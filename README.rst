@@ -6,8 +6,8 @@ mbsgdml
 .. image:: https://img.shields.io/pypi/v/mbsgdml.svg
         :target: https://pypi.python.org/pypi/mbsgdml
 
-.. image:: https://img.shields.io/travis/aalexmmaldonado/mbsgdml.svg
-        :target: https://travis-ci.com/aalexmmaldonado/mbsgdml
+.. image:: https://img.shields.io/travis/aalexmmaldonado/MB-sGDML.svg
+        :target: https://travis-ci.com/aalexmmaldonado/MB-sGDML
 
 .. image:: https://readthedocs.org/projects/mbsgdml/badge/?version=latest
         :target: https://mbsgdml.readthedocs.io/en/latest/?badge=latest
