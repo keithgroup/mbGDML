@@ -5,104 +5,113 @@ from numpy import array2string
 from cclib.io import ccread
 from cclib.parser.utils import convertor
 from periodictable import elements
-from mbsgdml import utils
+from mbsgdml import utils, parse
                 
 
-def split_trajectory(trajectory_path, processing_path,
-                       solvent, temperature, iteration):
-    """Separates each MD step in a trajectory as its
-    own xyz file in a specified location.
+def split_trajectory(trajectory_path, processing_path, solvent, temperature,
+                     iteration):
+    """Separates each MD step in a trajectory as its own xyz file in a
+    specified location.
+
+
+    Naming scheme is: numbersolventmolecule-tempt-iteration-traj-struct; e.g.
+    4H2O-100K-1-traj-struct.
     
     Args:
         trajectory_path (str): Specifies the MD trajectory to separate into
         steps.
         processing_path (str): Specifies folder where processed xyz file folder
         will be saved.
-        solvent (list): Specifies solvents to determine the number of atoms included in a molecule and labeling.
-        temperature (int): Provided information of MD thermostat set temperature; used for labeling.
-        iteration (int): Provided information of MD trajectory number; used for labeling.
+        solvent (lst): Specifies solvents to determine the number of atoms
+        included in a molecule and labeling.
+        temperature (int): Provided information of MD thermostat set
+        temperature; used for labeling.
+        iteration (int): Provided information of MD trajectory number;
+        used for labeling.
     
     Returns:
-        str: Path to step xyz files; ends in '/'.
+        str: Path to step xyz files.
     """
 
     # Determines labels for file names and directories.
     if solvent[0] == 'water':
-        labelSolvent = 'H2O'
+        solvent_label = 'H2O'
     elif solvent[0] == 'methanol':
-        labelSolvent = 'MeOH'
+        solvent_label = 'MeOH'
     elif solvent [0] == 'acetonitrile':
-        labelSolvent = 'acn'
+        solvent_label = 'acn'
     
-    labelNumMolecules = parsing.numberMolecules(trajectory_path, solvent)
+    num_molecules = parse.cluster_size(trajectory_path, solvent)
     # Creates cluster naming basis, e.g. '4H2O-300K-1'.
-    xyzClusterNameBase = str(int(labelNumMolecules)) + labelSolvent \
+    cluster_base_name = str(int(num_molecules)) + solvent_label \
                          + '-' + str(temperature) + 'K-' + str(iteration)
 
-
-    # Makes folder to put each step's xyz coordinates.
-    if processing_path[-1:] == '/':
-        nameFolderAttempt = processing_path + xyzClusterNameBase \
-                            + '-trajectory-structures'
-    else:
-        nameFolderAttempt = processing_path + '/' \
-                            + xyzClusterNameBase + '-trajectory-structures'
-
-    nameFolder = make_folder(nameFolderAttempt)
+    # Normalizes processing_path, assigns folder name, creates folder.
+    # Will append an integer if there is already a folder with the same name
+    # present.
+    processing_folder = utils.norm_path(processing_path) + cluster_base_name \
+                      + '-traj-struct'
+    processing_folder = utils.make_folder(processing_folder)
     
 
     # Starts parsing the trajectory.
     with open(trajectory_path, 'r') as traj:
 
-
-        fileStructure = []
-        aimdStep = '0,'
+        structure_file = []
+        md_step = '0,'
         line = traj.readline()
 
         # Loops through each line in trajectory file.
         while line:
             
-            lineSplit = line.split(' ')
+            split_line = line.split(' ')
             
-            # Writes the xyz file for the step and resets variables for next step.
-            # Occurs when the current line is the number of atoms in the next step.
+            # Writes the xyz file for the step and resets variables.
+            # Occurs when the current line is the number of atoms.
             # Makes sure to not write file if there is a blank line.
             # Makes sure to not write file in the first line.
-            if len(lineSplit) == 1 and lineSplit[0] != '\n' and len(fileStructure) != 0:
+            if len(split_line) == 1 and split_line[0] != '\n' \
+               and len(structure_file) != 0:
 
-                with open(nameFolder + '/' + xyzClusterNameBase + '-step' + aimdStep[:-1] + '.xyz', 'w') as f:
-                    f.write(''.join(fileStructure))
-                fileStructure = [line]
+                with open(processing_folder + '/' + cluster_base_name \
+                          + '-step' + md_step[:-1] + '.xyz', 'w') as f:
+                    f.write(''.join(structure_file))
+                structure_file = [line]
 
-            # Reformats the comment line to only include the AIMD potential energy in kcal/mol.
-            elif lineSplit[0] == '#':
+            # Reformats the comment line to only include the potential energy
+            # in kcal/mol.
+            elif split_line[0] == '#':
 
-                energy = float(lineSplit[8][6:]) * 627.509474 
-                aimdStep = lineSplit[5]
-                fileStructure.append('# ' + str(energy) + '\n')
+                energy = float(split_line[8][6:]) * 627.509474 
+                md_step = split_line[5]
+                structure_file.append('# ' + str(energy) + '\n')
 
             # Skips new lines in trajectory.
-            elif lineSplit[0] == '\n':
-
+            elif split_line[0] == '\n':
                 pass
 
-            # Where any line containing atomic coordinates gets added to xyz file.
+            # Any line containing atomic coordinates gets added to xyz file.
             else:
-
-                fileStructure.append(line)
+                structure_file.append(line)
 
             line = traj.readline()
         
-        # Writes last trajectory step (does not trigger write conditional statement).
-        with open(nameFolder + '/' + xyzClusterNameBase + '-step' + aimdStep[:-1] + '.xyz', 'w') as f:
-            f.write(''.join(fileStructure))
+        # Writes last trajectory step.
+        # Previous while loop does not trigger write conditional statement for
+        # the last step.
+        with open(processing_folder + '/' + cluster_base_name \
+                  + '-step' + md_step[:-1] + '.xyz', 'w') as f:
+            
+            f.write(''.join(structure_file))
     
-    return nameFolder
+    return processing_folder
 
 
 
 def parse_cluster(xyzPath, solvent):
     """Creates dictionary of all solvent molecules in solvent cluster from xyz file.
+
+    Atomic coordinates for each xyz step should be organized into molecules.
 
     Molecules are specified by specified by uppercase letters, and their values the xyz coordinates.
     
@@ -129,10 +138,10 @@ def parse_cluster(xyzPath, solvent):
 
         # Loops through each line in xyz file.
         while line:
-            lineSplit = line.split(' ')
+            split_line = line.split(' ')
 
             # Skips atom number and comment line.
-            if len(lineSplit) == 1 or lineSplit[0] == '#':
+            if len(split_line) == 1 or split_line[0] == '#':
 
                 pass
             
@@ -228,21 +237,21 @@ def separate_cluster(xyzFile, pathProcessing, solvent, temperature, iteration, s
 
     # Specifies number of atoms in each molecule and solvent label.
     if solvent[0] == 'water':
-        labelSolvent = 'H2O'
+        solvent_label = 'H2O'
         numAtoms = 3
     
     # Gets number of molecules in solvent cluster.
     labelNumMolecules = parsing.numberMolecules(xyzFile, solvent)
 
     # Creates trajectory naming basis, e.g. '4H2O-300K-1'.
-    xyzClusterNameBase = str(int(labelNumMolecules)) + labelSolvent \
+    cluster_base_name = str(int(labelNumMolecules)) + solvent_label \
                          + '-' + str(temperature) + 'K-' + str(iteration)
 
     # Creates folder to store each molecules combination xyz files.
     if pathProcessing[-1:] == '/':
-        nameFolderAttempt = pathProcessing + xyzClusterNameBase + '-segments/'
+        nameFolderAttempt = pathProcessing + cluster_base_name + '-segments/'
     else:
-        nameFolderAttempt = pathProcessing + '/' + xyzClusterNameBase + '-segments/'
+        nameFolderAttempt = pathProcessing + '/' + cluster_base_name + '-segments/'
 
     # Creates the folder if not present.
     try:
@@ -267,7 +276,7 @@ def separate_cluster(xyzFile, pathProcessing, solvent, temperature, iteration, s
         # Writes all combinations of a specific size to individual xyz files.
         for segment, coordinates in segmentedCluster.items():
             with open(nameFolderSegment + str(segment) \
-                      + '-' + xyzClusterNameBase \
+                      + '-' + cluster_base_name \
                       + '-step' + str(step) + '.xyz', 'w') as f:
                 f.write(str(len(segment) * numAtoms) + '\n') 
                 f.write('#\n')
