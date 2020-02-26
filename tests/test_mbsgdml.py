@@ -6,7 +6,6 @@
 import unittest
 from click.testing import CliRunner
 
-from mbsgdml import mbsgdml
 from mbsgdml import cli
 
 
