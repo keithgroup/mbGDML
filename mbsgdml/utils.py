@@ -1,5 +1,6 @@
 import os
 import cclib
+from natsort import natsorted, ns
 
 def norm_path(path):
     """Normalizes directory paths to be consistent.
@@ -20,6 +21,18 @@ def norm_path(path):
     return normd_path
 
 def get_files(path, expression):
+    """Returns paths to all files in a given directory that matches a provided
+    expression in the file name. Commonly used to find all files of a certain
+    type, e.g. output or xyz files.
+    
+    Args:
+        path (string): Specifies the folder to search.
+        expression (string): Expression to be tested against all file names in
+        'path'.
+    
+    Returns:
+        list: all absolute paths to files matching the provided expression.
+    """
     all_files = []
     for (dirpath, dirnames, filenames) in os.walk(path):
         
@@ -78,6 +91,15 @@ def make_folder(folder):
 
 
 def natsort_list(unsorted_list):
+    """Basic function that organizes a list based on human (or natural) sorting
+    methodology.
+    
+    Args:
+        unsorted_list (list): List of strings.
+    
+    Returns:
+        list: Sorted list of string.
+    """
     sorted_list = natsorted(unsorted_list, alg=ns.IGNORECASE)
 
     return sorted_list
