@@ -9,3 +9,4 @@ Sphinx==1.8.5
 twine==1.14.0
 Click==7.0
 natsort>=7.0.1
+cclib>=1.6.2
