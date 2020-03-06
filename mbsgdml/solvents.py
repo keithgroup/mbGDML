@@ -4,6 +4,12 @@ solvent_atoms = {
     'acetonitrile': {'C': 2, 'H': 3, 'N': 1}
 }
 
+solvent_size ={
+    'water': 3,
+    'methanol': 6,
+    'acetonitrile': 6
+}
+
 solvent_labels ={
     'water': 'H2O',
     'methanol': 'MeOH',
@@ -60,15 +66,20 @@ def identify_solvent(atom_list):
                     if multiple != test_multiple:
                         raise ValueError
                 
-                return {'solvent': solvent, 'size': int(atom_numbers[atom] \
-                        / solvent_atoms[solvent][atom])}
+                return {
+                    'solvent': solvent,
+                    'label': solvent_labels[solvent],
+                    'solvent_size': solvent_size[solvent],
+                    'molecule_size': int(atom_numbers[atom] \
+                                         / solvent_atoms[solvent][atom])
+                }
             except:
                 pass
     
     print('The solvent could not be identified.')
     raise ValueError
 
-test_solvent = ['C', 'C', 'H', 'H', 'H', 'N', 'C', 'C', 'H', 'H', 'H']
+#test_solvent = ['C', 'C', 'H', 'H', 'H', 'N', 'C', 'C', 'H', 'H', 'H']
 
-cluster_info = identify_solvent(test_solvent)
-print(cluster_info)
+#cluster_info = identify_solvent(test_solvent)
+#print(cluster_info)
