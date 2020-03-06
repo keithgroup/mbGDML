@@ -27,7 +27,8 @@ def identify_solvent(atom_list):
             the order does not matter; only the quantity.
     
     Returns:
-        dict: Contains 'solvent' and 'size' information.
+        dict: Contains 'solvent', 'label', 'solvent_size', and
+                'cluster_size'.
     """
 
     # Converts atoms identified by their atomic number into element symbols
@@ -80,7 +81,7 @@ def identify_solvent(atom_list):
                     'solvent': solvent,
                     'label': solvent_labels[solvent],
                     'solvent_size': solvent_size[solvent],
-                    'molecule_size': int(atom_numbers[atom] \
+                    'cluster_size': int(atom_numbers[atom] \
                                          / solvent_atoms[solvent][atom])
                 }
             except:
