@@ -1,8 +1,7 @@
 import itertools
 import os
 
-import numpy as np
-#from numpy import array2string
+from numpy import array2string
 from cclib.io import ccread
 from cclib.parser.utils import convertor
 from periodictable import elements
@@ -107,19 +106,20 @@ def split_trajectory(trajectory_path, processing_path, solvent, temperature,
     
     return processing_folder
 
-#cluster = parse.parse_stringfile('/home/alex/Dropbox/keith/projects/gdml/data/md/4H2O-md/4H2O-100K-1-md/4H2O-100K-1-md-trajectory.xyz')
-#test = parse_cluster({'atoms': cluster['atoms'], 'coords': cluster['coords'][0]})
-#print(test)
 
-def segment_cluster(xyzCluster, nbody):
-    """Creates dictionary of all possible nbody combinations of solvent cluster.
+def segment_cluster(cluster, nbody):
+    """Creates dictionary with all possible n-body combinations of solvent
+    cluster.
     
     Args:
-        xyzCluster (dict): Dictionary of solvent molecules in cluster.
-        nbody (int): Number of solvent molecules in combination.
+        cluster (dict): Dictionary of solvent molecules in cluster from
+                        parse_cluster
+        nbody (int):    Desired number of solvent molecules in combination.
     
     Returns:
-        dict: Dictionary of all nonrepeating solvent molecule combinations from cluster.
+        dict:   All nonrepeating solvent molecule combinations from cluster with
+                keys being uppercase concatenations of molecule labels and
+                values being the string of coordinates.
 
         ABC is considered the same as BAC and only included once.
     """
@@ -127,10 +127,10 @@ def segment_cluster(xyzCluster, nbody):
     segments = {}
     coordString = ''
 
-    # Creates list of combinations of xyzCluster dictionary keys
+    # Creates list of combinations of cluster dictionary keys
     # CombinationList is a list of tuples,
     # e.g. [('A', 'B'), ('A', 'C'), ('A', 'D'), ('B', 'C'), ('B', 'D'), ('C', 'D')].
-    combinationList = list(itertools.combinations(xyzCluster, nbody))
+    combinationList = list(itertools.combinations(cluster, nbody))
 
     # Adds each solvent molecule coordinates in each combination
     # to a dictionary.
@@ -138,7 +138,7 @@ def segment_cluster(xyzCluster, nbody):
         # Combination is tuple of solvent solvent molecules, e.g. ('B', 'C').
         for molecule in combination:
             # Molecule is the letter assigned to the solvent molecule, e.g. 'A'.
-            coordString = coordString + xyzCluster[molecule]
+            coordString = coordString + cluster[molecule]
 
         segments[''.join(combination)] = (coordString)
         coordString = ''
@@ -154,6 +154,10 @@ def segment_cluster(xyzCluster, nbody):
     #          H      1.4146817822      1.5705640307     -0.0349706549\n
     #          ...'}
     return segments
+
+test_cluster = parse.parse_stringfile('/home/alex/repos/MB-sGDML/tests/4MeOH-300K-1-md-trajectory.xyz')
+test_parse = parse.parse_cluster({'atoms': test_cluster['atoms'], 'coords': test_cluster['coords'][0]})
+print(test_parse['A'])
 
 
 def separate_cluster(xyzFile, pathProcessing, solvent, temperature, iteration, step):
@@ -349,12 +353,12 @@ def prepare_training(
                 atom_index = 0
                 while atom_index < len(atoms):
                     atom_string = '  ' + str(elements[atoms[atom_index]])
-                    coord_string = np.array2string(
+                    coord_string = array2string(
                                        coords[atom_index],
                                        suppress_small=True, separator='   ',
                                        formatter={'float_kind':'{:0.6f}'.format}
                                    )[1:-1].replace(' -', '-') + '    '
-                    force_string = np.array2string(
+                    force_string = array2string(
                                        forces[atom_index],
                                        suppress_small=True, separator='   ',
                                        formatter={'float_kind':'{:0.8f}'.format}

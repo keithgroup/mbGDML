@@ -1,5 +1,5 @@
 import os
-from numpy import array2string
+import numpy as np
 import cclib
 from periodictable import elements
 from mbsgdml import solvents
@@ -94,53 +94,7 @@ def parse_stringfile(stringfile_path):
     """
     
     stringfile_data = parse_coords(stringfile_path)
-
-    # Replaces 'atoms' with elemental symbols
-    element_list = []
-    for atom in stringfile_data['atoms']:
-        element_list.append(str(elements[atom]))
-    stringfile_data['atoms'] = element_list
-
-    '''
-    # Starts parsing the stringfile.
-    with open(stringfile_path, 'r') as stringfile:
-
-        structures = ['']
-        line = stringfile.readline()
-        structure_number = 0
-
-        # Loops through each line in string file and adds coordinates to
-        # structures.
-        while line:
-
-            # Splits line into list
-            # e.g. ['C', '1.208995', '-0.056447', '2.319079\n']
-            split_line = [item for item in line.split(' ') if item != '']
-
-            # Length of split coordinate will have length of four
-            if len(split_line) == 4:
-                # First item should be either a character or string
-                try:
-                    int(split_line[0])
-                except ValueError:
-                    # Remainder of items should be floats.
-                    try:
-                        float(split_line[1])
-                        float(split_line[2])
-                        float(split_line[3][:-2])
-                        structures[structure_number] = structures[structure_number] \
-                                                        + line
-                    except:
-                        pass
-            # If it is a line that doesn't have a coordinate we start a new
-            # structure in the list.
-            else:
-                if len(structures) != 0 and structures[structure_number] != '':
-                    structure_number += 1
-                    structures.append('')
-
-            line = stringfile.readline()  # Next line
-    '''     
+   
     return stringfile_data
 
 
@@ -150,16 +104,37 @@ def parse_cluster(cluster_data):
 
     Notes:
         Molecules are specified by specified by uppercase letters, and their
-    values the xyz coordinates.
+        values the xyz coordinates.
     
     Args:
         cluster_data (dict): Contains 'atoms' that is a list of elements
-            organized by molecule and matches the order of the numpy array
-            containing atomic coordinates
+    organized by molecule and matches the order of the numpy array
+    containing atomic coordinates
     
     Returns:
         dict: Contains solvent molecules with keys of uppercase characters
-                and a string containing atomic coordinates as values.
+    with dicts as values containing 'atoms' and 'coords'.
+    
+    {
+        'A':    {
+                 'atoms':   array([8, 1, 6, 1, 1, 1], dtype=int32),
+                 'coords':  array([[ 1.45505901, -0.880818  ,  0.851331  ],
+                                   [ 0.505216  , -1.15252401,  0.844885  ],
+                                   [ 2.22036801, -1.94217701,  0.2977    ],
+                                   [ 3.25924901, -1.61877101,  0.264909  ],
+                                   [ 1.89693001, -2.18833701, -0.717112  ],
+                                   [ 2.15446301, -2.84056201,  0.915723  ]])
+                },
+        'B':    {
+                 'atoms':   array([8, 1, 6, 1, 1, 1], dtype=int32),
+                 'coords':  array([[ 1.14600801,  1.44243601, -0.473102  ],
+                                  [ 1.38561801,  0.614295  ,  0.00943   ],
+                                  [ 1.47489701,  2.54700101,  0.357836  ],
+                                  [ 1.16626501,  3.45362102, -0.159587  ],
+                                  [ 2.55100901,  2.59826701,  0.538796  ],
+                                  [ 0.957941  ,  2.49831901,  1.31983201]])
+                }
+    }
     """
 
     # Identifies the solvent and size of a cluster.
@@ -178,36 +153,15 @@ def parse_cluster(cluster_data):
         # the molecule.
         molecule_label = chr(ord('@')+molecule_index)
         molecule_atoms = cluster_data['atoms'][atom_start:atom_end]
-        molecule_coords_array = cluster_data['coords'][atom_start:atom_end,:]
+        molecule_coords = cluster_data['coords'][atom_start:atom_end,:]
 
-        # Combines the atom element string with the atomic coordinates and adds
-        # each atomic position to a string containing all atoms of the molecule.
-        atom_index = 0
-        molecule_coords_string = ''
-        while atom_index < len(molecule_atoms):
-            atom = molecule_atoms[atom_index]
-            atom_coords = array2string(
-                            molecule_coords_array[atom_index,:],
-                            suppress_small=True, separator='   ',
-                            formatter={'float_kind':'{:0.8f}'.format}
-                          )[1:-1].replace(' -', '-') + '\n'
-            
-            molecule_coords_string += (atom + '   ' + atom_coords)\
-                                      .replace('   -', '  -')
-            
-            atom_index += 1
-        
-        cluster_molecules[molecule_label] = molecule_coords_string
+        cluster_molecules[molecule_label] = {'atoms': molecule_atoms,
+                                             'coords': molecule_coords}
 
         molecule_index += 1
-    
-    # {'A': ' O      2.1290090365      1.4901150553      0.5941161094\n
-    #         H      2.9229414264      1.7667755647      0.0793842086\n
-    #         H      1.4250698682      1.5702549374     -0.0247986470\n',
-    #  'B': ' O     -0.9480866892     -1.2983918818     -0.1572478054\n
-    #         H     -0.7970445792     -2.1806422344     -0.5083589780\n
-    #         H     -0.5303094646     -1.2751462507      0.7432080260\n'}
+
     return cluster_molecules
+
 
 def struct_dict(origin, struct_list):
     
