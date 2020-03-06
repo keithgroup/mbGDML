@@ -1,7 +1,7 @@
 import itertools
 import os
 
-from numpy import array2string
+import numpy as np
 from cclib.io import ccread
 from cclib.parser.utils import convertor
 from periodictable import elements
@@ -107,7 +107,7 @@ def split_trajectory(trajectory_path, processing_path, solvent, temperature,
     return processing_folder
 
 
-def segment_cluster(cluster, nbody):
+def partition_cluster(cluster, nbody):
     """Creates dictionary with all possible n-body combinations of solvent
     cluster.
     
@@ -125,39 +125,44 @@ def segment_cluster(cluster, nbody):
     """
 
     segments = {}
-    coordString = ''
 
     # Creates list of combinations of cluster dictionary keys
-    # CombinationList is a list of tuples,
+    # comb_list is a list of tuples,
     # e.g. [('A', 'B'), ('A', 'C'), ('A', 'D'), ('B', 'C'), ('B', 'D'), ('C', 'D')].
-    combinationList = list(itertools.combinations(cluster, nbody))
-
+    comb_list = list(itertools.combinations(cluster, nbody))
+    
     # Adds each solvent molecule coordinates in each combination
     # to a dictionary.
-    for combination in combinationList:
+    for combination in comb_list:
         # Combination is tuple of solvent solvent molecules, e.g. ('B', 'C').
+        
         for molecule in combination:
             # Molecule is the letter assigned to the solvent molecule, e.g. 'A'.
-            coordString = coordString + cluster[molecule]
 
-        segments[''.join(combination)] = (coordString)
-        coordString = ''
+            # Tries to concatenate two molecules; if it fails it initializes
+            # the variable.
+            try:
+                combined_atoms = np.concatenate((combined_atoms,
+                                                 cluster[molecule]['atoms']))
+                combined_coords = np.concatenate((combined_coords,
+                                                 cluster[molecule]['coords']))
+            except UnboundLocalError:
+                combined_atoms = cluster[molecule]['atoms']
+                combined_coords = cluster[molecule]['coords']
 
-    # segments is dictionary of molecule combinations and coordinates,
-    # e.g.
-    #{'ABC': ' O      2.1240718974      1.4844422494      0.5941950356\n
-    #          H      2.9213858899      1.7784234257      0.0674544743\n
-    #          H      1.4146817822      1.5705640307     -0.0349706549\n
-    #          ...',
-    # 'ACD': ' O      2.1240718974      1.4844422494      0.5941950356\n
-    #          H      2.9213858899      1.7784234257      0.0674544743\n
-    #          H      1.4146817822      1.5705640307     -0.0349706549\n
-    #          ...'}
+        # Adds the segment to the dict.
+        segments[''.join(combination)] = {'atoms': combined_atoms,
+                                          'coords': combined_coords}
+
+        # Clears segment variables for the next one.
+        del combined_atoms, combined_coords
+
     return segments
 
 test_cluster = parse.parse_stringfile('/home/alex/repos/MB-sGDML/tests/4MeOH-300K-1-md-trajectory.xyz')
 test_parse = parse.parse_cluster({'atoms': test_cluster['atoms'], 'coords': test_cluster['coords'][0]})
-print(test_parse['A'])
+test_partition = partition_cluster(test_parse, 3)
+print(test_partition)
 
 
 def separate_cluster(xyzFile, pathProcessing, solvent, temperature, iteration, step):
@@ -211,7 +216,7 @@ def separate_cluster(xyzFile, pathProcessing, solvent, temperature, iteration, s
     while segmentSize <= labelNumMolecules:
 
         # Gets all combinations of current combination size.
-        segmentedCluster = segment_cluster(parsedCluster, segmentSize)
+        segmentedCluster = partition_cluster(parsedCluster, segmentSize)
 
         # Writes all combinations of a specific size to individual xyz files.
         for segment, coordinates in segmentedCluster.items():
