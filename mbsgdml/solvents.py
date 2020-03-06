@@ -1,3 +1,5 @@
+from periodictable import elements
+
 solvent_atoms = {
     'water': {'H': 2, 'O': 1},
     'methanol': {'C': 1, 'H': 4, 'O': 1},
@@ -27,6 +29,14 @@ def identify_solvent(atom_list):
     Returns:
         dict: Contains 'solvent' and 'size' information.
     """
+
+    # Converts atoms identified by their atomic number into element symbols
+    # for human redability.
+    atom_list_elements = []
+    for atom in atom_list:
+        atom_list_elements.append(str(elements[atom]))
+    atom_list = atom_list_elements
+
     # Determines quantity of each element in atom list.
     # Example: {'H': 4, 'O': 2}
     atom_numbers = {}
@@ -78,8 +88,3 @@ def identify_solvent(atom_list):
     
     print('The solvent could not be identified.')
     raise ValueError
-
-#test_solvent = ['C', 'C', 'H', 'H', 'H', 'N', 'C', 'C', 'H', 'H', 'H']
-
-#cluster_info = identify_solvent(test_solvent)
-#print(cluster_info)
