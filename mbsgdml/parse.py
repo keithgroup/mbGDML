@@ -8,7 +8,7 @@ def parse_coords(fileName):
         data = cclib.io.ccread(fileName)
 
         atoms = data.atomnos
-        coords = data.atomcoords[-1]
+        coords = data.atomcoords
 
     except:
         print('Something happened while parsing xyz coordinates.')
@@ -79,15 +79,27 @@ def cluster_size(xyz_path, solvent):
 def parse_stringfile(stringfile_path):
     """Parses xyz stringfile into list containing xyz coordinates of each
     structure in order. A stringfile is a text file with a list of xyz
-    structures.
+    structures. This also could be a trajectory.
     
     Args:
-        stringfile_path (str): Specifies path to stringfile.
+        stringfile_path (str):  Specifies path to stringfile.
     
     Returns:
-        lst: list of xyz coordinates.
+        dict:   Contains 'atoms' which is a list of atoms identified by their
+                element symbol and 'coords' which is a numpy array with shape
+                (n, m, 3) where n is the number of structures and m is the
+                number of atoms in each structure.
     """
     
+    stringfile_data = parse_coords(stringfile_path)
+
+    # Replaces 'atoms' with elemental symbols
+    element_list = []
+    for atom in stringfile_data['atoms']:
+        element_list.append(str(elements[atom]))
+    stringfile_data['atoms'] = element_list
+
+    '''
     # Starts parsing the stringfile.
     with open(stringfile_path, 'r') as stringfile:
 
@@ -126,8 +138,9 @@ def parse_stringfile(stringfile_path):
                     structures.append('')
 
             line = stringfile.readline()  # Next line
-            
-    return structures
+    '''     
+    return stringfile_data
+
 
 def struct_dict(origin, struct_list):
     
