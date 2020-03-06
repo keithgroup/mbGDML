@@ -148,8 +148,8 @@ def struct_dict(origin, struct_list):
     index_struct = 0
 
     while index_struct < len(struct_list):
-        parsed_coords = parsing.parse_coords(struct_list[index_struct])
-        coord_string = parsing.string_coords(parsed_coords['atoms'],
+        parsed_coords = parse_coords(struct_list[index_struct])
+        coord_string = string_coords(parsed_coords['atoms'],
                                             parsed_coords['coords'])
         
         # Naming scheme for ABCluster minima
