@@ -143,7 +143,7 @@ def parse_cluster(cluster_data):
     # Partitions solvent cluster into individual solvent molecules.
     cluster_molecules = {}
     molecule_index = 1
-    while molecule_index <= solvent_info['molecule_size']:
+    while molecule_index <= solvent_info['cluster_size']:
         # Grabs index positions of atomic coordinates for the solvent molecule
         atom_start = molecule_index * solvent_info['solvent_size'] \
                      - solvent_info['solvent_size']

@@ -159,11 +159,6 @@ def partition_cluster(cluster, nbody):
 
     return segments
 
-test_cluster = parse.parse_stringfile('/home/alex/repos/MB-sGDML/tests/4MeOH-300K-1-md-trajectory.xyz')
-test_parse = parse.parse_cluster({'atoms': test_cluster['atoms'], 'coords': test_cluster['coords'][0]})
-test_partition = partition_cluster(test_parse, 2)
-print(test_partition)
-
 
 def separate_cluster(xyzFile, proc_path, solvent, temperature, iteration, step):
     """Creates folder in specified directory that includes all 1, 2, 3, ...
@@ -230,51 +225,74 @@ def separate_cluster(xyzFile, proc_path, solvent, temperature, iteration, step):
         segmentSize += 1
 
 
-def process_trajectory(traj_path, proc_path, solvent, temperature, iteration):
+def partition_trajectory(traj_path):
     """Processes MD trajectory into individual xyz files for
     each snapshot and further segments each snapshot into all possible n-body combinations.
     
     Args:
         traj_path (str): Path to MD trajectory.
-        proc_path (str): Directory to save a folder containing all solvent combinations.
-        solvent (list): Specifies solvents to determine the number of atoms included in a molecule and labeling.
-        temperature (int): Provided information of MD thermostate set temperature; used for labeling.
-        iteration (int): Provided information of MD trajectory number; used for labeling.
     """
 
-    # Separates trajectory into individual xyz files.
-    trajectoryStepsPath = split_trajectory(
-            traj_path, proc_path, solvent, temperature, iteration
-    )
+    # Parses trajectory.
+    parsed_traj = parse.parse_stringfile(traj_path)
 
-    # Gets list of all individual xyz files (not in order),
-    # e.g. ['4H2O-300K-1-step56.xyz', '4H2O-300K-1-step40.xyz', '4H2O-300K-1-step71.xyz']
-    trajectorySteps = [f for f in os.listdir(trajectoryStepsPath) \
-                       if os.path.isfile(os.path.join(trajectoryStepsPath, f))]
+    # Gets length of trajectory.
+    traj_steps = parsed_traj['coords'].shape[0]
 
-    # Creates folder of all combinations for each step in MD trajectory.
-    indexStep = 0
-    while indexStep < len(trajectorySteps):
-        # Determines xyz file string of step indexStep (increasing order).
-        fileStepString = [step for step in trajectorySteps \
-                          if ('step' + str(indexStep) + '.xyz') in step][0]
-        # Concatenates path of step xyz file.
-        stepPath = trajectoryStepsPath + \
-                   trajectorySteps[trajectorySteps.index(fileStepString)]
-        # Creates the folder with all combinations.
-        separate_cluster(
-            stepPath, proc_path, solvent, temperature, iteration, indexStep
+    # Gets solvent information.
+    solvent_info = solvents.identify_solvent(parsed_traj['atoms'])
+    
+    traj_partition = {}
+    step_index = 0
+    while step_index < traj_steps:
+        cluster = parse.parse_cluster(
+            {'atoms': parsed_traj['atoms'],
+             'coords': parsed_traj['coords'][step_index]}
         )
 
-        indexStep += 1
+        nbody_index = 1
+        while nbody_index <= solvent_info['cluster_size']:
+            partitions = partition_cluster(cluster, nbody_index)
+            
+            
+            partition_labels = list(partitions.keys())
+            
+            for label in partition_labels:
+                try:
+                    #if label == 'A' and step_index < 5:
+                    #    print('--------')
+                    #    print(label)
+                    #    print('new coord')
+                    #    print(np.array([partitions[label]['coords']]))
+                    #    print('traj')
+                    #    print(traj_partition[label]['coords'])
+                    
+                    #print(traj_partition[label]['coords'])
+                    traj_partition[label]['coords'] = np.append(
+                        traj_partition[label]['coords'],
+                        np.array([partitions[label]['coords']]),
+                        axis=0
+                    )
+                    
+                except KeyError:
+                    traj_partition[label] = {
+                        'atoms': partitions[label]['atoms'],
+                        'coords': np.array([partitions[label]['coords']])
+                    }
+            
+            nbody_index += 1
+        
+        step_index += 1
     
+    return traj_partition
+
     
-'''
-process_trajectory(
-   '/home/alex/Dropbox/keith/projects/gdml/data/md/4H2O-md/4H2O-100K-3-md/4H2O-100K-3-md-trajectory.xyz',
-   '/home/alex/Dropbox/keith/projects/gdml/data/segments/', ['water'], 100, 3
-)
-'''
+
+test = partition_trajectory('/home/alex/repos/MB-sGDML/tests/4MeOH-300K-1-md-trajectory.xyz')
+print(test['CD']['atoms'])
+print(test['CD']['coords'][3])
+print(test['CD']['coords'].shape)
+
 
 
 def convert_gradients(gradients, number_atoms):
@@ -358,12 +376,12 @@ def prepare_training(
                 atom_index = 0
                 while atom_index < len(atoms):
                     atom_string = '  ' + str(elements[atoms[atom_index]])
-                    coord_string = array2string(
+                    coord_string = np.array2string(
                                        coords[atom_index],
                                        suppress_small=True, separator='   ',
                                        formatter={'float_kind':'{:0.6f}'.format}
                                    )[1:-1].replace(' -', '-') + '    '
-                    force_string = array2string(
+                    force_string = np.array2string(
                                        forces[atom_index],
                                        suppress_small=True, separator='   ',
                                        formatter={'float_kind':'{:0.8f}'.format}
