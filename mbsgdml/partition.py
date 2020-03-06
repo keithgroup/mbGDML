@@ -107,73 +107,6 @@ def split_trajectory(trajectory_path, processing_path, solvent, temperature,
     
     return processing_folder
 
-
-
-def parse_cluster(cluster_data):
-    """Creates dictionary of all solvent molecules in solvent cluster from a
-    cluster_data dictionary.
-
-    Notes:
-        Molecules are specified by specified by uppercase letters, and their
-    values the xyz coordinates.
-    
-    Args:
-        cluster_data (dict): Contains 'atoms' that is a list of elements
-            organized by molecule and matches the order of the numpy array
-            containing atomic coordinates
-    
-    Returns:
-        dict: Contains solvent molecules with keys of uppercase characters
-                and a string containing atomic coordinates as values.
-    """
-
-    # Identifies the solvent and size of a cluster.
-    solvent_info = solvents.identify_solvent(cluster_data['atoms'])
-
-    # Partitions solvent cluster into individual solvent molecules.
-    cluster_molecules = {}
-    molecule_index = 1
-    while molecule_index <= solvent_info['molecule_size']:
-        # Grabs index positions of atomic coordinates for the solvent molecule
-        atom_start = molecule_index * solvent_info['solvent_size'] \
-                     - solvent_info['solvent_size']
-        atom_end = molecule_index * solvent_info['solvent_size']
-        
-        # Creates molecule label and grabs atoms and atomic coordinates for
-        # the molecule.
-        molecule_label = chr(ord('@')+molecule_index)
-        molecule_atoms = cluster_data['atoms'][atom_start:atom_end]
-        molecule_coords_array = cluster_data['coords'][atom_start:atom_end,:]
-
-        # Combines the atom element string with the atomic coordinates and adds
-        # each atomic position to a string containing all atoms of the molecule.
-        atom_index = 0
-        molecule_coords_string = ''
-        while atom_index < len(molecule_atoms):
-            atom = molecule_atoms[atom_index]
-            atom_coords = np.array2string(
-                            molecule_coords_array[atom_index,:],
-                            suppress_small=True, separator='   ',
-                            formatter={'float_kind':'{:0.8f}'.format}
-                          )[1:-1].replace(' -', '-') + '\n'
-            
-            molecule_coords_string += (atom + '   ' + atom_coords)\
-                                      .replace('   -', '  -')
-            
-            atom_index += 1
-        
-        cluster_molecules[molecule_label] = molecule_coords_string
-
-        molecule_index += 1
-    
-    # {'A': ' O      2.1290090365      1.4901150553      0.5941161094\n
-    #         H      2.9229414264      1.7667755647      0.0793842086\n
-    #         H      1.4250698682      1.5702549374     -0.0247986470\n',
-    #  'B': ' O     -0.9480866892     -1.2983918818     -0.1572478054\n
-    #         H     -0.7970445792     -2.1806422344     -0.5083589780\n
-    #         H     -0.5303094646     -1.2751462507      0.7432080260\n'}
-    return cluster_molecules
-
 #cluster = parse.parse_stringfile('/home/alex/Dropbox/keith/projects/gdml/data/md/4H2O-md/4H2O-100K-1-md/4H2O-100K-1-md-trajectory.xyz')
 #test = parse_cluster({'atoms': cluster['atoms'], 'coords': cluster['coords'][0]})
 #print(test)
@@ -244,7 +177,7 @@ def separate_cluster(xyzFile, pathProcessing, solvent, temperature, iteration, s
         numAtoms = 3
     
     # Gets number of molecules in solvent cluster.
-    labelNumMolecules = parsing.numberMolecules(xyzFile, solvent)
+    labelNumMolecules = parse.numberMolecules(xyzFile, solvent)
 
     # Creates trajectory naming basis, e.g. '4H2O-300K-1'.
     cluster_base_name = str(int(labelNumMolecules)) + solvent_label \
@@ -264,10 +197,10 @@ def separate_cluster(xyzFile, pathProcessing, solvent, temperature, iteration, s
     
     # Refreshes folder name and creates base path for a steps molecule combination.
     nameFolder = nameFolderAttempt
-    nameFolderSegment = make_folder(nameFolder + 'step' + str(step))
+    nameFolderSegment = utils.make_folder(nameFolder + 'step' + str(step))
 
     # Gets all solvent molecules from the xyz file into a dictionary.
-    parsedCluster = parse_cluster(xyzFile, solvent)
+    parsedCluster = parse.parse_cluster(xyzFile)
 
     # Creates xyz files of all possible combinations involving 1, 2, 3, ... solvent molecules.
     segmentSize = 1
