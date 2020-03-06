@@ -161,11 +161,11 @@ def partition_cluster(cluster, nbody):
 
 test_cluster = parse.parse_stringfile('/home/alex/repos/MB-sGDML/tests/4MeOH-300K-1-md-trajectory.xyz')
 test_parse = parse.parse_cluster({'atoms': test_cluster['atoms'], 'coords': test_cluster['coords'][0]})
-test_partition = partition_cluster(test_parse, 3)
+test_partition = partition_cluster(test_parse, 2)
 print(test_partition)
 
 
-def separate_cluster(xyzFile, pathProcessing, solvent, temperature, iteration, step):
+def separate_cluster(xyzFile, proc_path, solvent, temperature, iteration, step):
     """Creates folder in specified directory that includes all 1, 2, 3, ...
     solvent molecule combinations.
 
@@ -173,7 +173,7 @@ def separate_cluster(xyzFile, pathProcessing, solvent, temperature, iteration, s
     
     Args:
         xyzFile (str): Path to xyz file of a single MD snapshot.
-        pathProcessing (str): Directory to save a folder containing all solvent combinations.
+        proc_path (str): Directory to save a folder containing all solvent combinations.
         solvent (list): Specifies solvents to determine the number of atoms included in a molecule and labeling.
         temperature (int): Provided information of MD thermostate set temperature; used for labeling.
         iteration (int): Provided information of MD trajectory number; used for labeling.
@@ -193,10 +193,10 @@ def separate_cluster(xyzFile, pathProcessing, solvent, temperature, iteration, s
                          + '-' + str(temperature) + 'K-' + str(iteration)
 
     # Creates folder to store each molecules combination xyz files.
-    if pathProcessing[-1:] == '/':
-        nameFolderAttempt = pathProcessing + cluster_base_name + '-segments/'
+    if proc_path[-1:] == '/':
+        nameFolderAttempt = proc_path + cluster_base_name + '-segments/'
     else:
-        nameFolderAttempt = pathProcessing + '/' + cluster_base_name + '-segments/'
+        nameFolderAttempt = proc_path + '/' + cluster_base_name + '-segments/'
 
     # Creates the folder if not present.
     try:
@@ -230,13 +230,13 @@ def separate_cluster(xyzFile, pathProcessing, solvent, temperature, iteration, s
         segmentSize += 1
 
 
-def process_trajectory(pathTrajectory, pathProcessing, solvent, temperature, iteration):
+def process_trajectory(traj_path, proc_path, solvent, temperature, iteration):
     """Processes MD trajectory into individual xyz files for
     each snapshot and further segments each snapshot into all possible n-body combinations.
     
     Args:
-        pathTrajectory (str): Path to MD trajectory.
-        pathProcessing (str): Directory to save a folder containing all solvent combinations.
+        traj_path (str): Path to MD trajectory.
+        proc_path (str): Directory to save a folder containing all solvent combinations.
         solvent (list): Specifies solvents to determine the number of atoms included in a molecule and labeling.
         temperature (int): Provided information of MD thermostate set temperature; used for labeling.
         iteration (int): Provided information of MD trajectory number; used for labeling.
@@ -244,7 +244,7 @@ def process_trajectory(pathTrajectory, pathProcessing, solvent, temperature, ite
 
     # Separates trajectory into individual xyz files.
     trajectoryStepsPath = split_trajectory(
-            pathTrajectory, pathProcessing, solvent, temperature, iteration
+            traj_path, proc_path, solvent, temperature, iteration
     )
 
     # Gets list of all individual xyz files (not in order),
@@ -263,7 +263,7 @@ def process_trajectory(pathTrajectory, pathProcessing, solvent, temperature, ite
                    trajectorySteps[trajectorySteps.index(fileStepString)]
         # Creates the folder with all combinations.
         separate_cluster(
-            stepPath, pathProcessing, solvent, temperature, iteration, indexStep
+            stepPath, proc_path, solvent, temperature, iteration, indexStep
         )
 
         indexStep += 1
