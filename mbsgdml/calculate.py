@@ -6,28 +6,13 @@ import mbsgdml.parse as parse
 from wacc.calculations.packages.orca import ORCA
 import wacc.calculations.packages.templates as templates
 
-def engrad(
-    package, step_segments_dir, path_calcs, solvent, temperature,
-    md_iteration, md_step, theory_level_engrad='MP2', basis_set_engrad='Def2-TZVP',
+
+def partition_engrad(
+    package, partition_dict, path_calcs, temperature, md_iteration,
+    theory_level_engrad='MP2', basis_set_engrad='Def2-TZVP',
     options_engrad='TightSCF FrozenCore',
     control_blocks_engrad='%scf\n    ConvForced true\nend\n', submit=False
 ):
-    
-    if solvent[0] == 'water':
-        solvent_label = 'H2O'
-
-    # Grabs all xyz files from step_segments_dir
-    xyz_segments = utils.get_files(step_segments_dir, 'xyz')
-
-    # Gets maximum number of molecules in solvent cluster.
-    num_index = 0
-    num_molecules = 0
-    while num_index < len(xyz_segments):
-        num_molecules_iter = parse.cluster_size(xyz_segments[num_index], solvent)
-        if num_molecules_iter > num_molecules:
-            num_molecules = num_molecules_iter
-
-        num_index += 1
     
     # Creates calc folder name, e.g. '4H2O-300K-1-step0'.
     calc_name_base = str(int(num_molecules)) + solvent_label \
