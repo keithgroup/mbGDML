@@ -279,13 +279,6 @@ def partition_trajectory(traj_path):
     
     return traj_partition
 
-    
-
-test = partition_trajectory('/home/alex/repos/MB-sGDML/tests/4MeOH-300K-1-md-trajectory.xyz')
-print(test['CD']['atoms'])
-print(test['CD']['coords'][3])
-print(test['CD']['coords'].shape)
-
 
 def prepare_training(
     segment_calc_folder, training_folder, solvent, temperature, iteration
