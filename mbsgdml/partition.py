@@ -294,21 +294,6 @@ print(test['CD']['coords'][3])
 print(test['CD']['coords'].shape)
 
 
-
-def convert_gradients(gradients, number_atoms):
-    # Eh / bohr to kcal / (angstrom mol)
-    atom_index = 0
-    while atom_index < number_atoms:
-        coord_index = 0
-        while coord_index < 3:
-            gradients[atom_index][coord_index] = gradients[atom_index][coord_index] \
-                * ( 627.50947414 / 0.5291772109)
-
-            coord_index += 1
-        atom_index += 1
-
-    return gradients
-
 def prepare_training(
     segment_calc_folder, training_folder, solvent, temperature, iteration
 ):
