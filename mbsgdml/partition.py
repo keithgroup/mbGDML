@@ -262,6 +262,10 @@ def partition_trajectory(traj_path):
             # Tries to add the next trajectory step to 'coords'; if it fails it
             # initializes 'atoms' and 'coords' for that partition.
             for label in partition_labels:
+                partition_info = solvents.identify_solvent(
+                    partitions[label]['atoms']
+                )
+
                 try:
                     traj_partition[label]['coords'] = np.append(
                         traj_partition[label]['coords'],
@@ -270,6 +274,8 @@ def partition_trajectory(traj_path):
                     )
                 except KeyError:
                     traj_partition[label] = {
+                        'label': partition_info['label'],
+                        'partition_size': partition_info['cluster_size'],
                         'atoms': partitions[label]['atoms'],
                         'coords': np.array([partitions[label]['coords']])
                     }
@@ -278,15 +284,3 @@ def partition_trajectory(traj_path):
         step_index += 1
     
     return traj_partition
-
-                
-
-# TODO format data for numbers larger than 10 (reduce spacing)
-
-'''
-prepare_training(
-    '/home/alex/Dropbox/keith/projects/gdml/data/segment-calculations/4H2O-300K-1',
-    '/home/alex/Dropbox/keith/projects/gdml/data/gdml-files/4H2O-300K-1',
-    ['water'], '300', '1'
-)
-'''
