@@ -6,43 +6,6 @@ import mbsgdml.parse as parse
 from wacc.calculations.packages.orca import ORCA
 import wacc.calculations.packages.templates as templates
 
-def make_folder(pathFolder):
-    """Creates folder at specified path.
-    If the current folder exists, it creates another folder
-    with an added number.
-    
-    Args:
-        pathFolder (str): Path to desired folder.
-    
-    Returns:
-        str: Final path of new folder; ends in '/'.
-    """
-    
-    # First tries to create the desired directory.
-    try:
-
-        os.mkdir(pathFolder)
-        return pathFolder + '/'
-
-    # If there is already a directory with the same name,
-    # append a positive integer until there is no previously existing directory.
-    except FileExistsError:
-
-        indexDir = 1
-        dirExists = True
-        while dirExists:
-            try:
-                pathFolderIteration = pathFolder + '-' + str(indexDir)
-                os.mkdir(pathFolderIteration)
-
-                dirExists = False
-
-                return pathFolderIteration + '/'
-
-            # Increments number by 1 until it finds the lowest number.
-            except FileExistsError:
-                indexDir += 1
-
 def engrad(
     package, step_segments_dir, path_calcs, solvent, temperature,
     md_iteration, md_step, theory_level_engrad='MP2', basis_set_engrad='Def2-TZVP',
