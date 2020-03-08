@@ -226,11 +226,11 @@ def separate_cluster(xyzFile, proc_path, solvent, temperature, iteration, step):
 
 
 def partition_trajectory(traj_path):
-    """Processes MD trajectory into individual xyz files for
-    each snapshot and further segments each snapshot into all possible n-body combinations.
+    """Partitions MD trajectory into separate trajectories for each possible
+    segment.
     
     Args:
-        traj_path (str): Path to MD trajectory.
+        traj_path (str): Path to trajectory with xyz coordinates.
     """
 
     # Parses trajectory.
@@ -241,8 +241,10 @@ def partition_trajectory(traj_path):
 
     # Gets solvent information.
     solvent_info = solvents.identify_solvent(parsed_traj['atoms'])
-    
-    traj_partition = {}
+
+    # Directory containing all partitions atoms and coords.
+    traj_partition = {}  
+    # Loops through each step in the MD trajectory.
     step_index = 0
     while step_index < traj_steps:
         cluster = parse.parse_cluster(
@@ -250,30 +252,22 @@ def partition_trajectory(traj_path):
              'coords': parsed_traj['coords'][step_index]}
         )
 
+        # Loops through all possible n-body partitions and adds the atoms once
+        # and adds each step traj_partition.
         nbody_index = 1
         while nbody_index <= solvent_info['cluster_size']:
             partitions = partition_cluster(cluster, nbody_index)
-            
-            
             partition_labels = list(partitions.keys())
             
+            # Tries to add the next trajectory step to 'coords'; if it fails it
+            # initializes 'atoms' and 'coords' for that partition.
             for label in partition_labels:
                 try:
-                    #if label == 'A' and step_index < 5:
-                    #    print('--------')
-                    #    print(label)
-                    #    print('new coord')
-                    #    print(np.array([partitions[label]['coords']]))
-                    #    print('traj')
-                    #    print(traj_partition[label]['coords'])
-                    
-                    #print(traj_partition[label]['coords'])
                     traj_partition[label]['coords'] = np.append(
                         traj_partition[label]['coords'],
                         np.array([partitions[label]['coords']]),
                         axis=0
                     )
-                    
                 except KeyError:
                     traj_partition[label] = {
                         'atoms': partitions[label]['atoms'],
@@ -281,7 +275,6 @@ def partition_trajectory(traj_path):
                     }
             
             nbody_index += 1
-        
         step_index += 1
     
     return traj_partition
