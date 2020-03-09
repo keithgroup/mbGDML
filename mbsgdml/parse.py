@@ -17,33 +17,6 @@ def parse_coords(fileName):
     
     return {'atoms': atoms, 'coords': coords}
 
-def string_coords(atoms, coords):
-    """Puts atomic coordinates into a Python string. Typically used for 
-    writing to an input file.
-    
-    Args:
-        atoms (list): Contains elements as strings.
-        coords (list): Contains atomic positions in the same order as the
-        the atoms
-    
-    Returns:
-        string: all atomic positions ready to be written to a file.
-    """
-
-    coord_string = ''
-
-    atom_count = 0
-    while atom_count < len(atoms):
-        
-        coord_string = coord_string + str(elements[atoms[atom_count]]) \
-                        + ' ' + '  '.join([str(atom_coord) \
-                            for atom_coord in coords[atom_count]]) \
-                        + '\n'
-
-        atom_count += 1
-    
-    return coord_string
-
 
 def cluster_size(xyz_path, solvent):
     """Determines number of solvent molecules in a xyz file.

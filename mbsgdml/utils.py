@@ -1,5 +1,7 @@
 import os
+import numpy as np
 import cclib
+from periodictable import elements
 from natsort import natsorted, ns
 
 def norm_path(path):
@@ -104,6 +106,38 @@ def natsort_list(unsorted_list):
 
     return sorted_list
 
+def string_coords(atoms, coords):
+    """Puts atomic coordinates into a Python string. Typically used for 
+    writing to an input file.
+    
+    Args:
+        atoms (np.array): A (n, 1) numpy array containing all n elements labled
+            by their atomic number.
+        coords (np.array): Contains atomic positions in a (n, 3) numpy array
+            where the x, y, and z Cartesian coordinates in Angstroms are given
+            for the n atoms.
+    
+    Returns:
+        str: all atomic coordinates contained in a string.
+    """
+
+    atom_coords_string = ''
+
+    atom_index = 0
+    while atom_index < len(atoms):
+        atom_element = str(elements[atoms[atom_index]])
+        coords_string = np.array2string(
+            coords[atom_index],
+            suppress_small=True, separator='   ',
+            formatter={'float_kind':'{:0.9f}'.format}
+        )[1:-1] + '\n'
+        
+        atom_coords_string += (atom_element + '   ' \
+                               + coords_string).replace(' -', '-')
+
+        atom_index += 1
+    
+    return atom_coords_string
 
 def convert_gradients(gradients, number_atoms):
     # Eh/bohr to kcal/(angstrom mol)
