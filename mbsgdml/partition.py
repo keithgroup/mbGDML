@@ -110,7 +110,8 @@ def partition_trajectory(traj_path):
                     )
                 except KeyError:
                     traj_partition[label] = {
-                        'label': partition_info['label'],
+                        'solvent_label': partition_info['solvent_label'],
+                        'partition_label': label,
                         'partition_size': partition_info['cluster_size'],
                         'atoms': partitions[label]['atoms'],
                         'coords': np.array([partitions[label]['coords']])

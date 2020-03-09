@@ -79,7 +79,7 @@ def identify_solvent(atom_list):
                 
                 return {
                     'solvent': solvent,
-                    'label': solvent_labels[solvent],
+                    'solvent_label': solvent_labels[solvent],
                     'solvent_size': solvent_size[solvent],
                     'cluster_size': int(atom_numbers[atom] \
                                          / solvent_atoms[solvent][atom])
