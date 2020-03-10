@@ -48,11 +48,11 @@ def partition_engrad(
     # Normalizes path
     calc_path = utils.norm_path(calc_path)
     
-    # Creates calc folder name, e.g. '4H2O-300K-1'.
+    # Creates calc folder name, e.g. '4H2O-300-1'.
     calc_name_base = str(partition_dict['partition_size']) \
                      + partition_dict['solvent_label'] \
-                     + '-' + str(temperature) + 'K-' \
-                     + str(md_iteration) \
+                     + '-' + str(temperature) \
+                     + '-' + str(md_iteration) \
                      + '-' + partition_dict['partition_label']
 
     # Moves into MD step calculation folder.
@@ -119,9 +119,3 @@ def partition_engrad(
             stdout=subprocess.PIPE
         )
         output, error = submit_process.communicate()
-
-
-#test_partition = partition.partition_trajectory('/home/alex/repos/MB-sGDML/tests/4MeOH-300K-1-md-trajectory.xyz')
-#partition_engrad(
-#    'orca', '/home/alex/repos/MB-sGDML/tests', test_partition['CD'], 300, 1
-#)
