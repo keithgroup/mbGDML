@@ -42,6 +42,12 @@ def partition_engrad(
             calculation. Defaults to '%scf    ConvForced true end'.
         submit (bool, optional): controls whether the calculation is submitted.
             Defaults to False.
+    
+    Example:
+        calculate.partition_engrad(
+            'orca', '/path/to/dir/',
+            partition_dict, temp, iteration
+        )
     """
 
 
