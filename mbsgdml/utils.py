@@ -152,3 +152,8 @@ def convert_gradients(gradients, number_atoms):
         atom_index += 1
 
     return gradients
+
+# TODO Function that cleans and organizes a partition calculation folder
+# Provide directory, gets all files with expression, moves up one directory
+# newPath = shutil.move('sample1.txt', 'test')
+# Removes all remaining directories
