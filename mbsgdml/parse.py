@@ -2,7 +2,7 @@ import os
 import numpy as np
 import cclib
 from periodictable import elements
-from mbsgdml import solvents
+from mbsgdml import solvents, utils
 
 def parse_coords(fileName):
     
@@ -17,6 +17,48 @@ def parse_coords(fileName):
     
     return {'atoms': atoms, 'coords': coords}
 
+def parse_gdml_data(out_file):
+    """Parses GDML-relevant data from partition output file.
+    
+    Args:
+        out_file (str): path to computational chemistry output file. This should
+            contain all MD steps for the partition.
+    
+    Returns:
+        dict: contains all information needed to build GDML data sets.
+            'atoms' is a (n) numpy array containing the atomic numbers of the
+                atoms in the partition.
+            'coords' is a (m, n, 3) numpy array containing the m MD step
+                coordinates of the n atoms in the partition.
+            'grads' is a (m, n, 3) numpy array containing the gradients of the
+                m MD steps containing the n atoms in the partition.
+            'energies' is a (m, 1) numpy array containing the 
+    """
+
+    try:
+        data = cclib.io.ccread(out_file)
+
+        atoms = data.atomnos
+        coords = data.atomcoords
+        grads = data.grads
+        if hasattr(data, 'mpenergies'):
+            energies = data.mpenergies
+        elif hasattr(data, 'scfenergies'):
+            energies = data.scfenergies
+        else:
+            raise KeyError
+    except:
+        print('Something happened while parsing output file.')
+        return None
+
+    parsed_data = {
+        'atoms': atoms,
+        'coords': coords,
+        'grads': grads,
+        'energies': energies
+    }
+
+    return parsed_data
 
 def cluster_size(xyz_path, solvent):
     """Determines number of solvent molecules in a xyz file.
@@ -143,7 +185,7 @@ def struct_dict(origin, struct_list):
 
     while index_struct < len(struct_list):
         parsed_coords = parse_coords(struct_list[index_struct])
-        coord_string = string_coords(parsed_coords['atoms'],
+        coord_string = utils.string_coords(parsed_coords['atoms'],
                                             parsed_coords['coords'])
         
         # Naming scheme for ABCluster minima
