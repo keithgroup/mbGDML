@@ -32,7 +32,8 @@ def parse_gdml_data(out_file):
                 coordinates of the n atoms in the partition.
             'grads' is a (m, n, 3) numpy array containing the gradients of the
                 m MD steps containing the n atoms in the partition.
-            'energies' is a (m, 1) numpy array containing the 
+            'energies' is a (m, 1) numpy array containing the electronic 
+                energies of each m MD steps for the partition.
     """
 
     try:
