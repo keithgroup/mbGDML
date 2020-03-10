@@ -1,4 +1,5 @@
-from mbsgdml import utils, partition
+import os
+from mbsgdml import utils, partition, calculate
 
 def data_sets(trajfolder):
     """Driver for generating all positions and gradients from MD trajectories.
@@ -18,22 +19,47 @@ def data_sets(trajfolder):
             in solvent data sets. Must contain 'traj' in filename and have an
             'xyz' file extension.
     """
+
+    trajfolder = utils.norm_path(trajfolder)
+    trajs = utils.natsort_list(utils.get_files(trajfolder, 'traj'))
     
-    trajs  = utils.natsort_list(utils.get_files(trajfolder, 'traj'))
+    print('Making partition calculation directory.')
+    parentdir = utils.norm_path(trajfolder + 'partition_calculations')
+    try:
+        os.mkdir(parentdir)
+    except:
+        print('There is already a calculation directory.')
+        print('Please make sure you are not duplicating any calculations.')
+        print('Terminating.')
+        return None
     
     for traj in trajs:
+        os.chdir(parentdir)
+
         traj_filename = traj.split('/')[-1][:-4]
         traj_info = traj_filename.split('-')
         temp = traj_info[1]
         iteration = traj_info[2]
-        print(traj_filename)
 
-        traj_partition = partition.partition_trajectory(traj)
+        tempdir = utils.norm_path(parentdir + str(temp))
+        iterdir = utils.norm_path(tempdir + str(iteration))
+        try:
+            os.chdir(tempdir)
+        except:
+            os.mkdir(tempdir)
+        try:
+            os.chdir(iterdir)
+        except:
+            os.mkdir(iterdir)
 
-#test_partition = partition.partition_trajectory('/home/alex/repos/MB-sGDML/tests/4MeOH-300K-1-md-trajectory.xyz')
-#partition_engrad(
-#    'orca', '/home/alex/repos/MB-sGDML/tests', test_partition['CD'], 300, 1
-#)
+        print('Working on ' + traj_filename + ' ...')
+        traj_partitions = partition.partition_trajectory(traj)
+        for traj_partition in traj_partitions:
+            calculate.partition_engrad(
+                'orca', iterdir,
+                traj_partitions[traj_partition], temp, iteration
+            )
+    
     return None
 
 data_sets('/home/alex/Dropbox/keith/projects/gdml/data/md/4MeOH-md')
