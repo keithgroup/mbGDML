@@ -2,9 +2,7 @@ import os
 import subprocess
 
 from periodictable import elements
-import mbsgdml.utils as utils
-import mbsgdml.parse as parse
-import mbsgdml.partition as partition
+from mbsgdml import utils, parse, partition
 from wacc.calculations.packages.orca import ORCA
 import wacc.calculations.packages.templates as templates
 
