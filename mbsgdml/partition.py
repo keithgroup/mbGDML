@@ -111,6 +111,7 @@ def partition_trajectory(traj_path):
                 except KeyError:
                     traj_partition[label] = {
                         'solvent_label': partition_info['solvent_label'],
+                        'cluster_size': solvent_info['cluster_size'],
                         'partition_label': label,
                         'partition_size': partition_info['cluster_size'],
                         'atoms': partitions[label]['atoms'],

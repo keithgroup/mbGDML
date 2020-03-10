@@ -55,7 +55,7 @@ def partition_engrad(
     calc_path = utils.norm_path(calc_path)
     
     # Creates calc folder name, e.g. '4H2O-300-1'.
-    calc_name_base = str(partition_dict['partition_size']) \
+    calc_name_base = str(partition_dict['cluster_size']) \
                      + partition_dict['solvent_label'] \
                      + '-' + str(temperature) \
                      + '-' + str(md_iteration) \
