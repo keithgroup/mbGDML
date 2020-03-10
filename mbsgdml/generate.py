@@ -65,5 +65,3 @@ def data_sets(trajfolder, submit=False):
             )
     
     return None
-
-data_sets('/home/alex/Dropbox/keith/projects/gdml/data/md/5H2O-md')
