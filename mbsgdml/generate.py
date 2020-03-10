@@ -11,13 +11,16 @@ def data_sets(trajfolder):
     containing n solvent molecules.
 
     The trajectories must be labled with the following scheme:
-    'solvent info'-'temperature'-'iteration'-*traj*.xyz. For example,
+    'solvent info-temperature-iteration-*traj*.xyz'. For example,
     '4MeOH-300K-1-md-trajectory.xyz'.
     
     Args:
         trajfolder (path): folder containing all MD trajectories to be included
             in solvent data sets. Must contain 'traj' in filename and have an
             'xyz' file extension.
+    
+    Example:
+        data_sets('/path/to/dir')
     """
 
     trajfolder = utils.norm_path(trajfolder)
@@ -61,5 +64,3 @@ def data_sets(trajfolder):
             )
     
     return None
-
-data_sets('/home/alex/Dropbox/keith/projects/gdml/data/md/4MeOH-md')
