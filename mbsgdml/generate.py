@@ -1,7 +1,7 @@
 import os
 from mbsgdml import utils, partition, calculate
 
-def data_sets(trajfolder):
+def data_sets(trajfolder, submit=False):
     """Driver for generating all positions and gradients from MD trajectories.
 
     The provided folder contains the MD trajectories used for partitioning a
@@ -18,9 +18,10 @@ def data_sets(trajfolder):
         trajfolder (path): folder containing all MD trajectories to be included
             in solvent data sets. Must contain 'traj' in filename and have an
             'xyz' file extension.
+        submit(bool, optional): specifies if calculations should be submitted.
     
     Example:
-        data_sets('/path/to/dir')
+        data_sets('/path/to/dir', True)
     """
 
     trajfolder = utils.norm_path(trajfolder)
@@ -59,8 +60,8 @@ def data_sets(trajfolder):
         traj_partitions = partition.partition_trajectory(traj)
         for traj_partition in traj_partitions:
             calculate.partition_engrad(
-                'orca', iterdir,
-                traj_partitions[traj_partition], temp, iteration
+                'orca', iterdir, traj_partitions[traj_partition], temp,
+                iteration, submit=submit
             )
     
     return None
