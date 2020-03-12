@@ -1,4 +1,19 @@
+import os
+import json
 from periodictable import elements
+# TODO Create solvent class
+# TODO Create solvent file that contains solvent information to initialize objects
+
+class solvent():
+    def __init__(self):
+        with open('./solvents.json', 'r') as solvent_file:
+            solvent_data=solvent_file.read()
+        self.all_solvents = json.load(solvent_data)
+
+    def identify_solvent(self):
+        pass
+
+test = solvent()
 
 solvent_atoms = {
     'water': {'H': 2, 'O': 1},

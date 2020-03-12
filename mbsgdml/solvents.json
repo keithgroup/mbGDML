@@ -1,0 +1,14 @@
+{
+    "water": {
+        "label": "H2O",
+        "formula": "H2O"
+    },
+    "acetonitrile": {
+        "label": "acn",
+        "formula": "C2H3N"
+    },
+    "methanol": {
+        "label": "MeOH",
+        "formula": "CH3OH"
+    }
+}
