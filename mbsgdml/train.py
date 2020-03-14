@@ -11,7 +11,7 @@ class PartitionCalcOutput():
 
     Output file that contains electronic energies and gradients of the same
     partition from a single MD trajectory. For a single dimer partition of a
-    100 step MD trajectory would have 100 coordinates, single point energies,
+    n step MD trajectory would have n coordinates, single point energies,
     and gradients.
 
     Attributes:
@@ -73,17 +73,89 @@ class PartitionCalcOutput():
             print('Please check ' + str(self.output_name) + ' output file.')
             
     def write_gdml_data(self, gdml_data_dir):
-        gdml_data_dir = utils.norm_path(gdml_data_dir)
-        gdml_partition = ['monomer', 'dimer', 'trimer', 'tetramer', 'pentamer']
-        gdml_partition_dir = utils.norm_path(
-            gdml_data_dir + gdml_partition[self.partition_size - 1]
-        )
-        try:
-            os.chdir(gdml_partition_dir)
-        except:
-            os.mkdir(gdml_partition_dir)
+        """Writes and categorizes GDML file in a common GDML data directory.
         
-test_calc = PartitionCalcOutput('/home/alex/Dropbox/keith/projects/gdml/data/partitions/calculations/4MeOH/100K/1/out-4MeOH-100K-1-AB.out')
+        This should be the last function called after all necessary data is
+        collected from the output file.
+
+        GDML file is categorized according to its solvent, partition size,
+        temperature, and MD iteration in that order.
+
+        Args:
+            gdml_data_dir (str): Path to common GDML data directory.
+        """
+
+        gdml_data_dir = utils.norm_path(gdml_data_dir)
+
+        # Preparing directories.
+        # /path/to/gdml-files/solventlabel/partitionsize/temp/iteration
+        gdml_solvent = self.solvent.solvent_label
+        gdml_partition_size = ['monomer', 'dimer', 'trimer', 'tetramer', 'pentamer']
+        gdml_solvent_dir = utils.norm_path(
+            gdml_data_dir + gdml_solvent
+        )
+        gdml_partition_size_dir = utils.norm_path(
+            gdml_solvent_dir + gdml_partition_size[self.partition_size - 1]
+        )
+        gdml_temp_dir = utils.norm_path(
+            gdml_partition_size_dir + str(self.temp)
+        )
+        gdml_iter_dir = utils.norm_path(
+            gdml_temp_dir + str(self.iter)
+        )
+        all_dir = [gdml_solvent_dir, gdml_partition_size_dir, gdml_temp_dir,
+                   gdml_iter_dir]
+        for directory in all_dir:
+            try:
+                os.chdir(directory)
+            except:
+                os.mkdir(directory)
+                os.chdir(directory)
+        
+        # Writing GDML file.
+        self.gdml_file = gdml_iter_dir + self.partition \
+                         + '-' + self.cluster \
+                         + '-' + self.temp \
+                         + '-' + str(self.iter) \
+                         + '-gdml.xyz'
+        with open(self.gdml_file, 'w') as gdml_file:
+            step_index = 0
+            atom_list = utils.atoms_by_element(self.atoms)
+            atom_num = self.solvent.solvent_molec_size \
+                       * self.solvent.cluster_size
+            while step_index < len(self.coords):
+
+                # Number of atoms.
+                gdml_file.write(str(atom_num) + '\n')
+
+                # Comment with energy.
+                step_energy = convertor(
+                    self.energies[step_index][0], 'eV', 'kcal/mol'
+                )
+                gdml_file.write('# ' + str(step_energy) + '\n')
+
+                # Atomic positions and gradients.
+                atom_index = 0
+                while atom_index < len(self.atoms):
+                    atom_string = atom_list[atom_index] + '    '
+                    coord_string = np.array2string(
+                                       self.coords[step_index][atom_index],
+                                       suppress_small=True, separator='   ',
+                                       formatter={'float_kind':'{:0.8f}'.format}
+                                   )[1:-1] + '    '
+                    grad_string = np.array2string(
+                                       self.grads[step_index][atom_index],
+                                       suppress_small=True, separator='   ',
+                                       formatter={'float_kind':'{:0.8f}'.format}
+                                   )[1:-1] + '    '
+
+                    atom_line = ''.join([atom_string, coord_string, grad_string])
+                    atom_line = atom_line.replace(' -', '-') + '\n'
+                    gdml_file.write(atom_line)
+
+                    atom_index += 1
+            
+                step_index += 1
 
 def prepare_training(
     segment_calc_folder, training_folder, solvent, temperature, iteration
