@@ -7,7 +7,8 @@ from periodictable import elements
 class solvent():
     """Identifies and describes the solvent for MB-sGDML.
     
-    [extended_summary]
+    Represents the solvent that makes up the cluster MB-sGDML is being trained
+    from.
     
     Attributes:
         all_solvents (dict): Contains all solvents described in solvents.json.
@@ -20,14 +21,17 @@ class solvent():
         cluster_size (int): Total number of solvent molecules in cluster.
     """
 
-    def __init__(self):
+    def __init__(self, atom_list):
 
         # Gets available solvents from json file.
         solvent_json = os.path.dirname(os.path.realpath(__file__)) \
                        + '/solvents.json'
         with open(solvent_json, 'r') as solvent_file:
             solvent_data=solvent_file.read()
-        self.all_solvents = json.loads(solvent_data)
+        all_solvents = json.loads(solvent_data)
+        
+        self.identify_solvent(atom_list, all_solvents)
+
         
 
     def atom_numbers(self, chem_formula):
@@ -75,19 +79,23 @@ class solvent():
         return atom_dict
 
 
-    def identify_solvent(self, atom_list):
+    def identify_solvent(self, atom_list, all_solvents):
         """Identifies the solvent from a repeated list of elements.
         
         Args:
             atom_list (lst): List of elements as strings. Elements should be
                 repeated. For example, ['H', 'H', 'O', 'O', 'H', 'H']. Note that
                 the order does not matter; only the quantity.
+            all_solvents (dict): Contains all solvents described in
+            solvents.json. Keys are the name of the solvent, and the values are
+            dicts 'label' and 'formula' that provide a solvent label and
+            chemical formula, respectively.
         
         """
 
         # Converts atoms identified by their atomic number into element symbols
         # for human redability.
-        if atom_list[0].isdigit():
+        if str(atom_list[0]).isdigit():
             atom_list_elements = []
             for atom in atom_list:
                 atom_list_elements.append(str(elements[atom]))
@@ -106,9 +114,9 @@ class solvent():
         # solvent in the json file. Note, this does not differentiate
         # between isomers or compounds with the same chemical formula.
         # Loops through available solvents and solvent_atoms.
-        for solvent in self.all_solvents:
+        for solvent in all_solvents:
             
-            solvent_atoms = self.atom_numbers(self.all_solvents[solvent]['formula'])
+            solvent_atoms = self.atom_numbers(all_solvents[solvent]['formula'])
             # Number of elements in atom_list should equal that of the solvent.
             if len(atom_num) == len(solvent_atoms):
 
@@ -135,7 +143,7 @@ class solvent():
                     
                     
                     self.solvent_name = str(solvent)
-                    self.solvent_label = str(self.all_solvents[solvent]['label'])
+                    self.solvent_label = str(all_solvents[solvent]['label'])
                     self.solvent_molec_size = int(sum(solvent_atoms.values()))
                     self.cluster_size = int(atom_num[atom] \
                                             / solvent_atoms[atom])
