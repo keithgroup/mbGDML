@@ -4,6 +4,7 @@ from cclib.io import ccread
 from cclib.parser.utils import convertor
 from periodictable import elements
 from mbsgdml import utils
+from mbsgdml.solvents import solvent
 
 class PartitionCalcOutput():
     """Quantum chemistry output file for all MD steps of a single partition.
@@ -28,6 +29,7 @@ class PartitionCalcOutput():
         self.get_label_info()
         self.cclib_data = ccread(self.output_file)
         self.get_gdml_data()
+        self.get_solvent_info()
     
     def get_label_info(self):
         """Gets info from output file name.
@@ -49,9 +51,9 @@ class PartitionCalcOutput():
         self.partition = str(split_label[4].split('.')[0])
         self.partition_size = int(len(self.partition))
     
-    # TODO write get_solvent_info function that gets solvent information
+
     def get_solvent_info(self):
-        pass
+        self.solvent = solvent(self.atoms.tolist())
     
     def get_gdml_data(self):
         """Parses GDML-relevant data from partition output file.
