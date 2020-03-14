@@ -153,7 +153,19 @@ def convert_gradients(gradients, number_atoms):
 
     return gradients
 
-# TODO Function that cleans and organizes a partition calculation folder
-# Provide directory, gets all files with expression, moves up one directory
-# newPath = shutil.move('sample1.txt', 'test')
-# Removes all remaining directories
+def atoms_by_element(atom_list):
+    """Converts a list of atoms identified by their atomic number to their
+    elemental symbol.
+    
+    Args:
+        atom_list (list): Contains numbers that represent atomic numbers.
+    
+    Returns:
+        list: Contains strings of elemental symbols matching atom_list.
+    """
+
+    atom_list_elements = []
+    for atom in atom_list:
+        atom_list_elements.append(str(elements[atom]))
+
+    return atom_list_elements
