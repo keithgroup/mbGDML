@@ -5,40 +5,53 @@ from cclib.parser.utils import convertor
 from periodictable import elements
 from mbsgdml import utils
 
-class partitionCalcOutput():
+class PartitionCalcOutput():
     """Quantum chemistry output file for all MD steps of a single partition.
 
     Output file that contains electronic energies and gradients of the same
     partition from a single MD trajectory. For a single dimer partition of a
     100 step MD trajectory would have 100 coordinates, single point energies,
     and gradients.
+
+    Attributes:
+        output_file (str): Path to quantum chemistry output file for a
+            partition.
+        output_name (str): The name of the quantum chemistry output file
+            (includes extension).
+        cluster (str): The label identifying the partition of the MD trajectory.
+        temp (str): Set point temperautre for the MD thermostat.
+        iter (int): Identifies the iteration of the MD iteration.
     """
+
     def __init__(self, output_path):
         self.output_file = output_path
-        self.get_label_info
+        self.get_label_info()
         self.cclib_data = ccread(self.output_file)
-        self.get_gdml_data
+        self.get_gdml_data()
     
     def get_label_info(self):
         """Gets info from output file name.
 
         Output file should be labeled in the following manner:
         'out-NumSolv-temperature-iteration-partition.out'.
-        'NumSolv' tells us original sized solvent cluster (e.g., 4MeOH);
-        'temperature' is the set point for the thermostat (e.g., 300K);
-        'iteration' identifies the MD simulation (e.g., 2);
-        'partition' identifies what solvent molecules are in the partition
-        (e.g., CD). A complete example would be 'out-4MeOH-300K-2-CD.out'.
+            'NumSolv' tells us original sized solvent cluster (e.g., 4MeOH);
+            'temperature' is the set point for the thermostat (e.g., 300K);
+            'iteration' identifies the MD simulation (e.g., 2);
+            'partition' identifies what solvent molecules are in the partition
+                (e.g., CD).
+        A complete example would be 'out-4MeOH-300K-2-CD.out'.
         """
         self.output_name = self.output_file.split('/')[-1]
-        split_label = output_name.split('-')
+        split_label = self.output_name.split('-')
         self.cluster = str(split_label[1])
         self.temp = str(split_label[2])
         self.iter = int(split_label[3])
-        self.partition = str(split_label[4])
+        self.partition = str(split_label[4].split('.')[0])
         self.partition_size = int(len(self.partition))
     
     # TODO write get_solvent_info function that gets solvent information
+    def get_solvent_info(self):
+        pass
     
     def get_gdml_data(self):
         """Parses GDML-relevant data from partition output file.
@@ -68,6 +81,7 @@ class partitionCalcOutput():
         except:
             os.mkdir(gdml_partition_dir)
         
+test_calc = PartitionCalcOutput('/home/alex/Dropbox/keith/projects/gdml/data/partitions/calculations/4MeOH/100K/1/out-4MeOH-100K-1-AB.out')
 
 def prepare_training(
     segment_calc_folder, training_folder, solvent, temperature, iteration
