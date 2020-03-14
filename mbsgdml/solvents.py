@@ -5,11 +5,26 @@ from periodictable import elements
 # TODO Create solvent file that contains solvent information to initialize objects
 
 class solvent():
+    """Identifies and describes the solvent for MB-sGDML.
+    
+    [extended_summary]
+    
+    Attributes:
+        all_solvents (dict): Contains all solvents described in solvents.json.
+            Keys are the name of the solvent, and the values are dicts 'label'
+            and 'formula' that provide a solvent label and chemical formula,
+            respectively.
+        solvent_name (str): Name of the solvent.
+        solvent_label (str): A label for the solvent for filenaming purposes.
+        solvent_molec_size (int): Total number of atoms in one solvent molecule.
+        cluster_size (int): Total number of solvent molecules in cluster.
+    """
+
     def __init__(self):
 
         # Gets available solvents from json file.
         solvent_json = os.path.dirname(os.path.realpath(__file__)) \
-                           + '/solvents.json'
+                       + '/solvents.json'
         with open(solvent_json, 'r') as solvent_file:
             solvent_data=solvent_file.read()
         self.all_solvents = json.loads(solvent_data)
@@ -131,14 +146,6 @@ class solvent():
 
         if not hasattr(self, 'solvent_name'):
             print('The solvent could not be identified.')
-        
-
-test_solvent = solvent()
-test_solvent.identify_solvent(['C', 'H', 'H', 'H', 'O', 'H'])
-print(test_solvent.solvent_name)
-print(test_solvent.solvent_label)
-print(test_solvent.solvent_molec_size)
-print(test_solvent.cluster_size)
 
 
 solvent_atoms_old = {
