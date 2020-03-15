@@ -182,7 +182,7 @@ class PartitionCalcOutput():
             
                 step_index += 1
 
-def prepare_training(partition_calc_dir, gdml_data_dir):
+def prepare_gdml_files(partition_calc_dir, gdml_data_dir):
     
     partition_calc_dir = utils.norm_path(partition_calc_dir)
 
@@ -191,3 +191,47 @@ def prepare_training(partition_calc_dir, gdml_data_dir):
     for out_file in all_out_files:
         calc = PartitionCalcOutput(out_file)
         calc.write_gdml_data(gdml_data_dir)
+
+def prepare_partition_dataset(gdml_partition_dir, write_dir):
+
+    gdml_partition_dir = utils.norm_path(gdml_partition_dir)
+    write_dir = utils.norm_path(write_dir)
+
+    # Gets all GDML files within a partition.
+    all_gdml_files = utils.natsort_list(
+        utils.get_files(gdml_partition_dir, 'gdml.xyz')
+    )
+
+    # Gets naming information from one of the GDML files.
+    gdml_file_example = all_gdml_files[0].split('/')[-1][:-4].split('-')
+    gdml_partitions = ['monomer', 'dimer', 'trimer', 'tetramer', 'pentamer']
+    gdml_partition_size = gdml_partitions[len(gdml_file_example[0]) - 1]
+    gdml_cluster = gdml_file_example[1]
+    gdml_partition_file = write_dir \
+                          + '-'.join([gdml_cluster, gdml_partition_size]) \
+                          + '-gdml-dataset.xyz'
+    
+    # Writes all partitions to a single GDML file.
+    for partition in all_gdml_files:
+        open(gdml_partition_file, 'w').close()
+        print('Writing the ' + partition.split('/')[-1] + ' file.')
+        with open(partition) as partition_file:
+            with open(gdml_partition_file, 'a+') as gdml_file:
+                for line in partition_file:
+                    gdml_file.write(line)
+
+def prepare_gdml_dataset(gdml_solvent_dir, write_dir):
+
+    # Gets all directories which should contain all GDML files of a single
+    # partition size.
+    gdml_solvent_dir = utils.norm_path(gdml_solvent_dir)
+    partition_dirs = os.listdir(gdml_solvent_dir)
+    file_index = 0
+    while file_index < len(partition_dirs):
+        partition_dirs[file_index] = gdml_solvent_dir \
+                                     + partition_dirs[file_index]
+        file_index += 1
+    partition_dirs = [item for item in partition_dirs if os.path.isdir(item)]
+
+    for size in partition_dirs:
+        prepare_partition_dataset(size, write_dir)
