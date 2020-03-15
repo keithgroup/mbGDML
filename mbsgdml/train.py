@@ -23,6 +23,17 @@ class PartitionCalcOutput():
         cluster (str): The label identifying the partition of the MD trajectory.
         temp (str): Set point temperautre for the MD thermostat.
         iter (int): Identifies the iteration of the MD iteration.
+        partition (str): Identifies what solvent molecules are in the partition.
+        partition_size (int): The number of solvent molecules in the partition.
+        cclib_data (obj): Contains all data parsed from output file.
+        atoms (np.array): A (n) array containing n atomic numbers.
+        coords (np.array): A (m, n, 3) array containing the atomic coordinates
+            of n atoms of m MD steps.
+        grads (np.array): A (m, n, 3) array containing the atomic gradients
+            of n atoms of m MD steps.
+        energies (np.array): A (m, n) array containing the energies of n atoms
+            of m MD steps.
+        solvent (obj): From Solvent class and contains solvent information.
     """
 
     def __init__(self, output_path):
