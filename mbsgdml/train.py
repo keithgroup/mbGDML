@@ -1,4 +1,5 @@
 import os
+import re
 import numpy as np
 from cclib.io import ccread
 from cclib.parser.utils import convertor
@@ -137,20 +138,33 @@ class PartitionCalcOutput():
                 # Atomic positions and gradients.
                 atom_index = 0
                 while atom_index < len(self.atoms):
-                    atom_string = atom_list[atom_index] + '    '
+                    atom_string = atom_list[atom_index] + '     '
                     coord_string = np.array2string(
-                                       self.coords[step_index][atom_index],
-                                       suppress_small=True, separator='   ',
-                                       formatter={'float_kind':'{:0.8f}'.format}
-                                   )[1:-1] + '    '
+                        self.coords[step_index][atom_index],
+                        suppress_small=True, separator='     ',
+                        formatter={'float_kind':'{:0.8f}'.format}
+                    )[1:-1] + '     '
+                    # Converts from Eh/bohr to kcal/(angstrom mol)
+                    converted_grads = self.grads[step_index][atom_index] \
+                                      * ( 627.50947414 / 0.5291772109)
                     grad_string = np.array2string(
-                                       self.grads[step_index][atom_index],
-                                       suppress_small=True, separator='   ',
-                                       formatter={'float_kind':'{:0.8f}'.format}
-                                   )[1:-1] + '    '
+                        converted_grads,
+                        suppress_small=True, separator='     ',
+                        formatter={'float_kind':'{:0.8f}'.format}
+                    )[1:-1] + '     '
 
                     atom_line = ''.join([atom_string, coord_string, grad_string])
+
+                    # Cleaning string for alignments with negative numbers and
+                    # double-digit numbers.
                     atom_line = atom_line.replace(' -', '-') + '\n'
+                    neg_double = re.findall(' -[0-9][0-9].[0-9]', atom_line.rstrip())
+                    pos_double = re.findall(' [0-9][0-9].[0-9]', atom_line.rstrip())
+                    for value in neg_double:
+                        atom_line = atom_line.replace(value, value[1:])
+                    for value in pos_double:
+                        atom_line = atom_line.replace(value, value[1:])
+
                     gdml_file.write(atom_line)
 
                     atom_index += 1
