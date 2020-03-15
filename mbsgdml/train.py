@@ -180,6 +180,3 @@ def prepare_training(partition_calc_dir, gdml_data_dir):
     for out_file in all_out_files:
         calc = PartitionCalcOutput(out_file)
         calc.write_gdml_data(gdml_data_dir)
-
-#prepare_training('/home/alex/Dropbox/keith/projects/gdml/data/partitions/calculations/4MeOH',
-#'/home/alex/Dropbox/keith/projects/gdml/data/partitions/calculations/4MeOH')
