@@ -13,7 +13,8 @@ def partition_engrad(
     package, calc_path, partition_dict, temperature, md_iteration,
     theory_level_engrad='MP2', basis_set_engrad='def2-TZVP',
     options_engrad='TightSCF FrozenCore',
-    control_blocks_engrad='%scf\n    ConvForced true\nend\n', submit=False
+    control_blocks_engrad='%scf\n    ConvForced true\nend\n%maxcore 800\n',
+    submit=False
 ):
     """ Sets up a partition ORCA 4.2.0 EnGrad calculation for trajectory.
     
