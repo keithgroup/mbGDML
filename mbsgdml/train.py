@@ -189,6 +189,7 @@ def prepare_gdml_files(partition_calc_dir, gdml_data_dir):
     all_out_files = utils.get_files(partition_calc_dir, 'out')
 
     for out_file in all_out_files:
+        print('Writing the GDML file for ' + out_file.split('/')[-1] + ' ...')
         calc = PartitionCalcOutput(out_file)
         calc.write_gdml_data(gdml_data_dir)
 
