@@ -212,7 +212,8 @@ def prepare_partition_dataset(gdml_partition_dir, write_dir):
                           + '-'.join([gdml_cluster, gdml_partition_size]) \
                           + '-gdml-dataset.xyz'
     
-    # Writes all partitions to a single GDML file.
+    # TODO write data in npz instead of extended xyz file.
+    # Writes all partitions to a single extended-xyz GDML file.
     open(gdml_partition_file, 'w').close()
     for partition in all_gdml_files:
         print('Writing the ' + partition.split('/')[-1] + ' file.')
