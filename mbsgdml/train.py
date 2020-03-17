@@ -213,13 +213,13 @@ def prepare_partition_dataset(gdml_partition_dir, write_dir):
                           + '-gdml-dataset.xyz'
     
     # Writes all partitions to a single GDML file.
+    open(gdml_partition_file, 'w').close()
     for partition in all_gdml_files:
-        open(gdml_partition_file, 'w').close()
         print('Writing the ' + partition.split('/')[-1] + ' file.')
-        with open(partition) as partition_file:
-            with open(gdml_partition_file, 'a+') as gdml_file:
-                for line in partition_file:
-                    gdml_file.write(line)
+        with open(partition, 'r') as partition_file:
+            partition_data = partition_file.read()
+        with open(gdml_partition_file, 'a+') as gdml_file:
+            gdml_file.write(partition_data)
 
 def prepare_gdml_dataset(gdml_solvent_dir, write_dir):
 
@@ -233,6 +233,6 @@ def prepare_gdml_dataset(gdml_solvent_dir, write_dir):
                                      + partition_dirs[file_index]
         file_index += 1
     partition_dirs = [item for item in partition_dirs if os.path.isdir(item)]
-
+    
     for size in partition_dirs:
         prepare_partition_dataset(size, write_dir)
