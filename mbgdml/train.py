@@ -1,9 +1,34 @@
+# MIT License
+# 
+# Copyright (c) 2020, Alex M. Maldonado
+# 
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+# 
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 import os
 import re
 import numpy as np
+
 from cclib.io import ccread
 from cclib.parser.utils import convertor
+
 from periodictable import elements
+
 from mbgdml import utils
 from mbgdml.solvents import solvent
 
@@ -21,7 +46,8 @@ class MBGDMLTrain():
     def _get_datasets(self):
         self.dataset_paths = utils.get_files(self.dataset_dir, '.npz')
 
-class PartitionCalcOutput():
+
+class _PartitionCalcOutput():
     """Quantum chemistry output file for all MD steps of a single partition.
 
     Output file that contains electronic energies and gradients of the same
@@ -52,12 +78,12 @@ class PartitionCalcOutput():
 
     def __init__(self, output_path):
         self.output_file = output_path
-        self.get_label_info()
+        self._get_label_info()
         self.cclib_data = ccread(self.output_file)
-        self.get_gdml_data()
-        self.get_solvent_info()
+        self._get_gdml_data()
+        self._get_solvent_info()
     
-    def get_label_info(self):
+    def _get_label_info(self):
         """Gets info from output file name.
 
         Output file should be labeled in the following manner:
@@ -77,11 +103,12 @@ class PartitionCalcOutput():
         self.partition = str(split_label[4].split('.')[0])
         self.partition_size = int(len(self.partition))
     
-
-    def get_solvent_info(self):
+    def _get_solvent_info(self):
+        """Adds solvent information to object.
+        """
         self.solvent = solvent(self.atoms.tolist())
     
-    def get_gdml_data(self):
+    def _get_gdml_data(self):
         """Parses GDML-relevant data from partition output file.
         """
         try:
@@ -98,14 +125,16 @@ class PartitionCalcOutput():
             print('Something happened while parsing output file.')
             print('Please check ' + str(self.output_name) + ' output file.')
             
-    def write_gdml_data(self, gdml_data_dir):
+    def _write_gdml_data(self, gdml_data_dir):
         """Writes and categorizes GDML file in a common GDML data directory.
         
         This should be the last function called after all necessary data is
-        collected from the output file.
+        collected from the output file. 
 
         GDML file is categorized according to its solvent, partition size,
-        temperature, and MD iteration in that order.
+        temperature, and MD iteration in that order. These xyz files contain 
+        all information needed to create a GDML native dataset
+        (referred to as extended xyz files in GDML documentation).
 
         Args:
             gdml_data_dir (str): Path to common GDML data directory.
@@ -182,8 +211,12 @@ class PartitionCalcOutput():
                     # Cleaning string for alignments with negative numbers and
                     # double-digit numbers.
                     atom_line = atom_line.replace(' -', '-') + '\n'
-                    neg_double = re.findall(' -[0-9][0-9].[0-9]', atom_line.rstrip())
-                    pos_double = re.findall(' [0-9][0-9].[0-9]', atom_line.rstrip())
+                    neg_double = re.findall(
+                        ' -[0-9][0-9].[0-9]', atom_line.rstrip()
+                    )
+                    pos_double = re.findall(
+                        ' [0-9][0-9].[0-9]', atom_line.rstrip()
+                    )
                     for value in neg_double:
                         atom_line = atom_line.replace(value, value[1:])
                     for value in pos_double:
@@ -195,18 +228,44 @@ class PartitionCalcOutput():
             
                 step_index += 1
 
-def prepare_gdml_files(partition_calc_dir, gdml_data_dir):
-    
-    partition_calc_dir = utils.norm_path(partition_calc_dir)
+def create_gdml_xyz(calc_output_dir, gdml_dataset_dir):
+    """Writes xyz files for GDML datasets.
 
-    all_out_files = utils.get_files(partition_calc_dir, 'out')
+    Used as a driver for the _PartitionCalcOutput class that iterates over all
+    partitions for a solvent. Writes and organizes GDML xyz files according
+    to solvent, partition size, temperature, and MD iteration.
+    
+    Args:
+        calc_output_dir (str): Path to folder that contains computational
+            chemistry output files. Usually for an entire solvent.
+        gdml_dataset_dir (str): Path that contains all GDML dataset files.
+    """
+    
+    calc_output_dir = utils.norm_path(calc_output_dir)
+    all_out_files = utils.get_files(calc_output_dir, 'out')
 
     for out_file in all_out_files:
         print('Writing the GDML file for ' + out_file.split('/')[-1] + ' ...')
-        calc = PartitionCalcOutput(out_file)
-        calc.write_gdml_data(gdml_data_dir)
+        calc = _PartitionCalcOutput(out_file)
+        calc._write_gdml_data(gdml_dataset_dir)
 
-def prepare_partition_dataset(gdml_partition_dir, write_dir):
+def _combine_gdml_xyz(gdml_partition_dir, write_dir):
+    """Combines GDML xyz files.
+    
+    Finds all files labeled with 'gdml.xyz' (defined in 
+    _PartitionCalcOutput._write_gdml_data) in a user specified directory
+    and combines them. Typically used on a single partition size (e.g.,
+    monomer, dimer, trimer, etc.) to represent the complete dataset of that
+    partition size.
+
+    Args:
+        gdml_partition_dir (str): Path to directory containing GDML xyz files.
+            Typically to a directory containing only a single partition size
+            of a single solvent.
+        write_dir (str): Path to the directory where partition-size GDML xyz
+            files will be written. Usually the solvent directory in the 
+            gdml-dataset directory.
+    """
 
     gdml_partition_dir = utils.norm_path(gdml_partition_dir)
     write_dir = utils.norm_path(write_dir)
@@ -226,7 +285,8 @@ def prepare_partition_dataset(gdml_partition_dir, write_dir):
                           + '-'.join([gdml_cluster, gdml_partition_size]) \
                           + '-gdml-dataset.xyz'
     
-    # TODO write data in npz instead of extended xyz file.
+    # TODO check that each file has the same number of atoms.
+    # TODO write data as npz instead of extended xyz file.
     # Writes all partitions to a single extended-xyz GDML file.
     open(gdml_partition_file, 'w').close()
     for partition in all_gdml_files:
@@ -236,12 +296,23 @@ def prepare_partition_dataset(gdml_partition_dir, write_dir):
         with open(gdml_partition_file, 'a+') as gdml_file:
             gdml_file.write(partition_data)
 
-def prepare_gdml_dataset(gdml_solvent_dir, write_dir):
+def gdml_xyz_datasets(gdml_solvent_dir):
+    """Creates GDML xyz datasets for all solvent partitions.
+
+    Finds all GDML xyz files (by searching for files containing 'gdml.xyz)
+    and combines them into their respective partition-size GDML xyz file.
+    These files are written for documentation purposes.
+    
+    Args:
+        gdml_solvent_dir (str): Path to directory containing all GDML xyz files
+            for a solvent. New files are written to this directory as well.
+    """
+    
+    gdml_solvent_dir = utils.norm_path(gdml_solvent_dir)
+    partition_dirs = os.listdir(gdml_solvent_dir)
 
     # Gets all directories which should contain all GDML files of a single
     # partition size.
-    gdml_solvent_dir = utils.norm_path(gdml_solvent_dir)
-    partition_dirs = os.listdir(gdml_solvent_dir)
     file_index = 0
     while file_index < len(partition_dirs):
         partition_dirs[file_index] = gdml_solvent_dir \
@@ -249,5 +320,6 @@ def prepare_gdml_dataset(gdml_solvent_dir, write_dir):
         file_index += 1
     partition_dirs = [item for item in partition_dirs if os.path.isdir(item)]
     
+    # Combines and writes all partition-size GDML files.
     for size in partition_dirs:
-        prepare_partition_dataset(size, write_dir)
+        _combine_gdml_xyz(size, gdml_solvent_dir)
