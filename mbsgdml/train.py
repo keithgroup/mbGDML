@@ -7,6 +7,20 @@ from periodictable import elements
 from mbsgdml import utils
 from mbsgdml.solvents import solvent
 
+gdml_partition_size_names = [
+    'monomer', 'dimer', 'trimer', 'tetramer', 'pentamer'
+]
+
+class MBGDMLTrain():
+
+    def __init__(self, dataset_dir, model_dir):
+        self.dataset_dir = utils.norm_path(dataset_dir)
+        self.model_dir = utils.norm_path(model_dir)
+        self._get_datasets()
+    
+    def _get_datasets(self):
+        self.dataset_paths = utils.get_files(self.dataset_dir, '.npz')
+
 class PartitionCalcOutput():
     """Quantum chemistry output file for all MD steps of a single partition.
 
@@ -100,14 +114,13 @@ class PartitionCalcOutput():
         gdml_data_dir = utils.norm_path(gdml_data_dir)
 
         # Preparing directories.
-        # /path/to/gdml-files/solventlabel/partitionsize/temp/iteration
+        # /path/to/gdml-datasets/solventlabel/partitionsize/temp/iteration
         gdml_solvent = self.solvent.solvent_label
-        gdml_partition_size = ['monomer', 'dimer', 'trimer', 'tetramer', 'pentamer']
         gdml_solvent_dir = utils.norm_path(
             gdml_data_dir + gdml_solvent
         )
         gdml_partition_size_dir = utils.norm_path(
-            gdml_solvent_dir + gdml_partition_size[self.partition_size - 1]
+            gdml_solvent_dir + gdml_partition_size_names[self.partition_size - 1]
         )
         gdml_temp_dir = utils.norm_path(
             gdml_partition_size_dir + str(self.temp)
@@ -205,8 +218,9 @@ def prepare_partition_dataset(gdml_partition_dir, write_dir):
 
     # Gets naming information from one of the GDML files.
     gdml_file_example = all_gdml_files[0].split('/')[-1][:-4].split('-')
-    gdml_partitions = ['monomer', 'dimer', 'trimer', 'tetramer', 'pentamer']
-    gdml_partition_size = gdml_partitions[len(gdml_file_example[0]) - 1]
+    gdml_partition_size = gdml_partition_size_names[
+        len(gdml_file_example[0]) - 1
+    ]
     gdml_cluster = gdml_file_example[1]
     gdml_partition_file = write_dir \
                           + '-'.join([gdml_cluster, gdml_partition_size]) \
