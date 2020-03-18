@@ -5,7 +5,7 @@ import numpy as np
 from cclib.io import ccread
 from cclib.parser.utils import convertor
 from periodictable import elements
-from mbsgdml import utils, parse, solvents
+from mbgdml import utils, parse, solvents
 
 
 def partition_cluster(cluster, nbody):

@@ -5,9 +5,9 @@ from periodictable import elements
 # TODO Create solvent file that contains solvent information to initialize objects
 
 class solvent():
-    """Identifies and describes the solvent for MB-sGDML.
+    """Identifies and describes the solvent for MB-GDML.
     
-    Represents the solvent that makes up the cluster MB-sGDML is being trained
+    Represents the solvent that makes up the cluster MB-GDML is being trained
     from.
     
     Attributes:

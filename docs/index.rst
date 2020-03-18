@@ -1,4 +1,4 @@
-Welcome to mbsgdml's documentation!
+Welcome to mbgdml's documentation!
 ======================================
 
 .. toctree::
