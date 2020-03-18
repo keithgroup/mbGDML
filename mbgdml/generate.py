@@ -1,5 +1,5 @@
 import os
-from mbsgdml import utils, partition, calculate
+from mbgdml import utils, partition, calculate
 
 def data_sets(trajfolder, submit=False):
     """Driver for generating all positions and gradients from MD trajectories.

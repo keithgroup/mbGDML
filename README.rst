@@ -1,16 +1,16 @@
 =======
-mbsgdml
+mbgdml
 =======
 
 
-.. image:: https://img.shields.io/pypi/v/mbsgdml.svg
-        :target: https://pypi.python.org/pypi/mbsgdml
+.. image:: https://img.shields.io/pypi/v/mbgdml.svg
+        :target: https://pypi.python.org/pypi/mbgdml
 
-.. image:: https://img.shields.io/travis/aalexmmaldonado/MB-sGDML.svg
-        :target: https://travis-ci.com/aalexmmaldonado/MB-sGDML
+.. image:: https://img.shields.io/travis/aalexmmaldonado/MB-GDML.svg
+        :target: https://travis-ci.com/aalexmmaldonado/MB-GDML
 
-.. image:: https://readthedocs.org/projects/mbsgdml/badge/?version=latest
-        :target: https://mbsgdml.readthedocs.io/en/latest/?badge=latest
+.. image:: https://readthedocs.org/projects/mbgdml/badge/?version=latest
+        :target: https://mbgdml.readthedocs.io/en/latest/?badge=latest
         :alt: Documentation Status
 
 
@@ -20,7 +20,7 @@ Many-body symmetric gradient domain machine learning model for solvent force fie
 
 
 * Free software: MIT license
-* Documentation: https://mbsgdml.readthedocs.io.
+* Documentation: https://mbgdml.readthedocs.io.
 
 
 Features

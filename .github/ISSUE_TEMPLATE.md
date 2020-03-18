@@ -1,4 +1,4 @@
-* mbsgdml version:
+* mbgdml version:
 * Python version:
 * Operating System:
 

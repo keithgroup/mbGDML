@@ -8,13 +8,13 @@ Installation
 Stable release
 --------------
 
-To install mbsgdml, run this command in your terminal:
+To install mbgdml, run this command in your terminal:
 
 .. code-block:: console
 
-    $ pip install mbsgdml
+    $ pip install mbgdml
 
-This is the preferred method to install mbsgdml, as it will always install the most recent stable release.
+This is the preferred method to install mbgdml, as it will always install the most recent stable release.
 
 If you don't have `pip`_ installed, this `Python installation guide`_ can guide
 you through the process.
@@ -26,19 +26,19 @@ you through the process.
 From sources
 ------------
 
-The sources for mbsgdml can be downloaded from the `Github repo`_.
+The sources for mbgdml can be downloaded from the `Github repo`_.
 
 You can either clone the public repository:
 
 .. code-block:: console
 
-    $ git clone git://github.com/aalexmmaldonado/mbsgdml
+    $ git clone git://github.com/aalexmmaldonado/mbgdml
 
 Or download the `tarball`_:
 
 .. code-block:: console
 
-    $ curl -OJL https://github.com/aalexmmaldonado/mbsgdml/tarball/master
+    $ curl -OJL https://github.com/aalexmmaldonado/mbgdml/tarball/master
 
 Once you have a copy of the source, you can install it with:
 
@@ -47,5 +47,5 @@ Once you have a copy of the source, you can install it with:
     $ python setup.py install
 
 
-.. _Github repo: https://github.com/aalexmmaldonado/mbsgdml
-.. _tarball: https://github.com/aalexmmaldonado/mbsgdml/tarball/master
+.. _Github repo: https://github.com/aalexmmaldonado/mbgdml
+.. _tarball: https://github.com/aalexmmaldonado/mbgdml/tarball/master

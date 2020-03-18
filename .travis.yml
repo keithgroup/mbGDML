@@ -25,5 +25,5 @@ deploy:
     secure: PLEASE_REPLACE_ME
   on:
     tags: true
-    repo: aalexmmaldonado/mbsgdml
+    repo: aalexmmaldonado/mbgdml
     python: 3.8

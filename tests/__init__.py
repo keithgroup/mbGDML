@@ -1,1 +1,1 @@
-"""Unit test package for mbsgdml."""
+"""Unit test package for mbgdml."""

@@ -1,16 +1,16 @@
 #!/usr/bin/env python
 
-"""Tests for `mbsgdml` package."""
+"""Tests for `mbgdml` package."""
 
 
 import unittest
 from click.testing import CliRunner
 
-from mbsgdml import cli
+from mbgdml import cli
 
 
-class TestMbsgdml(unittest.TestCase):
-    """Tests for `mbsgdml` package."""
+class TestMBGDML(unittest.TestCase):
+    """Tests for `mbgdml` package."""
 
     def setUp(self):
         """Set up test fixtures, if any."""
@@ -26,7 +26,7 @@ class TestMbsgdml(unittest.TestCase):
         runner = CliRunner()
         result = runner.invoke(cli.main)
         assert result.exit_code == 0
-        assert 'mbsgdml.cli.main' in result.output
+        assert 'mbgdml.cli.main' in result.output
         help_result = runner.invoke(cli.main, ['--help'])
         assert help_result.exit_code == 0
         assert '--help  Show this message and exit.' in help_result.output

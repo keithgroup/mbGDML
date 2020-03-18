@@ -4,8 +4,8 @@ import numpy as np
 from cclib.io import ccread
 from cclib.parser.utils import convertor
 from periodictable import elements
-from mbsgdml import utils
-from mbsgdml.solvents import solvent
+from mbgdml import utils
+from mbgdml.solvents import solvent
 
 gdml_partition_size_names = [
     'monomer', 'dimer', 'trimer', 'tetramer', 'pentamer'

@@ -2,7 +2,7 @@ import os
 import numpy as np
 import cclib
 from periodictable import elements
-from mbsgdml import solvents, utils
+from mbgdml import solvents, utils
 
 def parse_coords(fileName):
     
