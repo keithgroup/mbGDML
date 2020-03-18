@@ -28,25 +28,24 @@ def get_files(path, expression):
     type, e.g. output or xyz files.
     
     Args:
-        path (string): Specifies the folder to search.
-        expression (string): Expression to be tested against all file names in
+        path (str): Specifies the directory to search.
+        expression (str): Expression to be tested against all file names in
         'path'.
     
     Returns:
         list: all absolute paths to files matching the provided expression.
     """
+    path = norm_path(path)
+    
     all_files = []
-    for (dirpath, dirnames, filenames) in os.walk(path):
-        
+    for (dirpath, _, filenames) in os.walk(path):
         index = 0
         while index < len(filenames):
-            filenames[index] = dirpath + '/' + filenames[index]
+            filenames[index] = norm_path(dirpath) + filenames[index]
             index += 1
 
-
         all_files.extend(filenames)
-    
-    
+        
     files = []
     for file in all_files:
         if expression in file:
