@@ -31,6 +31,7 @@ from cclib.parser.utils import convertor
 from periodictable import elements
 
 from sgdml.train import GDMLTrain
+from sgdml.predict import GDMLPredict
 
 from mbgdml import utils
 from mbgdml.solvents import solvent
@@ -65,7 +66,7 @@ class MBGDMLTrain():
         self.dataset = np.load(dataset_path)
     
     def train_GDML(self, dataset, num_train, num_validate, sigma, lam, info=''):
-        """Trains a sGDML model.
+        """Trains a sGDML model on a partition size.
         
         Args:
             dataset (str): GDML dataset.
@@ -110,6 +111,19 @@ class MBGDMLTrain():
         else:
             # TODO find way to add symmetry info to filename.
             np.savez_compressed(model_name, **model)
+    
+    def nbody_corrections(self, nbody_dataset, nbody_model, lower_model):
+        """Creates a n-body corrections GDML model.
+
+        To employ the many body expansion, we need GDML models that predict
+        n-body corrections/contributions. This is accomplished by 
+        
+        Args:
+            nbody_dataset (): GDML dataset 
+            model ([type]): [description]
+            lower_model ([type]): [description]
+        """
+
 
 
 
