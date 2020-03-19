@@ -116,6 +116,8 @@ class PartitionCalcOutput():
             of n atoms of m MD steps.
         grads (np.array): A (m, n, 3) array containing the atomic gradients
             of n atoms of m MD steps.
+        forces (np.array): A (m, n, 3) array containing the atomic forces
+            of n atoms of m MD steps.
         energies (np.array): A (m, n) array containing the energies of n atoms
             of m MD steps.
         solvent (obj): From Solvent class and contains solvent information.
@@ -160,6 +162,7 @@ class PartitionCalcOutput():
             self.atoms = self.cclib_data.atomnos
             self.coords = self.cclib_data.atomcoords
             self.grads = self.cclib_data.grads
+            self.forces = np.negative(self.grads)
             if hasattr(self.cclib_data, 'mpenergies'):
                 self.energies = self.cclib_data.mpenergies
             elif hasattr(self.cclib_data, 'scfenergies'):
@@ -243,10 +246,10 @@ class PartitionCalcOutput():
                         formatter={'float_kind':'{:0.8f}'.format}
                     )[1:-1] + '     '
                     # Converts from Eh/bohr to kcal/(angstrom mol)
-                    converted_grads = self.grads[step_index][atom_index] \
+                    converted_forces = self.forces[step_index][atom_index] \
                                       * ( 627.50947414 / 0.5291772109)
                     grad_string = np.array2string(
-                        converted_grads,
+                        converted_forces,
                         suppress_small=True, separator='     ',
                         formatter={'float_kind':'{:0.8f}'.format}
                     )[1:-1] + '     '
