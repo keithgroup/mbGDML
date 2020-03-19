@@ -18,10 +18,26 @@ mbgdml.train.gdml_xyz_datasets(
 
 
 test = mbgdml.train.MBGDMLTrain(
-    '/home/alex/Dropbox/keith/projects/gdml/data/gdml-datasets/H2O',
-    '/home/alex/Dropbox/keith/projects/gdml/data/gdml-models/H2O'
+    '/home/alex/Dropbox/keith/projects/gdml/data/gdml-datasets/MeOH',
+    '/home/alex/Dropbox/keith/projects/gdml/data/gdml-models/MeOH'
 )
-test.train_GDML(
-    test.dataset_paths[0], 500, 500, 10, 1e-15
-)
+
+train_num = 500
+validate_num = 300
+sigma_para = 10
+lambda_para = 1e-15
+info_string = 'train' + str(train_num) \
+              + '-valid' + str(validate_num) \
+              + '-sig' + str(sigma_para) \
+              + '-lam' + str(lambda_para)
+
+for dataset in test.dataset_paths:
+    
+    if 'trimer' in dataset:
+        test.load_dataset(dataset)
+        test.train_GDML(
+            test.dataset,
+            train_num, validate_num, sigma_para, lambda_para,
+            info_string
+        )
 

@@ -48,42 +48,68 @@ class MBGDMLTrain():
     def __init__(self, dataset_dir, model_dir):
         self.dataset_dir = utils.norm_path(dataset_dir)
         self.model_dir = utils.norm_path(model_dir)
-        self._get_datasets()
+        self.get_datasets()
     
-    def _get_datasets(self):
+    def get_datasets(self):
         """Finds all datasets with '.npz' extension in dataset directory.
         """
         self.dataset_paths = utils.get_files(self.dataset_dir, '.npz')
     
-    def train_GDML(self, dataset_path, num_train, num_validate, sigma, lam):
-        """Trains a sGDML model.
+    def load_dataset(self, dataset_path):
+        """Loads a GDML dataset from npz format from specified path.
         
         Args:
             dataset_path (str): Path to stored numpy arrays representing a GDML
                 dataset of a single solvent partition size.
+        """
+        self.dataset = np.load(dataset_path)
+    
+    def train_GDML(self, dataset, num_train, num_validate, sigma, lam, info=''):
+        """Trains a sGDML model.
+        
+        Args:
+            dataset (str): GDML dataset.
             num_train (int): The number of training points to sample.
             num_validate (int): The number of validation points to sample.
             sigma (int): Kernel length scale hyper parameter.
             lam (float): Hyper-parameter lambda (regularization strength).
+            info (optional; str): Information that can be appended to model
+                name.
         """
         
-        dataset = np.load(dataset_path)
+        
         gdml_train = GDMLTrain()
         task = gdml_train.create_task(
             dataset, num_train, dataset, num_validate,
             sigma, lam
         )
-        # TODO make gdml-model solvent directory 
+        # TODO make gdml-model solvent directory
+        
+        # Prepares directory to save in
+        save_dir = utils.norm_path(self.model_dir + 'gdml')
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+
+        dataset_name = str(dataset.f.name)
+        dataset_solvent, dataset_partition_size, _, _ = dataset_name.split('-')
+        n_body = gdml_partition_size_names.index(dataset_partition_size) + 1
+        if info != '':
+                info = '-' + info
+        model_name = ''.join([
+            save_dir, dataset_solvent, '-', str(n_body), 'body',
+            info, '-model.npz'
+        ])
+
+
         try:
+            print('Training ' + dataset_name + ' ...')
             model = gdml_train.train(task)
         except Exception as err:
             sys.exit(err)
+            print('Training failed...')
         else:
-            model_file = ''.join([
-                self.model_dir, 'model-',
-                dataset_path.split('/')[-1].split('.')[0], '.npz'
-            ])
-            np.savez_compressed(model_file, **model)
+            # TODO find way to add symmetry info to filename.
+            np.savez_compressed(model_name, **model)
 
 
 
