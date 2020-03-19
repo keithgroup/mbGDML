@@ -21,6 +21,7 @@
 # SOFTWARE.
 
 import os
+import sys
 import re
 import numpy as np
 
@@ -28,6 +29,8 @@ from cclib.io import ccread
 from cclib.parser.utils import convertor
 
 from periodictable import elements
+
+from sgdml.train import GDMLTrain
 
 from mbgdml import utils
 from mbgdml.solvents import solvent
@@ -37,6 +40,10 @@ gdml_partition_size_names = [
 ]
 
 class MBGDMLTrain():
+    """[summary]
+
+    Attributes:
+    """
 
     def __init__(self, dataset_dir, model_dir):
         self.dataset_dir = utils.norm_path(dataset_dir)
@@ -44,16 +51,54 @@ class MBGDMLTrain():
         self._get_datasets()
     
     def _get_datasets(self):
+        """Finds all datasets with '.npz' extension in dataset directory.
+        """
         self.dataset_paths = utils.get_files(self.dataset_dir, '.npz')
+    
+    def train_GDML(self, dataset_path, num_train, num_validate, sigma, lam):
+        """Trains a sGDML model.
+        
+        Args:
+            dataset_path (str): Path to stored numpy arrays representing a GDML
+                dataset of a single solvent partition size.
+            num_train (int): The number of training points to sample.
+            num_validate (int): The number of validation points to sample.
+            sigma (int): Kernel length scale hyper parameter.
+            lam (float): Hyper-parameter lambda (regularization strength).
+        """
+        
+        dataset = np.load(dataset_path)
+        gdml_train = GDMLTrain()
+        task = gdml_train.create_task(
+            dataset, num_train, dataset, num_validate,
+            sigma, lam
+        )
+
+        try:
+            model = gdml_train.train(task)
+        except Exception as err:
+            sys.exit(err)
+        else:
+            model_file = ''.join([
+                self.model_dir, 'model',
+                dataset_path.split('/')[-1].split('.')[0], '.npz'
+            ])
+            np.savez_compressed(model_file, **model)
 
 
-class _PartitionCalcOutput():
+
+class PartitionCalcOutput():
     """Quantum chemistry output file for all MD steps of a single partition.
 
     Output file that contains electronic energies and gradients of the same
     partition from a single MD trajectory. For a single dimer partition of a
     n step MD trajectory would have n coordinates, single point energies,
     and gradients.
+
+    Args:
+        output_path (str): Path to computational chemistry output file that
+            contains energies and gradients (preferably ab initio) of all
+            MD steps of a single partition.
 
     Attributes:
         output_file (str): Path to quantum chemistry output file for a
@@ -125,7 +170,7 @@ class _PartitionCalcOutput():
             print('Something happened while parsing output file.')
             print('Please check ' + str(self.output_name) + ' output file.')
             
-    def _write_gdml_data(self, gdml_data_dir):
+    def write_gdml_data(self, gdml_data_dir):
         """Writes and categorizes GDML file in a common GDML data directory.
         
         This should be the last function called after all necessary data is
@@ -186,7 +231,7 @@ class _PartitionCalcOutput():
                 step_energy = convertor(
                     self.energies[step_index][0], 'eV', 'kcal/mol'
                 )
-                gdml_file.write('# ' + str(step_energy) + '\n')
+                gdml_file.write(str(step_energy) + '\n')
 
                 # Atomic positions and gradients.
                 atom_index = 0
@@ -246,10 +291,10 @@ def create_gdml_xyz(calc_output_dir, gdml_dataset_dir):
 
     for out_file in all_out_files:
         print('Writing the GDML file for ' + out_file.split('/')[-1] + ' ...')
-        calc = _PartitionCalcOutput(out_file)
-        calc._write_gdml_data(gdml_dataset_dir)
+        calc = PartitionCalcOutput(out_file)
+        calc.write_gdml_data(gdml_dataset_dir)
 
-def _combine_gdml_xyz(gdml_partition_dir, write_dir):
+def combine_gdml_xyz(gdml_partition_dir, write_dir):
     """Combines GDML xyz files.
     
     Finds all files labeled with 'gdml.xyz' (defined in 
@@ -322,4 +367,4 @@ def gdml_xyz_datasets(gdml_solvent_dir):
     
     # Combines and writes all partition-size GDML files.
     for size in partition_dirs:
-        _combine_gdml_xyz(size, gdml_solvent_dir)
+        combine_gdml_xyz(size, gdml_solvent_dir)
