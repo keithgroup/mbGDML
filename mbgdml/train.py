@@ -73,14 +73,14 @@ class MBGDMLTrain():
             dataset, num_train, dataset, num_validate,
             sigma, lam
         )
-
+        # TODO make gdml-model solvent directory 
         try:
             model = gdml_train.train(task)
         except Exception as err:
             sys.exit(err)
         else:
             model_file = ''.join([
-                self.model_dir, 'model',
+                self.model_dir, 'model-',
                 dataset_path.split('/')[-1].split('.')[0], '.npz'
             ])
             np.savez_compressed(model_file, **model)
