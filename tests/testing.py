@@ -1,4 +1,4 @@
-# Quick file to test parts of MB-GDML as they are developed.
+# Quick file to test parts of mbGDML as they are developed.
 import mbgdml
 
 '''
