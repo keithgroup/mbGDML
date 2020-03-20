@@ -21,6 +21,7 @@
 # SOFTWARE.
 
 import os
+import subprocess
 import sys
 import re
 import numpy as np
@@ -31,7 +32,6 @@ from cclib.parser.utils import convertor
 from periodictable import elements
 
 from sgdml.train import GDMLTrain
-from sgdml.predict import GDMLPredict
 
 from mbgdml import utils
 from mbgdml.solvents import solvent
@@ -55,6 +55,9 @@ class MBGDMLTrain():
         """Finds all datasets with '.npz' extension in dataset directory.
         """
         self.dataset_paths = utils.get_files(self.dataset_dir, '.npz')
+        # TODO load each dataset and change dataset_paths to all_datasets
+        # as dict and add keys as partition size, values as path, fingerprint,
+        # dataset size, etc.
     
     def load_dataset(self, dataset_path):
         """Loads a GDML dataset from npz format from specified path.
@@ -65,66 +68,57 @@ class MBGDMLTrain():
         """
         self.dataset = np.load(dataset_path)
     
-    def train_GDML(self, dataset, num_train, num_validate, sigma, lam, info=''):
-        """Trains a sGDML model on a partition size.
+    def train_GDML(self, dataset_path, num_train, num_validate, num_test,
+                   sigma_range='2:10:100'):
+        """Trains a GDML model through the command line interface.
         
         Args:
-            dataset (str): GDML dataset.
+            dataset_path (str): Path to GDML dataset to be used for training,
+                validation, and testing. Total number of data points must be
+                greater than the sum of training, validation, and testing data
+                points.
             num_train (int): The number of training points to sample.
-            num_validate (int): The number of validation points to sample.
-            sigma (int): Kernel length scale hyper parameter.
-            lam (float): Hyper-parameter lambda (regularization strength).
-            info (optional; str): Information that can be appended to model
-                name.
+            num_validate (int): The number of validation points to sample,
+                without replacement.
+            num_test (int): The number of test points to test the validated
+                GDML model.
+            sigma_range (str, optional): Range of kernel length scales to train
+                and validate GDML values one. Format is
+                '<start>:<interval>:<stop>'. Note, the more length scales the
+                longer the training time.
         """
+        # TODO add remaining options for CLI sGDML as optional arguments.
         
-        
-        gdml_train = GDMLTrain()
-        task = gdml_train.create_task(
-            dataset, num_train, dataset, num_validate,
-            sigma, lam
-        )
-        # TODO make gdml-model solvent directory
-        
+        # Makes log file name.
+        dataset_name = dataset_path.split('/')[-1].split('.')[0]
+        log_name = ''.join([dataset_name, '-train.log'])
+
         # Prepares directory to save in
         save_dir = utils.norm_path(self.model_dir + 'gdml')
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
+        os.chdir(save_dir)
 
-        dataset_name = str(dataset.f.name)
-        dataset_solvent, dataset_partition_size, _, _ = dataset_name.split('-')
-        n_body = gdml_partition_size_names.index(dataset_partition_size) + 1
-        if info != '':
-                info = '-' + info
-        model_name = ''.join([
-            save_dir, dataset_solvent, '-', str(n_body), 'body',
-            info, '-model.npz'
-        ])
+        # Executing GDMLTrain via command line interface.
+        # TODO look into switching to python interface
+        sGDML_command = [
+            'sgdml', 'all',
+            str(dataset_path),
+            str(num_train), str(num_test), str(num_validate),
+            '-s', str(sigma_range)
+        ]
+        print('Running sGDML training on ' + dataset_name + ' ...')
+        subprocess.run(
+            sGDML_command,
+            stdout=open(log_name, 'w'),
+            encoding='unicode',
+            bufsize=1
+        ) # TODO Fix encoding
 
-
-        try:
-            print('Training ' + dataset_name + ' ...')
-            model = gdml_train.train(task)
-        except Exception as err:
-            sys.exit(err)
-            print('Training failed...')
-        else:
-            # TODO find way to add symmetry info to filename.
-            np.savez_compressed(model_name, **model)
-    
-    def nbody_corrections(self, nbody_dataset, nbody_model, lower_model):
-        """Creates a n-body corrections GDML model.
-
-        To employ the many body expansion, we need GDML models that predict
-        n-body corrections/contributions. This is accomplished by 
-        
-        Args:
-            nbody_dataset (): GDML dataset 
-            model ([type]): [description]
-            lower_model ([type]): [description]
-        """
-
-
+        # Adding input information to log file
+        with open(log_name, 'a') as log:
+            log.write('\n\n The following input was used for this file:')
+            log.write(' '.join(sGDML_command))
 
 
 class PartitionCalcOutput():
@@ -212,7 +206,10 @@ class PartitionCalcOutput():
         except:
             print('Something happened while parsing output file.')
             print('Please check ' + str(self.output_name) + ' output file.')
-            
+    
+    # TODO write a function to create the proper GDML dataset and change write
+    # GDML to input the GDML dataset
+
     def write_gdml_data(self, gdml_data_dir):
         """Writes and categorizes GDML file in a common GDML data directory.
         
