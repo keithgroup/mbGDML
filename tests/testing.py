@@ -18,26 +18,39 @@ mbgdml.train.gdml_xyz_datasets(
 
 
 test = mbgdml.train.MBGDMLTrain(
-    '/home/alex/Dropbox/keith/projects/gdml/data/gdml-datasets/MeOH',
-    '/home/alex/Dropbox/keith/projects/gdml/data/gdml-models/MeOH'
+    '/home/alex/Dropbox/keith/projects/gdml/data/gdml-datasets/H2O',
+    '/home/alex/Dropbox/keith/projects/gdml/data/gdml-models/H2O'
 )
 
 train_num = 500
-validate_num = 300
-sigma_para = 10
-lambda_para = 1e-15
-info_string = 'train' + str(train_num) \
-              + '-valid' + str(validate_num) \
-              + '-sig' + str(sigma_para) \
-              + '-lam' + str(lambda_para)
+validate_num = 200
+test_num = 200
+sigma_range = '2:10:300'
 
 for dataset in test.dataset_paths:
     
-    if 'trimer' in dataset:
-        test.load_dataset(dataset)
+    if 'monomer' in dataset:
         test.train_GDML(
-            test.dataset,
-            train_num, validate_num, sigma_para, lambda_para,
-            info_string
+            dataset, train_num, validate_num, test_num, sigma_range
         )
+
+    
+    if 'dimer' in dataset:
+        test.train_GDML(
+            dataset, train_num, validate_num, test_num, sigma_range
+        )
+
+
+    if 'trimer' in dataset:
+        test.train_GDML(
+            dataset, train_num, validate_num, test_num, sigma_range
+        )
+
+
+    if 'tetramer' in dataset:
+        test.train_GDML(
+            dataset, train_num, validate_num, test_num, sigma_range
+        )
+    
+
 
