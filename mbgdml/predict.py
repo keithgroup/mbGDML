@@ -20,10 +20,16 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import numpy as np
+
+from sgdml import predict
+
 class MBGDMLPredict():
 
-    def __init__(self):
-        pass
+    def __init__(self, model_path, dataset_path):
+        self.model_path = model_path
+        self.dataset_path = dataset_path
+
 
     def remove_nbody_contributions(
         self, raw_dataset, nbody_model
