@@ -1,12 +1,206 @@
+# MIT License
+# 
+# Copyright (c) 2020, Alex M. Maldonado
+# 
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+# 
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 import os
 import subprocess
 
+from mako.template import Template
+
 from periodictable import elements
+
 from mbgdml import utils
 from mbgdml import parse
 from mbgdml import partition
-from wacc.calculations.packages.orca import ORCA
-import wacc.calculations.packages.templates as templates
+
+class CalcTemplate():
+    """Contains all quantum chemistry calculations templates for mako.
+    """
+
+    def __init__(self):
+        self.orca_input_template = \
+'\
+# ${nameJob}\n\
+${commandSignal} ${theoryLevel} ${basisSet} ${calcType} ${options}\n\
+\n\
+${control_signal}pal\n\
+nprocs ${numCores}\n\
+end\n\
+\n\
+${controlBlocks}\n\
+\n\
+*xyz ${charge} ${multiplicity}\n\
+${coords}\
+*\n\
+'
+
+        self.orca_submit_template = \
+'\
+#!/bin/bash\n\
+#SBATCH --job-name=${nameJob}\n\
+#SBATCH --output=${nameOutput}.out\n\
+#SBATCH --nodes=${numNodes}\n\
+#SBATCH --ntasks-per-node=${numCores}\n\
+#SBATCH --time=${timeDays}-${timeHours}:00:00\n\
+#SBATCH --cluster=${nameCluster}\n\
+\n\
+# Output name variable for any wacc progression or verification.\n\
+output_name=${nameOutput}\n\
+\n\
+cd $SBATCH_O_WORKDIR\n\
+module purge\n\
+module load openmpi/3.1.4\n\
+module load orca/4.2.0\n\
+\n\
+cp $SLURM_SUBMIT_DIR/*.inp $SLURM_SCRATCH\n\
+\n\
+export LD_LIBRARY_PATH=/usr/lib64/openmpi/lib:$LD_LIBRARY_PATH\n\
+# Suppresses OpenFabrics (openib) absence nonfatal error.\n\
+export OMPI_MCA_btl_base_warn_component_unused=0\n\
+# Makes all error messages print.\n\
+export OMPI_MCA_orte_base_help_aggregate=0\n\
+\n\
+cd $SLURM_SCRATCH\n\
+$(which orca) ${nameInput}.inp\n\
+\n\
+'
+
+        self.orca_add_job='\
+\n\n$new_job\n\n\
+'
+
+class ORCA:
+    """Prepares, writes, and submits ORCA 4.2.0 calculations.
+    """
+
+    def __init__(self):
+        
+        templates = CalcTemplate()
+        self.commandSignal = '!'  # Command for ORCA
+        self.control_signal = '%'
+        self.fileExtension = 'inp'  # Defines file extension for ORCA input files
+        self.progression_parameters = ''
+        self.template_orca_string = templates.orca_input_template
+        self.template_orca_submit_string = templates.orca_submit_template
+
+        # Calculation properties
+        # Required properties are None type, whereas optionals are blank strings
+        self.nameJob = None  # Name of the job for record keeping
+        self.nameOutput = None  # Name of the output file (for verification and
+                                # progression).
+        self.nameInput = None  # Name of the input file
+        self.inputFiles = None  # Name of all input files
+        self.theoryLevel = None  # Level of theory
+        self.basisSet = None  # Basis sets
+        self.calcType = None  # ORCA calculation type
+        self.options = ''  # ORCA calculation options e.g. solvation models
+        self.nameCluster = 'smp'  # CRC cluster; default is smp
+        self.numNodes = '1'  # Number of nodes; smp default is 1
+        self.numCores = '12'   # Number of cores to use; default is 12
+        self.timeDays = None  # Requested days of runtime
+        self.timeHours = None  # Requested hours of runtime
+        self.controlBlocks = ''  # Additional control for different 
+
+        # System Properties
+        self.charge = None  # Overall charge of the system
+        self.multiplicity = None  # Multiplicity of the system
+        self.coordsString = None  # String of coordinates; each atom coordinate separated by '\n'
+
+
+    def write_input(self):
+        
+        templateOrca = Template(self.template_orca_string)
+        
+        self.input_corrections()
+
+        renderedOrca = templateOrca.render(
+            nameJob=self.nameJob, commandSignal=self.commandSignal,
+            control_signal=self.control_signal, theoryLevel=self.theoryLevel,
+            basisSet=self.basisSet, calcType=self.calcType,
+            options=self.options, numCores=self.numCores, charge=self.charge,
+            multiplicity=self.multiplicity, controlBlocks=self.controlBlocks,
+            coords=self.coordsString
+        )
+
+        with open(str(self.nameJob).replace(' ', '-') + '.' + self.fileExtension, 'w') as inputFile:
+            inputFile.write(renderedOrca)
+
+        return None
+    
+    def write_submit(self):
+        
+        templateOrcaSubmit = Template(self.template_orca_submit_string)
+
+        # Guesses default calculation run time based on type is not already specified
+        if self.timeDays == None or self.timeHours == None:
+            if str(self.calcType).lower() == 'opt':
+                self.timeDays = '1'
+                self.timeHours = '00'
+            elif str(self.calcType).lower() == 'spe':
+                self.timeDays = '0'
+                self.timeHours = '12'
+            elif str(self.calcType).lower() == 'freq':
+                self.timeDays = '3'
+                self.timeHours = '00'
+            else:
+                self.timeDays = '3'
+                self.timeHours = '00'
+
+        self.input_corrections()
+
+        renderedOrcaSubmit = templateOrcaSubmit.render(
+            nameJob = self.nameJob, nameOutput = self.nameOutput,
+            nameCluster = self.nameCluster, numNodes = self.numNodes,
+            numCores = self.numCores, timeDays = self.timeDays,
+            timeHours = self.timeHours, varBash = '$',
+            nameInput = self.nameInput, calcType=self.calcType,
+            inputFiles = self.nameInput + '.' + self.fileExtension,
+            progression_parameters = self.progression_parameters
+        )
+
+        slurm_file = 'submit-' + str(self.nameJob).replace(' ', '-') + '.slurm'
+
+        with open(slurm_file, 'w') as inputFile:
+            inputFile.write(renderedOrcaSubmit)
+
+        return slurm_file
+    
+
+    def input_corrections(self):
+        
+        # Ensures correct spe keyword for ORCA.
+        if self.calcType.lower() == 'spe':
+            self.calcType = 'SP'
+
+        # Forces numerical frequencies if using frozencore and MP2.
+        if ' frozencore' in self.options.lower() and self.calcType == 'freq' \
+           and 'mp2' in self.theoryLevel.lower():
+            self.calcType = 'NumFreq'
+        
+        self.nameInput = self.nameJob
+        # File corrections.
+
+        return None
+
+
 
 # TODO move custom orca calculator into this package.
 def partition_engrad(
@@ -89,6 +283,7 @@ def partition_engrad(
 
     # We want to skip the first step because this will be the same 
     # for every temperature and iteration.
+    templates = CalcTemplate()
     step_index = 1
     while step_index < partition_dict['coords'].shape[0]:
 
