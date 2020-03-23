@@ -10,3 +10,4 @@ twine==1.14.0
 Click==7.0
 natsort>=7.0.1
 cclib>=1.6.2
+periodictable>=1.5.2
