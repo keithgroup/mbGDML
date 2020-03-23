@@ -32,6 +32,7 @@ from cclib.parser.utils import convertor
 from periodictable import elements
 
 from sgdml.train import GDMLTrain
+import sgdml.cli as sGDML_cli
 
 from mbgdml import utils
 from mbgdml.solvents import solvent
