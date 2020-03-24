@@ -33,7 +33,7 @@ setup(
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
     ],
-    description="Many-body implementation of symmetric gradient domain machine learning model",
+    description="Many-body implementation of symmetric gradient domain machine learning",
     entry_points={
         'console_scripts': [
             'mbgdml=mbgdml.cli:main',
