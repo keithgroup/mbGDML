@@ -15,8 +15,7 @@ requirements = ['Click>=7.0', 'natsort>=7.0.1', 'cclib>=1.6.2',
 
 setup_requirements = [ ]
 
-test_requirements = ['natsort>=7.0.1', 'cclib>=1.6.2',
-                     'periodictable>=1.5.2', 'mako>=1.1.2']
+test_requirements = ['pytest>=5.4.1']
 
 setup(
     author="Alex M. Maldonado",
