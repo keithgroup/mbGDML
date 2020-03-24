@@ -6,8 +6,8 @@ mbgdml
 .. image:: https://img.shields.io/pypi/v/mbgdml.svg
         :target: https://pypi.python.org/pypi/mbgdml
 
-.. image:: https://img.shields.io/travis/aalexmmaldonado/mbGDML.svg
-        :target: https://travis-ci.com/aalexmmaldonado/mbGDML.svg?token=zhKXK5zzVqJmiyrPsaxe&branch=master
+.. image:: https://travis-ci.com/aalexmmaldonado/mbGDML.svg?token=zhKXK5zzVqJmiyrPsaxe&branch=master
+        :target: https://travis-ci.com/aalexmmaldonado/mbGDML
 
 .. image:: https://readthedocs.org/projects/mbgdml/badge/?version=latest
         :target: https://mbgdml.readthedocs.io/en/latest/?badge=latest
