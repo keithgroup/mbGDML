@@ -7,18 +7,9 @@ python:
 # Command to install dependencies, e.g. pip install -r requirements.txt --use-mirrors
 install: pip install -U tox-travis
 install: pip install --requirement requirements.txt
-install: pip install coverage
-
-# Environment changes for coverage
-env:
-  - CODECOV_TOKEN="84c2077a-baad-4da3-824b-b959d703acd7"
 
 # Command to run tests, e.g. python setup.py test
 script: tox
-script: coverage run -m unittest discover
-
-# Command to publish coverage
-after_success: bash <(curl -s https://codecov.io/bash)
 
 # Assuming you have installed the travis-ci CLI tool, after you
 # create the Github repo and add it to Travis, run the
