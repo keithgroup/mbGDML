@@ -12,3 +12,4 @@ natsort>=7.0.1
 cclib>=1.6.2
 periodictable>=1.5.2
 mako>=1.1.2
+sgdml>=0.4.1
