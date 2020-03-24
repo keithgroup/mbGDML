@@ -10,11 +10,13 @@ with open('README.rst') as readme_file:
 with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
-requirements = ['Click>=7.0', ]
+requirements = ['Click>=7.0', 'natsort>=7.0.1', 'cclib>=1.6.2',
+                'periodictable>=1.5.2', 'mako>=1.1.2']
 
 setup_requirements = [ ]
 
-test_requirements = [ ]
+test_requirements = ['natsort>=7.0.1', 'cclib>=1.6.2',
+                     'periodictable>=1.5.2', 'mako>=1.1.2']
 
 setup(
     author="Alex M. Maldonado",
@@ -31,7 +33,7 @@ setup(
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
     ],
-    description="Many-body symmetric gradient domain machine learning model for solvent force fields",
+    description="Many-body implementation of symmetric gradient domain machine learning model",
     entry_points={
         'console_scripts': [
             'mbgdml=mbgdml.cli:main',
