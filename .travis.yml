@@ -9,6 +9,10 @@ install: pip install -U tox-travis
 install: pip install --requirement requirements.txt
 install: pip install coverage
 
+# Environment changes for coverage
+env:
+  - CODECOV_TOKEN="84c2077a-baad-4da3-824b-b959d703acd7"
+
 # Command to run tests, e.g. python setup.py test
 script: tox
 script: coverage run -m unittest discover
