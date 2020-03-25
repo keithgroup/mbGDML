@@ -276,6 +276,3 @@ class PartitionCalcOutput():
                     atom_index += 1
             
                 step_index += 1
-
-test = PartitionCalcOutput('/home/alex/repos/mbGDML/tests/data/out-4MeOH-300K-1-ABC.out')
-test.create_dataset()
