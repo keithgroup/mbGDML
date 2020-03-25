@@ -1,7 +1,8 @@
 """Prepares, manipulates, and writes data for mbGDML.
 
 Raises:
-    KeyError: when the parsed output file does not have any energies.
+    KeyError: when the parsed quantum chemistry output file does not have any
+        energies.
 """
 
 # MIT License
@@ -31,12 +32,18 @@ import re
 import numpy as np
 from cclib.io import ccread
 from cclib.parser.utils import convertor
+from sgdml import __version__
+from sgdml.utils import io as sgdml_io
 from mbgdml import utils
 from mbgdml.solvents import solvent
 
 gdml_partition_size_names = [
     'monomer', 'dimer', 'trimer', 'tetramer', 'pentamer'
 ]
+
+
+
+
 
 class PartitionCalcOutput():
     """Quantum chemistry output file for all MD steps of a single partition.
@@ -55,7 +62,7 @@ class PartitionCalcOutput():
         output_file (str): Path to quantum chemistry output file for a
             partition.
         output_name (str): The name of the quantum chemistry output file
-            (includes extension).
+            (no extension).
         cluster (str): The label identifying the partition of the MD trajectory.
         temp (str): Set point temperautre for the MD thermostat.
         iter (int): Identifies the iteration of the MD iteration.
@@ -93,7 +100,7 @@ class PartitionCalcOutput():
                 (e.g., CD).
         A complete example would be 'out-4MeOH-300K-2-CD.out'.
         """
-        self.output_name = self.output_file.split('/')[-1]
+        self.output_name = self.output_file.split('/')[-1].split('.')[0]
         split_label = self.output_name.split('-')
         self.cluster = str(split_label[1])
         self.temp = str(split_label[2])
@@ -126,6 +133,46 @@ class PartitionCalcOutput():
     
     # TODO write a function to create the proper GDML dataset and change write
     # GDML to input the GDML dataset
+    def create_dataset(self, r_units='Ang', e_units='kcal/mol'):
+        
+        test_dataset = np.load('/home/alex/repos/mbGDML/tests/data/ABC-4MeOH-300K-1-gdml.npz')
+
+        # Preparing energies
+        energies = []
+        for energy in self.energies:
+            energies.append(convertor(energy[0], 'eV', e_units))
+        energies = np.array(energies)
+
+
+        base_variables = {
+            'type': 'd',  # Designates dataset or model.
+            'code_version': __version__,  # sGDML version.
+            'name': self.output_name,  # Name of the output file.
+            'theory': 'unknown',  # Theory used to calculate the data.
+            'z': self.atoms,  # Atomic numbers of all atoms in system.
+            'R': self.coords,  # Cartesian coordinates.
+            'r_unit': r_units,  # Units for coordinates (ORCA defaults to Ang).
+            'E': energies,  # Energy of the structure.
+            'e_unit': e_units,  # Units of energy.
+            'E_min': np.min(energies.ravel()),  # Energy minimum.
+            'E_max': np.max(energies.ravel()),  # Energy maximum.
+            'E_mean': np.mean(energies.ravel()),  # Energy mean.
+            'E_var': np.var(energies.ravel()),  # Energy variance.
+            'F': self.forces,  # Atomic forces for each atom.
+            'F_min': np.min(self.forces.ravel()),  # Force minimum.
+            'F_max': np.max(self.forces.ravel()),  # Force maximum.
+            'F_mean': np.mean(self.forces.ravel()),  # Force mean.
+            'F_var': np.var(self.forces.ravel())  # Force variance.
+        }
+
+        base_variables['md5'] = sgdml_io.dataset_md5(base_variables)
+
+        assert np.array_equal(test_dataset.f.E, base_variables['E'])
+        
+        self.dataset = base_variables
+        print('Break point')
+        
+
 
     def write_gdml_data(self, gdml_data_dir):
         """Writes and categorizes GDML file in a common GDML data directory.
@@ -230,7 +277,5 @@ class PartitionCalcOutput():
             
                 step_index += 1
 
-
-# TODO write 
-def sgdml_dataset_from_partition_calc():
-    pass
+test = PartitionCalcOutput('/home/alex/repos/mbGDML/tests/data/out-4MeOH-300K-1-ABC.out')
+test.create_dataset()
