@@ -1,8 +1,6 @@
 import os
 import json
 from periodictable import elements
-# TODO Create solvent class
-# TODO Create solvent file that contains solvent information to initialize objects
 
 class solvent():
     """Identifies and describes the solvent for MB-GDML.
@@ -11,15 +9,14 @@ class solvent():
     from.
     
     Attributes:
-        all_solvents (dict): Contains all solvents described in solvents.json.
-            Keys are the name of the solvent, and the values are dicts 'label'
-            and 'formula' that provide a solvent label and chemical formula,
-            respectively.
+        system (str): Designates what kind of system this is. Currently only
+            'solvent' systems.
         solvent_name (str): Name of the solvent.
         solvent_label (str): A label for the solvent for filenaming purposes.
         solvent_molec_size (int): Total number of atoms in one solvent molecule.
         cluster_size (int): Total number of solvent molecules in cluster.
     """
+
 
     def __init__(self, atom_list):
 
@@ -32,7 +29,6 @@ class solvent():
         
         self.identify_solvent(atom_list, all_solvents)
 
-        
 
     def atom_numbers(self, chem_formula):
         """Provides a dictionary of atoms and their quantity from chemical
@@ -87,9 +83,9 @@ class solvent():
                 repeated. For example, ['H', 'H', 'O', 'O', 'H', 'H']. Note that
                 the order does not matter; only the quantity.
             all_solvents (dict): Contains all solvents described in
-            solvents.json. Keys are the name of the solvent, and the values are
-            dicts 'label' and 'formula' that provide a solvent label and
-            chemical formula, respectively.
+                solvents.json. Keys are the name of the solvent, and the values
+                are dicts 'label' and 'formula' that provide a solvent label
+                and chemical formula, respectively.
         
         """
 
@@ -147,7 +143,8 @@ class solvent():
                     self.solvent_molec_size = int(sum(solvent_atoms.values()))
                     self.cluster_size = int(atom_num[atom] \
                                             / solvent_atoms[atom])
-                    
+                    self.system = 'solvent'  # For future
+                    # developments that could involve solute-solvent systems.
                     
                 except:
                     pass
