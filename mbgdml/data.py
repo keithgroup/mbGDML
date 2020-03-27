@@ -1,10 +1,3 @@
-"""Prepares, manipulates, and writes data for mbGDML.
-
-Raises:
-    KeyError: when the parsed quantum chemistry output file does not have any
-        energies.
-"""
-
 # MIT License
 # 
 # Copyright (c) 2020, Alex M. Maldonado
@@ -41,10 +34,6 @@ gdml_partition_size_names = [
     'monomer', 'dimer', 'trimer', 'tetramer', 'pentamer'
 ]
 
-
-
-
-
 class PartitionCalcOutput():
     """Quantum chemistry output file for all MD steps of a single partition.
 
@@ -69,16 +58,21 @@ class PartitionCalcOutput():
         partition (str): Identifies what solvent molecules are in the partition.
         partition_size (int): The number of solvent molecules in the partition.
         cclib_data (obj): Contains all data parsed from output file.
-        atoms (np.array): A (n) array containing n atomic numbers.
+        atoms (np.array): A (n,) array containing n atomic numbers.
         coords (np.array): A (m, n, 3) array containing the atomic coordinates
             of n atoms of m MD steps.
         grads (np.array): A (m, n, 3) array containing the atomic gradients
-            of n atoms of m MD steps.
+            of n atoms of m MD steps. cclib does not change the unit, so the
+            units are whatever is printed in the output file.
         forces (np.array): A (m, n, 3) array containing the atomic forces
-            of n atoms of m MD steps.
+            of n atoms of m MD steps. Simply the negative of grads.
         energies (np.array): A (m, n) array containing the energies of n atoms
-            of m MD steps.
-        solvent (obj): From Solvent class and contains solvent information.
+            of m MD steps. cclib stores these in the units of eV.
+        system (str): From Solvent class and designates the system. Currently
+            only 'solvent' is implemented.
+        solvent_info (dict): If the system is 'solvent', contains information
+            about the system and solvent. 'solvent_name', 'solvent_label',
+            'solvent_molec_size', and 'cluster_size'.
     """
 
     def __init__(self, output_path):
@@ -93,7 +87,7 @@ class PartitionCalcOutput():
 
         Output file should be labeled in the following manner:
         'out-NumSolv-temperature-iteration-partition.out'.
-            'NumSolv' tells us original sized solvent cluster (e.g., 4MeOH);
+            'NumSolv' tells us the original solvent cluster size (e.g., 4MeOH);
             'temperature' is the set point for the thermostat (e.g., 300K);
             'iteration' identifies the MD simulation (e.g., 2);
             'partition' identifies what solvent molecules are in the partition
@@ -111,7 +105,16 @@ class PartitionCalcOutput():
     def _get_solvent_info(self):
         """Adds solvent information to object.
         """
-        self.solvent = solvent(self.atoms.tolist())
+        solvent_info = solvent(self.atoms.tolist())
+        self.system = solvent_info.system
+        if self.system is 'solvent':
+            self.solvent_info = {
+                'solvent_name': solvent_info.solvent_name,
+                'solvent_label': solvent_info.solvent_label,
+                'solvent_molec_size': solvent_info.solvent_molec_size,
+                'cluster_size': solvent_info.cluster_size
+            }
+
     
     def _get_gdml_data(self):
         """Parses GDML-relevant data from partition output file.
@@ -133,9 +136,8 @@ class PartitionCalcOutput():
     
     # TODO write a function to create the proper GDML dataset and change write
     # GDML to input the GDML dataset
-    def create_dataset(self, r_units='Ang', e_units='kcal/mol'):
-        
-        test_dataset = np.load('/home/alex/repos/mbGDML/tests/data/ABC-4MeOH-300K-1-gdml.npz')
+    def create_dataset(self, theory='unknown', r_units='Ang',
+                       e_units='kcal/mol'):
 
         # Preparing energies
         energies = []
@@ -143,15 +145,15 @@ class PartitionCalcOutput():
             energies.append(convertor(energy[0], 'eV', e_units))
         energies = np.array(energies)
 
-
+        # sGDML variables.
         base_variables = {
             'type': 'd',  # Designates dataset or model.
             'code_version': __version__,  # sGDML version.
             'name': self.output_name,  # Name of the output file.
-            'theory': 'unknown',  # Theory used to calculate the data.
+            'theory': theory,  # Theory used to calculate the data.
             'z': self.atoms,  # Atomic numbers of all atoms in system.
             'R': self.coords,  # Cartesian coordinates.
-            'r_unit': r_units,  # Units for coordinates (ORCA defaults to Ang).
+            'r_unit': r_units,  # Units for coordinates.
             'E': energies,  # Energy of the structure.
             'e_unit': e_units,  # Units of energy.
             'E_min': np.min(energies.ravel()),  # Energy minimum.
@@ -165,15 +167,19 @@ class PartitionCalcOutput():
             'F_var': np.var(self.forces.ravel())  # Force variance.
         }
 
+        # mbGDML variables
+        if type(self.system) is 'solvent':
+            base_variables['system'] = 'solvent'
+            base_variables['solvent'] = self.solvent_info['solvent_name']
+            base_variables['cluster_size'] = self.solvent_info['cluster_size']
+
         base_variables['md5'] = sgdml_io.dataset_md5(base_variables)
 
-        assert np.array_equal(test_dataset.f.E, base_variables['E'])
-        
         self.dataset = base_variables
-        print('Break point')
         
 
-
+    # TODO rename function to write 'extended xyz'
+    # TODO look into what is the proper name for the 'extended xyz' file.
     def write_gdml_data(self, gdml_data_dir):
         """Writes and categorizes GDML file in a common GDML data directory.
         
@@ -193,7 +199,7 @@ class PartitionCalcOutput():
 
         # Preparing directories.
         # /path/to/gdml-datasets/solventlabel/partitionsize/temp/iteration
-        gdml_solvent = self.solvent.solvent_label
+        gdml_solvent = self.solvent_info['solvent_label']
         gdml_solvent_dir = utils.norm_path(
             gdml_data_dir + gdml_solvent
         )
@@ -224,8 +230,8 @@ class PartitionCalcOutput():
         with open(self.gdml_file, 'w') as gdml_file:
             step_index = 0
             atom_list = utils.atoms_by_element(self.atoms)
-            atom_num = self.solvent.solvent_molec_size \
-                       * self.solvent.cluster_size
+            atom_num = self.solvent_info['solvent_molec_size'] \
+                       * self.solvent_info['cluster_size']
             while step_index < len(self.coords):
 
                 # Number of atoms.
