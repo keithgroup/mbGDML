@@ -1,6 +1,3 @@
-"""Anything pertaining to training sGDML and mbGDML models.
-"""
-
 # MIT License
 # 
 # Copyright (c) 2020, Alex M. Maldonado
