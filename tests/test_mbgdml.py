@@ -33,11 +33,21 @@ test_path = mbgdml.utils.norm_path(
 )
 
 def test_data_create_dataset():
-    ref_dataset_path = ''.join([test_path, 'data/ABC-4MeOH-300K-1-gdml.npz'])
     ref_output_path = ''.join([test_path, 'data/out-4MeOH-300K-1-ABC.out'])
 
-    ref_dataset = np.load(ref_dataset_path)
     test_partition = mbgdml.data.PartitionCalcOutput(ref_output_path)
-    test_partition.create_dataset()
+    test_partition.create_dataset(theory='MP2/def2-TZVP')
     
-    assert np.array_equal(ref_dataset.f.E, test_partition.dataset['E'])
+    assert np.allclose(test_partition.dataset['R'][0][4],
+                       np.array([1.911664, -2.195424, -0.704814]))
+    assert test_partition.dataset['E'][0] == -217458.27068287216
+    assert test_partition.dataset['E_max'] == -217448.27742004013
+    assert test_partition.dataset['E_mean'] == -217453.4435426626
+    assert test_partition.dataset['E_min'] == -217458.27068287216
+    assert test_partition.dataset['E_var'] == 3.9385025745597186
+    assert test_partition.dataset['F_max'] == 65.08310037407716
+    assert np.allclose(test_partition.dataset['F'][0][0],
+                       np.array([-22.73440695, -11.93017795,   1.67021709]))
+    assert test_partition.dataset['F_mean'] == -4.391929749921794e-09
+    assert test_partition.dataset['F_min'] == -77.57149172033839
+    assert test_partition.dataset['F_var'] == 216.70599395856985
