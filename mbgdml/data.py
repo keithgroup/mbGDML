@@ -136,14 +136,18 @@ class PartitionCalcOutput():
     
     # TODO write a function to create the proper GDML dataset and change write
     # GDML to input the GDML dataset
-    def create_dataset(self, theory='unknown', r_units='Ang',
+    def create_dataset(self, theory='unknown', r_units='Angstrom',
                        e_units='kcal/mol'):
 
-        # Preparing energies
+        # Preparing energies in e_units.
         energies = []
         for energy in self.energies:
             energies.append(convertor(energy[0], 'eV', e_units))
         energies = np.array(energies)
+
+        # Preparing forces
+        forces = self.forces * (convertor(1, 'hartree', e_units) \
+                                / convertor(1, 'bohr', r_units))
 
         # sGDML variables.
         base_variables = {
@@ -160,11 +164,11 @@ class PartitionCalcOutput():
             'E_max': np.max(energies.ravel()),  # Energy maximum.
             'E_mean': np.mean(energies.ravel()),  # Energy mean.
             'E_var': np.var(energies.ravel()),  # Energy variance.
-            'F': self.forces,  # Atomic forces for each atom.
-            'F_min': np.min(self.forces.ravel()),  # Force minimum.
-            'F_max': np.max(self.forces.ravel()),  # Force maximum.
-            'F_mean': np.mean(self.forces.ravel()),  # Force mean.
-            'F_var': np.var(self.forces.ravel())  # Force variance.
+            'F': forces,  # Atomic forces for each atom.
+            'F_min': np.min(forces.ravel()),  # Force minimum.
+            'F_max': np.max(forces.ravel()),  # Force maximum.
+            'F_mean': np.mean(forces.ravel()),  # Force mean.
+            'F_var': np.var(forces.ravel())  # Force variance.
         }
 
         # mbGDML variables
