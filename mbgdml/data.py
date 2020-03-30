@@ -136,18 +136,21 @@ class PartitionCalcOutput():
     
     # TODO write a function to create the proper GDML dataset and change write
     # GDML to input the GDML dataset
-    def create_dataset(self, theory='unknown', r_units='Angstrom',
-                       e_units='kcal/mol'):
+    def create_dataset(self, r_units_calc, e_units_calc, theory='unknown',
+                       r_units='Angstrom', e_units='kcal/mol'):
 
         # Preparing energies in e_units.
+        # Note, cclib stores energies in eV.
         energies = []
         for energy in self.energies:
             energies.append(convertor(energy[0], 'eV', e_units))
         energies = np.array(energies)
 
-        # Preparing forces
-        forces = self.forces * (convertor(1, 'hartree', e_units) \
-                                / convertor(1, 'bohr', r_units))
+        # Converting forces.
+        # cclib does not convert gradients (or forces), this is where
+        # the energy and coordinates units come into play.
+        forces = self.forces * (convertor(1, e_units_calc, e_units) \
+                                / convertor(1, r_units_calc, r_units))
 
         # sGDML variables.
         base_variables = {
