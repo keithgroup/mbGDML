@@ -2,21 +2,22 @@
 import mbgdml
 
 '''
-mbgdml.train.create_gdml_xyz(
+mbgdml.data.create_datasets(
     '/home/alex/Dropbox/keith/projects/mbgdml/data/partitions/calculations/4H2O/',
-    '/home/alex/Dropbox/keith/projects/mbgdml/data/gdml-datasets/'
-)
-
-
-
-mbgdml.train.gdml_xyz_datasets(
-    '/home/alex/Dropbox/keith/projects/mbgdml/data/gdml-datasets/H2O'
+    '/home/alex/Dropbox/keith/projects/mbgdml/data/datasets/',
+    'bohr', 'hartree', theory='MP2/def2-TZVP'
 )
 '''
-# script to convert xyz to npz
-# sgdml_dataset_from_extxyz.py
+
+'''
+mbgdml.data.combine_datasets(
+    '/home/alex/Dropbox/keith/projects/mbgdml/data/datasets/MeOH/4mer',
+    '/home/alex/Dropbox/keith/projects/mbgdml/data/datasets/MeOH'
+)
+'''
 
 
+'''
 test = mbgdml.train.MBGDMLTrain(
     '/home/alex/Dropbox/keith/projects/mbgdml/data/quick-methanol/datasets',
     '/home/alex/Dropbox/keith/projects/mbgdml/data/quick-methanol/models'
@@ -33,7 +34,7 @@ for dataset in test.dataset_paths:
         test.train_GDML(
             dataset, train_num, validate_num, test_num, sigma_range
         )
-      
+'''     
 
 
 

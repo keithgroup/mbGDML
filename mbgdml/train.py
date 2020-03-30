@@ -36,6 +36,7 @@ import sgdml.cli as sGDML_cli
 
 from mbgdml import utils
 from mbgdml.solvents import solvent
+from mbgdml.data import PartitionCalcOutput
 
 gdml_partition_size_names = [
     'monomer', 'dimer', 'trimer', 'tetramer', 'pentamer'
@@ -121,99 +122,3 @@ class MBGDMLTrain():
             log.write('\n\n The following input was used for this file:')
             log.write(' '.join(sGDML_command))
 
-
-def create_gdml_xyz(calc_output_dir, gdml_dataset_dir):
-    """Writes xyz files for GDML datasets.
-
-    Used as a driver for the _PartitionCalcOutput class that iterates over all
-    partitions for a solvent. Writes and organizes GDML xyz files according
-    to solvent, partition size, temperature, and MD iteration.
-    
-    Args:
-        calc_output_dir (str): Path to folder that contains computational
-            chemistry output files. Usually for an entire solvent.
-        gdml_dataset_dir (str): Path that contains all GDML dataset files.
-    """
-    
-    calc_output_dir = utils.norm_path(calc_output_dir)
-    all_out_files = utils.get_files(calc_output_dir, 'out')
-
-    for out_file in all_out_files:
-        print('Writing the GDML file for ' + out_file.split('/')[-1] + ' ...')
-        calc = PartitionCalcOutput(out_file)
-        calc.write_gdml_data(gdml_dataset_dir)
-
-def combine_gdml_xyz(gdml_partition_dir, write_dir):
-    """Combines GDML xyz files.
-    
-    Finds all files labeled with 'gdml.xyz' (defined in 
-    _PartitionCalcOutput._write_gdml_data) in a user specified directory
-    and combines them. Typically used on a single partition size (e.g.,
-    monomer, dimer, trimer, etc.) to represent the complete dataset of that
-    partition size.
-
-    Args:
-        gdml_partition_dir (str): Path to directory containing GDML xyz files.
-            Typically to a directory containing only a single partition size
-            of a single solvent.
-        write_dir (str): Path to the directory where partition-size GDML xyz
-            files will be written. Usually the solvent directory in the 
-            gdml-dataset directory.
-    """
-
-    gdml_partition_dir = utils.norm_path(gdml_partition_dir)
-    write_dir = utils.norm_path(write_dir)
-
-    # Gets all GDML files within a partition.
-    all_gdml_files = utils.natsort_list(
-        utils.get_files(gdml_partition_dir, 'gdml.xyz')
-    )
-
-    # Gets naming information from one of the GDML files.
-    gdml_file_example = all_gdml_files[0].split('/')[-1][:-4].split('-')
-    gdml_partition_size = gdml_partition_size_names[
-        len(gdml_file_example[0]) - 1
-    ]
-    gdml_cluster = gdml_file_example[1]
-    gdml_partition_file = write_dir \
-                          + '-'.join([gdml_cluster, gdml_partition_size]) \
-                          + '-gdml-dataset.xyz'
-    
-    # TODO check that each file has the same number of atoms.
-    # TODO write data as npz instead of extended xyz file.
-    # Writes all partitions to a single extended-xyz GDML file.
-    open(gdml_partition_file, 'w').close()
-    for partition in all_gdml_files:
-        print('Writing the ' + partition.split('/')[-1] + ' file.')
-        with open(partition, 'r') as partition_file:
-            partition_data = partition_file.read()
-        with open(gdml_partition_file, 'a+') as gdml_file:
-            gdml_file.write(partition_data)
-
-def gdml_xyz_datasets(gdml_solvent_dir):
-    """Creates GDML xyz datasets for all solvent partitions.
-
-    Finds all GDML xyz files (by searching for files containing 'gdml.xyz)
-    and combines them into their respective partition-size GDML xyz file.
-    These files are written for documentation purposes.
-    
-    Args:
-        gdml_solvent_dir (str): Path to directory containing all GDML xyz files
-            for a solvent. New files are written to this directory as well.
-    """
-    
-    gdml_solvent_dir = utils.norm_path(gdml_solvent_dir)
-    partition_dirs = os.listdir(gdml_solvent_dir)
-
-    # Gets all directories which should contain all GDML files of a single
-    # partition size.
-    file_index = 0
-    while file_index < len(partition_dirs):
-        partition_dirs[file_index] = gdml_solvent_dir \
-                                     + partition_dirs[file_index]
-        file_index += 1
-    partition_dirs = [item for item in partition_dirs if os.path.isdir(item)]
-    
-    # Combines and writes all partition-size GDML files.
-    for size in partition_dirs:
-        combine_gdml_xyz(size, gdml_solvent_dir)
