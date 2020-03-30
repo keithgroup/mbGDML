@@ -36,7 +36,7 @@ def test_data_create_dataset():
     ref_output_path = ''.join([test_path, 'data/out-4MeOH-300K-1-ABC.out'])
 
     test_partition = mbgdml.data.PartitionCalcOutput(ref_output_path)
-    test_partition.create_dataset(theory='MP2/def2-TZVP')
+    test_partition.create_dataset('bohr', 'hartree', theory='MP2/def2-TZVP')
     
     assert np.allclose(test_partition.dataset['R'][0][4],
                        np.array([1.911664, -2.195424, -0.704814]))
