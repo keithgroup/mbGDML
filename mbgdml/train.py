@@ -35,8 +35,7 @@ from sgdml.train import GDMLTrain
 import sgdml.cli as sGDML_cli
 
 from mbgdml import utils
-from mbgdml.solvents import solvent
-from mbgdml.data import PartitionCalcOutput
+from mbgdml.data import mbGDMLModel
 
 class MBGDMLTrain():
 
@@ -111,7 +110,8 @@ class MBGDMLTrain():
 
         # Makes log file name.
         dataset_name = self.dataset_path.split('/')[-1].split('.')[0]
-        log_name = ''.join([dataset_name, '-train.log'])
+        log_name = ''.join([dataset_name.replace('dataset', 'model'),
+                            '-train.log'])
 
         # Prepares directory to save in
         self._organization_dirs(model_dir)
@@ -134,4 +134,27 @@ class MBGDMLTrain():
         with open(log_name, 'a') as log:
             log.write('\n\n The following command was used for this file: ')
             log.write(' '.join(sGDML_command))
+            log.write('\n Note, the model name will have "model" instead')
+            log.write('of "dataset".')
+        
+        # Adding additional mbGDML info to the model.
+        model = mbGDMLModel()
+        model.get_model_name(log_name)
+        model.load_model(model.name + '.npz')
+        os.remove(model.name + '.npz')
+
+        # Changing model name.
+        model.name = model.name.replace('-dataset-', '-model-')
+
+        # Adding system info.
+        model.add_system_info(model.base_vars)
+
+        # Adding many-body information if present in dataset.
+        if 'mb' in self.dataset.keys():
+            model.add_manybody_info(
+                int(self.dataset.f.mb_order[()]), model.base_vars
+            )
+
+        # Saving model.
+        model.save(model.name, model.base_vars, self.model_dir, False)
 
