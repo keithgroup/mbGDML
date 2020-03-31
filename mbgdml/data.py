@@ -30,8 +30,6 @@ from sgdml.utils import io as sgdml_io
 from mbgdml import utils
 import mbgdml.solvents as solvents
 
-# Modifying np.load to 
-
 class _mbGDMLData():
 
     def __init__(self):
@@ -85,17 +83,35 @@ class mbGDMLModel(_mbGDMLData):
         pass
 
     def load_model(self, model_path):
+        """Loads GDML model.
+        
+        Args:
+            model_path (str): Path to GDML model.
+        """
         self.model = np.load(model_path, allow_pickle=True)
         self.base_vars = dict(self.model)
     
-    def get_model_name(self, log_file):
+    def get_model_name(self, log_path):
+        """Retrives GDML model's name from log file.
+        
+        Args:
+            log_path (str): Path to the log file.
+        """
 
-        for line in reversed(list(open(log_file))):
+        for line in reversed(list(open(log_path))):
             if 'This is your model file' in line:
                 self.name = line.split(':')[-1][2:-6]
                 break
     
-    def add_manybody_info(self, mb_order, base_vars):
+    def add_manybody_info(self, mb_order):
+        """Adds many-body (mb) information to GDML model.
+        
+        Args:
+            mb_order (int): The order of many-body 'corrections' or expansion.
+        """
+        if not hasattr(self, 'base_vars'):
+            raise AttributeError('There is no model loaded.')
+
         self.base_vars['mb'] = mb_order
         
         
