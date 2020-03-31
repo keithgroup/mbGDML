@@ -151,9 +151,7 @@ class MBGDMLTrain():
 
         # Adding many-body information if present in dataset.
         if 'mb' in self.dataset.keys():
-            model.add_manybody_info(
-                int(self.dataset.f.mb_order[()]), model.base_vars
-            )
+            model.add_manybody_info(int(self.dataset.f.mb_order[()]))
 
         # Saving model.
         model.save(model.name, model.base_vars, self.model_dir, False)
