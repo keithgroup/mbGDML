@@ -39,15 +39,11 @@ from mbgdml.solvents import solvent
 from mbgdml.data import PartitionCalcOutput
 
 class MBGDMLTrain():
-    """[summary]
 
-    Attributes:
-    """
 
-    def __init__(self, dataset_path, model_dir):
-        self.dataset_path = dataset_path
-        self.model_dir = utils.norm_path(model_dir)
-    
+    def __init__(self):
+        pass
+
     def load_dataset(self, dataset_path):
         """Loads a GDML dataset from npz format from specified path.
         
@@ -55,17 +51,52 @@ class MBGDMLTrain():
             dataset_path (str): Path to stored numpy arrays representing a GDML
                 dataset of a single solvent partition size.
         """
+        self.dataset_path = dataset_path
         self.dataset = np.load(dataset_path)
     
-    def train_GDML(self, dataset_path, num_train, num_validate, num_test,
+
+    def _organization_dirs(self, model_dir):
+        """Determines where a model should be saved.
+
+        The model will be written in a directory that depends on the
+        parent solvent cluster (e.g. 4MeOH).
+        
+        Args:
+            model_dir (str): Path to a common directory for GDML models.
+
+        Notes:
+            Requires the 'dataset' attribute.
+            Sets the 'model_dir' attribute for writing GDML models.
+        """
+
+        model_dir = utils.norm_path(model_dir)
+
+        if not hasattr(self, 'dataset'):
+            raise AttributeError('There is currently no dataset loaded.')
+        
+        # Parsing information from the dataset_name.
+        parent_cluster, partition_size, _ = self.dataset.f.name[()].split('-')
+
+        # Preparing directories.
+        if str(self.dataset.f.system[()]) == 'solvent':
+            model_solvent_dir = utils.norm_path(
+                model_dir + parent_cluster
+            )
+            try:
+                os.makedirs(model_solvent_dir)
+            except FileExistsError:
+                pass
+            os.chdir(model_solvent_dir)
+        
+        self.model_dir = model_solvent_dir
+    
+
+    def train_GDML(self, model_dir, num_train, num_validate, num_test,
                    sigma_range='2:10:100'):
         """Trains a GDML model through the command line interface.
         
         Args:
-            dataset_path (str): Path to GDML dataset to be used for training,
-                validation, and testing. Total number of data points must be
-                greater than the sum of training, validation, and testing data
-                points.
+            model_dir (str): Path to a common directory for GDML models.
             num_train (int): The number of training points to sample.
             num_validate (int): The number of validation points to sample,
                 without replacement.
@@ -77,20 +108,17 @@ class MBGDMLTrain():
                 longer the training time. Two is the minimum value.
         """
         # TODO add remaining options for CLI sGDML as optional arguments.
-        
+
         # Makes log file name.
-        dataset_name = dataset_path.split('/')[-1].split('.')[0]
+        dataset_name = self.dataset_path.split('/')[-1].split('.')[0]
         log_name = ''.join([dataset_name, '-train.log'])
 
         # Prepares directory to save in
-        save_dir = utils.norm_path(self.model_dir + 'gdml')
-        if not os.path.exists(save_dir):
-            os.makedirs(save_dir)
-        os.chdir(save_dir)
+        self._organization_dirs(model_dir)
 
         sGDML_command = [
             'sgdml', 'all',
-            str(dataset_path),
+            str(self.dataset_path),
             str(num_train), str(num_test), str(num_validate),
             '-s', str(sigma_range)
         ]
