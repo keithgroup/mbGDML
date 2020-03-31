@@ -71,6 +71,17 @@ class _mbGDMLData():
         return base_vars
 
     def save(self, name, base_vars, save_dir, dataset):
+        """General save function for GDML datasets and models.
+        
+        Args:
+            name (str): Name of the file to be saved not including the
+                extension.
+            base_vars (dict): Base variables for dataset or model.
+            save_dir (str): Directory to save the file.
+            dataset (bool): Is the file a dataset? Controls whether the md5 of
+                the file is updated.
+        """
+
         save_dir = utils.norm_path(save_dir)
         if dataset:
             base_vars['md5'] = sgdml_io.dataset_md5(base_vars)
