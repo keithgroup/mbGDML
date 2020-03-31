@@ -28,11 +28,223 @@ from cclib.parser.utils import convertor
 from sgdml import __version__
 from sgdml.utils import io as sgdml_io
 from mbgdml import utils
-from mbgdml.solvents import solvent
+import mbgdml.solvents as solvents
 
-gdml_partition_size_names = [
-    'monomer', 'dimer', 'trimer', 'tetramer', 'pentamer'
-]
+
+class MBGDMLDataset():
+
+    def __init__(self):
+        pass
+    
+    def get_system_info(self, atoms):
+        """Describes the dataset system.
+        
+        Args:
+            atoms (list): Atomic numbers of all atoms in the system. The atoms
+                are repeated; for example, water is ['H', 'H', 'O'].
+        """
+        self.system_info = solvents.system_info(atoms)
+
+    def _organization_dirs(
+        self,
+        gdml_data_dir
+    ):
+        """Determines where a dataset should be saved.
+
+        The dataset will be written in a directory that depends on the
+        parent solvent cluster (e.g. 4MeOH), partition size (e.g., dimer),
+        MD temperature (e.g. 300K), and MD iteration (e.g. 1).
+        
+        Args:
+            gdml_data_dir (str): Path to a common directory for GDML datasets.
+
+        Notes:
+            Requires the 'dataset_name' attribute.
+            Sets the 'gdml_file_path' attribute for writing GDML datasets.
+        """
+
+        gdml_data_dir = utils.norm_path(gdml_data_dir)
+
+        if not hasattr(self, 'dataset_name'):
+            raise ValueError('There is no "dataset_name" attribute.')
+        
+        # Parsing information from the partition dataset_name.
+        partition_label, parent_cluster_label, \
+        md_temp, md_iter, _ = self.dataset_name.split('-')
+
+        # Preparing directories.
+        if self.system_info['system'] == 'solvent':
+            # /path/to/gdml-datasets/solventlabel/partitionsize/temp/iteration
+            gdml_solvent_dir = utils.norm_path(
+                gdml_data_dir + parent_cluster_label
+            )
+            gdml_partition_size_dir = utils.norm_path(
+                gdml_solvent_dir + str(self.system_info['cluster_size']) + 'mer'
+            )
+            gdml_temp_dir = utils.norm_path(
+                gdml_partition_size_dir + str(md_temp)
+            )
+            gdml_iter_dir = utils.norm_path(
+                gdml_temp_dir + str(md_iter)
+            )
+            all_dir = [gdml_solvent_dir, gdml_partition_size_dir,
+                       gdml_temp_dir, gdml_iter_dir]
+            for directory in all_dir:
+                try:
+                    os.chdir(directory)
+                except:
+                    os.mkdir(directory)
+                    os.chdir(directory)
+        
+        # Writing GDML file.
+        self.gdml_file_path = gdml_iter_dir + self.dataset_name
+
+
+    def add_mbgdml_info(self, base_vars):
+        """[summary]
+        
+        Args:
+            base_vars (dict): Custom data structure that contains all
+                information for a GDML dataset.
+        
+        Returns:
+            dict: An updated GDML dataset with additional information regarding
+                the system.
+        
+        Notes:
+            If the system is a solvent, the 'solvent' name and 'cluster_size'
+            is included.
+        """
+
+        if not hasattr(self, 'system_info'):
+            self.get_system_info(base_vars['z'].tolist())
+        
+        base_vars['system'] = self.system_info['system']
+        if base_vars['system'] is 'solvent':
+            base_vars['solvent'] = self.system_info['solvent_name']
+            base_vars['cluster_size'] = self.system_info['cluster_size']
+        
+        return base_vars
+
+
+    def partition_dataset_name(self, partition_label, cluster_label,
+                               md_temp, md_iter):
+        """Automates and standardizes partition datasets names.
+        
+        Args:
+            partition_label (str): Identifies what solvent molecules are in
+                the partition.
+            cluster_label (str): The label identifying the parent solvent
+                cluster of the partition.
+            md_temp (str): Set point temperautre for the MD thermostat.
+            md_iter (str): Identifies the iteration of the MD iteration.
+        """
+        
+        self.dataset_name =  '-'.join([
+            partition_label, cluster_label, md_temp, md_iter,
+            'dataset'
+        ])
+
+
+    def create_dataset(
+        self,
+        gdml_data_dir,
+        dataset_name,
+        atoms,
+        coords,
+        energies,
+        forces,
+        e_units,
+        e_units_calc,
+        r_units_calc,
+        theory='unknown',
+        gdml_r_units='Angstrom',
+        gdml_e_units='kcal/mol',
+        write=True
+    ):
+        """Creates and writes GDML dataset.
+        
+        Args:
+            gdml_data_dir (str): Path to common GDML dataset directory. This
+                is above the solvent direcotry.
+            dataset_name (str): The name to label the dataset.
+            atoms (np.ndarray): A (n,) array containing n atomic numbers.
+            coords (np.ndarray): A (m, n, 3) array containing the atomic
+                coordinates of n atoms of m MD steps.
+            energies (np.ndarray): A (m, n) array containing the energies of
+                n atoms of m MD steps. cclib stores these in the units of eV.
+            forces (np.ndarray): A (m, n, 3) array containing the atomic forces
+                of n atoms of m MD steps. Simply the negative of grads.
+            e_units (str): The energy units of the passed energies np.ndarray.
+            e_units_calc (str): The units of energies reported in the partition
+                calculation output file. This is used to converted energies and
+                forces. Options are 'eV', 'hartree', 'kcal/mol', and 'kJ/mol'.
+            r_units_calc (str): The units of the coordinates in the partition
+                calculation output file. This is only used convert forces if
+                needed. Options are 'Angstrom' or 'bohr'.
+            theory (str, optional): The level of theory and basis set used
+                for the partition calculations. For example, 'MP2.def2-TZVP.
+                Defaults to 'unknown'.
+            gdml_r_units (str, optional): Desired coordinate units for the GDML
+                dataset. Defaults to 'Angstrom'.
+            gdml_e_units (str, optional): Desired energy units for the GDML dataset.
+                Defaults to 'kcal/mol'.
+            write (bool, optional): Whether or not the dataset is written to
+                disk. Defaults to True.
+        """
+
+        # Preparing energies in e_units.
+        if e_units != gdml_e_units:
+            energies = []
+            for energy in energies:
+                energies.append(
+                    convertor(energy, e_units, gdml_e_units)
+                )
+            energies = np.array(energies)
+
+        # Converting forces.
+        # cclib does not convert gradients (or forces), this is where
+        # the energy and coordinates units come into play.
+        forces = forces * (convertor(1, e_units_calc, gdml_e_units) \
+                           / convertor(1, r_units_calc, gdml_r_units))
+
+        if not hasattr(self, 'system_info'):
+            self.get_system_info(atoms.tolist())
+
+        # sGDML variables.
+        base_vars = {
+            'type': 'd',  # Designates dataset or model.
+            'code_version': __version__,  # sGDML version.
+            'name': dataset_name,  # Name of the output file.
+            'theory': theory,  # Theory used to calculate the data.
+            'z': atoms,  # Atomic numbers of all atoms in system.
+            'R': coords,  # Cartesian coordinates.
+            'r_unit': gdml_r_units,  # Units for coordinates.
+            'E': energies,  # Energy of the structure.
+            'e_unit': gdml_e_units,  # Units of energy.
+            'E_min': np.min(energies.ravel()),  # Energy minimum.
+            'E_max': np.max(energies.ravel()),  # Energy maximum.
+            'E_mean': np.mean(energies.ravel()),  # Energy mean.
+            'E_var': np.var(energies.ravel()),  # Energy variance.
+            'F': forces,  # Atomic forces for each atom.
+            'F_min': np.min(forces.ravel()),  # Force minimum.
+            'F_max': np.max(forces.ravel()),  # Force maximum.
+            'F_mean': np.mean(forces.ravel()),  # Force mean.
+            'F_var': np.var(forces.ravel())  # Force variance.
+        }
+
+        # mbGDML variables.
+        base_vars = self.add_mbgdml_info(base_vars)
+
+        base_vars['md5'] = sgdml_io.dataset_md5(base_vars)
+        self.dataset = base_vars
+
+        # Writes dataset.
+        if write:
+            self._organization_dirs(gdml_data_dir)
+            dataset_path = self.gdml_file_path + '.npz'
+            np.savez_compressed(dataset_path, **base_vars)
+
 
 class PartitionCalcOutput():
     """Quantum chemistry output file for all MD steps of a single partition.
@@ -52,9 +264,10 @@ class PartitionCalcOutput():
             partition.
         output_name (str): The name of the quantum chemistry output file
             (no extension).
-        cluster (str): The label identifying the partition of the MD trajectory.
+        cluster (str): The label identifying the parent solvent cluster of
+            the partition.
         temp (str): Set point temperautre for the MD thermostat.
-        iter (int): Identifies the iteration of the MD iteration.
+        iter (str): Identifies the iteration of the MD iteration.
         partition (str): Identifies what solvent molecules are in the partition.
         partition_size (int): The number of solvent molecules in the partition.
         cclib_data (obj): Contains all data parsed from output file.
@@ -80,7 +293,7 @@ class PartitionCalcOutput():
         self._get_label_info()
         self.cclib_data = ccread(self.output_file)
         self._get_gdml_data()
-        self._get_solvent_info()
+        self.system_info = solvents.system_info(self.atoms.tolist())
     
     def _get_label_info(self):
         """Gets info from output file name.
@@ -98,22 +311,9 @@ class PartitionCalcOutput():
         split_label = self.output_name.split('-')
         self.cluster = str(split_label[1])
         self.temp = str(split_label[2])
-        self.iter = int(split_label[3])
+        self.iter = str(split_label[3])
         self.partition = str(split_label[4].split('.')[0])
         self.partition_size = int(len(self.partition))
-    
-    def _get_solvent_info(self):
-        """Adds solvent information to object.
-        """
-        solvent_info = solvent(self.atoms.tolist())
-        self.system = solvent_info.system
-        if self.system is 'solvent':
-            self.solvent_info = {
-                'solvent_name': solvent_info.solvent_name,
-                'solvent_label': solvent_info.solvent_label,
-                'solvent_molec_size': solvent_info.solvent_molec_size,
-                'cluster_size': solvent_info.cluster_size
-            }
 
     
     def _get_gdml_data(self):
@@ -133,136 +333,14 @@ class PartitionCalcOutput():
         except:
             print('Something happened while parsing output file.')
             print('Please check ' + str(self.output_name) + ' output file.')
-    
-    def _organization_dirs(self, gdml_data_dir):
-        """Determines where a dataset should be saved.
-
-        The dataset will be written in a directory that depends on the
-        solvent (e.g. MeOH), partition size (e.g., dimer), MD temperature
-        (e.g. 300K), and MD iteration (e.g. 1).
         
-        Args:
-            gdml_data_dir (str): Path to a common directory for GDML datasets.
-
-        Notes:
-            Sets the 'gdml_file_path' attribute for writing GDML datasets.
-        """
-
-        gdml_data_dir = utils.norm_path(gdml_data_dir)
-
-        # Preparing directories.
-        # /path/to/gdml-datasets/solventlabel/partitionsize/temp/iteration
-        gdml_solvent = self.solvent_info['solvent_label']
-        gdml_solvent_dir = utils.norm_path(
-            gdml_data_dir + gdml_solvent
-        )
-        gdml_partition_size_dir = utils.norm_path(
-            gdml_solvent_dir + str(self.partition_size) + 'mer'
-        )
-        gdml_temp_dir = utils.norm_path(
-            gdml_partition_size_dir + str(self.temp)
-        )
-        gdml_iter_dir = utils.norm_path(
-            gdml_temp_dir + str(self.iter)
-        )
-        all_dir = [gdml_solvent_dir, gdml_partition_size_dir, gdml_temp_dir,
-                   gdml_iter_dir]
-        for directory in all_dir:
-            try:
-                os.chdir(directory)
-            except:
-                os.mkdir(directory)
-                os.chdir(directory)
-        
-        # Writing GDML file.
-        self.gdml_file_path = gdml_iter_dir + self.partition \
-                              + '-' + self.cluster \
-                              + '-' + self.temp \
-                              + '-' + str(self.iter) \
-                              + '-dataset'
-
-
-    def create_dataset(self, gdml_dataset_dir, r_units_calc, e_units_calc,
-                       theory='unknown', r_units='Angstrom',
-                       e_units='kcal/mol', write=True):
-        """Creates and writes GDML dataset.
-        
-        Args:
-            gdml_dataset_dir (str): Path to common GDML dataset directory. This
-                is above the solvent direcotry.
-            r_units_calc (str): The units of the coordinates in the partition
-                calculation output file. This is only used convert forces if
-                needed. Options are 'Angstrom' or 'bohr'.
-            e_units_calc (str): The units of energies reported in the partition
-                calculation output file. This is used to converted energies and
-                forces. Options are 'eV', 'hartree', 'kcal/mol', and 'kJ/mol'.
-            theory (str, optional): The level of theory and basis set used
-                for the partition calculations. Defaults to 'unknown'.
-            r_units (str, optional): Desired coordinate units for the GDML
-                dataset. Defaults to 'Angstrom'.
-            e_units (str, optional): Desired energy units for the GDML dataset.
-                Defaults to 'kcal/mol'.
-            write (bool, optional): Whether or not the dataset is written to
-                disk. Defaults to True.
-        """
-
-        # Preparing energies in e_units.
-        # Note, cclib stores energies in eV.
+        # Reformats energies.
         energies = []
         for energy in self.energies:
-            energies.append(convertor(energy[0], 'eV', e_units))
-        energies = np.array(energies)
+            energies.append(convertor(energy[0], 'eV', 'kcal/mol'))
+        self.energies = np.array(energies)
+        self.energy_units = 'kcal/mol'
 
-        # Converting forces.
-        # cclib does not convert gradients (or forces), this is where
-        # the energy and coordinates units come into play.
-        forces = self.forces * (convertor(1, e_units_calc, e_units) \
-                                / convertor(1, r_units_calc, r_units))
-
-        # Preparing dataset name.
-        dataset_name = self.partition \
-                       + '-' + self.cluster \
-                       + '-' + self.temp \
-                       + '-' + str(self.iter) \
-                       + '-dataset'
-
-        # sGDML variables.
-        base_vars = {
-            'type': 'd',  # Designates dataset or model.
-            'code_version': __version__,  # sGDML version.
-            'name': dataset_name,  # Name of the output file.
-            'theory': theory,  # Theory used to calculate the data.
-            'z': self.atoms,  # Atomic numbers of all atoms in system.
-            'R': self.coords,  # Cartesian coordinates.
-            'r_unit': r_units,  # Units for coordinates.
-            'E': energies,  # Energy of the structure.
-            'e_unit': e_units,  # Units of energy.
-            'E_min': np.min(energies.ravel()),  # Energy minimum.
-            'E_max': np.max(energies.ravel()),  # Energy maximum.
-            'E_mean': np.mean(energies.ravel()),  # Energy mean.
-            'E_var': np.var(energies.ravel()),  # Energy variance.
-            'F': forces,  # Atomic forces for each atom.
-            'F_min': np.min(forces.ravel()),  # Force minimum.
-            'F_max': np.max(forces.ravel()),  # Force maximum.
-            'F_mean': np.mean(forces.ravel()),  # Force mean.
-            'F_var': np.var(forces.ravel())  # Force variance.
-        }
-
-        # mbGDML variables.
-        if self.system is 'solvent':
-            base_vars['system'] = 'solvent'
-            base_vars['solvent'] = self.solvent_info['solvent_name']
-            base_vars['cluster_size'] = self.solvent_info['cluster_size']
-
-        base_vars['md5'] = sgdml_io.dataset_md5(base_vars)
-        self.dataset = base_vars
-
-        # Writes dataset.
-        if write:
-            self._organization_dirs(gdml_dataset_dir)
-            dataset_path = self.gdml_file_path + '.npz'
-            np.savez_compressed(dataset_path, **base_vars)
-        
 
 def create_datasets(calc_output_dir, dataset_dir, r_units_calc, e_units_calc,
                     theory='unknown', r_units='Angstrom', e_units='kcal/mol'):
@@ -287,10 +365,26 @@ def create_datasets(calc_output_dir, dataset_dir, r_units_calc, e_units_calc,
 
     for out_file in all_out_files:
         print('Writing GDML dataset for ' + out_file.split('/')[-1] + ' ...')
-        calc = PartitionCalcOutput(out_file)
-        calc.create_dataset(dataset_dir, r_units_calc, e_units_calc,
-                            theory=theory, r_units=r_units,
-                            e_units=e_units)
+        partition_calc = PartitionCalcOutput(out_file)
+        dataset = MBGDMLDataset()
+        dataset.partition_dataset_name(
+            partition_calc.partition,
+            partition_calc.cluster,
+            partition_calc.temp,
+            partition_calc.iter,
+        )
+        dataset.create_dataset(
+            dataset_dir,
+            dataset.dataset_name,
+            partition_calc.atoms,
+            partition_calc.coords,
+            partition_calc.energies,
+            partition_calc.forces,
+            'kcal/mol',
+            'hartree',
+            'bohr',
+            theory='MP2.def2-TZVP',
+        )
 
 
 def combine_datasets(partition_dir, write_dir):
