@@ -175,92 +175,29 @@ class solvent():
             print('The solvent could not be identified.')
 
 
-solvent_atoms_old = {
-    'water': {'H': 2, 'O': 1},
-    'methanol': {'C': 1, 'H': 4, 'O': 1},
-    'acetonitrile': {'C': 2, 'H': 3, 'N': 1}
-}
-
-solvent_size_old ={
-    'water': 3,
-    'methanol': 6,
-    'acetonitrile': 6
-}
-
-solvent_labels_old ={
-    'water': 'H2O',
-    'methanol': 'MeOH',
-    'acetonitrile': 'acn'
-}
-
-def identify_solvent(atom_list):
-    """Identifies the solvent from a repeated list of elements from an xyz file.
+def system_info(atoms):
+    """Determines information about the system key to mbGDML.
     
     Args:
-        atom_list (lst): List of elements as strings. Elements should be
-            repeated. For example, ['H', 'H', 'O', 'O', 'H', 'H']. Note that
-            the order does not matter; only the quantity.
+        atoms (list): Atomic numbers of all atoms in the system.
     
     Returns:
-        dict: Contains 'solvent', 'label', 'solvent_size_old', and
-                'cluster_size'.
+        dict: System information useful for mbGDML. Information includes
+            'system' which categorizes the system and provides specific
+            information.
+    
+    Notes:
+        For a 'solvent' system the additional information returned is the
+        'solvent_name', 'solvent_label', 'solvent_molec_size', and
+        'cluster_size'.
     """
-
-    # Converts atoms identified by their atomic number into element symbols
-    # for human redability.
-    atom_list_elements = []
-    for atom in atom_list:
-        atom_list_elements.append(str(elements[atom]))
-    atom_list = atom_list_elements
-
-    # Determines quantity of each element in atom list.
-    # Example: {'H': 4, 'O': 2}
-    atom_num = {}
-    for atom in atom_list:
-        if atom in atom_num.keys():
-            atom_num[atom] += 1
-        else:
-            atom_num[atom] = 1
     
-    # Identifies solvent by comparing multiples of element numbers for each
-    # solvent in solvent_atoms_old dictionary. Note, this does not differentiate
-    # between isomers or compounds with the same chemical formula.
-    # Loops through available solvents and solvent_atoms_old.
-    for solvent in solvent_atoms_old:
-
-        # Number of elements in atom_list should equal that of the solvent.
-        if len(atom_num) == len(solvent_atoms_old[solvent]):
-
-            # Tests all criteria to identify solvent. If this fails, it moves
-            # onto the next solvent. If all of them fail, it raises an error.
-            try:
-                # Checks that the number of atoms is a multiple of the solvent.
-                # Also checks that the multiples of all the atoms are the same.
-                solvent_numbers = []
-
-                # Checks that atoms are multiples of a solvent.
-                for atom in solvent_atoms_old[solvent]:
-                    multiple = atom_num[atom] / solvent_atoms_old[solvent][atom]
-                    if multiple.is_integer():
-                        solvent_numbers.append(multiple)
-                    else:
-                        raise ValueError
-
-                # Checks that all multiples are the same.
-                test_multiple = solvent_numbers[0]
-                for multiple in solvent_numbers:
-                    if multiple != test_multiple:
-                        raise ValueError
-                
-                return {
-                    'solvent': solvent,
-                    'solvent_label': solvent_labels_old[solvent],
-                    'solvent_size': solvent_size_old[solvent],
-                    'cluster_size': int(atom_num[atom] \
-                                         / solvent_atoms_old[solvent][atom])
-                }
-            except:
-                pass
+    system_info = solvent(atoms)
+    system_info_dict = {'system': system_info.system}
+    if system_info_dict['system'] is 'solvent':
+        system_info_dict['solvent_name'] = system_info.solvent_name
+        system_info_dict['solvent_label'] = system_info.solvent_label
+        system_info_dict['solvent_molec_size'] = system_info.solvent_molec_size
+        system_info_dict['cluster_size'] = system_info.cluster_size
     
-    print('The solvent could not be identified.')
-    raise ValueError
+    return system_info_dict
