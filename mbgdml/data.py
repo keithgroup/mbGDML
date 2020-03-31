@@ -30,12 +30,13 @@ from sgdml.utils import io as sgdml_io
 from mbgdml import utils
 import mbgdml.solvents as solvents
 
+# Modifying np.load to 
 
-class MBGDMLDataset():
+class _mbGDMLData():
 
     def __init__(self):
         pass
-    
+
     def get_system_info(self, atoms):
         """Describes the dataset system.
         
@@ -44,6 +45,69 @@ class MBGDMLDataset():
                 are repeated; for example, water is ['H', 'H', 'O'].
         """
         self.system_info = solvents.system_info(atoms)
+    
+    def add_system_info(self, base_vars):
+        """Adds information about the system to the model.
+        
+        Args:
+            base_vars (dict): Custom data structure that contains all
+                information for a GDML dataset.
+        
+        Returns:
+            dict: An updated GDML dataset with additional information regarding
+                the system.
+        
+        Notes:
+            If the system is a solvent, the 'solvent' name and 'cluster_size'
+            is included.
+        """
+
+        if not hasattr(self, 'system_info'):
+            self.get_system_info(base_vars['z'].tolist())
+        
+        base_vars['system'] = self.system_info['system']
+        if base_vars['system'] is 'solvent':
+            base_vars['solvent'] = self.system_info['solvent_name']
+            base_vars['cluster_size'] = self.system_info['cluster_size']
+        
+        return base_vars
+
+    def save(self, name, base_vars, save_dir, dataset):
+        save_dir = utils.norm_path(save_dir)
+        if dataset:
+            base_vars['md5'] = sgdml_io.dataset_md5(base_vars)
+        save_path = save_dir + name + '.npz'
+        np.savez_compressed(save_path, **base_vars)
+
+class mbGDMLModel(_mbGDMLData):
+    
+    def __init__(self):
+        pass
+
+    def load_model(self, model_path):
+        self.model = np.load(model_path, allow_pickle=True)
+        self.base_vars = dict(self.model)
+    
+    def get_model_name(self, log_file):
+
+        for line in reversed(list(open(log_file))):
+            if 'This is your model file' in line:
+                self.name = line.split(':')[-1][2:-6]
+                break
+    
+    def add_manybody_info(self, mb_order, base_vars):
+        self.base_vars['mb'] = mb_order
+        
+        
+        
+
+
+
+class mbGDMLDataset(_mbGDMLData):
+
+    def __init__(self):
+        pass
+    
 
     def _organization_dirs(
         self,
@@ -66,7 +130,7 @@ class MBGDMLDataset():
         gdml_data_dir = utils.norm_path(gdml_data_dir)
 
         if not hasattr(self, 'dataset_name'):
-            raise ValueError('There is no "dataset_name" attribute.')
+            raise AttributeError('There is no "dataset_name" attribute.')
         
         # Parsing information from the partition dataset_name.
         partition_label, parent_cluster_label, \
@@ -98,33 +162,6 @@ class MBGDMLDataset():
         
         # Writing GDML file.
         self.gdml_file_path = gdml_iter_dir + self.dataset_name
-
-
-    def add_mbgdml_info(self, base_vars):
-        """[summary]
-        
-        Args:
-            base_vars (dict): Custom data structure that contains all
-                information for a GDML dataset.
-        
-        Returns:
-            dict: An updated GDML dataset with additional information regarding
-                the system.
-        
-        Notes:
-            If the system is a solvent, the 'solvent' name and 'cluster_size'
-            is included.
-        """
-
-        if not hasattr(self, 'system_info'):
-            self.get_system_info(base_vars['z'].tolist())
-        
-        base_vars['system'] = self.system_info['system']
-        if base_vars['system'] is 'solvent':
-            base_vars['solvent'] = self.system_info['solvent_name']
-            base_vars['cluster_size'] = self.system_info['cluster_size']
-        
-        return base_vars
 
 
     def partition_dataset_name(self, partition_label, cluster_label,
@@ -234,7 +271,7 @@ class MBGDMLDataset():
         }
 
         # mbGDML variables.
-        base_vars = self.add_mbgdml_info(base_vars)
+        base_vars = self.add_system_info(base_vars)
 
         base_vars['md5'] = sgdml_io.dataset_md5(base_vars)
         self.dataset = base_vars
@@ -246,7 +283,7 @@ class MBGDMLDataset():
             np.savez_compressed(dataset_path, **base_vars)
 
 
-class PartitionCalcOutput():
+class PartitionCalcOutput:
     """Quantum chemistry output file for all MD steps of a single partition.
 
     Output file that contains electronic energies and gradients of the same
@@ -366,7 +403,7 @@ def create_datasets(calc_output_dir, dataset_dir, r_units_calc, e_units_calc,
     for out_file in all_out_files:
         print('Writing GDML dataset for ' + out_file.split('/')[-1] + ' ...')
         partition_calc = PartitionCalcOutput(out_file)
-        dataset = MBGDMLDataset()
+        dataset = mbGDMLDataset()
         dataset.partition_dataset_name(
             partition_calc.partition,
             partition_calc.cluster,
