@@ -38,28 +38,15 @@ from mbgdml import utils
 from mbgdml.solvents import solvent
 from mbgdml.data import PartitionCalcOutput
 
-gdml_partition_size_names = [
-    'monomer', 'dimer', 'trimer', 'tetramer', 'pentamer'
-]
-
 class MBGDMLTrain():
     """[summary]
 
     Attributes:
     """
 
-    def __init__(self, dataset_dir, model_dir):
-        self.dataset_dir = utils.norm_path(dataset_dir)
+    def __init__(self, dataset_path, model_dir):
+        self.dataset_path = dataset_path
         self.model_dir = utils.norm_path(model_dir)
-        self.get_datasets()
-    
-    def get_datasets(self):
-        """Finds all datasets with '.npz' extension in dataset directory.
-        """
-        self.dataset_paths = utils.get_files(self.dataset_dir, '.npz')
-        # TODO load each dataset and change dataset_paths to all_datasets
-        # as dict and add keys as partition size, values as path, fingerprint,
-        # dataset size, etc.
     
     def load_dataset(self, dataset_path):
         """Loads a GDML dataset from npz format from specified path.
@@ -87,7 +74,7 @@ class MBGDMLTrain():
             sigma_range (str, optional): Range of kernel length scales to train
                 and validate GDML values one. Format is
                 '<start>:<interval>:<stop>'. Note, the more length scales the
-                longer the training time.
+                longer the training time. Two is the minimum value.
         """
         # TODO add remaining options for CLI sGDML as optional arguments.
         
@@ -101,8 +88,6 @@ class MBGDMLTrain():
             os.makedirs(save_dir)
         os.chdir(save_dir)
 
-        # Executing GDMLTrain via command line interface.
-        # TODO look into switching to python interface
         sGDML_command = [
             'sgdml', 'all',
             str(dataset_path),
@@ -119,6 +104,6 @@ class MBGDMLTrain():
 
         # Adding input information to log file
         with open(log_name, 'a') as log:
-            log.write('\n\n The following input was used for this file:')
+            log.write('\n\n The following command was used for this file: ')
             log.write(' '.join(sGDML_command))
 
