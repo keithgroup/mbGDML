@@ -75,8 +75,18 @@ class mbGDMLPredict():
         # Removing all n-body contributions for every configuration.
         gdml = GDMLPredict(nbody_model)
         for config in range(num_config):
-            for comb in nbody_combinations:
 
+            '''
+            # DEBUG START
+            if config > 380 and config < 385:
+                o_energy = base_vars['E'][config][()]
+                o_forces = base_vars['F'][config]
+                print(f'\n\n-----Configuration {config}-----')
+                print(f'Original Energy: {o_energy} kcal/mol')
+                print(f'Original Forces:\n{o_forces}')
+            # DEBUG END
+            '''
+            for comb in nbody_combinations:
                 # Gets indices of all atoms in the
                 # n-body combination of molecules.
                 atoms = []
@@ -84,12 +94,32 @@ class mbGDMLPredict():
                     atoms += list(range(
                         molecule * molecule_size, (molecule + 1) * molecule_size
                     ))
-                
+                '''
+                o_energy = E[config][()]
+                o_forces = F[config, atoms]
+                '''
                 # Removes n-body contributions prediced from nbody_model
                 # from the dataset.
                 e, f = gdml.predict(R[config, atoms].flatten())
                 F[config, atoms] -= f.reshape(len(atoms), 3)
                 E[config] -= e
+
+                '''
+                # DEBUG
+                if config > 380 and config < 385:
+                    print(f'\nMolecule combination: {comb}')
+                    print(f'Atoms: {atoms}')
+
+                    print(f'Original energy: {o_energy}')
+                    print(f'Predicted energy: {e[0]}')
+                    print(f'New energy: {E[config]}')
+
+                    print(f'Original forces:\n{o_forces}')
+                    print(f'Predicted forces:\n{f.reshape(len(atoms), 3)}')
+                    print(f'New forces:\n{F[config, atoms]}')
+                # DEBUG END
+                '''
+
         
         # Updates dataset.
         base_vars['E'] = E
