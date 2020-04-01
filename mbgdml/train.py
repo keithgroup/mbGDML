@@ -135,12 +135,12 @@ class MBGDMLTrain():
             log.write('\n\n The following command was used for this file: ')
             log.write(' '.join(sGDML_command))
             log.write('\n Note, the model name will have "model" instead')
-            log.write('of "dataset".')
+            log.write(' of "dataset".')
         
         # Adding additional mbGDML info to the model.
         model = mbGDMLModel()
         model.get_model_name(log_name)
-        model.load_model(model.name + '.npz')
+        model.load(model.name + '.npz')
         os.remove(model.name + '.npz')
 
         # Changing model name.
@@ -151,7 +151,7 @@ class MBGDMLTrain():
 
         # Adding many-body information if present in dataset.
         if 'mb' in self.dataset.keys():
-            model.add_manybody_info(int(self.dataset.f.mb_order[()]))
+            model.add_manybody_info(int(self.dataset.f.mb[()]))
 
         # Saving model.
         model.save(model.name, model.base_vars, self.model_dir, False)
