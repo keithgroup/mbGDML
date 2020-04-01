@@ -20,21 +20,20 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import itertools
+
 import numpy as np
+from sgdml.predict import GDMLPredict
+import mbgdml.solvents as solvents
 
-from sgdml import predict
+class mbGDMLPredict():
 
-class MBGDMLPredict():
-
-    def __init__(self, model_path, dataset_path):
-        self.model_path = model_path
-        self.dataset_path = dataset_path
+    def __init__(self):
+        pass
 
 
-    def remove_nbody_contributions(
-        self, raw_dataset, nbody_model
-    ):
-        """Creates new GDML dataset with GDML predicted n-body predictions
+    def remove_nbody(self, base_vars, nbody_model):
+        """Updates GDML dataset with GDML predicted n-body predictions
         removed.
 
         To employ the many body expansion, we need GDML models that predict
@@ -42,7 +41,87 @@ class MBGDMLPredict():
         for training an (n+1)-body mbGDML model.
 
         Args:
-            raw_dataset (dict): GDML dataset containing n-body
+            base_vars (dict): GDML dataset converted to a dict containing n-body
                 contributions to be removed.
-            nbody_model (dict): GDML model that predicts n-body contributions.
+            nbody_model (np.NpzFile): Loaded mbGDML model that predicts n-body
+                contributions.
         """
+
+        # Assinging variables from dataset to be updated or used.
+        z = base_vars['z']
+        R = base_vars['R']
+        E = base_vars['E']
+        F = base_vars['F']
+
+        # Getting information from the dataset.
+        num_config = R.shape[0]
+
+        # Getting system information from dataset and model.
+        system = str(base_vars['system'][()])
+
+        if system == 'solvent':
+            dataset_info = solvents.system_info(z.tolist())
+            model_info = solvents.system_info(nbody_model.f.z.tolist())
+        
+        system_size = dataset_info['cluster_size']
+        nbody_order = model_info['cluster_size']
+        molecule_size = model_info['solvent_molec_size']
+        
+        # Getting list of n-body combinations.
+        nbody_combinations = list(
+            itertools.combinations(list(range(0, system_size)), nbody_order)
+        )
+
+        # Removing all n-body contributions for every configuration.
+        gdml = GDMLPredict(nbody_model)
+        for config in range(num_config):
+            for comb in nbody_combinations:
+
+                # Gets indices of all atoms in the
+                # n-body combination of molecules.
+                atoms = []
+                for molecule in comb:
+                    atoms += list(range(
+                        molecule * molecule_size, (molecule + 1) * molecule_size
+                    ))
+                
+                # Removes n-body contributions prediced from nbody_model
+                # from the dataset.
+                e, f = gdml.predict(R[config, atoms].flatten())
+                F[config, atoms] -= f.reshape(len(atoms), 3)
+                E[config] -= e
+        
+        # Updates dataset.
+        base_vars['E'] = E
+        base_vars['E_min'] = np.min(E.ravel())
+        base_vars['E_max'] = np.max(E.ravel())
+        base_vars['E_mean'] = np.mean(E.ravel())
+        base_vars['E_var'] = np.var(E.ravel())
+        base_vars['F'] = F
+        base_vars['F_min'] = np.min(F.ravel())
+        base_vars['F_max'] = np.max(F.ravel())
+        base_vars['F_mean'] = np.mean(F.ravel())
+        base_vars['F_var'] = np.var(F.ravel())
+
+        if 'mb' in base_vars.keys():
+            if type(base_vars['mb']) is not int:
+                o_mb = base_vars['mb'][()]
+            else:
+                o_mb = base_vars['mb']
+            n_nb = int(nbody_order) + 1
+            if o_mb > n_nb:
+                mb = o_mb
+            else:
+                mb = n_nb
+            base_vars['mb'] = mb
+        else:
+            base_vars['mb'] = int(nbody_order + 1)
+
+        cluster_label = str(base_vars['name'][()]).split('-')[0]
+
+        nbody_label = str(base_vars['mb']) + 'body'
+
+        name = '-'.join([cluster_label, nbody_label, 'dataset'])
+        base_vars['name'][()] = name
+
+        return base_vars
