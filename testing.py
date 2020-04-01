@@ -16,7 +16,7 @@ mbgdml.data.combine_datasets(
 )
 '''
 
-
+'''
 train_num = 300
 validate_num = 300
 test_num = 300
@@ -27,41 +27,32 @@ test.train_GDML(
     '/home/alex/Dropbox/keith/projects/mbgdml/data/models/',
     train_num, validate_num, test_num, sigma_range
 )
+'''
 
+
+# Info from here on out.
+solvent_label = '4H2O'  # ***
+nbody = 4  # ***
+
+dataset_dir = f'/home/alex/Dropbox/keith/projects/mbgdml/data/datasets/{solvent_label}/'
+dataset_path = f'{dataset_dir}{solvent_label}-{str(nbody)}mer-dataset.npz'
+models_dir = '/home/alex/Dropbox/keith/projects/mbgdml/data/models/'
+solvent_model_dir = f'{models_dir}{solvent_label}/'
 
 '''
-test_dataset = mbgdml.data.mbGDMLDataset()
-test_dataset.load('/home/alex/Dropbox/keith/projects/mbgdml/data/datasets/4H2O/4H2O-4mer-dataset.npz') #####
-
-test_model1 = mbgdml.data.mbGDMLModel()
-test_model1.load('/home/alex/Dropbox/keith/projects/mbgdml/data/models/4H2O/4H2O-1mer-model-MP2.def2-TZVP-train300-sym2.npz') #####
-test_dataset.mb_dataset(test_model1.model)
-
-test_model2 = mbgdml.data.mbGDMLModel()
-test_model2.load('/home/alex/Dropbox/keith/projects/mbgdml/data/models/4H2O/4H2O-2body-model-MP2.def2-TZVP-train300-sym8.npz') #####
-test_dataset.mb_dataset(test_model2.model)
-
-test_model3 = mbgdml.data.mbGDMLModel()
-test_model3.load('/home/alex/Dropbox/keith/projects/mbgdml/data/models/4H2O/4H2O-3mer-model-MP2.def2-TZVP-train300-sym48.npz') #####
-test_dataset.mb_dataset(test_model3.model)
-
-#test_model4 = mbgdml.data.mbGDMLModel()
-#test_model4.load('/home/alex/Dropbox/keith/projects/mbgdml/data/models/4H2O/4H2O-2body-model-MP2.def2-TZVP-train300-sym8.npz') #####
-#test_dataset.mb_dataset(test_model4.model)
+# Creates a new mbGDML dataset.
+dataset = mbgdml.data.mbGDMLDataset()
+dataset.load(dataset_path)
+dataset.mb_dataset(nbody, solvent_model_dir)
+dataset.save(dataset.base_vars['name'][()], dataset.base_vars, dataset_dir, True)
 '''
-'''
-test_dataset.save(test_dataset.base_vars['name'][()], test_dataset.base_vars,
-                  '/home/alex/Dropbox/keith/projects/mbgdml/data/datasets/4H2O', True) #####
-'''
-'''
+
+# Training the new mbGDML model.
+mb_dataset_path = f'{dataset_dir}{solvent_label}-{nbody}body-dataset.npz'
 train_num = 300
 validate_num = 300
 test_num = 300
-sigma_range = '2:10:100'  # Original is 2:10:100
+sigma_range = '80:10:200'  # Original is 2:10:100
 test = mbgdml.train.MBGDMLTrain()
-test.load_dataset('/home/alex/Dropbox/keith/projects/mbgdml/data/datasets/4H2O/4H2O-4body-dataset.npz') #####
-test.train_GDML(
-    '/home/alex/Dropbox/keith/projects/mbgdml/data/models/',
-    train_num, validate_num, test_num, sigma_range
-)
-'''
+test.load_dataset(mb_dataset_path)
+test.train_GDML(models_dir, train_num, validate_num, test_num, sigma_range)

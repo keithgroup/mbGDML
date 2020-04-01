@@ -312,14 +312,43 @@ class mbGDMLDataset(_mbGDMLData):
             dataset_path = self.gdml_file_path + '.npz'
             np.savez_compressed(dataset_path, **base_vars)
     
-    def mb_dataset(self, nbody_model):
+    def mb_dataset(self, nbody, models_dir):
         
         if not hasattr(self, 'base_vars'):
             raise AttributeError('Please load a dataset first.')
-        mbgdml = mbGDMLPredict()
-        self.base_vars = mbgdml.remove_nbody(self.base_vars, nbody_model)
 
-        # Removes old dataset
+        nbody_index = 1
+        while nbody_index < nbody:
+
+            # Gets model.
+            if nbody_index == 1:
+                model_paths = utils.get_files(models_dir, '-1mer-')
+            else:
+                search_string = ''.join(['-', str(nbody_index), 'body-'])
+                model_paths = utils.get_files(models_dir, search_string)
+
+            # Removes logs that are found as well.
+            model_paths = [path for path in model_paths if '.npz' in path]
+
+            if len(model_paths) == 1:
+                model_path = model_paths[0]
+            else:
+                raise ValueError(
+                    f'There seems to be multiple {nbody_index}body models.'
+                )
+            
+            # Removes n-body contributions.
+            print(f'Removing {nbody_index}body contributions ...')
+            nbody_model = mbGDMLModel()
+            nbody_model.load(model_path)
+            predict = mbGDMLPredict()
+            self.base_vars = predict.remove_nbody(
+                self.base_vars, nbody_model.model
+            )
+
+            nbody_index += 1
+
+        # Removes old dataset attribute.
         if hasattr(self, 'dataset'):
             delattr(self, 'dataset')
 
