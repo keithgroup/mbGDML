@@ -29,6 +29,7 @@ from sgdml import __version__
 from sgdml.utils import io as sgdml_io
 from mbgdml import utils
 import mbgdml.solvents as solvents
+from mbgdml.predict import mbGDMLPredict
 
 class _mbGDMLData():
 
@@ -93,7 +94,7 @@ class mbGDMLModel(_mbGDMLData):
     def __init__(self):
         pass
 
-    def load_model(self, model_path):
+    def load(self, model_path):
         """Loads GDML model.
         
         Args:
@@ -118,17 +119,14 @@ class mbGDMLModel(_mbGDMLData):
         """Adds many-body (mb) information to GDML model.
         
         Args:
-            mb_order (int): The order of many-body 'corrections' or expansion.
+            mb_order (int): The max order of many-body predictions removed
+                from the dataset.
         """
         if not hasattr(self, 'base_vars'):
             raise AttributeError('There is no model loaded.')
 
         self.base_vars['mb'] = mb_order
         
-        
-        
-
-
 
 class mbGDMLDataset(_mbGDMLData):
 
@@ -189,6 +187,11 @@ class mbGDMLDataset(_mbGDMLData):
         
         # Writing GDML file.
         self.gdml_file_path = gdml_iter_dir + self.dataset_name
+
+    
+    def load(self, dataset_path):
+        self.dataset = np.load(dataset_path)
+        self.base_vars = dict(self.dataset)
 
 
     def partition_dataset_name(self, partition_label, cluster_label,
@@ -301,13 +304,26 @@ class mbGDMLDataset(_mbGDMLData):
         base_vars = self.add_system_info(base_vars)
 
         base_vars['md5'] = sgdml_io.dataset_md5(base_vars)
-        self.dataset = base_vars
+        self.base_vars = base_vars
 
         # Writes dataset.
         if write:
             self._organization_dirs(gdml_data_dir)
             dataset_path = self.gdml_file_path + '.npz'
             np.savez_compressed(dataset_path, **base_vars)
+    
+    def mb_dataset(self, nbody_model):
+        
+        if not hasattr(self, 'base_vars'):
+            raise AttributeError('Please load a dataset first.')
+        mbgdml = mbGDMLPredict()
+        self.base_vars = mbgdml.remove_nbody(self.base_vars, nbody_model)
+
+        # Removes old dataset
+        if hasattr(self, 'dataset'):
+            delattr(self, 'dataset')
+
+
 
 
 class PartitionCalcOutput:
