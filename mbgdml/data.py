@@ -312,6 +312,22 @@ class mbGDMLDataset(_mbGDMLData):
             dataset_path = self.gdml_file_path + '.npz'
             np.savez_compressed(dataset_path, **base_vars)
     
+    def print(self):
+
+        if not hasattr(self, 'base_vars'):
+            raise AttributeError('Please load a dataset first.')
+        
+        R = self.base_vars['R']
+        E = self.base_vars['E']
+        F = self.base_vars['F']
+
+        num_config = R.shape[0]
+        for config in range(num_config):
+            print(f'-----Configuration {config}-----')
+            print(f'Energy: {E[config][()]} kcal/mol')
+            print(f'Forces:\n{F[config]}')
+
+    
     def mb_dataset(self, nbody, models_dir):
         
         if not hasattr(self, 'base_vars'):
