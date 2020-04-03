@@ -359,7 +359,7 @@ class mbGDMLDataset(_mbGDMLData):
             nbody_model.load(model_path)
             predict = mbGDMLPredict()
             self.base_vars = predict.remove_nbody(
-                self.base_vars, nbody_model.model
+                self.dataset, nbody_model.model
             )
 
             nbody_index += 1
