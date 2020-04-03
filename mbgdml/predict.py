@@ -32,7 +32,50 @@ class mbGDMLPredict():
         pass
 
 
-    def remove_nbody(self, base_vars, nbody_model):
+    def predict(self, z, R, mb_gdml):
+        
+        # Gets system information from dataset.
+        # This assumes the system is only solvent.
+        dataset_info = solvents.system_info(z.tolist())
+        system_size = dataset_info['cluster_size']
+        molecule_size = dataset_info['solvent_molec_size']
+
+        # Sets up arrays for storing predicted energies and forces.
+        F = np.zeros(R.shape)
+        E = 0.0
+
+        # Adds contributions from all models.
+        for gdml in mb_gdml:
+            
+            model_atoms = int(gdml.n_atoms)
+            nbody_order = int(model_atoms/molecule_size)
+            
+            # Getting list of n-body combinations.
+            nbody_combinations = list(
+                itertools.combinations(list(range(0, system_size)), nbody_order)
+            )
+
+            # Adding all contributions.
+            for comb in nbody_combinations:
+                # Gets indices of all atoms in the
+                # n-body combination of molecules.
+                atoms = []
+                for molecule in comb:
+                    atoms += list(range(
+                        molecule * molecule_size, (molecule + 1) * molecule_size
+                    ))
+                
+                # Adds n-body contributions prediced from nbody_model.
+                e, f = gdml.predict(R[atoms].flatten())
+                F[atoms] += f.reshape(len(atoms), 3)
+                E += e
+        
+        return E, F
+
+
+
+
+    def remove_nbody(self, dataset, nbody_model):
         """Updates GDML dataset with GDML predicted n-body predictions
         removed.
 
@@ -48,6 +91,7 @@ class mbGDMLPredict():
         """
 
         # Assinging variables from dataset to be updated or used.
+        base_vars = dict(dataset)
         z = base_vars['z']
         R = base_vars['R']
         E = base_vars['E']
