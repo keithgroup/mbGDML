@@ -23,15 +23,196 @@
 import os
 import subprocess
 
+import numpy as np
 from mako.template import Template
-
 from periodictable import elements
+from sgdml.predict import GDMLPredict
+from cclib.parser.utils import convertor
+
+from ase.calculators.calculator import Calculator
+from ase.io import read
+from ase.optimize import QuasiNewton
+from ase.md.velocitydistribution import (MaxwellBoltzmannDistribution, Stationary, ZeroRotation)
+from ase.md.verlet import VelocityVerlet
+from ase import units
 
 from mbgdml import utils
 from mbgdml import parse
 from mbgdml import partition
+from mbgdml.predict import mbGDMLPredict
+from mbgdml.data import _mbGDMLData
 
-class CalcTemplate():
+
+class mbGDMLCalculator(Calculator):
+    """Initializes mbGDML calculator with models and units.
+    
+    Args:
+        model_paths (list): Paths of all models to be used for GDML
+            prediction.
+        e_unit_model (str, optional): Specifies the units of energy
+            prediction for the GDML models. Defaults to 'kcal/mol'.
+        r_unit_model (str, optional): [description]. Defaults to 'Angstrom'.
+    """
+
+    implemented_properties = ['energy', 'forces']
+
+    def __init__(self, elements, model_paths, e_unit_model='kcal/mol',
+                 r_unit_model='Angstrom', *args, **kwargs):
+
+        # TODO logging?
+        self.atoms = None
+        self.elements = elements
+
+        self.load_models(model_paths)
+        self.gdml_predict = mbGDMLPredict(self.gdmls)
+
+        self.e_unit_model = e_unit_model
+        self.r_unit_model = r_unit_model
+        
+        self.results = {}  # calculated properties (energy, forces, ...)
+        self.parameters = None  # calculational parameters
+
+        if self.parameters is None:
+            # Use default parameters if they were not read from file:
+            self.parameters = self.get_default_parameters()
+
+        if not hasattr(self, 'name'):
+            self.name = self.__class__.__name__.lower()
+
+    def load_models(self, model_paths):
+        """Loads models for GDML prediction.
+        
+        Args:
+            model_paths (list): List containing paths of all GDML models to be
+                loaded. All of these models will be used during the MD run. 
+        """
+        gdmls = []
+        model_index = 0
+        while model_index < len(model_paths):
+            loaded_model = np.load(model_paths[model_index])
+            predict_model = GDMLPredict(loaded_model)
+            gdmls.append(predict_model)
+
+            model_index += 1
+        
+        self.gdmls = gdmls
+
+    def calculate(self, atoms=None, *args, **kwargs):
+
+        super(mbGDMLCalculator, self).calculate(
+            atoms, *args, **kwargs
+        )
+
+        r = np.array(atoms.get_positions())
+        e, f = self.gdml_predict.predict(self.elements, r)
+
+        # convert model units to ASE default units (eV and Ang)
+        if self.e_unit_model != 'eV':
+            e *= convertor(1, self.e_unit_model, 'eV')
+            f *= convertor(1, self.e_unit_model, 'eV')
+
+        if self.r_unit_model != 'Angstrom':
+            f /= convertor(1, self.r_unit_model, 'Angstrom')
+
+        self.results = {'energy': e, 'forces': f.reshape(-1, 3)}
+
+class mbGDMLMD(_mbGDMLData):
+    def __init__(self, structure_name, structure_path):
+        """Molecular dynamics through ASE with many-body GDML model.
+        
+        Args:
+            structure_name (str): Name of the structure. Mainly for file naming.
+            structure_path (str): Path to the structure file.
+        """
+        self._load_structure(structure_name, structure_path)
+
+    def _load_structure(self, structure_name, structure_path):
+        """Sets the appropriate attributes for structure information.
+        
+        Args:
+            structure_name (str): Name of the structure. Mainly for file naming.
+            structure_path (str): Path to the structure file.
+        """
+        self.structure_name = structure_name
+        self.structure_path = structure_path
+        self.structure = read(structure_path) # mol
+        self.atoms = self.structure.numbers
+    
+    def load_calculator(self, model_paths):
+        """Loads the many-body GDML ASE calculator.
+        
+        Args:
+            model_paths (list): Paths to all many-body GDML models to be used.
+        """
+
+        self.calc = mbGDMLCalculator(self.atoms, model_paths)
+        self.structure.set_calculator(self.calc)
+
+    def relax(self, max_force=1e-4, steps=100):
+        """Short relaxation of structure.
+        
+        Args:
+            max_force (float, optional): Maximum force. Defaults to 1e-4.
+            steps (int, optional): Maximum allowable steps. Defaults to 100.
+        
+        Raises:
+            AttributeError: Requires a calculator to be loaded first.
+        """
+        if not hasattr(self, 'calc'):
+            raise AttributeError('Please load a calculator first.')
+
+        # do a quick geometry relaxation
+        qn = QuasiNewton(self.structure)
+        qn.run(max_force, steps)
+        
+    def printenergy(self, a):
+        """Quick function to print MD information during simulation.
+        
+        Args:
+            a (atoms): Atoms object from ASE.
+        """
+        # function to print the potential, kinetic and total energy
+        e_pot = a.get_potential_energy() / len(a)
+        e_kin = a.get_kinetic_energy() / len(a)
+        print('Energy per atom: Epot = %.3feV  Ekin = %.3feV (T=%3.0fK)  '
+              'Etot = %.3feV' % (e_pot, e_kin, e_kin / (1.5 * units.kB),
+              e_pot + e_kin))
+    
+    def run(self, steps, t_step, temp):
+        """Runs a MD simulation using the Verlet algorithm in ASE.
+        
+        Args:
+            steps (int): Number of steps for the MD simulation.
+            t_step (float): Time step in femtoseconds.
+            temp (float): Temperature in Kelvin used for initializing
+                velocities.
+        
+        Raises:
+            AttributeError: Requires a calculator to be loaded first.
+        """
+        
+        if not hasattr(self, 'calc'):
+            raise AttributeError('Please load a calculator first.')
+
+        # Initialize momenta corresponding to temp
+        MaxwellBoltzmannDistribution(self.structure, temp * units.kB)
+        Stationary(self.structure) # zero linear momentum
+        ZeroRotation(self.structure) # zero angular momentum
+
+        self.name = f'{self.structure_name}-{t_step}fs-{steps}steps-{temp}K'
+        # run MD with constant energy using the VelocityVerlet algorithm
+        dyn = VelocityVerlet(
+            self.structure, t_step * units.fs,
+            trajectory=f'{self.name}.traj'
+        )
+
+        # now run the dynamics
+        self.printenergy(self.structure)
+        for i in range(steps):
+            dyn.run(10)
+            self.printenergy(self.structure)
+
+class CalcTemplate:
     """Contains all quantum chemistry calculations templates for mako.
     """
 

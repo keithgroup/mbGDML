@@ -29,7 +29,7 @@ test.train_GDML(
 )
 '''
 
-
+'''
 # Info from here on out.
 solvent_label = '4H2O'  # ***
 nbody = 4  # ***
@@ -56,4 +56,20 @@ sigma_range = '80:10:180'  # Original is 2:10:100
 test = mbgdml.train.MBGDMLTrain()
 test.load_dataset(mb_dataset_path)
 test.train_GDML(models_dir, train_num, validate_num, test_num, sigma_range)
+'''
 
+# Testing MD
+model_paths = [
+    '/home/alex/Dropbox/keith/projects/mbgdml/data/models/4MeOH/4MeOH-1mer-model-MP2.def2-TZVP-train300-sym6.npz',
+    '/home/alex/Dropbox/keith/projects/mbgdml/data/models/4MeOH/4MeOH-2body-model-MP2.def2-TZVP-train300-sym72.npz',
+    '/home/alex/Dropbox/keith/projects/mbgdml/data/models/4MeOH/4MeOH-3body-model-MP2.def2-TZVP-train300-sym12.npz'
+]
+
+md = mbgdml.calculate.mbGDMLMD(
+    'methanol',
+    '/home/alex/Dropbox/keith/projects/mbgdml/data/md/mbgdml/4MeOH/structures/4MeOH-minimum.xyz'
+)
+
+md.load_calculator(model_paths)
+md.relax()
+md.run(100, 0.5, 300)
