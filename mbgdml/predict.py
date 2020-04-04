@@ -28,11 +28,17 @@ import mbgdml.solvents as solvents
 
 class mbGDMLPredict():
 
-    def __init__(self):
-        pass
+    def __init__(self, mb_gdml):
+        """Sets GDML models to be used for many-body prediction.
+        
+        Args:
+            mb_gdml (list): Contains sgdml.GDMLPredict objects for all models
+                to be used for prediction.
+        """
+        self.gdmls = mb_gdml
 
 
-    def predict(self, z, R, mb_gdml):
+    def predict(self, z, R):
         
         # Gets system information from dataset.
         # This assumes the system is only solvent.
@@ -45,7 +51,7 @@ class mbGDMLPredict():
         E = 0.0
 
         # Adds contributions from all models.
-        for gdml in mb_gdml:
+        for gdml in self.gdmls:
             
             model_atoms = int(gdml.n_atoms)
             nbody_order = int(model_atoms/molecule_size)
