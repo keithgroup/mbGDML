@@ -27,8 +27,9 @@ import numpy as np
 from cclib.io import ccread
 from cclib.parser.utils import convertor
 from periodictable import elements
-from mbgdml import utils, parse, solvents
-
+from mbgdml import utils
+from mbgdml import parse
+from mbgdml import solvents
 
 def partition_cluster(cluster, nbody):
     """Creates dictionary with all possible n-body combinations of solvent
@@ -98,7 +99,7 @@ def partition_trajectory(traj_path):
     traj_steps = parsed_traj['coords'].shape[0]
 
     # Gets solvent information.
-    solvent_info = solvents.identify_solvent(parsed_traj['atoms'])
+    solvent_info = solvents.system_info(parsed_traj['atoms'])
 
     # Directory containing all partitions atoms and coords.
     traj_partition = {}  
@@ -120,7 +121,7 @@ def partition_trajectory(traj_path):
             # Tries to add the next trajectory step to 'coords'; if it fails it
             # initializes 'atoms' and 'coords' for that partition.
             for label in partition_labels:
-                partition_info = solvents.identify_solvent(
+                partition_info = solvents.system_info(
                     partitions[label]['atoms']
                 )
 
