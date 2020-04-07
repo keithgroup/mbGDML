@@ -80,7 +80,7 @@ class _mbGDMLData():
             base_vars (dict): Base variables for dataset or model.
             save_dir (str): Directory to save the file.
             dataset (bool): Is the file a dataset? Controls whether the md5 of
-                the file is updated.
+                the file is saved.
         """
 
         save_dir = utils.norm_path(save_dir)
@@ -365,6 +365,82 @@ class mbGDMLDataset(_mbGDMLData):
         # Removes old dataset attribute.
         if hasattr(self, 'dataset'):
             delattr(self, 'dataset')
+
+
+class mbGDMLPredictset(_mbGDMLData):
+
+    def __init__(self, dataset_path, model_paths):
+        self.dataset_path = dataset_path
+        self.dataset = np.load(dataset_path)
+        self.model_paths = model_paths
+        self.mbgdml = mbGDMLPredict(model_paths)
+
+
+    def create_predictset(self):
+
+        num_config = self.dataset.f.R.shape[0]
+        name = str(self.dataset.f.name[()]).replace(
+            'dataset', 'prediction'
+        )
+        
+        self.base_vars = {
+            'type': 'p',  # Designates predictions.
+            'code_version': __version__,  # sGDML version.
+            'name': name,
+            'theory': self.dataset.f.theory,
+            'z': self.dataset.f.z,
+            'R': self.dataset.f.R,
+            'r_unit': self.dataset.f.r_unit,
+            'E_true': self.dataset.f.E,
+            'e_unit': self.dataset.f.e_unit,
+            'F_true': self.dataset.f.F,
+        }
+
+        all_E = {}
+        all_F = {}
+        for i in range(num_config):
+            print(f'Predicting structure {i} out of {num_config} ...')
+            e, f = self.mbgdml.decomposed_predict(
+                self.dataset.f.z.tolist(), self.dataset.f.R[i]
+            )
+
+            for order in e:
+                if i == 0:
+                    all_E[order] = e[order]
+                    all_F[order] = f[order]
+                    
+                    if order == 'T':
+                        all_E[order] = np.array([all_E[order]])
+                        all_F[order] = np.array([all_F[order]])
+                    else:
+                        for combo in e[order]:
+                            all_E[order][combo] = np.array(
+                                [all_E[order][combo]]
+                            )
+                            all_F[order][combo] = np.array(
+                                [all_F[order][combo]]
+                            )
+                else:
+                    if order == 'T':
+                        np.concatenate((all_E[order], np.array([e[order]])), axis=0)
+                        np.concatenate((all_F[order], np.array([f[order]])), axis=0)
+                    else:
+                        for combo in e[order]:
+                            all_E[order][combo] = np.concatenate(
+                                (all_E[order][combo], np.array([e[order][combo]])), axis=0
+                            )
+                            all_F[order][combo] = np.concatenate(
+                                (all_F[order][combo], np.array([f[order][combo]])), axis=0
+                            )
+
+
+        # Loop through all_E and all_F and add their keys to base_vars
+        for order in all_E:
+            E_name = f'E_{order}'
+            F_name = f'F_{order}'
+            self.base_vars[E_name] = all_E[order]
+            self.base_vars[F_name] = all_F[order]
+
 
 
 
