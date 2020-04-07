@@ -186,8 +186,8 @@ class mbGDMLPredict():
         return e['T'], f['T']
 
 
-    def remove_nbody(self, dataset, nbody_model):
-        """Updates GDML dataset with GDML predicted n-body predictions
+    def remove_nbody(self, dataset):
+        """Creates GDML dataset with GDML predicted n-body predictions
         removed.
 
         To employ the many body expansion, we need GDML models that predict
@@ -197,10 +197,14 @@ class mbGDMLPredict():
         Args:
             base_vars (dict): GDML dataset converted to a dict containing n-body
                 contributions to be removed.
-            nbody_model (np.NpzFile): Loaded mbGDML model that predicts n-body
-                contributions.
         """
 
+        if len(self.gdmls) != 1:
+            raise ValueError('N-body contributions can only be removed one '
+                             'at time. Please load only one GDML.')
+        else:
+            nbody_model = self.gdmls[0]
+        
         # Assinging variables from dataset to be updated or used.
         base_vars = dict(dataset)
         z = base_vars['z']
