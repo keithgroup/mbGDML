@@ -28,6 +28,7 @@ import mbgdml.solvents as solvents
 
 class mbGDMLPredict():
 
+
     def __init__(self, mb_gdml):
         """Sets GDML models to be used for many-body prediction.
         
@@ -73,7 +74,7 @@ class mbGDMLPredict():
 
         nbody_order = int(gdml.n_atoms/molecule_size)
         
-        # Getting list of n-body combinations (ints).
+        # Getting list of n-body combinations (int).
         nbody_combinations = list(
             itertools.combinations(list(range(0, system_size)), nbody_order)
         )
@@ -165,6 +166,7 @@ class mbGDMLPredict():
         
         return E_contributions, F_contributions
 
+
     def predict(self, z, R):
         """Predicts total energy and atomic forces using many-body GDML models.
         
@@ -182,8 +184,6 @@ class mbGDMLPredict():
         e, f = self.decomposed_predict(z, R)
         
         return e['T'], f['T']
-
-
 
 
     def remove_nbody(self, dataset, nbody_model):
