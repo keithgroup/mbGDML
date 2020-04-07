@@ -47,8 +47,10 @@ class mbGDMLPredict():
                 GDML models.
         """
         self.gdmls = []
+        self.models = []
         for model in models:
             loaded = np.load(model)
+            self.models.append(loaded)
             gdml = GDMLPredict(loaded)
             self.gdmls.append(gdml)
 
@@ -160,7 +162,9 @@ class mbGDMLPredict():
 
         # Gets system information from dataset.
         # This assumes the system is only solvent.
-        dataset_info = solvents.system_info(z.tolist())
+        if type(z) != list:
+            z = z.tolist()
+        dataset_info = solvents.system_info(z)
         system_size = dataset_info['cluster_size']
         molecule_size = dataset_info['solvent_molec_size']
 
