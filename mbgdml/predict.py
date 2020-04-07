@@ -29,14 +29,29 @@ import mbgdml.solvents as solvents
 class mbGDMLPredict():
 
 
-    def __init__(self, mb_gdml):
+    def __init__(self, models):
         """Sets GDML models to be used for many-body prediction.
         
         Args:
-            mb_gdml (list): Contains sgdml.GDMLPredict objects for all models
-                to be used for prediction.
+            models (list): Contains paths to either standard or many-body
+                GDML models.
         """
-        self.gdmls = mb_gdml
+        self._load_models(models)
+    
+
+    def _load_models(self, models):
+        """Loads models and preprares GDMLPredict.
+        
+        Args:
+            models (list): Contains paths to either standard or many-body
+                GDML models.
+        """
+        self.gdmls = []
+        for model in models:
+            loaded = np.load(model)
+            gdml = GDMLPredict(loaded)
+            self.gdmls.append(gdml)
+
 
 
     def _calculate(self, z, R, system_size, molecule_size, gdml):
