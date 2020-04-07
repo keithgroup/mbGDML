@@ -26,18 +26,18 @@
 import os
 import pytest
 import numpy as np
-import mbgdml
 
-test_path = mbgdml.utils.norm_path(
-    os.path.dirname(os.path.realpath(__file__))
-)
+import mbgdml.data as data
+import mbgdml.utils as utils
+
+# Must be run from mbGDML root directory.
 
 def test_data_create_dataset():
-    ref_output_path = ''.join([test_path, 'data/out-4MeOH-300K-1-ABC.out'])
-    write_path = ''.join([test_path, 'data/'])
+    ref_output_path = 'tests/data/partition-calcs/out-4H2O-300K-1-ABC.out'
+    write_path = 'tests/data/write/'
 
-    test_partition = mbgdml.data.PartitionCalcOutput(ref_output_path)
-    dataset = mbgdml.data.MBGDMLDataset()
+    test_partition = data.PartitionCalcOutput(ref_output_path)
+    dataset = data.mbGDMLDataset()
     dataset.partition_dataset_name(
         test_partition.partition,
         test_partition.cluster,
@@ -54,32 +54,31 @@ def test_data_create_dataset():
         'kcal/mol',
         'hartree',
         'bohr',
-        theory='MP2/def2-TZVP',
+        theory='MP2.def2-TZVP',
         write=False
     )
 
-    assert dataset.dataset['r_unit'] == 'Angstrom'
-    assert np.allclose(dataset.dataset['R'][0][4],
-                       np.array([1.911664, -2.195424, -0.704814]))
+    assert dataset.base_vars['r_unit'] == 'Angstrom'
+    assert np.allclose(dataset.base_vars['R'][0][4],
+                       np.array([-1.39912, -2.017925, -0.902479]))
 
-    assert dataset.dataset['e_unit'] == 'kcal/mol'
-    assert dataset.dataset['E'][0] == -217458.27068287216
-    assert dataset.dataset['E_max'] == -217448.27742004013
-    assert dataset.dataset['E_mean'] == -217453.4435426626
-    assert dataset.dataset['E_min'] == -217458.27068287216
-    assert dataset.dataset['E_var'] == 3.9385025745597186
+    assert dataset.base_vars['e_unit'] == 'kcal/mol'
+    assert dataset.base_vars['E'][0] == -143672.88767989643
+    assert dataset.base_vars['E_max'] == -143668.55663397504
+    assert dataset.base_vars['E_mean'] == -143671.36616500877
+    assert dataset.base_vars['E_min'] == -143674.07605733958
+    assert dataset.base_vars['E_var'] == 1.1866207743053436
 
-    assert dataset.dataset['F_max'] == 65.08310037407716
-    assert np.allclose(dataset.dataset['F'][0][0],
-                       np.array([-22.73440695, -11.93017795,   1.67021709]))
-    assert dataset.dataset['F_mean'] == -4.391929749921794e-09
-    assert dataset.dataset['F_min'] == -77.57149172033839
-    assert dataset.dataset['F_var'] == 216.70599395856985
+    assert dataset.base_vars['F_max'] == 75.06988364013725
+    assert np.allclose(dataset.base_vars['F'][30][0],
+                       np.array([6.81548275, -14.34210238, -63.49876045]))
+    assert dataset.base_vars['F_mean'] == -2.1959648981851178e-08
+    assert dataset.base_vars['F_min'] == -75.04996184655204
+    assert dataset.base_vars['F_var'] == 373.33604029702724
 
-    assert dataset.dataset['cluster_size'] == 3
-    assert dataset.dataset['e_unit'] == 'kcal/mol'
-    assert dataset.dataset['name'] == 'ABC-4MeOH-300K-1-dataset'
-    assert dataset.dataset['system'] == 'solvent'
-    assert dataset.dataset['solvent'] == 'methanol'
-    assert dataset.dataset['cluster_size'] == 3
-    assert dataset.dataset['theory'] == 'MP2/def2-TZVP'
+    assert dataset.base_vars['e_unit'] == 'kcal/mol'
+    assert dataset.base_vars['name'] == 'ABC-4H2O-300K-1-dataset'
+    assert dataset.base_vars['system'] == 'solvent'
+    assert dataset.base_vars['solvent'] == 'water'
+    assert dataset.base_vars['cluster_size'] == 3
+    assert dataset.base_vars['theory'] == 'MP2.def2-TZVP'
