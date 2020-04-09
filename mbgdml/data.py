@@ -417,7 +417,7 @@ class mbGDMLPredictset(_mbGDMLData):
         all_E = {}
         all_F = {}
         for i in range(num_config):
-            print(f'Predicting structure {i} out of {num_config} ...')
+            print(f'Predicting structure {i} out of {num_config - 1} ...')
             e, f = self.mbgdml.decomposed_predict(
                 self.dataset.f.z.tolist(), self.dataset.f.R[i]
             )
