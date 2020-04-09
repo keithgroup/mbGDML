@@ -413,6 +413,7 @@ class mbGDMLPredictset(_mbGDMLData):
             'F_true': self.dataset.f.F,
         }
 
+        # Predicts and stores energy and forces.
         all_E = {}
         all_F = {}
         for i in range(num_config):
@@ -439,11 +440,11 @@ class mbGDMLPredictset(_mbGDMLData):
                             )
                 else:
                     if order == 'T':
-                        np.concatenate(
+                        all_E[order] = np.concatenate(
                             (all_E[order], np.array([e[order]])),
                             axis=0
                         )
-                        np.concatenate(
+                        all_F[order] = np.concatenate(
                             (all_F[order], np.array([f[order]])),
                             axis=0
                         )
