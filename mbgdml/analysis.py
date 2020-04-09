@@ -21,20 +21,22 @@
 # SOFTWARE.
 
 """Analyses for mbGDML models."""
+
 import numpy as np
+import matplotlib as mpl
+import matplotlib.pyplot as plt
 from mbgdml.data import mbGDMLPredictset
+from mbgdml.utils import norm_path
+from mbgdml.utils import atoms_by_element
 
 class NBodyContributions:
+
 
     def __init__(self):
         pass
     
-    
-    def load_predictset(self, predictset_path):
-        self.predictset = mbGDMLPredictset()
-        self.predictset.read(predictset_path)
 
-    def force_similarity(self, predict_force, true_force):
+    def compute_force_similarity(self, predict_force, true_force):
         """Compute modified cosine similarity of two force vectors.
 
         Computes 1 - cosine_similarity. Two exact vectors will thus have a
@@ -48,7 +50,9 @@ class NBodyContributions:
                 shape as predict_force
         
         Returns:
-            float: [description]
+            float: Similarity (accuracy) of predicted force vector for an atom.
+                0.0 is perfect similarity and the further away from zero the
+                less similar (accurate).
         """
 
         similarity = np.dot(predict_force, true_force) / \
@@ -57,5 +61,127 @@ class NBodyContributions:
 
         similarity = float(1 - similarity)
         return similarity
+    
+    def cluster_force_similarity(self, predict_set, structure_index):
 
-    # TODO heat map that computes cosine similarity for 1-body up to n-body contributions of force vectors
+        # Retrives all n-body force contributions.
+        F = {}
+        F_index = 1
+        while hasattr(predict_set, f'F_{F_index}'):
+            all_F = getattr(predict_set, f'F_{F_index}')
+            F[f'F_{F_index}'] = all_F['T'][structure_index]
+            F_index += 1
+        
+        F_true = predict_set.F_true[structure_index]
+
+        # Sets up array.
+        similarities = np.zeros((F_true.shape[0], F_index - 1))
+
+        atom = 0
+        while atom < F_true.shape[0]:
+            F_index = 1
+            while f'F_{F_index}' in F:
+                similarities[atom][F_index - 1] = self.compute_force_similarity(
+                    F_true[atom], F[f'F_{F_index}'][atom]
+                )
+
+                F_index += 1
+            
+            atom += 1
+        
+        return similarities
+    
+
+    def create_heatmap(self, similarity, atoms, num_nbody,
+                       base_name, name, data_labels, save_dir):
+
+        fig, heatmap = plt.subplots(figsize=(3, 4), constrained_layout=True)
+
+        norm = mpl.colors.Normalize(vmin=0, vmax=2)
+        im = heatmap.imshow(similarity, cmap='Reds', vmin=0.0, vmax=2.0, norm=norm)
+
+
+        # Customizing plot.
+        heatmap.set_xticks(np.arange(len(num_nbody)))
+        heatmap.set_xticklabels(num_nbody)
+        heatmap.set_xlabel('n-body order')
+
+        heatmap.set_yticks(np.arange(len(atoms)))
+        heatmap.set_yticklabels(atoms)
+        heatmap.set_ylabel('atoms')
+
+        # Customizing colorbar
+        fig.colorbar(im, orientation='vertical')
+
+        if data_labels:
+            # Loop over data dimensions and create text annotations.
+            for i in range(len(atoms)):
+                for j in range(len(num_nbody)):
+                    num = np.around(similarity[i, j], decimals=2)
+                    heatmap.text(j, i, num,
+                                ha="center", va="center", color="black")
+        
+        plt.savefig(f'{save_dir}{name}.png', dpi=600, bbox_inches='tight')
+        plt.close()
+
+    
+    def force_heatmap(self, predict_set, structure_list, base_name, save_dir,
+                      mean=False, data_labels=False):
+        
+        save_dir = norm_path(save_dir)
+
+        sim_list = []
+        for struct in structure_list:
+            sim_list.append(self.cluster_force_similarity(
+                predict_set, struct
+            ))
+        
+
+        atoms = atoms_by_element(predict_set.z.tolist())
+        num_nbody = list(range(1, sim_list[0].shape[1] + 1))
+        num_nbody = [str(i) for i in num_nbody]
+        '''
+        # Plotting heatmaps.
+        index = 0
+        while index < len(sim_list):
+            
+            name = f'{base_name}-struct{structure_list[index]}'
+
+            print(f'Creating figure {name}.png')
+            self.create_heatmap(
+                sim_list[index],
+                atoms,
+                num_nbody,
+                base_name,
+                name,
+                data_labels,
+                save_dir
+            )
+
+            index += 1
+        '''
+        if mean:
+
+            sim_mean = np.zeros(sim_list[0].shape)
+            for atom in list(range(0, sim_list[0].shape[0])):
+                for n_body in list(range(0, sim_list[0].shape[1])):
+                    mean_array = np.array([])
+                    for struct in structure_list:
+                        mean_array = np.append(
+                            mean_array,
+                            sim_list[structure_list[struct]][atom][n_body]
+                        )
+
+                    sim_mean[atom][n_body] = np.mean(mean_array)
+
+            name = f'{base_name}-average'
+
+            self.create_heatmap(
+                sim_mean,
+                atoms,
+                num_nbody,
+                base_name,
+                name,
+                data_labels,
+                save_dir
+            )
