@@ -369,7 +369,21 @@ class mbGDMLDataset(_mbGDMLData):
 
 class mbGDMLPredictset(_mbGDMLData):
 
-    def __init__(self, dataset_path, model_paths):
+    def __init__(self):
+        pass
+
+    
+    def read(self, predictset_path):
+        predictset = np.load(predictset_path, allow_pickle=True)
+        predictset = dict(predictset)
+        for file in predictset:
+            if type(predictset[file][()]) == np.str_:
+                setattr(self, file, str(predictset[file][()]))
+            else:
+                setattr(self, file, predictset[file][()])
+    
+
+    def load(self, dataset_path, model_paths):
         self.dataset_path = dataset_path
         self.dataset = np.load(dataset_path)
         self.model_paths = model_paths
@@ -377,6 +391,9 @@ class mbGDMLPredictset(_mbGDMLData):
 
 
     def create_predictset(self):
+
+        if not hasattr(self, 'dataset') or not hasattr(self, 'mbgdml'):
+            raise AttributeError('Please load a data set and mbGDML models.')
 
         num_config = self.dataset.f.R.shape[0]
         name = str(self.dataset.f.name[()]).replace(
@@ -422,15 +439,25 @@ class mbGDMLPredictset(_mbGDMLData):
                             )
                 else:
                     if order == 'T':
-                        np.concatenate((all_E[order], np.array([e[order]])), axis=0)
-                        np.concatenate((all_F[order], np.array([f[order]])), axis=0)
+                        np.concatenate(
+                            (all_E[order], np.array([e[order]])),
+                            axis=0
+                        )
+                        np.concatenate(
+                            (all_F[order], np.array([f[order]])),
+                            axis=0
+                        )
                     else:
                         for combo in e[order]:
                             all_E[order][combo] = np.concatenate(
-                                (all_E[order][combo], np.array([e[order][combo]])), axis=0
+                                (all_E[order][combo],
+                                 np.array([e[order][combo]])),
+                                axis=0
                             )
                             all_F[order][combo] = np.concatenate(
-                                (all_F[order][combo], np.array([f[order][combo]])), axis=0
+                                (all_F[order][combo],
+                                 np.array([f[order][combo]])),
+                                 axis=0
                             )
 
 
@@ -440,6 +467,9 @@ class mbGDMLPredictset(_mbGDMLData):
             F_name = f'F_{order}'
             self.base_vars[E_name] = all_E[order]
             self.base_vars[F_name] = all_F[order]
+        
+        for data in self.base_vars:
+            setattr(self, data, self.base_vars[data])
 
 
 
