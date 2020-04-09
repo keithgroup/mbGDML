@@ -381,6 +381,8 @@ class mbGDMLPredictset(_mbGDMLData):
                 setattr(self, file, str(predictset[file][()]))
             else:
                 setattr(self, file, predictset[file][()])
+
+    # TODO write function that sums the total many-body order forces 
     
 
     def load(self, dataset_path, model_paths):
