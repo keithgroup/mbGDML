@@ -98,6 +98,6 @@ test.force_heatmap(
     test_set,
     list(range(0, test_set.F_true.shape[0])),
     '4H2O',
-    '/home/alex/Dropbox/keith/projects/mbgdml/data/analysis/4H2O/force-similarity-heatmaps/all',
-    mean=True,
+    '/home/alex/Dropbox/keith/projects/mbgdml/data/analysis/4H2O/force-similarity-heatmaps/',
+    mean=True
 )

@@ -68,8 +68,9 @@ class NBodyContributions:
         F = {}
         F_index = 1
         while hasattr(predict_set, f'F_{F_index}'):
-            all_F = getattr(predict_set, f'F_{F_index}')
-            F[f'F_{F_index}'] = all_F['T'][structure_index]
+            _, F[f'F_{F_index}'] = predict_set.sum_contributions(
+                structure_index, F_index
+            )
             F_index += 1
         
         F_true = predict_set.F_true[structure_index]
@@ -97,7 +98,7 @@ class NBodyContributions:
 
         fig, heatmap = plt.subplots(figsize=(3, 4), constrained_layout=True)
 
-        norm = mpl.colors.Normalize(vmin=0, vmax=2)
+        norm = mpl.colors.Normalize(vmin=0, vmax=2.0)
         im = heatmap.imshow(similarity, cmap='Reds', vmin=0.0, vmax=2.0, norm=norm)
 
 

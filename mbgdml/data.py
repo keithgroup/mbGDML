@@ -374,6 +374,11 @@ class mbGDMLPredictset(_mbGDMLData):
 
     
     def read(self, predictset_path):
+        """Reads predict data set and loads data.
+        
+        Args:
+            predictset_path (str): Path to prediction data set.
+        """
         predictset = np.load(predictset_path, allow_pickle=True)
         predictset = dict(predictset)
         for file in predictset:
@@ -382,7 +387,29 @@ class mbGDMLPredictset(_mbGDMLData):
             else:
                 setattr(self, file, predictset[file][()])
 
-    # TODO write function that sums the total many-body order forces 
+    
+    def sum_contributions(self, struct_num, nbody_num):
+        
+        if not hasattr(self, 'F_T'):
+            raise AttributeError('Please read a predict set first.')
+        
+        F = np.zeros(self.F_true[0].shape)
+        E = 0.0
+        nbody_index = 1
+        while hasattr(self, f'E_{nbody_index}') and \
+              hasattr(self, f'F_{nbody_index}') and \
+              nbody_index <= nbody_num:
+
+            E_cont = getattr(self, f'E_{nbody_index}')
+            F_cont = getattr(self, f'F_{nbody_index}')
+
+            E += E_cont['T'][struct_num]
+            F += F_cont['T'][struct_num]
+
+            nbody_index += 1
+        
+        return (E, F)
+        
     
 
     def load(self, dataset_path, model_paths):
