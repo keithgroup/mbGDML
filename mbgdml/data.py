@@ -601,6 +601,81 @@ class PartitionCalcOutput:
         self.energy_units = 'kcal/mol'
 
 
+class structure:
+
+    def __init__(self):
+        pass
+
+    def load_file(self, file_path):
+        self._ccdata = ccread(file_path)
+        self.z = self._ccdata.atomnos
+        self.R = self._ccdata.atomcoords
+
+
+    @property
+    def quantity(self):
+        """The number of structures.
+        """
+        if self.R.ndim == 2:
+            return 1
+        elif self.R.ndim == 3:
+            if self.R.shape[0] == 1:
+                return 1
+            else:
+                return self.R.shape[0]
+        else:
+            raise ValueError(
+                f"The coordinates have an unusual dimension of {self.R.ndim}."
+            )
+    
+    @property
+    def z(self):
+        """Array of atoms' atomic numbers in the same number as in
+        the coordinate file.
+        """
+
+        return self._z
+    
+    @z.setter
+    def z(self, atoms):
+        #TODO check type and convert to list
+        self._z = atoms
+    
+    @property
+    def R(self):
+        """The atomic positions of structure(s) in a np.ndarray of (m, 3) or
+        (n, m, 3) shape where n is the number of structures and m is the
+        number of atoms with 3 positional coordinates.
+        """
+        if self._R.ndim == 2:
+            if self._R.shape[1] != 3:
+                raise ValueError(
+                    "GDML expects xyz coordinates in array's 2nd dimension"
+                )
+
+            return self._R
+        elif self._R.ndim == 3:
+            if self._R.shape[2] != 3:
+                raise ValueError(
+                    "GDML expects xyz coordinates in array's 3rd dimension"
+                )
+
+            if self._R.shape[0] == 1:
+                return self._R[0]
+            else:
+                return self._R
+        else:
+            raise ValueError(
+                f"The coordinates have an unusual dimension of {self._R.ndim}."
+            )
+    
+    @R.setter
+    def R(self, coords):
+        self._R = coords
+    
+
+
+
 def create_datasets(calc_output_dir, dataset_dir, r_units_calc, e_units_calc,
                     theory='unknown', r_units='Angstrom', e_units='kcal/mol'):
     """Writes solvent partition datasets for GDML.
