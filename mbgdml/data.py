@@ -65,7 +65,7 @@ class _mbGDMLData():
             self.get_system_info(base_vars['z'].tolist())
         
         base_vars['system'] = self.system_info['system']
-        if base_vars['system'] is 'solvent':
+        if base_vars['system'] == 'solvent':
             base_vars['solvent'] = self.system_info['solvent_name']
             base_vars['cluster_size'] = self.system_info['cluster_size']
         
