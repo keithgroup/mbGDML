@@ -98,8 +98,9 @@ class NBodyContributions:
 
         fig, heatmap = plt.subplots(figsize=(3, 4), constrained_layout=True)
 
-        norm = mpl.colors.Normalize(vmin=0, vmax=2.0)
-        im = heatmap.imshow(similarity, cmap='Reds', vmin=0.0, vmax=2.0, norm=norm)
+        #norm = mpl.colors.Normalize(vmin=0, vmax=2.0)
+        #im = heatmap.imshow(similarity, cmap='Reds', vmin=0.0, vmax=2.0, norm=norm)
+        im = heatmap.imshow(similarity, cmap='Reds')
 
 
         # Customizing plot.

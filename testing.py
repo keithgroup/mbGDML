@@ -74,30 +74,18 @@ md.load_calculator(model_paths)
 md.relax()
 md.run(100, 0.5, 300)
 '''
-'''
+
 # Testing prediction set
 model_paths = [
-    '/home/alex/Dropbox/keith/projects/mbgdml/data/models/4H2O/4H2O-1mer-model-MP2.def2-TZVP-train300-sym2.npz',
-    '/home/alex/Dropbox/keith/projects/mbgdml/data/models/4H2O/4H2O-2body-model-MP2.def2-TZVP-train300-sym8.npz'
+    '/home/alex/Dropbox/keith/projects/mbgdml/data/models/4MeOH/4MeOH-1mer-model-MP2.def2-TZVP-train300-sym6.npz',
+    '/home/alex/Dropbox/keith/projects/mbgdml/data/models/4MeOH/4MeOH-2body-model-MP2.def2-TZVP-train300-sym72.npz',
+    '/home/alex/Dropbox/keith/projects/mbgdml/data/models/4MeOH/4MeOH-3body-model-MP2.def2-TZVP-train300-sym12.npz',
+    '/home/alex/Dropbox/keith/projects/mbgdml/data/models/4MeOH/4MeOH-4body-model-MP2.def2-TZVP-train300-sym1.npz'
 ]
-dataset_path = '/home/alex/Dropbox/keith/projects/mbgdml/data/datasets/4H2O/4H2O-2mer-dataset.npz'
+dataset_path = '/home/alex/Dropbox/keith/projects/mbgdml/data/datasets/4MeOH/4MeOH-4mer-dataset.npz'
 test = mbgdml.data.mbGDMLPredictset()
 test.load(dataset_path, model_paths)
 test.create_predictset()
 
-test.save(test.base_vars['name'], test.base_vars, '/home/alex/Dropbox/keith/projects/mbgdml/data/predictsets/4H2O/', False)
-'''
+test.save(test.base_vars['name'], test.base_vars, '/home/alex/Dropbox/keith/projects/mbgdml/data/predictsets/4MeOH/', False)
 
-# Testing reading prediction set
-predictset_path = '/home/alex/Dropbox/keith/projects/mbgdml/data/predictsets/4H2O/4H2O-4mer-prediction.npz'
-test = mbgdml.analysis.NBodyContributions()
-test_set = mbgdml.data.mbGDMLPredictset()
-test_set.read(predictset_path)
-
-test.force_heatmap(
-    test_set,
-    list(range(0, test_set.F_true.shape[0])),
-    '4H2O',
-    '/home/alex/Dropbox/keith/projects/mbgdml/data/analysis/4H2O/force-similarity-heatmaps/',
-    mean=True
-)
