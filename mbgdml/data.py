@@ -410,11 +410,13 @@ class mbGDMLPredictset(_mbGDMLData):
         
         return (E, F)
         
+
+    def load_dataset(self, dataset_path):
+        self.dataset_path = dataset_path
+        self.dataset = dict(np.load(dataset_path))
     
 
-    def load(self, dataset_path, model_paths):
-        self.dataset_path = dataset_path
-        self.dataset = np.load(dataset_path)
+    def load_models(self, model_paths):
         self.model_paths = model_paths
         self.mbgdml = mbGDMLPredict(model_paths)
 
@@ -424,8 +426,8 @@ class mbGDMLPredictset(_mbGDMLData):
         if not hasattr(self, 'dataset') or not hasattr(self, 'mbgdml'):
             raise AttributeError('Please load a data set and mbGDML models.')
 
-        num_config = self.dataset.f.R.shape[0]
-        name = str(self.dataset.f.name[()]).replace(
+        num_config = self.dataset['R'].shape[0]
+        name = str(self.dataset['name'][()]).replace(
             'dataset', 'prediction'
         )
         
@@ -433,13 +435,13 @@ class mbGDMLPredictset(_mbGDMLData):
             'type': 'p',  # Designates predictions.
             'code_version': __version__,  # sGDML version.
             'name': name,
-            'theory': self.dataset.f.theory,
-            'z': self.dataset.f.z,
-            'R': self.dataset.f.R,
-            'r_unit': self.dataset.f.r_unit,
-            'E_true': self.dataset.f.E,
-            'e_unit': self.dataset.f.e_unit,
-            'F_true': self.dataset.f.F,
+            'theory': self.dataset['theory'],
+            'z': self.dataset['z'],
+            'R': self.dataset['R'],
+            'r_unit': self.dataset['r_unit'],
+            'E_true': self.dataset['E'],
+            'e_unit': self.dataset['e_unit'],
+            'F_true': self.dataset['F'],
         }
 
         # Predicts and stores energy and forces.
@@ -448,7 +450,7 @@ class mbGDMLPredictset(_mbGDMLData):
         for i in range(num_config):
             print(f'Predicting structure {i} out of {num_config - 1} ...')
             e, f = self.mbgdml.decomposed_predict(
-                self.dataset.f.z.tolist(), self.dataset.f.R[i]
+                self.dataset['z'].tolist(), self.dataset['R'][i]
             )
 
             for order in e:
@@ -457,20 +459,18 @@ class mbGDMLPredictset(_mbGDMLData):
                     all_F[order] = f[order]
                     
                     if order == 'T':
-                        all_E[order] = np.array([all_E[order]])
+                        all_E[order] = all_E[order]
                         all_F[order] = np.array([all_F[order]])
                     else:
                         for combo in e[order]:
-                            all_E[order][combo] = np.array(
-                                [all_E[order][combo]]
-                            )
+                            all_E[order][combo] = all_E[order][combo]
                             all_F[order][combo] = np.array(
                                 [all_F[order][combo]]
                             )
                 else:
                     if order == 'T':
                         all_E[order] = np.concatenate(
-                            (all_E[order], np.array([e[order]])),
+                            (all_E[order], e[order]),
                             axis=0
                         )
                         all_F[order] = np.concatenate(
@@ -480,8 +480,7 @@ class mbGDMLPredictset(_mbGDMLData):
                     else:
                         for combo in e[order]:
                             all_E[order][combo] = np.concatenate(
-                                (all_E[order][combo],
-                                 np.array([e[order][combo]])),
+                                (all_E[order][combo], e[order][combo]),
                                 axis=0
                             )
                             all_F[order][combo] = np.concatenate(
