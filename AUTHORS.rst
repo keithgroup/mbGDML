@@ -5,7 +5,7 @@ Credits
 Development Lead
 ----------------
 
-* Alex M. Maldonado <alex.maldonado113@gmail.com>
+* Alex M. Maldonado <aalexmmaldonado@gmail.com>
 
 Contributors
 ------------
