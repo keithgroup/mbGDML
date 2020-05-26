@@ -77,6 +77,38 @@ md.run(100, 0.5, 300)
 
 # Testing prediction set
 model_paths = [
+    '/home/alex/Dropbox/keith/projects/mbgdml/data/models/4H2O/4H2O-1mer-model-MP2.def2-TZVP-train300-sym2.npz',
+    '/home/alex/Dropbox/keith/projects/mbgdml/data/models/4H2O/4H2O-2body-model-MP2.def2-TZVP-train300-sym8.npz',
+    '/home/alex/Dropbox/keith/projects/mbgdml/data/models/4H2O/4H2O-3body-model-MP2.def2-TZVP-train300-sym48.npz',
+    '/home/alex/Dropbox/keith/projects/mbgdml/data/models/4H2O/4H2O-4body-model-MP2.def2-TZVP-train300-sym1.npz'
+]
+dataset_path = '/home/alex/Dropbox/keith/projects/mbgdml/data/datasets/4H2O/4H2O-4mer-dataset.npz'
+test = mbgdml.data.mbGDMLPredictset()
+test.load_models(model_paths)
+test.load_dataset(dataset_path)
+test.create_predictset()
+
+test.save(test.base_vars['name'], test.base_vars, '/home/alex/Dropbox/keith/projects/mbgdml/data/predictsets/4H2O/', False)
+
+
+# Testing prediction set
+model_paths = [
+    '/home/alex/Dropbox/keith/projects/mbgdml/data/models/4MeCN/4acn-1mer-model-MP2.def2-TZVP-train300-sym6.npz',
+    '/home/alex/Dropbox/keith/projects/mbgdml/data/models/4MeCN/4acn-2body-model-MP2.def2-TZVP-train300-sym72.npz',
+    '/home/alex/Dropbox/keith/projects/mbgdml/data/models/4MeCN/4acn-3body-model-MP2.def2-TZVP-train300-sym36.npz',
+    '/home/alex/Dropbox/keith/projects/mbgdml/data/models/4MeCN/4acn-4body-model-MP2.def2-TZVP-train300-sym1.npz'
+]
+dataset_path = '/home/alex/Dropbox/keith/projects/mbgdml/data/datasets/4MeCN/4acn-4mer-dataset.npz'
+test = mbgdml.data.mbGDMLPredictset()
+test.load_models(model_paths)
+test.load_dataset(dataset_path)
+test.create_predictset()
+
+test.save(test.base_vars['name'], test.base_vars, '/home/alex/Dropbox/keith/projects/mbgdml/data/predictsets/4MeCN/', False)
+
+'''
+# Testing prediction set
+model_paths = [
     '/home/alex/Dropbox/keith/projects/mbgdml/data/models/4MeOH/4MeOH-1mer-model-MP2.def2-TZVP-train300-sym6.npz',
     '/home/alex/Dropbox/keith/projects/mbgdml/data/models/4MeOH/4MeOH-2body-model-MP2.def2-TZVP-train300-sym72.npz',
     '/home/alex/Dropbox/keith/projects/mbgdml/data/models/4MeOH/4MeOH-3body-model-MP2.def2-TZVP-train300-sym12.npz',
@@ -84,8 +116,9 @@ model_paths = [
 ]
 dataset_path = '/home/alex/Dropbox/keith/projects/mbgdml/data/datasets/4MeOH/4MeOH-4mer-dataset.npz'
 test = mbgdml.data.mbGDMLPredictset()
-test.load(dataset_path, model_paths)
+test.load_models(model_paths)
+test.load_dataset(dataset_path)
 test.create_predictset()
 
 test.save(test.base_vars['name'], test.base_vars, '/home/alex/Dropbox/keith/projects/mbgdml/data/predictsets/4MeOH/', False)
-
+'''
