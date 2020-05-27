@@ -4,7 +4,7 @@ python:
 
 install: pip install --requirement requirements.txt
 script: pip install sphinx_rtd_theme
-script: sphinx-build -nWT -b dummy . _build/html
+script: sphinx-build -nWT docs/source/ docs/_build/html
 
 deploy:
   provider: pypi
