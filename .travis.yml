@@ -1,8 +1,12 @@
 language: python
 python:
-- 3.7
+  - 3.7
+
 install: pip install --requirement requirements.txt
-script: sphinx-build -nWT docs/source/ docs/_build/html
+script:
+  - pip install sphinx_rtd_theme
+  - sphinx-build -nWT docs/source/ docs/_build/html
+
 deploy:
   provider: pypi
   distributions: sdist bdist_wheel
