@@ -38,6 +38,9 @@ templates_path = ['_templates']
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = []
 
+# Updating master docs
+master_doc = 'index'
+
 
 # -- Options for HTML output -------------------------------------------------
 
