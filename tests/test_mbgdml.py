@@ -54,7 +54,7 @@ def test_data_create_dataset():
         'kcal/mol',
         'hartree',
         'bohr',
-        theory='MP2.def2-TZVP',
+        theory='MP2.def2TZVP',
         write=False
     )
 
@@ -81,7 +81,7 @@ def test_data_create_dataset():
     assert dataset.base_vars['system'] == 'solvent'
     assert dataset.base_vars['solvent'] == 'water'
     assert dataset.base_vars['cluster_size'] == 3
-    assert dataset.base_vars['theory'] == 'MP2.def2-TZVP'
+    assert dataset.base_vars['theory'] == 'MP2.def2TZVP'
 
 
 def test_data_create_predictset():
