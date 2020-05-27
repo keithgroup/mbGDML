@@ -7,6 +7,15 @@ script:
   - pip install sphinx_rtd_theme
   - sphinx-build -nWT docs/source/ docs/_build/html
 
+
+deploy:
+  provider: pages
+  skip_cleanup: true
+  github_token: $GITHUB_TOKEN  # Set in the settings page of your repository, as a secure variable
+  keep_history: true
+  on:
+    branch: master
+
 deploy:
   provider: pypi
   distributions: sdist bdist_wheel
