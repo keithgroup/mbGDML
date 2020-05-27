@@ -20,6 +20,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+# pylint: disable=E1101
+
 import os
 import re
 import numpy as np
@@ -379,7 +381,7 @@ class mbGDMLPredictset(_mbGDMLData):
 
     def __init__(self):
         pass
-
+        
     
     def read(self, predictset_path):
         """Reads predict data set and loads data.
@@ -441,7 +443,30 @@ class mbGDMLPredictset(_mbGDMLData):
             nbody_index += 1
         
         return (E, F)
-        
+    
+
+    def nbody_predictions(self, nbody_order):
+
+        if not hasattr(self, 'R'):
+            raise AttributeError('No coordinates;'
+                                 'please read a predict set first.')
+        else:
+            num_structures = self.R.shape[0]
+
+            for structure in range(0, num_structures):
+                e, f = self.sum_contributions(structure, nbody_order)
+
+                e = np.array([e])
+                f = np.array([f])
+
+                if structure == 0:
+                    E = e
+                    F = f
+                else:
+                    E = np.concatenate((E, e))
+                    F = np.concatenate((F, f))
+
+        return (E, F)
 
     def load_dataset(self, dataset_path):
         """
