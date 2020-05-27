@@ -4,7 +4,6 @@ python:
 
 install: pip install --requirement requirements.txt
 script: make html
-script: touch docs/_build/html/.nojekyll
 
 deploy:
   provider: pypi
