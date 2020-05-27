@@ -368,6 +368,14 @@ class mbGDMLDataset(_mbGDMLData):
 
 
 class mbGDMLPredictset(_mbGDMLData):
+    """
+    A predict set is a data set with mbGDML predicted energy and forces instead
+    of training data.
+
+    When analyzing many structures using mbGDML it is easier (and faster) to
+    predict all many-body contributions once and then analyze the stored data.
+    The predict set accomplishes just this.
+    """
 
     def __init__(self):
         pass
@@ -377,7 +385,7 @@ class mbGDMLPredictset(_mbGDMLData):
         """Reads predict data set and loads data.
         
         Args:
-            predictset_path (str): Path to prediction data set.
+            predictset_path (str): Path to predict data set.
         """
         predictset = np.load(predictset_path, allow_pickle=True)
         predictset = dict(predictset)
@@ -388,23 +396,47 @@ class mbGDMLPredictset(_mbGDMLData):
                 setattr(self, file, predictset[file][()])
 
     
-    def sum_contributions(self, struct_num, nbody_num):
+    def sum_contributions(self, struct_num, nbody_order):
+        """
+        Returns the energy and force of a structure at a
+        specific many-body order.
+
+        Predict sets have data that is broken down into many-body and 'total'
+        contributions. Many-body contributions provide the total for that order;
+        for example, 'E_3' gives you the total contribution (or correction) of
+        all three bodies evaluated in the structure. This is not the total
+        energy with one-body, two-body, and three-body corrections.
+
+        This function returns the 'total energy' that includes the specified
+        nbody_order and lower corrections.
+
+        Args:
+            struct_num (int): Specifies the index of the structure in the
+                self.R array and the energy and force arrays.
+            nbody_order (int): Highest many-body order corrections to include.
         
-        if not hasattr(self, 'F_T'):
+        Returns:
+            tuple: Energy and force of the structure with all many-body
+                corrections up to nbody_order.
+        """
+
+        if not hasattr(self, 'type'):
             raise AttributeError('Please read a predict set first.')
         
-        F = np.zeros(self.F_true[0].shape)
-        E = 0.0
         nbody_index = 1
         while hasattr(self, f'E_{nbody_index}') and \
               hasattr(self, f'F_{nbody_index}') and \
-              nbody_index <= nbody_num:
+              nbody_index <= nbody_order:
 
             E_cont = getattr(self, f'E_{nbody_index}')
             F_cont = getattr(self, f'F_{nbody_index}')
 
-            E += E_cont['T'][struct_num]
-            F += F_cont['T'][struct_num]
+            if nbody_index == 1:
+                E = E_cont['T'][struct_num]
+                F = F_cont['T'][struct_num]
+            else:
+                E += E_cont['T'][struct_num]
+                F += F_cont['T'][struct_num]
 
             nbody_index += 1
         
@@ -412,16 +444,25 @@ class mbGDMLPredictset(_mbGDMLData):
         
 
     def load_dataset(self, dataset_path):
+        """
+        Loads data set in preparation to create a predict set.
+        """
         self.dataset_path = dataset_path
         self.dataset = dict(np.load(dataset_path))
     
 
     def load_models(self, model_paths):
+        """
+        Loads model(s) in preparation to create a predict set.
+        """
         self.model_paths = model_paths
         self.mbgdml = mbGDMLPredict(model_paths)
 
 
     def create_predictset(self):
+        """
+        Creates a predict set from loaded data set and models.
+        """
 
         if not hasattr(self, 'dataset') or not hasattr(self, 'mbgdml'):
             raise AttributeError('Please load a data set and mbGDML models.')
