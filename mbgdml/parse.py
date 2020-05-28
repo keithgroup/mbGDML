@@ -176,16 +176,16 @@ def parse_cluster(cluster_data):
     """
 
     # Identifies the solvent and size of a cluster.
-    solvent_info = solvents.identify_solvent(cluster_data['atoms'])
+    solvent_info = solvents.solvent(list(cluster_data['atoms']))
 
     # Partitions solvent cluster into individual solvent molecules.
     cluster_molecules = {}
     molecule_index = 1
-    while molecule_index <= solvent_info['cluster_size']:
+    while molecule_index <= solvent_info.cluster_size:
         # Grabs index positions of atomic coordinates for the solvent molecule
-        atom_start = molecule_index * solvent_info['solvent_size'] \
-                     - solvent_info['solvent_size']
-        atom_end = molecule_index * solvent_info['solvent_size']
+        atom_start = molecule_index * solvent_info.solvent_molec_size \
+                     - solvent_info.solvent_molec_size
+        atom_end = molecule_index * solvent_info.solvent_molec_size
         
         # Creates molecule label and grabs atoms and atomic coordinates for
         # the molecule.
