@@ -252,7 +252,7 @@ class mbGDMLDataset(_mbGDMLData):
                 calculation output file. This is only used convert forces if
                 needed. Options are 'Angstrom' or 'bohr'.
             theory (str, optional): The level of theory and basis set used
-                for the partition calculations. For example, 'MP2.def2-TZVP.
+                for the partition calculations. For example, 'MP2.def2TZVP.
                 Defaults to 'unknown'.
             gdml_r_units (str, optional): Desired coordinate units for the GDML
                 dataset. Defaults to 'Angstrom'.
@@ -782,7 +782,7 @@ def create_datasets(calc_output_dir, dataset_dir, r_units_calc, e_units_calc,
             'kcal/mol',
             'hartree',
             'bohr',
-            theory='MP2.def2-TZVP',
+            theory='MP2.def2TZVP',
         )
 
 
