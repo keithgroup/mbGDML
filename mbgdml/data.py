@@ -91,6 +91,7 @@ class _mbGDMLData():
         save_path = save_dir + name + '.npz'
         np.savez_compressed(save_path, **base_vars)
 
+
 class mbGDMLModel(_mbGDMLData):
     
     def __init__(self):
@@ -214,6 +215,42 @@ class mbGDMLDataset(_mbGDMLData):
             'dataset'
         ])
 
+    @property
+    def z(self):
+
+        if hasattr(self, '_custom_data'):
+            if self._custom_data == True:
+                return self._z
+    
+    @property
+    def R(self):
+
+        if hasattr(self, '_custom_data'):
+            if self._custom_data == True:
+                return self._R
+    
+    @property
+    def F(self):
+
+        if hasattr(self, '_custom_data'):
+            if self._custom_data == True:
+                return self._F
+
+    def read_trajectory_xyz(self, trajectory_path):
+
+        self._custom_data = True
+
+        parsed_data = ccread(trajectory_path)
+        self._z = parsed_data.atomnos
+        self._R = parsed_data.atomcoords
+    
+    def read_forces_xyz(self, trajectory_path):
+
+        self._custom_data = True
+        
+        parsed_data = ccread(trajectory_path)
+        self._F = parsed_data.atomcoords
+
 
     def create_dataset(
         self,
@@ -317,7 +354,7 @@ class mbGDMLDataset(_mbGDMLData):
     def print(self):
 
         if not hasattr(self, 'base_vars'):
-            raise AttributeError('Please load a dataset first.')
+            raise AttributeError('Please load a data set first.')
         
         R = self.base_vars['R']
         E = self.base_vars['E']
@@ -333,7 +370,7 @@ class mbGDMLDataset(_mbGDMLData):
     def mb_dataset(self, nbody, models_dir):
         
         if not hasattr(self, 'base_vars'):
-            raise AttributeError('Please load a dataset first.')
+            raise AttributeError('Please load a data set first.')
 
         nbody_index = 1
         while nbody_index < nbody:
