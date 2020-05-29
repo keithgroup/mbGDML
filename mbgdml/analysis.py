@@ -25,9 +25,14 @@
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+from mbgdml.data import structure
 from mbgdml.data import mbGDMLPredictset
 from mbgdml.utils import norm_path
 from mbgdml.utils import atoms_by_element
+from ase import Atoms
+from dscribe.descriptors import SOAP
+from dscribe.kernels import REMatchKernel
+from sklearn.preprocessing import normalize
 
 class NBodyContributions:
 
@@ -187,3 +192,59 @@ class NBodyContributions:
                 data_labels,
                 save_dir
             )
+
+
+class similarity:
+
+    def __init__(self):
+        pass
+
+    
+    def prepare_structures(self, z, R):
+
+        structures = []
+
+        for struct_num in R:
+            print('yes')
+
+
+    def initialize_soap(self, atoms, rcut, nmax, lmax, sigma, **kwargs):
+
+        atoms = list(set(atoms))  # Unique list of atomic species
+
+        self.desc = SOAP(
+            species=atoms,
+            rcut=rcut,
+            nmax=nmax,
+            lmax=lmax,
+            sigma=sigma,
+            periodic=False,
+            crossover=True,
+            sparse=False
+        )
+
+
+
+        
+
+
+
+def test():
+    string_file = '/home/alex/Dropbox/keith/projects/mbgdml/data/analysis/similarity/test/h2o-lit-structures.xyz'
+
+    test_structures = structure()
+    test_structures.load_file(string_file)
+    test = similarity()
+    test.initialize_soap(
+        test_structures.z,
+        5.0,
+        8,
+        6,
+        0.5
+    )
+
+    test.prepare_structures(test_structures.z, test_structures.R)
+
+    return 'test'
+
+run = test()
