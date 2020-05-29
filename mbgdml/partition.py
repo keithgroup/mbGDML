@@ -90,6 +90,11 @@ def partition_trajectory(traj_path):
     
     Args:
         traj_path (str): Path to trajectory with xyz coordinates.
+    
+    Returns:
+        dict: All nonrepeating solvent molecule combinations from cluster with
+              keys being uppercase concatenations of molecule labels and
+              values being the string of coordinates.
     """
 
     # Parses trajectory.
