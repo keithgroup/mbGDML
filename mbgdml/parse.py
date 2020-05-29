@@ -117,23 +117,21 @@ def cluster_size(xyz_path, solvent):
             line = xyz_file.readline()
 
 def parse_stringfile(stringfile_path):
-    """Parses xyz stringfile into list containing xyz coordinates of each
-    structure in order. A stringfile is a text file with a list of xyz
-    structures. This also could be a trajectory.
+    """Parses xyz stringfile into ***
     
     Args:
         stringfile_path (str):  Specifies path to stringfile.
     
     Returns:
-        dict:   Contains 'atoms' which is a list of atoms identified by their
-                element symbol and 'coords' which is a numpy array with shape
-                (n, m, 3) where n is the number of structures and m is the
-                number of atoms in each structure.
+        ***
     """
     
-    stringfile_data = parse_coords(stringfile_path)
+    # TODO write custom function to parse string files with different numbers of atoms
+    # cclib cannot be used because xyz parse cannot handle different solvents or sizes
+    # probably have to manually parse each structure and build a dict
+    # Or maybe use cclib individually for each structure
    
-    return stringfile_data
+    pass
 
 
 def parse_cluster(cluster_data):
