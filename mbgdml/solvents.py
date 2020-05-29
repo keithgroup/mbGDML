@@ -47,9 +47,9 @@ class solvent():
                        + '/solvents.json'
         with open(solvent_json, 'r') as solvent_file:
             solvent_data=solvent_file.read()
-        all_solvents = json.loads(solvent_data)
+        self.all_solvents = json.loads(solvent_data)
         
-        self.identify_solvent(atom_list, all_solvents)
+        self.identify_solvent(atom_list, self.all_solvents)
 
 
     def atom_numbers(self, chem_formula):
