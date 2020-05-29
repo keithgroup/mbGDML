@@ -98,7 +98,7 @@ def partition_trajectory(traj_path):
     """
 
     # Parses trajectory.
-    parsed_traj = parse.parse_stringfile(traj_path)
+    parsed_traj = parse.parse_coords(traj_path)
 
     # Gets length of trajectory.
     traj_steps = parsed_traj['coords'].shape[0]
