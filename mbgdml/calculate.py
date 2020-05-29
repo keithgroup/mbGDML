@@ -243,9 +243,6 @@ ${coords}\
 #SBATCH --time=${timeDays}-${timeHours}:00:00\n\
 #SBATCH --cluster=${nameCluster}\n\
 \n\
-# Output name variable for any wacc progression or verification.\n\
-output_name=${nameOutput}\n\
-\n\
 cd $SBATCH_O_WORKDIR\n\
 module purge\n\
 module load openmpi/3.1.4\n\
@@ -260,7 +257,7 @@ export OMPI_MCA_btl_base_warn_component_unused=0\n\
 export OMPI_MCA_orte_base_help_aggregate=0\n\
 \n\
 cd $SLURM_SCRATCH\n\
-$(which orca) ${nameInput}.inp\n\
+$(which orca) *.inp\n\
 \n\
 '
 
@@ -383,10 +380,16 @@ class ORCA:
 
 
 def partition_engrad(
-    package, calc_path, partition_dict, temperature, md_iteration,
-    theory_level_engrad='MP2', basis_set_engrad='def2-TZVP',
+    package,
+    partition_dict,
+    temperature,
+    md_iteration,
+    calc_dir='.',
+    calc_name='partition-engrad',
+    theory_level_engrad='MP2',
+    basis_set_engrad='def2-TZVP',
     options_engrad='TightSCF FrozenCore',
-    control_blocks_engrad='%scf\n    ConvForced true\nend\n%maxcore 800\n',
+    control_blocks_engrad='%scf\n    ConvForced true\nend\n%maxcore 8000\n',
     submit=False
 ):
     """ Sets up a partition ORCA 4.2.0 EnGrad calculation for trajectory.
@@ -396,14 +399,16 @@ def partition_engrad(
     Args:
         package (str): specifies the quantum chemistry program to be used. ORCA
             is currently the only package directly supported.
-        calc_path (str): path to the parent directory for the calculation
-            directory.
         partition_dict (dict): contains all information for the partition
             including 'solvent_label', 'partition_size', 'atoms', and 'coords'.
         temperature (int): used for labeling and identifying the thermostat
             temperature for the molecular dynamics simulation.
         md_iteration (int): used for labeling and identifying the iteration of
             the molecular dynamics simulation.
+        calc_dir (str, optional): Path to write calculation.
+            Defaults to current directory ('./').
+        calc_name (str, optional): Name for the calculation.
+            Defaults to 'partition-engrad'.
         theory_level_engrad (str, optional): keword that specifies the
             level of theory (e.g., MP2, BP86, B3LYP, etc.) used for calculations.
             Defaults to 'MP2' for ORCA 4.2.0.
@@ -426,23 +431,14 @@ def partition_engrad(
 
 
     # Normalizes path
-    calc_path = utils.norm_path(calc_path)
-    
-    # Creates calc folder name, e.g. '4H2O-300-1'.
-    calc_name_base = str(partition_dict['cluster_size']) \
-                     + partition_dict['solvent_label'] \
-                     + '-' + str(temperature) \
-                     + '-' + str(md_iteration) \
-                     + '-' + partition_dict['partition_label']
+    calc_path = utils.norm_path(calc_dir)
+
+    # Gets solvent information
+    #solvent_info = solvents.system_info(parsed_traj['atoms'])
 
     # Moves into MD step calculation folder.
-    try:
-        os.chdir(calc_path)
-        os.mkdir(calc_name_base)
-        os.chdir(calc_name_base)
-    except:
-        print('This folder already exists.')
-        return None
+    os.makedirs(calc_path, exist_ok=True)
+    os.chdir(calc_path)
     
     # Creates calculation object
     if package.lower() == 'orca':
@@ -468,7 +464,7 @@ def partition_engrad(
 
         # If this is the first step, we need to write the submission file.
         if step_index == 1:
-            engrad.nameJob = calc_name_base
+            engrad.nameJob = calc_name
             output_file = 'out-' + engrad.nameJob + '.out'
             engrad.nameOutput = output_file[:-4]
             engrad.template_orca_submit_string = templates.orca_submit_template
@@ -477,7 +473,7 @@ def partition_engrad(
             engrad.template_orca_string = templates.orca_add_job \
                                         + templates.orca_input_template
 
-        engrad.nameJob = calc_name_base + '-step' + str(step_index)
+        engrad.nameJob = calc_name + '-step' + str(step_index)
         engrad.coordsString = utils.string_coords(
             partition_dict['atoms'],
             partition_dict['coords'][step_index]
@@ -485,7 +481,7 @@ def partition_engrad(
         engrad.write_input()
         
         
-        with open(calc_name_base + '.inp', 'a+') as outfile:
+        with open(calc_name + '.inp', 'a+') as outfile:
             with open(engrad.nameJob + '.inp') as infile:
                 for line in infile:
                     outfile.write(line)
