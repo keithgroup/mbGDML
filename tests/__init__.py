@@ -1,1 +1,1 @@
-"""Unit test package for mbgdml."""
+"""Pytest package for mbgdml."""

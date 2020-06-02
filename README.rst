@@ -9,10 +9,6 @@ mbgdml
 .. image:: https://travis-ci.com/aalexmmaldonado/mbGDML.svg?token=zhKXK5zzVqJmiyrPsaxe&branch=master
         :target: https://travis-ci.com/aalexmmaldonado/mbGDML
 
-.. image:: https://readthedocs.org/projects/mbgdml/badge/?version=latest
-        :target: https://mbgdml.readthedocs.io/en/latest/?badge=latest
-        :alt: Documentation Status
-
 
 
 
