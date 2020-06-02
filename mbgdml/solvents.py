@@ -42,13 +42,8 @@ class solvent():
 
     def __init__(self, atom_list):
 
-        # Gets available solvents from json file.
-        solvent_json = os.path.dirname(os.path.realpath(__file__)) \
-                       + '/solvents.json'
-        with open(solvent_json, 'r') as solvent_file:
-            solvent_data=solvent_file.read()
-        self.all_solvents = json.loads(solvent_data)
-        
+        # Gets available solvents
+        self.all_solvents = solvent_data
         self.identify_solvent(atom_list, self.all_solvents)
 
 
@@ -201,3 +196,18 @@ def system_info(atoms):
         system_info_dict['cluster_size'] = system_info.cluster_size
     
     return system_info_dict
+
+solvent_data = {
+    "water": {
+        "label": "H2O",
+        "formula": "H2O"
+    },
+    "acetonitrile": {
+        "label": "acn",
+        "formula": "C2H3N"
+    },
+    "methanol": {
+        "label": "MeOH",
+        "formula": "CH3OH"
+    }
+}
