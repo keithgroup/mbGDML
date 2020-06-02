@@ -41,70 +41,115 @@ class _mbGDMLData():
     def get_system_info(self, atoms):
         """Describes the dataset system.
         
-        Args:
-            atoms (list): Atomic numbers of all atoms in the system. The atoms
+        Parameters
+        ----------
+            atoms : list
+                Atomic numbers of all atoms in the system. The atoms
                 are repeated; for example, water is ['H', 'H', 'O'].
         """
         self.system_info = solvents.system_info(atoms)
     
-    def add_system_info(self, base_vars):
+    def add_system_info(self, dataset):
         """Adds information about the system to the model.
         
-        Args:
-            base_vars (dict): Custom data structure that contains all
-                information for a GDML dataset.
+        Parameters
+        ----------
+        dataset : dict
+            Custom data structure that contains all information for a
+            GDML dataset.
         
-        Returns:
-            dict: An updated GDML dataset with additional information regarding
-                the system.
+        Returns
+        -------
+        dict
+            An updated GDML dataset with additional information regarding
+            the system.
         
-        Notes:
-            If the system is a solvent, the 'solvent' name and 'cluster_size'
-            is included.
+        Note
+        ----
+        If the system is a solvent, the 'solvent' name and 'cluster_size'
+        is included.
         """
 
         if not hasattr(self, 'system_info'):
-            self.get_system_info(base_vars['z'].tolist())
+            self.get_system_info(dataset['z'].tolist())
         
-        base_vars['system'] = self.system_info['system']
-        if base_vars['system'] == 'solvent':
-            base_vars['solvent'] = self.system_info['solvent_name']
-            base_vars['cluster_size'] = self.system_info['cluster_size']
+        dataset['system'] = self.system_info['system']
+        if dataset['system'] == 'solvent':
+            dataset['solvent'] = self.system_info['solvent_name']
+            dataset['cluster_size'] = self.system_info['cluster_size']
         
-        return base_vars
+        return dataset
 
-    def save(self, name, base_vars, save_dir, dataset):
-        """General save function for GDML datasets and models.
+    def save(self, name, data, save_dir, is_dataset):
+        """General save function for GDML data sets and models.
         
-        Args:
-            name (str): Name of the file to be saved not including the
-                extension.
-            base_vars (dict): Base variables for dataset or model.
-            save_dir (str): Directory to save the file.
-            dataset (bool): Is the file a dataset? Controls whether the md5 of
-                the file is saved.
+        Parameters
+        ----------
+        name : str
+            Name of the file to be saved not including the
+            extension.
+        data : dict
+            Base variables for dataset or model.
+        save_dir : str
+            Directory to save the file.
+        is_dataset : bool
+            Is the file a dataset? Controls whether the md5 of
+            the file is saved.
         """
 
         save_dir = utils.norm_path(save_dir)
-        if dataset:
-            base_vars['md5'] = sgdml_io.dataset_md5(base_vars)
+        if is_dataset:
+            data['md5'] = sgdml_io.dataset_md5(data)
         save_path = save_dir + name + '.npz'
-        np.savez_compressed(save_path, **base_vars)
+        np.savez_compressed(save_path, **data)
 
 
 class mbGDMLModel(_mbGDMLData):
+    """
+    A class to load, inspect, and modify GDML models.
+
+    Attributes
+    ----------
+    model : np.npzfile
+        GDML model for predicting energies and forces.
+        
+
+    Methods
+    -------
+    load(model_path)
+        Loads GDML model.
+    get_model_name(log_path)
+        Retrives GDML model's name from log file.
+    add_manybody_info(mb_order)
+        Adds many-body (mb) information to GDML model.
+    """
     
     def __init__(self):
         pass
+
+    @property
+    def code_version(self):
+
+        if hasattr(self, '_model_data'):
+            return self._model_data['code_version'][()]
+        else:
+            raise AttributeError('No model is loaded.')
 
     def load(self, model_path):
         """Loads GDML model.
         
         Args:
             model_path (str): Path to GDML model.
+
+        Raises:
+            AttributeError: 
         """
+
         self.model = np.load(model_path, allow_pickle=True)
-        self.base_vars = dict(self.model)
+        self._model_data = dict(self.model_npz)
+
+        if self._model_data['type'][()] != 'm':
+            raise AttributeError('This npz is not a GDML model.')
     
     def get_model_name(self, log_path):
         """Retrives GDML model's name from log file.
@@ -125,10 +170,10 @@ class mbGDMLModel(_mbGDMLData):
             mb_order (int): The max order of many-body predictions removed
                 from the dataset.
         """
-        if not hasattr(self, 'base_vars'):
+        if not hasattr(self, 'model_data'):
             raise AttributeError('There is no model loaded.')
 
-        self.base_vars['mb'] = mb_order
+        self.model_data['mb'] = mb_order
         
 
 class mbGDMLDataset(_mbGDMLData):
@@ -193,8 +238,12 @@ class mbGDMLDataset(_mbGDMLData):
 
     
     def load(self, dataset_path):
-        self.dataset = np.load(dataset_path)
-        self.base_vars = dict(self.dataset)
+        self._dataset_npz = np.load(dataset_path)
+        self.dataset = dict(self._dataset_npz)
+        self._z = self.dataset['z']
+        self._R = self.dataset['R']
+        self._E = self.dataset['E']
+        self._F = self.dataset['F']
 
 
     def partition_dataset_name(self, partition_label, cluster_label,
@@ -218,27 +267,41 @@ class mbGDMLDataset(_mbGDMLData):
     @property
     def z(self):
 
-        if hasattr(self, '_custom_data'):
-            if self._custom_data == True:
-                return self._z
+        if hasattr(self, '_user_data') or hasattr(self, 'dataset'):
+            return self._z
+        else:
+            raise AttributeError('There is no data loaded.')
     
     @property
     def R(self):
 
-        if hasattr(self, '_custom_data'):
-            if self._custom_data == True:
-                return self._R
+        if hasattr(self, '_user_data') or hasattr(self, 'dataset'):
+            return self._R
+        else:
+            raise AttributeError('There is no data loaded.')
     
     @property
     def F(self):
 
-        if hasattr(self, '_custom_data'):
-            if self._custom_data == True:
-                return self._F
+        if hasattr(self, '_user_data') or hasattr(self, 'dataset'):
+            return self._F
+        else:
+            raise AttributeError('There is no data loaded.')
+    
+    @property
+    def E(self):
+
+        if hasattr(self, '_user_data') or hasattr(self, 'dataset'):
+            if not hasattr(self, '_E'):
+                raise AttributeError('No energies were provided in data set.')
+            else:
+                return self._E
+        else:
+            raise AttributeError('There is no data loaded.')
 
     def read_trajectory_xyz(self, trajectory_path):
 
-        self._custom_data = True
+        self._user_data = True
 
         parsed_data = ccread(trajectory_path)
         self._z = parsed_data.atomnos
@@ -246,7 +309,7 @@ class mbGDMLDataset(_mbGDMLData):
     
     def read_forces_xyz(self, trajectory_path):
 
-        self._custom_data = True
+        self._user_data = True
         
         parsed_data = ccread(trajectory_path)
         self._F = parsed_data.atomcoords
@@ -318,7 +381,7 @@ class mbGDMLDataset(_mbGDMLData):
             self.get_system_info(atoms.tolist())
 
         # sGDML variables.
-        base_vars = {
+        dataset = {
             'type': 'd',  # Designates dataset or model.
             'code_version': __version__,  # sGDML version.
             'name': dataset_name,  # Name of the output file.
@@ -340,25 +403,25 @@ class mbGDMLDataset(_mbGDMLData):
         }
 
         # mbGDML variables.
-        base_vars = self.add_system_info(base_vars)
+        dataset = self.add_system_info(dataset)
 
-        base_vars['md5'] = sgdml_io.dataset_md5(base_vars)
-        self.base_vars = base_vars
+        dataset['md5'] = sgdml_io.dataset_md5(dataset)
+        self.dataset = dataset
 
         # Writes dataset.
         if write:
             self._organization_dirs(gdml_data_dir)
             dataset_path = self.gdml_file_path + '.npz'
-            np.savez_compressed(dataset_path, **base_vars)
+            np.savez_compressed(dataset_path, **dataset)
     
     def print(self):
 
-        if not hasattr(self, 'base_vars'):
+        if not hasattr(self, 'dataset'):
             raise AttributeError('Please load a data set first.')
         
-        R = self.base_vars['R']
-        E = self.base_vars['E']
-        F = self.base_vars['F']
+        R = self.dataset['R']
+        E = self.dataset['E']
+        F = self.dataset['F']
 
         num_config = R.shape[0]
         for config in range(num_config):
@@ -369,7 +432,7 @@ class mbGDMLDataset(_mbGDMLData):
     
     def mb_dataset(self, nbody, models_dir):
         
-        if not hasattr(self, 'base_vars'):
+        if not hasattr(self, 'dataset'):
             raise AttributeError('Please load a data set first.')
 
         nbody_index = 1
@@ -397,7 +460,7 @@ class mbGDMLDataset(_mbGDMLData):
             nbody_model = mbGDMLModel()
             nbody_model.load(model_path)
             predict = mbGDMLPredict([nbody_model.model])
-            self.base_vars = predict.remove_nbody(self.dataset)
+            self.dataset = predict.remove_nbody(self.dataset)
 
             nbody_index += 1
 
@@ -534,7 +597,7 @@ class mbGDMLPredictset(_mbGDMLData):
             'dataset', 'prediction'
         )
         
-        self.base_vars = {
+        self.dataset = {
             'type': 'p',  # Designates predictions.
             'code_version': __version__,  # sGDML version.
             'name': name,
@@ -593,15 +656,15 @@ class mbGDMLPredictset(_mbGDMLData):
                             )
 
 
-        # Loop through all_E and all_F and add their keys to base_vars
+        # Loop through all_E and all_F and add their keys to dataset
         for order in all_E:
             E_name = f'E_{order}'
             F_name = f'F_{order}'
-            self.base_vars[E_name] = all_E[order]
-            self.base_vars[F_name] = all_F[order]
+            self.dataset[E_name] = all_E[order]
+            self.dataset[F_name] = all_F[order]
         
-        for data in self.base_vars:
-            setattr(self, data, self.base_vars[data])
+        for data in self.dataset:
+            setattr(self, data, self.dataset[data])
 
 
 
@@ -851,30 +914,30 @@ def combine_datasets(partition_dir, write_dir):
     )
 
     # Prepares initial combined dataset from the first dataset found.
-    dataset = np.load(all_dataset_paths[0])
-    base_vars = dict(dataset)
+    dataset_npz = np.load(all_dataset_paths[0])
+    dataset = dict(dataset_npz)
     del dataset
-    original_name = str(base_vars['name'][()])
+    original_name = str(dataset['name'][()])
     parent_label = original_name.split('-')[1]
-    size_label = ''.join([str(base_vars['cluster_size']), 'mer'])
-    base_vars['name'][()] = '-'.join([parent_label, size_label, 'dataset'])
+    size_label = ''.join([str(dataset['cluster_size']), 'mer'])
+    dataset['name'][()] = '-'.join([parent_label, size_label, 'dataset'])
 
     # Adds the remaining datasets to the new dataset.
     index_dataset = 1
     while index_dataset < len (all_dataset_paths):
         dataset_add = np.load(all_dataset_paths[index_dataset])
         print('Adding %s dataset to %s ...' % (dataset_add.f.name[()],
-              base_vars['name'][()]))
+              dataset['name'][()]))
 
         # Ensuring the datasets are compatible.
         try:
-            assert np.array_equal(base_vars['type'], dataset_add.f.type)
-            assert np.array_equal(base_vars['z'], dataset_add.f.z)
-            assert np.array_equal(base_vars['r_unit'], dataset_add.f.r_unit)
-            assert np.array_equal(base_vars['e_unit'], dataset_add.f.e_unit)
-            assert np.array_equal(base_vars['system'], dataset_add.f.system)
-            assert np.array_equal(base_vars['solvent'], dataset_add.f.solvent)
-            assert np.array_equal(base_vars['cluster_size'],
+            assert np.array_equal(dataset['type'], dataset_add.f.type)
+            assert np.array_equal(dataset['z'], dataset_add.f.z)
+            assert np.array_equal(dataset['r_unit'], dataset_add.f.r_unit)
+            assert np.array_equal(dataset['e_unit'], dataset_add.f.e_unit)
+            assert np.array_equal(dataset['system'], dataset_add.f.system)
+            assert np.array_equal(dataset['solvent'], dataset_add.f.solvent)
+            assert np.array_equal(dataset['cluster_size'],
                                   dataset_add.f.cluster_size)
         except AssertionError:
             base_filename = all_dataset_paths[0].split('/')[-1]
@@ -885,34 +948,34 @@ def combine_datasets(partition_dir, write_dir):
         # Seeing if the theory is always the same.
         # If theories are different, we change theory to 'unknown'.
         try:
-            assert str(base_vars['theory'][()]) == str(dataset_add.f.theory[()])
+            assert str(dataset['theory'][()]) == str(dataset_add.f.theory[()])
         except AssertionError:
-            base_vars['theory'][()] = 'unknown'
+            dataset['theory'][()] = 'unknown'
 
         # Concatenating relevant arrays.
-        base_vars['R'] = np.concatenate(
-            (base_vars['R'], dataset_add.f.R), axis=0
+        dataset['R'] = np.concatenate(
+            (dataset['R'], dataset_add.f.R), axis=0
         )
-        base_vars['E'] = np.concatenate(
-            (base_vars['E'], dataset_add.f.E), axis=0
+        dataset['E'] = np.concatenate(
+            (dataset['E'], dataset_add.f.E), axis=0
         )
-        base_vars['F'] = np.concatenate(
-            (base_vars['F'], dataset_add.f.F), axis=0
+        dataset['F'] = np.concatenate(
+            (dataset['F'], dataset_add.f.F), axis=0
         )
 
         index_dataset += 1
     
     # Updating min, max, mean, an variances.
-    base_vars['E_min'] = np.min(base_vars['E'].ravel())
-    base_vars['E_max'] = np.max(base_vars['E'].ravel())
-    base_vars['E_mean'] = np.mean(base_vars['E'].ravel())
-    base_vars['E_var'] = np.var(base_vars['E'].ravel())
-    base_vars['F_min'] = np.min(base_vars['F'].ravel())
-    base_vars['F_max'] = np.max(base_vars['F'].ravel())
-    base_vars['F_mean'] = np.mean(base_vars['F'].ravel())
-    base_vars['F_var'] = np.var(base_vars['F'].ravel())
+    dataset['E_min'] = np.min(dataset['E'].ravel())
+    dataset['E_max'] = np.max(dataset['E'].ravel())
+    dataset['E_mean'] = np.mean(dataset['E'].ravel())
+    dataset['E_var'] = np.var(dataset['E'].ravel())
+    dataset['F_min'] = np.min(dataset['F'].ravel())
+    dataset['F_max'] = np.max(dataset['F'].ravel())
+    dataset['F_mean'] = np.mean(dataset['F'].ravel())
+    dataset['F_var'] = np.var(dataset['F'].ravel())
 
     # Writing combined dataset.
-    base_vars['md5'] = sgdml_io.dataset_md5(base_vars)
-    dataset_path = write_dir + str(base_vars['name'][()]) + '.npz'
-    np.savez_compressed(dataset_path, **base_vars)
+    dataset['md5'] = sgdml_io.dataset_md5(dataset)
+    dataset_path = write_dir + str(dataset['name'][()]) + '.npz'
+    np.savez_compressed(dataset_path, **dataset)
