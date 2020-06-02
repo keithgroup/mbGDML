@@ -63,7 +63,7 @@ class similarity:
         
 
 
-
+"""
 def test():
     string_file = '/home/alex/Dropbox/keith/projects/mbgdml/data/analysis/similarity/test/h2o-lit-structures.xyz'
 
@@ -83,3 +83,4 @@ def test():
     return 'test'
 
 run = test()
+"""
