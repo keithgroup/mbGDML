@@ -1,15 +1,11 @@
-Welcome to mbGDML's documentation!
-==================================
+mbGDML
+======
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+   :hidden:
+
+   install
+   API <doc/modules>
+   contributing
 
 
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`

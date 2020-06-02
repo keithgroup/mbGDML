@@ -62,9 +62,6 @@ instance/
 # Scrapy stuff:
 .scrapy
 
-# Sphinx documentation
-docs/_build/
-
 # PyBuilder
 target/
 
@@ -104,3 +101,7 @@ ENV/
 # IDE settings
 .vscode/
 .idea/
+
+# docs
+docs/source/doc/*
+docs/build/*
