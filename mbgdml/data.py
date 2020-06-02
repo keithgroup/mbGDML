@@ -184,13 +184,13 @@ class mbGDMLDataset(_mbGDMLData):
 
     def _organization_dirs(
         self,
-        gdml_data_dir
+        gdml_data_dir,
+        dataset_name
     ):
         """Determines where a dataset should be saved.
 
         The dataset will be written in a directory that depends on the
-        parent solvent cluster (e.g. 4MeOH), partition size (e.g., dimer),
-        MD temperature (e.g. 300K), and MD iteration (e.g. 1).
+        partition size (e.g., dimer).
         
         Args:
             gdml_data_dir (str): Path to a common directory for GDML datasets.
@@ -202,30 +202,12 @@ class mbGDMLDataset(_mbGDMLData):
 
         gdml_data_dir = utils.norm_path(gdml_data_dir)
 
-        if not hasattr(self, 'dataset_name'):
-            raise AttributeError('There is no "dataset_name" attribute.')
-        
-        # Parsing information from the partition dataset_name.
-        partition_label, parent_cluster_label, \
-        md_temp, md_iter, _ = self.dataset_name.split('-')
-
         # Preparing directories.
         if self.system_info['system'] == 'solvent':
-            # /path/to/gdml-datasets/solventlabel/partitionsize/temp/iteration
-            gdml_solvent_dir = utils.norm_path(
-                gdml_data_dir + parent_cluster_label
-            )
             gdml_partition_size_dir = utils.norm_path(
-                gdml_solvent_dir + str(self.system_info['cluster_size']) + 'mer'
+                gdml_data_dir + str(self.system_info['cluster_size']) + 'mer'
             )
-            gdml_temp_dir = utils.norm_path(
-                gdml_partition_size_dir + str(md_temp)
-            )
-            gdml_iter_dir = utils.norm_path(
-                gdml_temp_dir + str(md_iter)
-            )
-            all_dir = [gdml_solvent_dir, gdml_partition_size_dir,
-                       gdml_temp_dir, gdml_iter_dir]
+            all_dir = [gdml_partition_size_dir]
             for directory in all_dir:
                 try:
                     os.chdir(directory)
@@ -234,7 +216,7 @@ class mbGDMLDataset(_mbGDMLData):
                     os.chdir(directory)
         
         # Writing GDML file.
-        self.gdml_file_path = gdml_iter_dir + self.dataset_name
+        self.gdml_file_path = gdml_partition_size_dir + dataset_name
 
     
     def load(self, dataset_path):
@@ -410,7 +392,7 @@ class mbGDMLDataset(_mbGDMLData):
 
         # Writes dataset.
         if write:
-            self._organization_dirs(gdml_data_dir)
+            self._organization_dirs(gdml_data_dir, dataset_name)
             dataset_path = self.gdml_file_path + '.npz'
             np.savez_compressed(dataset_path, **dataset)
     
@@ -843,11 +825,11 @@ class structure:
 
 def create_datasets(calc_output_dir, dataset_dir, r_units_calc, e_units_calc,
                     theory='unknown', r_units='Angstrom', e_units='kcal/mol'):
-    """Writes solvent partition datasets for GDML.
+    """Writes partition datasets for GDML.
 
     Used as a driver for the PartitionCalcOutput class that iterates over all
-    partitions for a solvent. Writes and organizes GDML xyz files according
-    to solvent, partition size, temperature, and MD iteration.
+    partitions. Writes and organizes GDML xyz files according
+    to partition size, temperature, and MD iteration.
     
     Args:
         calc_output_dir (str): Path to folder that contains computational
@@ -856,7 +838,7 @@ def create_datasets(calc_output_dir, dataset_dir, r_units_calc, e_units_calc,
 
     Notes:
         The partition calculation output files must have 'out' somewhere in
-        the file name (or extentions).
+        the file name (or extension).
     """
     
     calc_output_dir = utils.norm_path(calc_output_dir)
@@ -866,15 +848,9 @@ def create_datasets(calc_output_dir, dataset_dir, r_units_calc, e_units_calc,
         print('Writing GDML dataset for ' + out_file.split('/')[-1] + ' ...')
         partition_calc = PartitionCalcOutput(out_file)
         dataset = mbGDMLDataset()
-        dataset.partition_dataset_name(
-            partition_calc.partition,
-            partition_calc.cluster,
-            partition_calc.temp,
-            partition_calc.iter,
-        )
         dataset.create_dataset(
             dataset_dir,
-            dataset.dataset_name,
+            partition_calc.output_name,
             partition_calc.atoms,
             partition_calc.coords,
             partition_calc.energies,
@@ -910,13 +886,13 @@ def combine_datasets(partition_dir, write_dir):
 
     # Gets all GDML datasets within a partition directory.
     all_dataset_paths = utils.natsort_list(
-        utils.get_files(partition_dir, 'dataset.npz')
+        utils.get_files(partition_dir, '.npz')
     )
 
     # Prepares initial combined dataset from the first dataset found.
     dataset_npz = np.load(all_dataset_paths[0])
     dataset = dict(dataset_npz)
-    del dataset
+    del dataset_npz
     original_name = str(dataset['name'][()])
     parent_label = original_name.split('-')[1]
     size_label = ''.join([str(dataset['cluster_size']), 'mer'])
