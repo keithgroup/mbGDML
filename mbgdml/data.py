@@ -576,10 +576,10 @@ class mbGDMLPredictset(_mbGDMLData):
 
         num_config = self.dataset['R'].shape[0]
         name = str(self.dataset['name'][()]).replace(
-            'dataset', 'prediction'
+            'dataset', 'predictset'
         )
         
-        self.dataset = {
+        self.predictset = {
             'type': 'p',  # Designates predictions.
             'code_version': __version__,  # sGDML version.
             'name': name,
@@ -642,11 +642,11 @@ class mbGDMLPredictset(_mbGDMLData):
         for order in all_E:
             E_name = f'E_{order}'
             F_name = f'F_{order}'
-            self.dataset[E_name] = all_E[order]
-            self.dataset[F_name] = all_F[order]
+            self.predictset[E_name] = all_E[order]
+            self.predictset[F_name] = all_F[order]
         
-        for data in self.dataset:
-            setattr(self, data, self.dataset[data])
+        for data in self.predictset:
+            setattr(self, data, self.predictset[data])
 
 
 
