@@ -148,7 +148,7 @@ class PartitionOutput:
             self.cclib_data.metadata['package'], self.G, self.e_units,
             self.r_units
         )
-        self.G = np.negative(self.G)
+        self.F = np.negative(self.G)
 
         self.system_info = solvents.system_info(self.z.tolist())
 
