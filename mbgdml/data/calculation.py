@@ -105,17 +105,17 @@ class PartitionOutput:
         The number of solvent molecules in the partition.
     cclib_data : cclib.ccdata
         Contains all data parsed from output file.
-    atoms : numpy.ndarray
+    z : numpy.ndarray
         A (n,) array containing n atomic numbers.
-    coords : numpy.ndarray
+    R : numpy.ndarray
         A (m, n, 3) array containing the atomic coordinates
         of n atoms of m MD steps.
-    energies : numpy.ndarray
+    E : numpy.ndarray
         A (m,) array containing the energies of m structures.
-    grads : numpy.ndarray
+    G : numpy.ndarray
         A (m, n, 3) array containing the atomic gradients of n atoms of m MD
         steps.
-    forces : numpy.ndarray
+    F : numpy.ndarray
         A (m, n, 3) array containing the atomic forces
         of n atoms of m MD steps. Simply the negative of grads.
     system : str
@@ -143,14 +143,14 @@ class PartitionOutput:
         
         self.cclib_data = ccread(self.output_path)
         self._get_gdml_data()
-        self.energies = convertor(self.energies, 'eV', self.e_units)
-        self.grads = convert_forces(
-            self.cclib_data.metadata['package'], self.grads, self.e_units,
+        self.E = convertor(self.E, 'eV', self.e_units)
+        self.G = convert_forces(
+            self.cclib_data.metadata['package'], self.G, self.e_units,
             self.r_units
         )
-        self.forces = np.negative(self.grads)
+        self.G = np.negative(self.G)
 
-        self.system_info = solvents.system_info(self.atoms.tolist())
+        self.system_info = solvents.system_info(self.z.tolist())
 
     
     def _get_gdml_data(self):
@@ -166,15 +166,15 @@ class PartitionOutput:
         """
 
         try:
-            self.atoms = self.cclib_data.atomnos
-            self.coords = self.cclib_data.atomcoords
-            self.grads = self.cclib_data.grads
-            self.forces = np.negative(self.grads)
+            self.z = self.cclib_data.atomnos
+            self.R = self.cclib_data.atomcoords
+            self.G = self.cclib_data.grads
+            self.F = np.negative(self.G)
 
             if hasattr(self.cclib_data, 'mpenergies'):
-                self.energies = self.cclib_data.mpenergies
+                self.E = self.cclib_data.mpenergies
             elif hasattr(self.cclib_data, 'scfenergies'):
-                self.energies = self.cclib_data.scfenergies
+                self.E = self.cclib_data.scfenergies
             else:
                 raise AttributeError('No energies were found.')
         except:
