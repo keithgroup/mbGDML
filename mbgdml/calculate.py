@@ -40,7 +40,7 @@ from mbgdml import utils
 from mbgdml import parse
 from mbgdml import partition
 from mbgdml.predict import mbGDMLPredict
-from mbgdml.data import _mbGDMLData
+from mbgdml.data import mbGDMLData
 
 
 class mbGDMLCalculator(Calculator):
@@ -116,7 +116,7 @@ class mbGDMLCalculator(Calculator):
 
         self.results = {'energy': e, 'forces': f.reshape(-1, 3)}
 
-class mbGDMLMD(_mbGDMLData):
+class mbGDMLMD(mbGDMLData):
     def __init__(self, structure_name, structure_path):
         """Molecular dynamics through ASE with many-body GDML model.
         

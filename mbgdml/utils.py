@@ -20,11 +20,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+
 import os
 import numpy as np
 import cclib
 from periodictable import elements
 from natsort import natsorted, ns
+
 
 def norm_path(path):
     """Normalizes directory paths to be consistent.
@@ -43,6 +45,7 @@ def norm_path(path):
         normd_path = path + '/'
     
     return normd_path
+
 
 def get_files(path, expression):
     """Returns paths to all files in a given directory that matches a provided
@@ -74,6 +77,7 @@ def get_files(path, expression):
             files.append(file)
 
     return files
+
 
 def make_folder(folder):
     """Creates folder at specified path.
@@ -127,6 +131,7 @@ def natsort_list(unsorted_list):
 
     return sorted_list
 
+
 def string_coords(atoms, coords):
     """Puts atomic coordinates into a Python string. Typically used for 
     writing to an input file.
@@ -160,19 +165,74 @@ def string_coords(atoms, coords):
     
     return atom_coords_string
 
-def convert_gradients(gradients, number_atoms):
-    # Eh/bohr to kcal/(angstrom mol)
-    atom_index = 0
-    while atom_index < number_atoms:
-        coord_index = 0
-        while coord_index < 3:
-            gradients[atom_index][coord_index] = gradients[atom_index][coord_index] \
-                * ( 627.50947414 / 0.5291772109)
 
-            coord_index += 1
-        atom_index += 1
+def convert_forces(
+    package, forces, e_units, r_units, e_units_calc=None, r_units_calc=None
+):
+    """Converts forces (or gradients) to specified units.
 
-    return gradients
+    cclib automatically converts energy units to eV, but does not convert
+    gradients. GDML needs consistent energy and force units, so we convert
+    them.
+
+    Note
+    ----
+        Only supports 'ORCA' for automatically determining calc units.
+        Otherwise, manually specify `e_units_calc` and `r_units_calc`.
+
+    Parameters
+    ----------
+    package : str
+        Computational chemistry package used for computations.
+    forces : numpy.ndarray
+        An array with units of energy and distance matching `e_units_calc`
+        and `r_units_calc`.
+    e_units : str
+        Desired units of energy. Available units are 'eV', 'hartree',
+        'kcal/mol', and 'kJ/mol'.
+    r_units : str
+        Desired units of distance. Available units implemented in cclib's
+        convertor function are 'Angstrom' and 'bohr'.
+    e_units_calc : str, optional
+        Specifies package-specific energy units used in calculation.
+        Defaults to None.
+    r_units_calc : str, optional
+        Specifies package-specific distance units used in calculation.
+        Defaults to None.
+    
+    Raises
+    ------
+    ValueError
+        If the selected energy units are not implemented.
+    ValueError
+        If the selected distance units are not implemented.
+    ValueError
+        If calculation package is not defined here for known energy and
+        distance units.
+    """
+
+    defined_packages = {
+        'ORCA': {'e_unit': 'hartree', 'r_unit': 'bohr'}
+    }
+
+    if e_units not in {'eV', 'hartree', 'kcal/mol', 'kJ/mol'}:
+        raise ValueError(f'{e_units} is not an available energy unit.')
+    if r_units not in {'Angstrom', 'bohr'}:
+        raise ValueError(f'{r_units} is not an available distance unit.')
+    if package in defined_packages:
+        e_units_calc = defined_packages[package]['e_unit']
+        r_units_calc = defined_packages[package]['r_unit']
+    else:
+        if e_units_calc == None or r_units_calc == None:
+            raise ValueError(
+                'Please specify e_units_calc and r_units_calc.'
+            )
+    
+    forces_conv = cclib.parser.utils.convertor(forces, e_units_calc, e_units)
+    forces_conv = cclib.parser.utils.convertor(forces_conv, r_units, r_units_calc)
+    
+    return forces_conv
+
 
 def atoms_by_element(atom_list):
     """Converts a list of atoms identified by their atomic number to their
