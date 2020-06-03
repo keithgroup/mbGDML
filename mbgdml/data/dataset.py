@@ -383,13 +383,15 @@ class mbGDMLDataset(mbGDMLData):
         monomer, dimer, trimer, etc.) to represent the complete dataset of that
         partition size.
 
-        Args:
-            partition_dir (str): Path to directory containing GDML datasets.
-                Typically to a directory containing only a single partition size
-                of a single solvent.
-            write_dir (str): Path to the directory where the partition-size GDML
-                dataset will be written. Usually the solvent directory in the 
-                gdml-dataset directory.
+        Parameters
+        ----------
+        partition_dir : str
+            Path to directory containing GDML datasets. Typically to a
+            directory containing only a single partition size
+            of a single solvent.
+        write_dir (str): Path to the directory where the partition-size GDML
+            dataset will be written. Usually the cluster directory in the 
+            gdml-dataset directory.
         """
 
         # Normalizes directories.
@@ -406,7 +408,7 @@ class mbGDMLDataset(mbGDMLData):
         dataset = dict(dataset_npz)
         del dataset_npz
         original_name = str(dataset['name'][()])
-        parent_label = original_name.split('-')[1]
+        parent_label = original_name.split('-')[0]
         size_label = ''.join([str(dataset['cluster_size']), 'mer'])
         dataset['name'][()] = '-'.join([parent_label, size_label, 'dataset'])
 
