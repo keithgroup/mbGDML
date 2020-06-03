@@ -256,10 +256,10 @@ class mbGDMLDataset(mbGDMLData):
         self,
         gdml_data_dir,
         dataset_name,
-        atoms,
-        coords,
-        energies,
-        forces,
+        z,
+        R,
+        E,
+        F,
         e_units,
         r_units,
         theory='unknown',
@@ -277,14 +277,14 @@ class mbGDMLDataset(mbGDMLData):
             Path to common GDML data set directory for a particular cluster.
         dataset_name : str
             The name to label the dataset.
-        atoms : numpy.ndarray
+        z : numpy.ndarray
             A (n,) array containing atomic numbers of n atoms.
-        coords : numpy.ndarray
+        R : numpy.ndarray
             A (m, n, 3) array containing the atomic coordinates of n atoms of
             m MD steps.
-        energies : numpy.ndarray
+        E : numpy.ndarray
             A (m,) array containing the energies of m MD steps.
-        forces : numpy.ndarray
+        F : numpy.ndarray
             A (m, n, 3) array containing the atomic forces of n atoms of
             m MD steps. Simply the negative of grads.
         e_units : str
@@ -324,16 +324,16 @@ class mbGDMLDataset(mbGDMLData):
                     'Please specify calculation units for conversion.'
                 )
             else:
-                energies = convertor(energies, e_units, e_units_gdml)
-                forces = utils.convert_forces(
-                    'unknown', forces,
+                E = convertor(E, e_units, e_units_gdml)
+                F = utils.convert_forces(
+                    'unknown', F,
                     e_units, r_units,
                     e_units_calc=e_units_calc,
                     r_units_calc=r_units_calc
                 )
 
         if not hasattr(self, 'system_info'):
-            self.get_system_info(atoms.tolist())
+            self.get_system_info(z.tolist())
 
         # sGDML variables.
         dataset = {
@@ -341,20 +341,20 @@ class mbGDMLDataset(mbGDMLData):
             'code_version': __version__,  # sGDML version.
             'name': dataset_name,  # Name of the output file.
             'theory': theory,  # Theory used to calculate the data.
-            'z': atoms,  # Atomic numbers of all atoms in system.
-            'R': coords,  # Cartesian coordinates.
+            'z': z,  # Atomic numbers of all atoms in system.
+            'R': R,  # Cartesian coordinates.
             'r_unit': r_units_gdml,  # Units for coordinates.
-            'E': energies,  # Energy of the structures.
+            'E': E,  # Energy of the structures.
             'e_unit': e_units_gdml,  # Units of energy.
-            'E_min': np.min(energies.ravel()),  # Energy minimum.
-            'E_max': np.max(energies.ravel()),  # Energy maximum.
-            'E_mean': np.mean(energies.ravel()),  # Energy mean.
-            'E_var': np.var(energies.ravel()),  # Energy variance.
-            'F': forces,  # Atomic forces for each atom.
-            'F_min': np.min(forces.ravel()),  # Force minimum.
-            'F_max': np.max(forces.ravel()),  # Force maximum.
-            'F_mean': np.mean(forces.ravel()),  # Force mean.
-            'F_var': np.var(forces.ravel())  # Force variance.
+            'E_min': np.min(E.ravel()),  # Energy minimum.
+            'E_max': np.max(E.ravel()),  # Energy maximum.
+            'E_mean': np.mean(E.ravel()),  # Energy mean.
+            'E_var': np.var(E.ravel()),  # Energy variance.
+            'F': F,  # Atomic forces for each atom.
+            'F_min': np.min(F.ravel()),  # Force minimum.
+            'F_max': np.max(F.ravel()),  # Force maximum.
+            'F_mean': np.mean(F.ravel()),  # Force mean.
+            'F_var': np.var(F.ravel())  # Force variance.
         }
 
         # mbGDML variables.
