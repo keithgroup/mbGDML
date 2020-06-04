@@ -8,7 +8,9 @@ with open('README.rst') as readme_file:
     readme = readme_file.read()
 
 requirements = ['Click>=7.0', 'natsort>=7.0.1', 'cclib>=1.6.2',
-                'periodictable>=1.5.2', 'mako>=1.1.2', 'numpy>=1.18.2']
+                'periodictable>=1.5.2', 'numpy>=1.18.2']
+
+optional_requirements = ['mako>=1.1.2']
 
 setup_requirements = [ ]
 
@@ -35,6 +37,7 @@ setup(
         ],
     },
     install_requires=requirements,
+    extras_require=optional_requirements,
     license="MIT license",
     long_description=readme,
     include_package_data=True,
