@@ -70,9 +70,7 @@ class NBodyContributions:
         F = {}
         F_index = 1
         while hasattr(predict_set, f'F_{F_index}'):
-            _, F[f'F_{F_index}'] = predict_set.sum_contributions(
-                structure_index, F_index
-            )
+            F[f'F_{F_index}'] = getattr(predict_set, f'F_{F_index}')[structure_index]
             F_index += 1
         
         F_true = predict_set.F_true[structure_index]
