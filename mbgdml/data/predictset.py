@@ -50,7 +50,7 @@ class mbGDMLPredictset(mbGDMLData):
         pass
         
     
-    def read(self, predictset_path):
+    def load(self, predictset_path):
         """Reads predict data set and loads data.
         
         Args:
@@ -79,14 +79,19 @@ class mbGDMLPredictset(mbGDMLData):
         This function returns the 'total energy' that includes the specified
         nbody_order and lower corrections.
 
-        Args:
-            struct_num (int): Specifies the index of the structure in the
-                self.R array and the energy and force arrays.
-            nbody_order (int): Highest many-body order corrections to include.
+        Parameters
+        ----------
+        struct_num : int
+            Specifies the index of the structure in the self.R array and the
+            energy and force arrays.
+        nbody_order : int
+            Highest many-body order corrections to include.
         
-        Returns:
-            tuple: Energy and force of the structure with all many-body
-                corrections up to nbody_order.
+        Returns
+        -------
+        tuple
+            Energy and force of the structure with all many-body corrections
+            up to nbody_order.
         """
 
         if not hasattr(self, 'type'):
