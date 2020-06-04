@@ -23,7 +23,6 @@
 """Analyses for mbGDML models."""
 
 import numpy as np
-import matplotlib as mpl
 import matplotlib.pyplot as plt
 from mbgdml.data import structure
 from mbgdml.data import mbGDMLPredictset
