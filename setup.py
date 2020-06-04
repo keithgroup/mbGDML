@@ -10,8 +10,6 @@ with open('README.rst') as readme_file:
 requirements = ['Click>=7.0', 'natsort>=7.0.1', 'cclib>=1.6.2',
                 'periodictable>=1.5.2', 'numpy>=1.18.2']
 
-optional_requirements = ['mako>=1.1.2']
-
 setup_requirements = [ ]
 
 test_requirements = ['pytest>=5.4.1', 'sgdml>=0.4.1', 'natsort>=7.0.1',
@@ -37,7 +35,7 @@ setup(
         ],
     },
     install_requires=requirements,
-    extras_require=optional_requirements,
+    extras_require={'calculations': ['mako>=1.1.2']},
     license="MIT license",
     long_description=readme,
     include_package_data=True,
