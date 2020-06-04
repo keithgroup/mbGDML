@@ -22,6 +22,8 @@
 
 """Analyses for mbGDML models."""
 
+import logging
+logging.getLogger("matplotlib").setLevel(logging.ERROR)
 import numpy as np
 import matplotlib.pyplot as plt
 from mbgdml.data import structure
