@@ -57,17 +57,41 @@ class mbGDMLPredictset(mbGDMLData):
             predictset_path (str): Path to predict data set.
         """
         predictset = np.load(predictset_path, allow_pickle=True)
-        predictset = dict(predictset)
+        self.predictset = dict(predictset)
+
+        self.sgdml_version = predictset['code_version']
+        self.name = predictset['name']
+        self.theory = predictset['theory']
+        self.z = predictset['z']
+        self.R = predictset['R']
+        self.r_unit = predictset['r_unit']
+        self.e_unit = predictset['e_unit']
+        self.E_true = predictset['E_true']
+        self.F_true = predictset['F_true']
+
+        # Adds all n-body energy and force contributions as attributes
         for file in predictset:
-            if type(predictset[file][()]) == np.str_:
-                setattr(self, file, str(predictset[file][()]))
-            else:
-                setattr(self, file, predictset[file][()])
+            if 'true' not in file:
+                if 'E_' in file or 'F_' in file:
+                    attr_name = file + '_cont'
+                    setattr(self, attr_name, predictset[file][()])
+        
+        # Creates intuitive attributes to represent energy and force
+        # predictions as the total prediction instead of just contributions.
+        nbody_index = 1
+        while hasattr(self, f'E_{nbody_index}_cont') \
+              and hasattr(self, f'F_{nbody_index}_cont'):
+
+                e_total, f_total = self._sum_contributions(nbody_index)
+                setattr(self, f'E_{nbody_index}', e_total)
+                setattr(self, f'F_{nbody_index}', f_total)
+
+                nbody_index += 1
 
     
-    def sum_contributions(self, struct_num, nbody_order):
+    def _sum_contributions(self, nbody_order):
         """
-        Returns the energy and force of a structure at a
+        Returns the energy and force of all structures at a
         specific many-body order.
 
         Predict sets have data that is broken down into many-body and 'total'
@@ -81,38 +105,36 @@ class mbGDMLPredictset(mbGDMLData):
 
         Parameters
         ----------
-        struct_num : int
-            Specifies the index of the structure in the self.R array and the
-            energy and force arrays.
         nbody_order : int
             Highest many-body order corrections to include.
         
         Returns
         -------
         tuple
-            Energy and force of the structure with all many-body corrections
+            Energies and forces of all structures with all many-body corrections
             up to nbody_order.
         """
 
-        if not hasattr(self, 'type'):
+        if not hasattr(self, 'sgdml_version'):
             raise AttributeError('Please read a predict set first.')
         
         nbody_index = 1
-        while hasattr(self, f'E_{nbody_index}') and \
-              hasattr(self, f'F_{nbody_index}') and \
-              nbody_index <= nbody_order:
+        while hasattr(self, f'E_{nbody_index}_cont') and \
+                hasattr(self, f'F_{nbody_index}_cont') and \
+                nbody_index <= nbody_order:
 
-            E_cont = getattr(self, f'E_{nbody_index}')
-            F_cont = getattr(self, f'F_{nbody_index}')
+            e_cont = getattr(self, f'E_{nbody_index}_cont')
+            f_cont = getattr(self, f'F_{nbody_index}_cont')
 
             if nbody_index == 1:
-                E = E_cont['T'][struct_num]
-                F = F_cont['T'][struct_num]
+                E = e_cont['T']
+                F = f_cont['T']
             else:
-                E += E_cont['T'][struct_num]
-                F += F_cont['T'][struct_num]
+                E = np.add(E, e_cont['T'])
+                F = np.add(F, f_cont['T'])
 
             nbody_index += 1
+
         
         return (E, F)
     
