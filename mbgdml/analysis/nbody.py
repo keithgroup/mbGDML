@@ -31,12 +31,11 @@ from mbgdml.data import mbGDMLPredictset
 from mbgdml.utils import norm_path
 from mbgdml.utils import atoms_by_element
 
-class NBodyContributions:
 
+class NBody:
 
     def __init__(self):
         pass
-    
 
     def compute_force_similarity(self, predict_force, true_force):
         """Compute modified cosine similarity of two force vectors.
@@ -63,6 +62,14 @@ class NBodyContributions:
 
         similarity = float(1 - similarity)
         return similarity
+
+
+class NBodyHeatMaps(NBody):
+
+
+    def __init__(self):
+        pass
+
     
     def cluster_force_similarity(self, predict_set, structure_index):
 
@@ -128,7 +135,7 @@ class NBodyContributions:
 
     
     def force_heatmap(self, predict_set, structure_list, base_name, save_dir,
-                      mean=False, data_labels=False):
+                      mean=True, data_labels=False):
         
         save_dir = norm_path(save_dir)
 
@@ -142,26 +149,7 @@ class NBodyContributions:
         atoms = atoms_by_element(predict_set.z.tolist())
         num_nbody = list(range(1, sim_list[0].shape[1] + 1))
         num_nbody = [str(i) for i in num_nbody]
-        '''
-        # Plotting heatmaps.
-        index = 0
-        while index < len(sim_list):
-            
-            name = f'{base_name}-struct{structure_list[index]}'
-
-            print(f'Creating figure {name}.png')
-            self.create_heatmap(
-                sim_list[index],
-                atoms,
-                num_nbody,
-                base_name,
-                name,
-                data_labels,
-                save_dir
-            )
-
-            index += 1
-        '''
+        
         if mean:
 
             sim_mean = np.zeros(sim_list[0].shape)
@@ -187,3 +175,12 @@ class NBodyContributions:
                 data_labels,
                 save_dir
             )
+
+
+class NBodyMD(NBody):
+
+    def __init__(self):
+        pass
+
+    
+    
