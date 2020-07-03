@@ -4,13 +4,12 @@ python:
 
 install:
   - pip install --requirement requirements.txt
-  - pip install codecov
-
+  - pip install codecov pytest-cov
 script:
   - pip install sphinx_rtd_theme
   - sphinx-apidoc -o docs/source/doc mbgdml
   - sphinx-build -nT docs/source/ docs/
-  - coverage run tests/test_mbgdml.py
+  - pytest --cov=./
 
 # Push the results back to codecov
 after_success:
@@ -23,17 +22,6 @@ deploy:
   keep_history: true
   on:
     branch: master
-
-deploy:
-  provider: pypi
-  distributions: sdist bdist_wheel
-  user: aalexmmaldonado
-  password:
-    secure: PLEASE_REPLACE_ME
-  on:
-    tags: true
-    repo: aalexmmaldonado/mbgdml
-    python: 3.8
 
 env:
   global:
