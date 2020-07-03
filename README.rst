@@ -2,10 +2,6 @@
 mbgdml
 =======
 
-
-.. image:: https://img.shields.io/pypi/v/mbgdml.svg
-        :target: https://pypi.python.org/pypi/mbgdml
-
 .. image:: https://travis-ci.com/aalexmmaldonado/mbGDML.svg?token=zhKXK5zzVqJmiyrPsaxe&branch=master
         :target: https://travis-ci.com/aalexmmaldonado/mbGDML
 
