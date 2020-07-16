@@ -2,13 +2,18 @@ language: python
 python:
   - 3.7
 
-install: pip install --requirement requirements.txt
-
+install:
+  - pip install --requirement requirements.txt
+  - pip install codecov pytest-cov
 script:
   - pip install sphinx_rtd_theme
   - sphinx-apidoc -o docs/source/doc mbgdml
-  - sphinx-build -nT docs/source/ docs/build/
+  - sphinx-build -nT docs/source/ docs/
+  - pytest --cov=./
 
+# Push the results back to codecov
+after_success:
+  - codecov
 
 deploy:
   provider: pages
@@ -18,17 +23,7 @@ deploy:
   on:
     branch: master
 
-deploy:
-  provider: pypi
-  distributions: sdist bdist_wheel
-  user: aalexmmaldonado
-  password:
-    secure: PLEASE_REPLACE_ME
-  on:
-    tags: true
-    repo: aalexmmaldonado/mbgdml
-    python: 3.8
-
 env:
   global:
   - secure: CEMYH8OCmhWwbLC4JKIX+UUtWLgVH9Tokzpm+qBxAgD/qHGFgebSOGSAsxHgvXo3xNVjjWCIjySQDaObh51X/jpGFfhiovPke6GZ15b7BC6yL0AYJsM4GbHWdk39wwzFrA6EMIf1wIIju2paB38WPQstJuPdumCAQb9KVZvX+rotdEVjexkim+/3O0zldExg80Fg89AYwLfvwLHgCaP5UBWNMGmIT6FQuF4YBm+55x4D6RQ53WehfbxIfMP4JPBjcoXSFytobmuid7PyaVcBMLju6dfrGS0vHXTc/374VK7K+6BtnP+ksGJsrtm/5X0dWHCV35ldafdA7IT5j2Q7by+HdUNjlZSQJoS9n58xWNT3JWPFPG7Lbt4vcAkQg2/Nm8I8FvP7ejMl0rIR1OZti9/sP7Oy/Mc87quEGkl39EiviyBjrSNNxejFEHG5sGq+ALlM00UboKYXJcL3ovHiel7sLjYm8mGRBE3nRU5dBMMRFiAUf0yZcOaKm3etYMAboiiw/5Z5xs/cNClLDjG+OpoScCJjMB6tZLF7HGNeqFyo8D3yY3kP9fAlq/VxQMXM/XmJUfqxoNZyZekyPX31WLouDYeMeKUwbYHHfErXNOSbzhzSfYDgX3IVXKoA0NHasyak9xBMuUqLA8mgQmMw5mOmbW+pB3gLBhlzlfyLIsQ=
+  - CODECOV_TOKEN="84c2077a-baad-4da3-824b-b959d703acd7"
