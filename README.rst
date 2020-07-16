@@ -5,17 +5,18 @@ mbgdml
 .. image:: https://codecov.io/gh/aalexmmaldonado/mbGDML/branch/master/graph/badge.svg
         :target: https://codecov.io/gh/aalexmmaldonado/mbGDML
 
-.. image:: https://travis-ci.com/aalexmmaldonado/mbGDML.svg?token=zhKXK5zzVqJmiyrPsaxe&branch=master
-        :target: https://travis-ci.com/aalexmmaldonado/mbGDML
+.. image:: https://travis-ci.com/keithgroup/mbGDML.svg?branch=master
+        :target: https://travis-ci.com/github/keithgroup/mbGDML
+
+.. image:: https://img.shields.io/lgtm/grade/python/g/keithgroup/mbGDML.svg?logo=lgtm&logoWidth=18
+        :target: https://lgtm.com/projects/g/keithgroup/mbGDML/context:python
 
 
-
-
-Many-body symmetric gradient domain machine learning model for solvent force fields
+Many-body implementation of sGDML machine learning force fields.
 
 
 * Free software: MIT license
-* Documentation: https://mbgdml.readthedocs.io.
+* Documentation: https://keithgroup.github.io/mbGDML/.
 
 
 Features
