@@ -2,14 +2,14 @@
 mbgdml
 =======
 
-.. image:: https://codecov.io/gh/aalexmmaldonado/mbGDML/branch/master/graph/badge.svg
-        :target: https://codecov.io/gh/aalexmmaldonado/mbGDML
-
 .. image:: https://travis-ci.com/keithgroup/mbGDML.svg?branch=master
-        :target: https://travis-ci.com/github/keithgroup/mbGDML
+    :target: https://travis-ci.com/github/keithgroup/mbGDML
+        
+.. image:: https://codecov.io/gh/keithgroup/mbGDML/branch/master/graph/badge.svg
+    :target: https://codecov.io/gh/keithgroup/mbGDML
 
 .. image:: https://img.shields.io/lgtm/grade/python/g/keithgroup/mbGDML.svg?logo=lgtm&logoWidth=18
-        :target: https://lgtm.com/projects/g/keithgroup/mbGDML/context:python
+    :target: https://lgtm.com/projects/g/keithgroup/mbGDML/context:python
 
 
 Many-body implementation of sGDML machine learning force fields.
