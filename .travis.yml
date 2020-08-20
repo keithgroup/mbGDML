@@ -6,7 +6,6 @@ install:
   - pip install --requirement requirements.txt
 script:
   - pip install .[ase]
-  - pwd
   - sphinx-apidoc --force -o docs/source/doc/ mbgdml ./tests/
   - sphinx-build -nT docs/source/ docs/html/
   - pytest --cov=./

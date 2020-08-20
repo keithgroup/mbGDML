@@ -3,7 +3,7 @@
 
 # Fill this out with the correct org/repo
 ORG=keithgroup
-REPO=mbgdml
+REPO=mbGDML
 # This probably should match an email for one of your users.
 EMAIL=aalexmmaldonado@gmail.com
 
