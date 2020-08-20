@@ -4,9 +4,7 @@ python:
 
 install:
   - pip install --requirement requirements.txt
-  - pip install codecov pytest-cov
 script:
-  - pip install sphinx_rtd_theme ase matplotlib
   - pip install .[ase]
   - sphinx-apidoc -o --force docs/source/doc/ mbgdml ./tests/
   - sphinx-build -nT docs/source/ docs/html/
