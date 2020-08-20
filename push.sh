@@ -22,7 +22,7 @@ if [ "$1" != "dry" ]; then
 fi
 
 # Copy in the HTML.  You may want to change this with your documentation path.
-cp -R ../$REPO/docs/html/* ./
+cp -R ./docs/html/* ./
 
 # Add and commit changes.
 git add -A .
