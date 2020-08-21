@@ -10,16 +10,7 @@ script:
 - pytest --cov=./
 after_success:
 - codecov
-deploy:
-  provider: pages
-  local_dir: docs/html/
-  repo: keithgroup/mbGDML
-  target_branch: gh-pages
-  keep_history: true
-  skip_cleanup: true
-  github_token: $GITHUB_TOKEN
-  on:
-    branch: master
+- ./push.sh
 env:
   global:
   - secure: bABOrVqwFFa3InQZDAGDYQZD2ZdXqJKit/E5bdGlGPYRG7gTxEvYzOp6kQwOMuR3As8Q47Y8dp2USE9ooWMTwGEQ9sZb/MyZci1MeAtKX3X+V74d31W91UmAVVNSpOPSJ/tkfGwBINq6220uPNT5jQb/hRuRl3HIzUvq+Yi+jC9HclLbk2PSF/RwlQ+sMpXpNOBQ1NJMtBR2En1vcN41VM3aVrYoUkZtZgX5RBY0JXNed9ynRRrt9C/9eThSFlEF3OOKTYdvOIgSQV0lX4dQKfV2Ymd03L/Jt5kZHUJKPLFLk8MlDWc6IGHpONoE2h92bs/yjbHDvtqc6wp/j1OSpTJWOetyiJmDy6Hi8rmoKBC7rro9mwxaJ0dH8fy4fHNpScuMF6WOsaU8r9235qAwT5kPlU+OUFSwUV475Haw7nbfZXJ/JqRJQo0+eQ5Eqn7Qru/R9x1EvAZoR8FBGJDzZfkHYRQ4kPr7QzTf02P0v1qmH/r9smWKkP8FvBlmfggjcT9H0SpWD2ujTmGT961sYIJqXQdm9Ap3puSfJ2jU/zz5VHPbame8RzOq+nMJX0X1JGTyY65su8bAP0jCQEV1CeFcZGIaPv4yzIB4lRcXeR/1kuvlyMzl4z7c44bceQzA54RU3lx/YUBLVZChf/exgcXRC/hDNy9CvUJMazqiI8o=
