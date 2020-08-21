@@ -11,9 +11,9 @@ set -e
 
 # Clone the gh-pages branch outside of the repo and cd into it.
 cd ..
-git clone -b gh-pages "https://$GITHUB_TOKEN@github.com/$ORG/$REPO.git" gh-pages
+git clone -b gh-pages "https://aalexmmaldonado:$GITHUB_TOKEN@github.com/$ORG/$REPO.git" gh-pages
 cd gh-pages
-git remote set-url origin "https://$GITHUB_TOKEN@github.com/$ORG/$REPO.git"
+git remote set-url origin "https://aalexmmaldonado:$GITHUB_TOKEN@github.com/$ORG/$REPO.git"
 
 # Update git configuration so I can push.
 if [ "$1" != "dry" ]; then
