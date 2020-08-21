@@ -7,6 +7,7 @@ script:
 - pip install .[ase]
 - sphinx-apidoc --force -o docs/source/doc/ mbgdml ./tests/
 - sphinx-build -nT docs/source/ docs/html/
+- touch ./docs/html/.nojekyll
 - pytest --cov=./
 after_success:
 - codecov
