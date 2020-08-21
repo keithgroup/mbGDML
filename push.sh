@@ -13,6 +13,7 @@ set -e
 cd ..
 git clone -b gh-pages "https://$GITHUB_TOKEN@github.com/$ORG/$REPO.git" gh-pages
 cd gh-pages
+git remote set-url origin "https://$GITHUB_TOKEN@github.com/$ORG/$REPO.git"
 
 # Update git configuration so I can push.
 if [ "$1" != "dry" ]; then
