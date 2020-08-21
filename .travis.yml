@@ -12,7 +12,17 @@ script:
 
 after_success:
   - codecov
-  - ./push.sh
+
+deploy:
+  provider: pages
+  local_dir: ./docs/html/
+  repo: keithgroup/mbGDML
+  target_branch: gh-pages
+  keep_history: true
+  skip_cleanup: true
+  github_token: $GH_TOKEN  # Set in the settings page of your repository, as a secure variable
+  on:
+    branch: master
 
 env:
   global:
