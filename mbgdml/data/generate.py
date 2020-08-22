@@ -8,7 +8,7 @@
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-
+#
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
 # 
@@ -36,14 +36,17 @@ def data_sets(trajfolder, submit=False):
     'solvent info-temperature-iteration-*traj*.xyz'. For example,
     '4MeOH-300K-1-md-trajectory.xyz'.
     
-    Args:
-        trajfolder (path): folder containing all MD trajectories to be included
-            in solvent data sets. Must contain 'traj' in filename and have an
-            'xyz' file extension.
-        submit(bool, optional): specifies if calculations should be submitted.
+    Parameters
+    ----------
+    trajfolder : str
+        Directory containing all MD trajectories to be included in solvent data 
+        sets. Must contain 'traj' in filename and have an 'xyz' file extension.
+    submit : bool, optional
+        specifies if calculations should be submitted.
     
-    Example:
-        data_sets('/path/to/dir', True)
+    Examples
+    --------
+    >>> data_sets('./path/to/dir/', True)
     """
 
     trajfolder = utils.norm_path(trajfolder)

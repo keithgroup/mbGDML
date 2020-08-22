@@ -8,7 +8,7 @@
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-
+#
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
 # 
@@ -37,9 +37,8 @@ from mbgdml.predict import mbGDMLPredict
 
 
 class mbGDMLPredictset(mbGDMLData):
-    """
-    A predict set is a data set with mbGDML predicted energy and forces instead
-    of training data.
+    """A predict set is a data set with mbGDML predicted energy and forces
+    instead of training data.
 
     When analyzing many structures using mbGDML it is easier (and faster) to
     predict all many-body contributions once and then analyze the stored data.
@@ -53,8 +52,10 @@ class mbGDMLPredictset(mbGDMLData):
     def load(self, predictset_path):
         """Reads predict data set and loads data.
         
-        Args:
-            predictset_path (str): Path to predict data set.
+        Parameters
+        ----------
+        predictset_path : str
+            Path to predict data set.
         """
         predictset = np.load(predictset_path, allow_pickle=True)
         self.predictset = dict(predictset)
@@ -90,9 +91,8 @@ class mbGDMLPredictset(mbGDMLData):
 
     
     def _sum_contributions(self, nbody_order):
-        """
-        Returns the energy and force of all structures at a
-        specific many-body order.
+        """Returns the energy and force of all structures at a specific
+        n-body order.
 
         Predict sets have data that is broken down into many-body and 'total'
         contributions. Many-body contributions provide the total for that order;
@@ -140,10 +140,18 @@ class mbGDMLPredictset(mbGDMLData):
     
 
     def nbody_predictions(self, nbody_order):
+        """???
+
+        Parameters
+        ----------
+        nbody_order : int
+
+        """
 
         if not hasattr(self, 'R'):
             raise AttributeError('No coordinates;'
-                                 'please read a predict set first.')
+                'please read a predict set first.'
+            )
         else:
             num_structures = self.R.shape[0]
 
@@ -163,24 +171,21 @@ class mbGDMLPredictset(mbGDMLData):
         return (E, F)
 
     def load_dataset(self, dataset_path):
-        """
-        Loads data set in preparation to create a predict set.
+        """Loads data set in preparation to create a predict set.
         """
         self.dataset_path = dataset_path
         self.dataset = dict(np.load(dataset_path))
     
 
     def load_models(self, model_paths):
-        """
-        Loads model(s) in preparation to create a predict set.
+        """Loads model(s) in preparation to create a predict set.
         """
         self.model_paths = model_paths
         self.mbgdml = mbGDMLPredict(model_paths)
 
 
     def create_predictset(self):
-        """
-        Creates a predict set from loaded data set and models.
+        """Creates a predict set from loaded data set and models.
         """
 
         if not hasattr(self, 'dataset') or not hasattr(self, 'mbgdml'):
