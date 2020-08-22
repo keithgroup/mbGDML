@@ -8,7 +8,7 @@
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-
+#
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
 # 
@@ -33,27 +33,40 @@ from mbgdml.utils import atoms_by_element
 
 
 class NBody:
+    """
+    Probing individual n-body contributions of force fields.
+
+    Methods
+    -------
+    compute_force_similarity(predict_force, true_force)
+        Calculates cosine distance of two arrays.
+    
+    """
 
     def __init__(self):
         pass
 
     def compute_force_similarity(self, predict_force, true_force):
-        """Compute modified cosine similarity of two force vectors.
+        """Compute modified cosine distance of two force vectors.
 
         Computes 1 - cosine_similarity. Two exact vectors will thus have a
         similarity of 0, orthogal vectors will be 1, and equal but opposite
         will be 2.
         
-        Args:
-            predict_force (np.ndarray): Array of the predicted force vector by
-                GDML.
-            true_force (np.ndarray): Array of the true force vector of the same
-                shape as predict_force
+        Parameters
+        ----------
+        predict_force : np.ndarray
+            Array of the predicted force vector by GDML.
+        true_force : np.ndarray
+            Array of the true force vector of the same shape as predict_force
         
-        Returns:
-            float: Similarity (accuracy) of predicted force vector for an atom.
-                0.0 is perfect similarity and the further away from zero the
-                less similar (accurate).
+        Returns
+        -------
+        float
+            Similarity (accuracy) of predicted force vector for an atom. 0.0 is 
+            perfect similarity and the further away from zero the less similar 
+            (accurate).
+        
         """
 
         similarity = np.dot(predict_force, true_force) / \
@@ -65,13 +78,23 @@ class NBody:
 
 
 class NBodyHeatMaps(NBody):
+    """
+    Heat maps for n-body contribution accuracy.
 
+    Methods
+    -------
+    cluster_force_similarity(predict_set, structure_index)
+    """
 
     def __init__(self):
         pass
 
     
     def cluster_force_similarity(self, predict_set, structure_index):
+        """
+        Computes the 
+        """
+
 
         # Retrives all n-body force contributions.
         F = {}
@@ -100,8 +123,29 @@ class NBodyHeatMaps(NBody):
         return similarities
     
 
-    def create_heatmap(self, similarity, atoms, num_nbody,
-                       base_name, name, data_labels, save_dir):
+    def create_heatmap(
+        self, similarity, atoms, num_nbody, name, data_labels,
+        save_dir
+    ):
+        """
+        Generates matplotlib heatmap figure.
+
+        Parameters
+        ----------
+        similarity : numpy.ndarray
+            Cosine distances in n x m array where n is the order of n-body
+            contributions, and m is the number of atoms.
+        atoms : list
+            Strings of elemental symbols in the same order as atoms in the
+            system.
+        num_nbody : int
+            Maximum number of n-body contributions to include.
+        name : str
+            File name to save the heatmap.
+        data_labels : bool
+            Whether or not to include values of cosine distance inside
+            heatmap cells.
+        """
 
         fig, heatmap = plt.subplots(figsize=(3, 4), constrained_layout=True)
 
@@ -134,8 +178,28 @@ class NBodyHeatMaps(NBody):
         plt.close()
 
     
-    def force_heatmap(self, predict_set, structure_list, base_name, save_dir,
-                      mean=True, data_labels=False):
+    def force_heatmap(
+        self, predict_set, structure_list, base_name, save_dir,
+        data_labels=False
+    ):
+        """
+        Computes and saves force heat map of predict set.
+
+        Parameters
+        ----------
+        predict_set : mbgdml.data.mbGDMLPredictset
+            Object with loaded predict set.
+        structure_list : list
+            Indices of structures to include in the heatmap.
+        base_name : str
+            First part of saved file name.
+        save_dir : str
+            Path to save the heatmap to as a png.
+        data_labels : bool, optional
+            Whether or not to include values of cosine distance inside
+            heatmap cells.
+        """
+
         
         save_dir = norm_path(save_dir)
 
@@ -150,7 +214,7 @@ class NBodyHeatMaps(NBody):
         num_nbody = list(range(1, sim_list[0].shape[1] + 1))
         num_nbody = [str(i) for i in num_nbody]
         
-        if mean:
+        if len(structure_list) != 1:
 
             sim_mean = np.zeros(sim_list[0].shape)
             for atom in list(range(0, sim_list[0].shape[0])):
@@ -170,7 +234,6 @@ class NBodyHeatMaps(NBody):
                 sim_mean,
                 atoms,
                 num_nbody,
-                base_name,
                 name,
                 data_labels,
                 save_dir
