@@ -8,7 +8,7 @@
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-
+#
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
 # 
@@ -28,7 +28,22 @@ import mbgdml.solvents as solvents
 
 
 class mbGDMLData():
-    """Parent class for mbGDML data and predict sets.
+    """
+    Parent class for mbGDML data and predict sets.
+
+    Attributes
+    ----------
+    system_info : dict
+        Information describing the system.
+    
+    Methods
+    -------
+    get_system_info(atoms)
+        Sets the system_info attribute.
+    add_system_info(dict_data)
+        Adds system information to data set.
+    save(name, data, save_dir, is_dataset)
+        Saves data set.
     """
 
     def __init__(self):
@@ -41,7 +56,7 @@ class mbGDMLData():
         Parameters
         ----------
         atoms : list
-            Atomic numbers of all atoms in the system. The atoms
+            Atomic symbols of all atoms in the system. The atoms
             are repeated; for example, water is ['H', 'H', 'O'].
         """
 
@@ -63,10 +78,10 @@ class mbGDMLData():
             An updated GDML dataset with additional information regarding
             the system.
         
-        Note
-        ----
-            If the system is a solvent, the 'solvent' name and 'cluster_size'
-            is included.
+        Notes
+        -----
+        If the system is a solvent, the 'solvent' name and 'cluster_size'
+        is included.
         """
 
         if not hasattr(self, 'system_info'):

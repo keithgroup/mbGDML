@@ -38,6 +38,11 @@ from mbgdml.predict import mbGDMLPredict
 class mbGDMLDataset(mbGDMLData):
     """For creating, loading, manipulating, and using GDML data sets.
 
+    Attributes
+    ----------
+    dataset : dict
+        Contains all information and arrays stored in data set.
+    
     Methods
     -------
     load(dataset_path)
@@ -51,11 +56,6 @@ class mbGDMLDataset(mbGDMLData):
     e_units, e_units_calc, r_units_calc, theory='unknown',
     gdml_r_units='Angstrom', gdml_e_units='kcal/mol', write=True)
         Creates and writes a single GDML data set.
-
-    Attributes
-    ----------
-    dataset : dict
-        Contains all information and arrays stored in data set.
     """
 
     def __init__(self):
@@ -471,6 +471,13 @@ class mbGDMLDataset(mbGDMLData):
         np.savez_compressed(dataset_path, **dataset)
 
     def print(self):
+        """Prints all structure coordinates, energies, and force of a data set.
+
+        Raises
+        ------
+        AttributeError
+            If there is no data set loaded.
+        """
 
         if not hasattr(self, 'dataset'):
             raise AttributeError('Please load a data set first.')
@@ -487,6 +494,24 @@ class mbGDMLDataset(mbGDMLData):
 
     
     def mb_dataset(self, nbody, models_dir):
+        """Creates a many-body data set.
+
+        Removes n-body contributions of energy and forces from a data set.
+
+        Parameters
+        ----------
+        nbody : int
+            Number of n-body contributions to include.
+        models_dir : str
+            Path to directory containing GDML files.
+
+        Raises
+        ------
+        AttributeError
+            If there is no data set loaded.
+        ValueError
+            If there are more than one models with the same name.
+        """
         
         if not hasattr(self, 'dataset'):
             raise AttributeError('Please load a data set first.')
