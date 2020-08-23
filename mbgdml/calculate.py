@@ -46,12 +46,25 @@ from mbgdml.data import mbGDMLData
 class mbGDMLCalculator(Calculator):
     """Initializes mbGDML calculator with models and units.
     
-    Args:
-        model_paths (list): Paths of all models to be used for GDML
-            prediction.
-        e_unit_model (str, optional): Specifies the units of energy
-            prediction for the GDML models. Defaults to 'kcal/mol'.
-        r_unit_model (str, optional): [description]. Defaults to 'Angstrom'.
+    Parameteres
+    -----------
+    model_paths : list
+        Paths of all models to be used for GDML prediction.
+    e_unit_model : str, optional
+        Specifies the units of energy prediction for the GDML models. Defaults
+        to 'kcal/mol'.
+    r_unit_model : str, optional
+        Specifies the distance units for GDML models. Defaults to 'Angstrom'.
+    
+    Attributes
+    ----------
+
+
+    Methods
+    -------
+    load_models(model_paths)
+        Loads models for GDML prediction.
+    calculate(atoms=None, *args, **kwargs)
     """
 
     implemented_properties = ['energy', 'forces']
@@ -82,9 +95,11 @@ class mbGDMLCalculator(Calculator):
     def load_models(self, model_paths):
         """Loads models for GDML prediction.
         
-        Args:
-            model_paths (list): List containing paths of all GDML models to be
-                loaded. All of these models will be used during the MD run. 
+        Parameteres
+        -----------
+        model_paths : list
+            Contains paths of all GDML models to be loaded. All of these models 
+            will be used during the MD run. 
         """
         gdmls = []
         model_index = 0
@@ -98,6 +113,9 @@ class mbGDMLCalculator(Calculator):
         self.gdmls = gdmls
 
     def calculate(self, atoms=None, *args, **kwargs):
+        """Predicts energy and forces using many-body GDML models.
+
+        """
 
         super(mbGDMLCalculator, self).calculate(
             atoms, *args, **kwargs
@@ -117,21 +135,35 @@ class mbGDMLCalculator(Calculator):
         self.results = {'energy': e, 'forces': f.reshape(-1, 3)}
 
 class mbGDMLMD(mbGDMLData):
-    def __init__(self, structure_name, structure_path):
-        """Molecular dynamics through ASE with many-body GDML model.
+    """Molecular dynamics through ASE with many-body GDML models.
         
-        Args:
-            structure_name (str): Name of the structure. Mainly for file naming.
-            structure_path (str): Path to the structure file.
-        """
+    Parameters
+    ----------
+    structure_name : str
+        Name of the structure. Mainly for file naming.
+    structure_path : str
+        Path to the structure file.
+
+    Attributes
+    ----------
+
+    Methods
+    -------
+
+    """
+
+    def __init__(self, structure_name, structure_path):
         self._load_structure(structure_name, structure_path)
 
     def _load_structure(self, structure_name, structure_path):
         """Sets the appropriate attributes for structure information.
         
-        Args:
-            structure_name (str): Name of the structure. Mainly for file naming.
-            structure_path (str): Path to the structure file.
+        Parameteres
+        -----------
+        structure_name : str
+            Name of the structure. Mainly for file naming.
+        structure_path : str
+            Path to the structure file.
         """
         self.structure_name = structure_name
         self.structure_path = structure_path
@@ -141,8 +173,10 @@ class mbGDMLMD(mbGDMLData):
     def load_calculator(self, model_paths):
         """Loads the many-body GDML ASE calculator.
         
-        Args:
-            model_paths (list): Paths to all many-body GDML models to be used.
+        Parameteres
+        -----------
+        model_paths : list
+            Paths to all many-body GDML models to be used.
         """
 
         self.calc = mbGDMLCalculator(self.atoms, model_paths)
@@ -151,12 +185,17 @@ class mbGDMLMD(mbGDMLData):
     def relax(self, max_force=1e-4, steps=100):
         """Short relaxation of structure.
         
-        Args:
-            max_force (float, optional): Maximum force. Defaults to 1e-4.
-            steps (int, optional): Maximum allowable steps. Defaults to 100.
+        Parameteres
+        -----------
+        max_force : float, optional
+            Maximum force. Defaults to 1e-4.
+        steps : int, optional
+            Maximum allowable steps. Defaults to 100.
         
-        Raises:
-            AttributeError: Requires a calculator to be loaded first.
+        Raises
+        ------
+        AttributeError
+            Requires a calculator to be loaded first.
         """
         if not hasattr(self, 'calc'):
             raise AttributeError('Please load a calculator first.')
@@ -168,8 +207,10 @@ class mbGDMLMD(mbGDMLData):
     def printenergy(self, a):
         """Quick function to print MD information during simulation.
         
-        Args:
-            a (atoms): Atoms object from ASE.
+        Parameteres
+        -----------
+        a : `ase.atoms`
+            Atoms object from ASE.
         """
         # function to print the potential, kinetic and total energy
         e_pot = a.get_potential_energy() / len(a)
@@ -181,14 +222,19 @@ class mbGDMLMD(mbGDMLData):
     def run(self, steps, t_step, temp):
         """Runs a MD simulation using the Verlet algorithm in ASE.
         
-        Args:
-            steps (int): Number of steps for the MD simulation.
-            t_step (float): Time step in femtoseconds.
-            temp (float): Temperature in Kelvin used for initializing
-                velocities.
+        Parameteres
+        -----------
+        steps : `int`
+            Number of steps for the MD simulation.
+        t_step : `float`
+            Time step in femtoseconds.
+        temp : `float`
+            Temperature in Kelvin used for initializing velocities.
         
-        Raises:
-            AttributeError: Requires a calculator to be loaded first.
+        Raises
+        ------
+        AttributeError
+            Requires a calculator to be loaded first.
         """
         
         if not hasattr(self, 'calc'):
@@ -392,41 +438,48 @@ def partition_engrad(
     control_blocks_engrad='%scf\n    ConvForced true\nend\n%maxcore 8000\n',
     submit=False
 ):
-    """ Sets up a partition ORCA 4.2.0 EnGrad calculation for trajectory.
+    """Sets up a partition ORCA 4.2.0 EnGrad calculation for trajectory.
     
     Can be submitted or just have the input files prepared.
     
-    Args:
-        package (str): specifies the quantum chemistry program to be used. ORCA
-            is currently the only package directly supported.
-        partition_dict (dict): contains all information for the partition
-            including 'solvent_label', 'partition_size', 'atoms', and 'coords'.
-        temperature (int): used for labeling and identifying the thermostat
-            temperature for the molecular dynamics simulation.
-        md_iteration (int): used for labeling and identifying the iteration of
-            the molecular dynamics simulation.
-        calc_dir (str, optional): Path to write calculation.
-            Defaults to current directory ('./').
-        calc_name (str, optional): Name for the calculation.
-            Defaults to 'partition-engrad'.
-        theory_level_engrad (str, optional): keword that specifies the
-            level of theory (e.g., MP2, BP86, B3LYP, etc.) used for calculations.
-            Defaults to 'MP2' for ORCA 4.2.0.
-        basis_set_engrad (str, optional): keyword that specifies the basis set
-            (e.g., def2-SVP, def2-TZVP, etc.). Defaults to 'def2-TZVP'.
-        options_engrad (str, optional): all options specifically for the EnGrad
-            calculation (e.g., SCF convergence criteria, algorithms, etc.)
-            Defaults to 'TightSCF FrozenCore'.
-        control_blocks_engrad (str, optional): all options that control the
-            calculation. Defaults to '%scf    ConvForced true end'.
-        submit (bool, optional): controls whether the calculation is submitted.
-            Defaults to False.
+    Parameteres
+    -----------
+    package : `str`
+        Specifies the quantum chemistry program to be used. ORCA is currently
+        the only package directly supported.
+    partition_dict : `dict`
+        Contains all information for the partition including 'solvent_label',
+        'partition_size', 'atoms', and 'coords'.
+    temperature : `int`
+        Used for labeling and identifying the thermostat temperature for the 
+        molecular dynamics simulation.
+    md_iteration : `int`
+        Used for labeling and identifying the iteration of the molecular 
+        dynamics simulation.
+    calc_dir : `str`, optional
+        Path to write calculation. Defaults to current directory ('./').
+    calc_name : `str`, optional
+        Name for the calculation. Defaults to 'partition-engrad'.
+    theory_level_engrad : `str`, optional
+        Keword that specifies the level of theory (e.g., MP2, BP86, B3LYP, 
+        etc.) used for calculations. Defaults to 'MP2' for ORCA 4.2.0.
+    basis_set_engrad : `str`, optional
+        Keyword that specifies the basis set (e.g., def2-SVP, def2-TZVP, etc.). 
+        Defaults to 'def2-TZVP'.
+    options_engrad : `str`, optional
+        All options specifically for the EnGrad calculation (e.g., SCF 
+        convergence criteria, algorithms, etc.) Defaults to 'TightSCF 
+        FrozenCore'.
+    control_blocks_engrad : `str`, optional
+        All options that control the calculation. Defaults to
+        '%scf    ConvForced true end'.
+    submit : `bool`, optional
+        Controls whether the calculation is submitted. Defaults to False.
     
-    Example:
-        calculate.partition_engrad(
-            'orca', '/path/to/dir/',
-            partition_dict, temp, iteration
-        )
+    Examples
+    --------
+    >>> calculate.partition_engrad('orca', '/path/to/dir/', partition_dict, 
+    temp, iteration)
     """
 
 
