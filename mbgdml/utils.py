@@ -31,11 +31,15 @@ from natsort import natsorted, ns
 def norm_path(path):
     """Normalizes directory paths to be consistent.
     
-    Args:
-        path (string): Path to a directory.
+    Parameters
+    ----------
+    path : str
+        Path to a directory.
     
-    Returns:
-        normd_path: Normalized path.
+    Returns
+    -------
+    str
+        Normalized path.
     """
 
     normd_path = path  # Initializes path variable.
@@ -52,13 +56,17 @@ def get_files(path, expression):
     expression in the file name. Commonly used to find all files of a certain
     type, e.g. output or xyz files.
     
-    Args:
-        path (str): Specifies the directory to search.
-        expression (str): Expression to be tested against all file names in
-        'path'.
+    Parameters
+    ----------
+    path : str
+        Specifies the directory to search.
+    expression : str
+        Expression to be tested against all file names in 'path'.
     
-    Returns:
-        list: all absolute paths to files matching the provided expression.
+    Returns
+    -------
+    list
+        all absolute paths to files matching the provided expression.
     """
     path = norm_path(path)
     
@@ -84,11 +92,15 @@ def make_folder(folder):
     If the current folder exists, it creates another folder
     with an added number.
     
-    Args:
-        pathFolder (str): Path to desired folder.
+    Parameters
+    ----------
+    pathFolder : str
+        Path to desired folder.
     
-    Returns:
-        str: Final path of new folder; ends in '/'.
+    Returns
+    -------
+    str
+        Final path of new folder; ends in '/'.
     """
     
     # First tries to create the desired directory.
@@ -121,11 +133,15 @@ def natsort_list(unsorted_list):
     """Basic function that organizes a list based on human (or natural) sorting
     methodology.
     
-    Args:
-        unsorted_list (list): List of strings.
+    Parameters
+    -----------
+    unsorted_list : list
+        List of strings.
     
-    Returns:
-        list: Sorted list of string.
+    Returns
+    -------
+    list
+        Sorted list of string.
     """
     sorted_list = natsorted(unsorted_list, alg=ns.IGNORECASE)
 
@@ -136,15 +152,18 @@ def string_coords(atoms, coords):
     """Puts atomic coordinates into a Python string. Typically used for 
     writing to an input file.
     
-    Args:
-        atoms (np.array): A (n, 1) numpy array containing all n elements labled
-            by their atomic number.
-        coords (np.array): Contains atomic positions in a (n, 3) numpy array
-            where the x, y, and z Cartesian coordinates in Angstroms are given
-            for the n atoms.
+    Parameters
+    atoms : numpy.ndarray
+        A (n, 1) numpy array containing all n elements labled by their atomic 
+        number.
+    coords : numpy.array
+        Contains atomic positions in a (n, 3) numpy array where the x, y, and z 
+        Cartesian coordinates in Angstroms are given for the n atoms.
     
-    Returns:
-        str: all atomic coordinates contained in a string.
+    Returns
+    -------
+    str
+        all atomic coordinates contained in a string.
     """
 
     atom_coords_string = ''
@@ -175,11 +194,6 @@ def convert_forces(
     gradients. GDML needs consistent energy and force units, so we convert
     them.
 
-    Note
-    ----
-        Only supports 'ORCA' for automatically determining calc units.
-        Otherwise, manually specify `e_units_calc` and `r_units_calc`.
-
     Parameters
     ----------
     package : str
@@ -209,6 +223,11 @@ def convert_forces(
     ValueError
         If calculation package is not defined here for known energy and
         distance units.
+    
+    Notes
+    -----
+    Only supports 'ORCA' for automatically determining calc units.
+    Otherwise, manually specify `e_units_calc` and `r_units_calc`.
     """
 
     defined_packages = {
@@ -238,11 +257,14 @@ def atoms_by_element(atom_list):
     """Converts a list of atoms identified by their atomic number to their
     elemental symbol.
     
-    Args:
-        atom_list (list): Contains numbers that represent atomic numbers.
+    Parameters
+    atom_list : list
+        Contains numbers that represent atomic numbers.
     
-    Returns:
-        list: Contains strings of elemental symbols matching atom_list.
+    Returns
+    -------
+    list
+        Contains strings of elemental symbols matching atom_list.
     """
 
     atom_list_elements = []

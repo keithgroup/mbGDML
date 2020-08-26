@@ -32,9 +32,10 @@ class mbGDMLPredict():
     def __init__(self, models):
         """Sets GDML models to be used for many-body prediction.
         
-        Args:
-            models (list): Contains paths to either standard or many-body
-                GDML models.
+        Parameters
+        ----------
+        models : list
+            Contains paths to either standard or many-body GDML models.
         """
         self._load_models(models)
     
@@ -42,9 +43,10 @@ class mbGDMLPredict():
     def _load_models(self, models):
         """Loads models and preprares GDMLPredict.
         
-        Args:
-            models (list): Contains paths to either standard or many-body
-                GDML models.
+        Parameters
+        ----------
+        models : list
+            Contains paths to either standard or many-body GDML models.
         """
         self.gdmls = []
         self.models = []
@@ -63,26 +65,33 @@ class mbGDMLPredict():
         In other words, it predicts the energy and force contribution from a
         single many-body (or standard) GDML model.
         
-        Args:
-            z (list): Atomic numbers of all atoms in the system.
-            R (np.ndarray): Cartesian coordinates of all atoms of the structure
-                specified in the same order as z. The array should have shape
-                (n, 3) where n is the number of atoms.
-            system_size (int): Number of molecules of the defined chemical
-                species in the structure.
-            molecule_size (int): Number of atoms in the defined chemical
-                species.
-            gdml (sgdml.GDMLPredict): Object used to predict energies
-                and forces of the structure defined in R.
+        Parameters
+        ----------
+        z : list
+            Atomic numbers of all atoms in the system.
+        R : numpy.ndarray
+            Cartesian coordinates of all atoms of the structure specified in 
+            the same order as z. The array should have shape (n, 3) where n is 
+            the number of atoms.
+        system_size : int
+            Number of molecules of the defined chemical species in the 
+            structure.
+        molecule_size : int
+            Number of atoms in the defined chemical species.
+        gdml : sgdml.predict.GDMLPredict
+            Object used to predict energies and forces of the structure defined 
+            in R.
         
-        Returns:
-            tuple: Dictionaries of contributions and total energies (float) and
-                forces (np.ndarray) of the structure. Note that forces has
-                the same shape as R. Each key of the dictionary is the molecule
-                combination. For example, '01' contains the predictions of
-                two-body energy and forces of the pair containing molecules 0
-                and 1. Additionally, each dict has 'T' representing the total
-                energy or forces.
+        Returns
+        -------
+        tuple
+            Dictionaries of contributions and total energies (float) and
+            forces (np.ndarray) of the structure. Note that forces has
+            the same shape as R. Each key of the dictionary is the molecule
+            combination. For example, '01' contains the predictions of
+            two-body energy and forces of the pair containing molecules 0
+            and 1. Additionally, each dict has 'T' representing the total
+            energy or forces.
         """
 
         # 'T' is for total
@@ -125,21 +134,27 @@ class mbGDMLPredict():
         """Computes predicted total energy and atomic forces decomposed by
         many body order.
         
-        Args:
-            z (list): Atomic numbers of all atoms in the system.
-            R (np.ndarray): Cartesian coordinates of all atoms of the structure
-                specified in the same order as z. The array should have shape
-                (n, 3) where n is the number of atoms.
+        Parameters
+        ----------
+        z : list
+            Atomic numbers of all atoms in the system.
+        R : numpy.ndarray
+            Cartesian coordinates of all atoms of the structure specified in 
+            the same order as z. The array should have shape (n, 3) where n is 
+            the number of atoms.
         
-        Returns:
-            tuple: Dictionaries of many-body contributions of total energies
-                (float) and forces (np.ndarray) of the structure. Note that
-                forces has the same shape as R. Each key of the dictionary is
-                the order of the many-body model. Within this dictionary is a
-                total, 'T', and molecule combinations identified in the system
-                and their contributions.
+        Returns
+        -------
+        tuple
+            Dictionaries of many-body contributions of total energies
+            (float) and forces (np.ndarray) of the structure. Note that
+            forces has the same shape as R. Each key of the dictionary is
+            the order of the many-body model. Within this dictionary is a
+            total, 'T', and molecule combinations identified in the system
+            and their contributions.
         
-        Examples:
+        Examples
+        --------
         >>> atoms = [8, 1, 1, 8, 1, 1]
         >>> coords = array([[ 1.530147,  1.121901,  0.396232],
                             [ 2.350485,  1.1297  , -0.085235],
@@ -189,16 +204,21 @@ class mbGDMLPredict():
     def predict(self, z, R):
         """Predicts total energy and atomic forces using many-body GDML models.
         
-        Args:
-            z (list): Atomic numbers of all atoms in the system.
-            R (np.ndarray): Cartesian coordinates of all atoms of the structure
-                specified in the same order as z. The array should have shape
-                (n, 3) where n is the number of atoms.
+        Parameters
+        ----------
+        z : list
+            Atomic numbers of all atoms in the system.
+        R : numpy.ndarray
+            Cartesian coordinates of all atoms of the structure specified in 
+            the same order as z. The array should have shape (n, 3) where n is 
+            the number of atoms.
         
-        Returns:
-            tuple: Total energy of the system (float) and atomic forces
-                (np.ndarray) in the units specified by the GDML models.
-                Note that the forces have the same shape as R.
+        Returns
+        -------
+        tuple
+            Total energy of the system (float) and atomic forces (numpy.ndarray) 
+            in the units specified by the GDML models. Note that the forces 
+            have the same shape as R.
         """
         e, f = self.decomposed_predict(z, R)
         
@@ -213,9 +233,11 @@ class mbGDMLPredict():
         n-body corrections/contributions. This provides the appropriate dataset
         for training an (n+1)-body mbGDML model.
 
-        Args:
-            base_vars (dict): GDML dataset converted to a dict containing n-body
-                contributions to be removed.
+        Parameters
+        ----------
+        base_vars : dict
+            GDML dataset converted to a dict containing n-body contributions to 
+            be removed.
         """
 
         if len(self.gdmls) != 1:

@@ -35,17 +35,23 @@ def partition_cluster(cluster, nbody):
     """Creates dictionary with all possible n-body combinations of solvent
     cluster.
     
-    Args:
-        cluster (dict): Dictionary of solvent molecules in cluster from
-                        parse_cluster
-        nbody (int):    Desired number of solvent molecules in combination.
+    Parameters
+    ----------
+    cluster : dict
+        Dictionary of solvent molecules in cluster from parse_cluster
+    nbody : int
+        Desired number of solvent molecules in combination.
     
-    Returns:
-        dict:   All nonrepeating solvent molecule combinations from cluster with
-                keys being uppercase concatenations of molecule labels and
-                values being the string of coordinates.
+    Returns
+    -------
+    dict
+        All nonrepeating solvent molecule combinations from cluster with keys 
+        being uppercase concatenations of molecule labels and values being the 
+        string of coordinates.
 
-        ABC is considered the same as BAC and only included once.
+    Notes
+    -----
+    ABC is considered the same as BAC and only included once.
     """
 
     segments = {}
@@ -88,13 +94,17 @@ def partition_trajectory(traj_path):
     """Partitions MD trajectory into separate trajectories for each possible
     segment.
     
-    Args:
-        traj_path (str): Path to trajectory with xyz coordinates.
+    Parameters
+    ----------
+    traj_path : str
+        Path to trajectory with xyz coordinates.
     
-    Returns:
-        dict: All nonrepeating solvent molecule combinations from cluster with
-              keys being uppercase concatenations of molecule labels and
-              values being the string of coordinates.
+    Returns
+    -------
+    dict
+        All nonrepeating solvent molecule combinations from cluster with keys 
+        being uppercase concatenations of molecule labels and values being the 
+        string of coordinates.
     """
 
     # Parses trajectory.
