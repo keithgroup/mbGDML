@@ -46,9 +46,11 @@ class MBGDMLTrain():
     def load_dataset(self, dataset_path):
         """Loads a GDML dataset from npz format from specified path.
         
-        Args:
-            dataset_path (str): Path to stored numpy arrays representing a GDML
-                dataset of a single solvent partition size.
+        Parameters
+        ----------
+        dataset_path : str
+            Path to stored numpy arrays representing a GDML dataset of a single 
+            solvent partition size.
         """
         self.dataset_path = dataset_path
         self.dataset = np.load(dataset_path)
@@ -60,12 +62,15 @@ class MBGDMLTrain():
         The model will be written in a directory that depends on the
         parent solvent cluster (e.g. 4MeOH).
         
-        Args:
-            model_dir (str): Path to a common directory for GDML models.
+        Parameters
+        ----------
+        model_dir : str
+            Path to a common directory for GDML models.
 
-        Notes:
-            Requires the 'dataset' attribute.
-            Sets the 'model_dir' attribute for writing GDML models.
+        Notes
+        -----
+        Requires the 'dataset' attribute. Sets the 'model_dir' attribute for 
+        writing GDML models.
         """
 
         model_dir = utils.norm_path(model_dir)
@@ -94,17 +99,20 @@ class MBGDMLTrain():
                    sigma_range='2:10:100'):
         """Trains a GDML model through the command line interface.
         
-        Args:
-            model_dir (str): Path to a common directory for GDML models.
-            num_train (int): The number of training points to sample.
-            num_validate (int): The number of validation points to sample,
-                without replacement.
-            num_test (int): The number of test points to test the validated
-                GDML model.
-            sigma_range (str, optional): Range of kernel length scales to train
-                and validate GDML values one. Format is
-                '<start>:<interval>:<stop>'. Note, the more length scales the
-                longer the training time. Two is the minimum value.
+        Parameters
+        ----------
+        model_dir : str
+            Path to a common directory for GDML models.
+        num_train : int
+            The number of training points to sample.
+        num_validate : int
+            The number of validation points to sample, without replacement.
+        num_test : int
+            The number of test points to test the validated GDML model.
+        sigma_range : str, optional
+            Range of kernel length scales to train and validate GDML values 
+            one. Format is `<start>:<interval>:<stop>`. Note, the more length 
+            scales the longer the training time. Two is the minimum value.
         """
         # TODO add remaining options for CLI sGDML as optional arguments.
 

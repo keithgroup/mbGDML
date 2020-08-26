@@ -30,13 +30,19 @@ class solvent():
     Represents the solvent that makes up the cluster MB-GDML is being trained
     from.
     
-    Attributes:
-        system (str): Designates what kind of system this is. Currently only
-            'solvent' systems.
-        solvent_name (str): Name of the solvent.
-        solvent_label (str): A label for the solvent for filenaming purposes.
-        solvent_molec_size (int): Total number of atoms in one solvent molecule.
-        cluster_size (int): Total number of solvent molecules in cluster.
+    Attributes
+    ----------
+    system : str
+        Designates what kind of system this is. Currently only 'solvent' 
+        systems.
+    solvent_name : str
+        Name of the solvent.
+    solvent_label : str
+        A label for the solvent for filenaming purposes.
+    solvent_molec_size : int
+        Total number of atoms in one solvent molecule.
+    cluster_size : int
+        Total number of solvent molecules in cluster.
     """
 
 
@@ -51,18 +57,23 @@ class solvent():
         """Provides a dictionary of atoms and their quantity from chemical
         formula.
         
-        Args:
-            chem_formula (str): the chemical formula of a single solvent
-                molecule. For example, 'CH3OH' for methanol, 'H2O' for water,
-                and 'C2H3N' for acetonitrile.
+        Parameters
+        ----------
+        chem_formula : str
+            The chemical formula of a single solvent  molecule. For example, 
+            'CH3OH' for methanol, 'H2O' for water, and 'C2H3N' for acetonitrile.
         
-        Returns:
-            dict: contains the atoms as their elemental symbol for keys and
-                their quantity as values.
+        Returns
+        -------
+        dict
+            Contains the atoms as their elemental symbol for keys and their 
+            quantity as values.
         
-        Example:
-            atom_numbers('CH3OH')
+        Examples
+        -------
+        >>> atom_numbers('CH3OH')
         """
+
         string_list = list(chem_formula)
         atom_dict = {}
         str_index = 0
@@ -95,15 +106,16 @@ class solvent():
     def identify_solvent(self, atom_list, all_solvents):
         """Identifies the solvent from a repeated list of elements.
         
-        Args:
-            atom_list (lst): List of elements as strings. Elements should be
-                repeated. For example, ['H', 'H', 'O', 'O', 'H', 'H']. Note that
-                the order does not matter; only the quantity.
-            all_solvents (dict): Contains all solvents described in
-                solvents.json. Keys are the name of the solvent, and the values
-                are dicts 'label' and 'formula' that provide a solvent label
-                and chemical formula, respectively.
-        
+        Parameters
+        ----------
+        atom_list : list
+            Elements as strings. Elements should be repeated. For example, 
+            ['H', 'H', 'O', 'O', 'H', 'H']. Note that the order does not 
+            matter; only the quantity.
+        all_solvents : dict
+            Contains all solvents described in solvents.json. Keys are the name 
+            of the solvent, and the values are dicts 'label' and 'formula' that 
+            provide a solvent label and chemical formula, respectively.
         """
 
         # Converts atoms identified by their atomic number into element symbols
@@ -173,18 +185,21 @@ class solvent():
 def system_info(atoms):
     """Determines information about the system key to mbGDML.
     
-    Args:
-        atoms (list): Atomic numbers of all atoms in the system.
+    Parameters
+    ----------
+    atoms : list
+        Atomic numbers of all atoms in the system.
     
-    Returns:
-        dict: System information useful for mbGDML. Information includes
-            'system' which categorizes the system and provides specific
-            information.
+    Returns
+    -------
+    dict
+        System information useful for mbGDML. Information includes 'system' 
+        which categorizes the system and provides specific information.
     
-    Notes:
-        For a 'solvent' system the additional information returned is the
-        'solvent_name', 'solvent_label', 'solvent_molec_size', and
-        'cluster_size'.
+    Notes
+    -----
+    For a 'solvent' system the additional information returned is the
+    'solvent_name', 'solvent_label', 'solvent_molec_size', and 'cluster_size'.
     """
     
     system_info = solvent(atoms)

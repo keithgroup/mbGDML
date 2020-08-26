@@ -42,20 +42,23 @@ def parse_coords(fileName):
 def parse_gdml_data(out_file):
     """Parses GDML-relevant data from partition output file.
     
-    Args:
-        out_file (str): path to computational chemistry output file. This should
-            contain all MD steps for the partition.
+    Parameters
+    ----------
+    out_file : str
+        Path to computational chemistry output file. This should contain all MD 
+        steps for the partition.
     
-    Returns:
-        dict: contains all information needed to build GDML data sets.
-            'atoms' is a (n) numpy array containing the atomic numbers of the
-                atoms in the partition.
-            'coords' is a (m, n, 3) numpy array containing the m MD step
-                coordinates of the n atoms in the partition.
-            'grads' is a (m, n, 3) numpy array containing the gradients of the
-                m MD steps containing the n atoms in the partition.
-            'energies' is a (m, 1) numpy array containing the electronic 
-                energies of each m MD steps for the partition.
+    Returns
+    -------
+    dict:
+        Contains all information needed to build GDML data sets. 'atoms' is a 
+        (n) numpy array containing the atomic numbers of the atoms in the 
+        partition. 'coords' is a (m, n, 3) numpy array containing the m MD 
+        step coordinates of the n atoms in the partition. 'grads' is a 
+        (m, n, 3) numpy array containing the gradients of the m MD steps 
+        containing the n atoms in the partition. 'energies' is a (m, 1) numpy 
+        array containing the electronic energies of each m MD steps for the 
+        partition.
     """
 
     try:
@@ -86,12 +89,18 @@ def parse_gdml_data(out_file):
 def cluster_size(xyz_path, solvent):
     """Determines number of solvent molecules in a xyz file.
     
-    Args:
-        xyz_path (str): Path to xyz file of interest.
-        solvent (lst): Specifies solvents to determine the number of atoms included in a molecule.
+    Parameters
+    ----------
+    xyz_path : str
+        Path to xyz file of interest.
+    solvent : lst
+        Specifies solvents to determine the number of atoms included in a 
+        molecule.
     
-    Returns:
-        int: Number of solvent molecules in specified xyz file.
+    Returns
+    -------
+    int
+        Number of solvent molecules in specified xyz file.
     """
 
     with open(xyz_path, 'r') as xyz_file:
@@ -119,11 +128,14 @@ def cluster_size(xyz_path, solvent):
 def parse_stringfile(stringfile_path):
     """Parses xyz stringfile into ***
     
-    Args:
-        stringfile_path (str):  Specifies path to stringfile.
+    Parameters
+    ----------
+    stringfile_path : str
+        Specifies path to stringfile.
     
-    Returns:
-        ***
+    Returns
+    -------
+    TODO
     """
     
     # TODO write custom function to parse string files with different numbers of atoms
@@ -137,39 +149,43 @@ def parse_stringfile(stringfile_path):
 def parse_cluster(cluster_data):
     """Creates dictionary of all solvent molecules in solvent cluster from a
     cluster_data dictionary.
+    
+    Parameters
+    ----------
+    cluster_data : dict
+        Contains 'atoms' that is a list of elements organized by molecule and 
+        matches the order of the numpy array containing atomic coordinates
+    
+    Returns
+    -------
+    dict
+        Contains solvent molecules with keys of uppercase characters with dicts 
+        as values containing 'atoms' and 'coords'.
 
-    Notes:
-        Molecules are specified by specified by uppercase letters, and their
-        values the xyz coordinates.
-    
-    Args:
-        cluster_data (dict): Contains 'atoms' that is a list of elements
-    organized by molecule and matches the order of the numpy array
-    containing atomic coordinates
-    
-    Returns:
-        dict: Contains solvent molecules with keys of uppercase characters
-    with dicts as values containing 'atoms' and 'coords'.
-    
+    Notes
+    -----
+    Molecules are specified by specified by uppercase letters, and their
+    values the xyz coordinates.
+
     {
-        'A':    {
-                 'atoms':   array([8, 1, 6, 1, 1, 1], dtype=int32),
-                 'coords':  array([[ 1.45505901, -0.880818  ,  0.851331  ],
-                                   [ 0.505216  , -1.15252401,  0.844885  ],
-                                   [ 2.22036801, -1.94217701,  0.2977    ],
-                                   [ 3.25924901, -1.61877101,  0.264909  ],
-                                   [ 1.89693001, -2.18833701, -0.717112  ],
-                                   [ 2.15446301, -2.84056201,  0.915723  ]])
-                },
-        'B':    {
-                 'atoms':   array([8, 1, 6, 1, 1, 1], dtype=int32),
-                 'coords':  array([[ 1.14600801,  1.44243601, -0.473102  ],
-                                  [ 1.38561801,  0.614295  ,  0.00943   ],
-                                  [ 1.47489701,  2.54700101,  0.357836  ],
-                                  [ 1.16626501,  3.45362102, -0.159587  ],
-                                  [ 2.55100901,  2.59826701,  0.538796  ],
-                                  [ 0.957941  ,  2.49831901,  1.31983201]])
-                }
+        'A': {
+            'atoms':   array([8, 1, 6, 1, 1, 1], dtype=int32),
+            'coords':  array([[ 1.45505901, -0.880818  ,  0.851331  ],
+                            [ 0.505216  , -1.15252401,  0.844885  ],
+                            [ 2.22036801, -1.94217701,  0.2977    ],
+                            [ 3.25924901, -1.61877101,  0.264909  ],
+                            [ 1.89693001, -2.18833701, -0.717112  ],
+                            [ 2.15446301, -2.84056201,  0.915723  ]])
+        },
+        'B': {
+            'atoms':   array([8, 1, 6, 1, 1, 1], dtype=int32),
+            'coords':  array([[ 1.14600801,  1.44243601, -0.473102  ],
+                            [ 1.38561801,  0.614295  ,  0.00943   ],
+                            [ 1.47489701,  2.54700101,  0.357836  ],
+                            [ 1.16626501,  3.45362102, -0.159587  ],
+                            [ 2.55100901,  2.59826701,  0.538796  ],
+                            [ 0.957941  ,  2.49831901,  1.31983201]])
+        }
     }
     """
 
