@@ -8,7 +8,8 @@ with open('README.rst') as readme_file:
     readme = readme_file.read()
 
 requirements = ['Click>=7.0', 'natsort>=7.0.1', 'cclib>=1.6.2',
-                'periodictable>=1.5.2', 'numpy>=1.18.2']
+                'periodictable>=1.5.2', 'numpy>=1.18.2', 'dscribe>=0.4.1a0',
+                'ase>=3.20.1']
 
 setup_requirements = [ ]
 
