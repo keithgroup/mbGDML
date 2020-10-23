@@ -35,7 +35,7 @@ from mbgdml import utils
 import mbgdml.solvents as solvents
 from mbgdml.predict import mbGDMLPredict
 
-
+# TODO finish documenting
 class mbGDMLPredictset(mbGDMLData):
     """A predict set is a data set with mbGDML predicted energy and forces
     instead of training data.
@@ -43,11 +43,51 @@ class mbGDMLPredictset(mbGDMLData):
     When analyzing many structures using mbGDML it is easier (and faster) to
     predict all many-body contributions once and then analyze the stored data.
     The predict set accomplishes just this.
+
+    Attributes
+    ----------
+    predictset : `dict`
+        Dictionary of loaded npz predict set file.
+    sgdml_version : `str`
+        The sGDML Python package version used for predictions.
+    name : `str`
+        File name of the predict set.
+    theory : `str`
+        Specifies the level of theory used for GDML training.
+    n_z : `int`
+        Number of atoms in each structure.
+    z : `numpy.ndarray`
+        Atomic numbers of all atoms in every structure (same in each one) with
+        shape ``n_z``.
+    n_R : `int`
+        Number of structures in the predict set.
+    R : `numpy.ndarray`
+        Atomic coordinates of every structure with shape (``n_R``, ``n_z``, 3).
+    r_unit : `str`
+        Units of space for the structures' coordinates.
+    e_unit : `str`
+        Units of energy.
+    E_true : `numpy.ndarray`
+        Reference energies with shape ``n_R``.
+    F_true : `numpy.ndarray`
+        Reference atomic forces with shape (``n_R``, ``n_z``, 3).
+
+    Methods
+    -------
+    load(predictset_path)
+        Load a npz predict set file into memory.
+    nbody_predictions(nbody_order)
+        Calculates energies and atomic forces of all structures including up to
+        ``nbody_order`` corrections.
+    load_dataset(dataset_path)
+        Load a data set prior to creating a predict set.
+    load_models(model_paths)
+        Loads GDML models prior to creating a predict set.
     """
 
-    def __init__(self):
-        pass
-        
+    def __init__(self, *args):
+        for arg in args:
+            self.load(arg)
     
     def load(self, predictset_path):
         """Reads predict data set and loads data.
@@ -55,147 +95,129 @@ class mbGDMLPredictset(mbGDMLData):
         Parameters
         ----------
         predictset_path : str
-            Path to predict data set.
+            Path to predict set npz file.
         """
         predictset = np.load(predictset_path, allow_pickle=True)
         self.predictset = dict(predictset)
-
-        self.sgdml_version = predictset['code_version']
-        self.name = predictset['name']
-        self.theory = predictset['theory']
+        self.sgdml_version = str(predictset['code_version'][()])
+        self.name = str(predictset['name'][()])
+        self.theory = str(predictset['theory'][()])
         self.z = predictset['z']
+        self.n_z = self.z.shape[0]
         self.R = predictset['R']
-        self.r_unit = predictset['r_unit']
-        self.e_unit = predictset['e_unit']
+        self.n_R = self.R.shape[0]
+        self.r_unit = str(predictset['r_unit'][()])
+        self.e_unit = str(predictset['e_unit'][()])
         self.E_true = predictset['E_true']
         self.F_true = predictset['F_true']
-
-        # Adds all n-body energy and force contributions as attributes
-        for file in predictset:
-            if 'true' not in file:
-                if 'E_' in file or 'F_' in file:
-                    attr_name = file + '_cont'
-                    setattr(self, attr_name, predictset[file][()])
-        
-        # Creates intuitive attributes to represent energy and force
-        # predictions as the total prediction instead of just contributions.
-        nbody_index = 1
-        while hasattr(self, f'E_{nbody_index}_cont') \
-              and hasattr(self, f'F_{nbody_index}_cont'):
-
-                e_total, f_total = self._sum_contributions(nbody_index)
-                setattr(self, f'E_{nbody_index}', e_total)
-                setattr(self, f'F_{nbody_index}', f_total)
-
-                nbody_index += 1
-
     
-    def _sum_contributions(self, nbody_order):
-        """Returns the energy and force of all structures at a specific
-        n-body order.
-
-        Predict sets have data that is broken down into many-body and 'total'
-        contributions. Many-body contributions provide the total for that order;
-        for example, 'E_3' gives you the total contribution (or correction) of
-        all three bodies evaluated in the structure. This is not the total
-        energy with one-body, two-body, and three-body corrections.
-
-        This function returns the 'total energy' that includes the specified
-        nbody_order and lower corrections.
+    def _get_total_contributions(self, nbody_order):
+        """N-body energy and atomic forces contributions of all structures.
 
         Parameters
         ----------
-        nbody_order : int
+        structure : `int`
+            The index of the desired structure.
+        nbody_order : `int`
+            Desired n-body order contributions.
+        
+        Returns
+        -------
+        tuple : (`numpy.ndarray`)
+            Energies, shape of ``n_R``, and atomic forces, shape of
+            (``n_R``, ``n_z``, 3), contributions of all structures. 
+        
+        Raises
+        ------
+        AttributeError
+            If there is no predict set.
+        """
+        if not hasattr(self, 'R'):
+            raise AttributeError('Please load or create a predict set first.'
+            )
+        else:
+            E_cont = self.predictset[f'E_{nbody_order}'][()]['T']
+            F_cont = self.predictset[f'F_{nbody_order}'][()]['T']
+            return E_cont, F_cont
+
+    def nbody_predictions(self, max_nbody_order):
+        """Energies and forces of all structures up to and including a specific
+        n-body order.
+
+        Predict sets have data that is broken down into many-body contributions.
+        This function sums the many-body contributions up to the specified
+        level; for example, `3` returns the energy and force predictions when
+        including one, two, and three body contributions/corrections.
+
+        Parameters
+        ----------
+        max_nbody_order : `int`
             Highest many-body order corrections to include.
         
         Returns
         -------
-        tuple
+        tuple (`numpy.ndarray`)
             Energies and forces of all structures with all many-body corrections
             up to nbody_order.
         """
-
-        if not hasattr(self, 'sgdml_version'):
-            raise AttributeError('Please read a predict set first.')
-        
         nbody_index = 1
-        while hasattr(self, f'E_{nbody_index}_cont') and \
-                hasattr(self, f'F_{nbody_index}_cont') and \
-                nbody_index <= nbody_order:
-
-            e_cont = getattr(self, f'E_{nbody_index}_cont')
-            f_cont = getattr(self, f'F_{nbody_index}_cont')
-
+        while nbody_index <= max_nbody_order:
+            E_cont, F_cont = self._get_total_contributions(nbody_index)
             if nbody_index == 1:
-                E = e_cont['T']
-                F = f_cont['T']
+                E = E_cont
+                F = F_cont
             else:
-                E = np.add(E, e_cont['T'])
-                F = np.add(F, f_cont['T'])
-
-            nbody_index += 1
-
-        
-        return (E, F)
-    
-
-    def nbody_predictions(self, nbody_order):
-        """???
-
-        Parameters
-        ----------
-        nbody_order : int
-
-        """
-
-        if not hasattr(self, 'R'):
-            raise AttributeError('No coordinates;'
-                'please read a predict set first.'
-            )
-        else:
-            num_structures = self.R.shape[0]
-
-            for structure in range(0, num_structures):
-                e, f = self.sum_contributions(structure, nbody_order)
-
-                e = np.array([e])
-                f = np.array([f])
-
-                if structure == 0:
-                    E = e
-                    F = f
-                else:
-                    E = np.concatenate((E, e))
-                    F = np.concatenate((F, f))
-
-        return (E, F)
+                E = np.add(E, E_cont)
+                F = np.add(F, F_cont)
+            nbody_index += 1  
+        return E, F
 
     def load_dataset(self, dataset_path):
         """Loads data set in preparation to create a predict set.
+
+        Parameters
+        ----------
+        dataset_path : `str`
+            Path to data set.
         """
         self.dataset_path = dataset_path
         self.dataset = dict(np.load(dataset_path))
     
-
     def load_models(self, model_paths):
         """Loads model(s) in preparation to create a predict set.
+
+        Parameters
+        ----------
+        model_paths : `list` [`str`]
+            Paths to GDML models in assending order of n-body corrections, e.g.,
+            ['/path/to/1body-model.npz', '/path/to/2body-model.npz'].
         """
         self.model_paths = model_paths
         self.mbgdml = mbGDMLPredict(model_paths)
 
-
-    def create_predictset(self):
+    def create_predictset(self, name=''):
         """Creates a predict set from loaded data set and models.
-        """
 
-        if not hasattr(self, 'dataset') or not hasattr(self, 'mbgdml'):
-            raise AttributeError('Please load a data set and mbGDML models.')
-
-        num_config = self.dataset['R'].shape[0]
-        name = str(self.dataset['name'][()]).replace(
-            'dataset', 'predictset'
-        )
+        Parameters
+        ----------
+        name : `str`, optional
+            The desired file name for the predict set. Defaults to the name of
+            the data set with any occurrence of 'data' changed to 'predict'.
         
+        Raises
+        ------
+        AttributeError
+            If no data set or GDML models were loaded beforehand.
+        """
+        if not hasattr(self, 'dataset'):
+            raise AttributeError('Please load a data set.')
+        if not hasattr(self, 'mbgdml'):
+            raise AttributeError('Please load GDML models.')
+        num_config = self.dataset['R'].shape[0]
+        if name == '':
+            name = str(self.dataset['name'][()]).replace(
+                'data', 'predict'
+            )
         self.predictset = {
             'type': 'p',  # Designates predictions.
             'code_version': __version__,  # sGDML version.
@@ -208,7 +230,6 @@ class mbGDMLPredictset(mbGDMLData):
             'e_unit': self.dataset['e_unit'],
             'F_true': self.dataset['F'],
         }
-
         # Predicts and stores energy and forces.
         all_E = {}
         all_F = {}
@@ -217,12 +238,10 @@ class mbGDMLPredictset(mbGDMLData):
             e, f = self.mbgdml.decomposed_predict(
                 self.dataset['z'].tolist(), self.dataset['R'][i]
             )
-
             for order in e:
                 if i == 0:
                     all_E[order] = e[order]
-                    all_F[order] = f[order]
-                    
+                    all_F[order] = f[order]    
                     if order == 'T':
                         all_E[order] = all_E[order]
                         all_F[order] = np.array([all_F[order]])
@@ -253,16 +272,12 @@ class mbGDMLPredictset(mbGDMLData):
                                  np.array([f[order][combo]])),
                                  axis=0
                             )
-
-
         # Loop through all_E and all_F and add their keys to dataset
         for order in all_E:
             E_name = f'E_{order}'
             F_name = f'F_{order}'
             self.predictset[E_name] = all_E[order]
             self.predictset[F_name] = all_F[order]
-        
         for data in self.predictset:
             setattr(self, data, self.predictset[data])
-
 
