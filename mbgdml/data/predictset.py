@@ -71,18 +71,6 @@ class mbGDMLPredictset(mbGDMLData):
         Reference energies with shape ``n_R``.
     F_true : `numpy.ndarray`
         Reference atomic forces with shape (``n_R``, ``n_z``, 3).
-
-    Methods
-    -------
-    load(predictset_path)
-        Load a npz predict set file into memory.
-    nbody_predictions(nbody_order)
-        Calculates energies and atomic forces of all structures including up to
-        ``nbody_order`` corrections.
-    load_dataset(dataset_path)
-        Load a data set prior to creating a predict set.
-    load_models(model_paths)
-        Loads GDML models prior to creating a predict set.
     """
 
     def __init__(self, *args):
