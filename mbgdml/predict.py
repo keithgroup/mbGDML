@@ -119,7 +119,7 @@ class mbGDMLPredict():
             e, f = gdml.predict(R[atoms].flatten())
 
             # Adds contributions prediced from model.
-            comb_label = ''.join(str(molecule) for molecule in comb)
+            comb_label = ','.join(str(molecule) for molecule in comb)
             E_contributions[comb_label] = e
             F_contributions[comb_label] = f.reshape(len(atoms), 3)
 
