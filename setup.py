@@ -7,13 +7,17 @@ from setuptools import setup, find_packages
 with open('README.md') as readme_file:
     readme = readme_file.read()
 
-requirements = ['Click', 'natsort', 'cclib>=1.6.4',
-                'periodictable', 'numpy', 'dscribe',
-                'ase', 'sgdml', 'mako', 'matplotlib']
+requirements = [
+    'Click', 'natsort', 'cclib>=1.6.4', 'periodictable', 'numpy', 'dscribe',
+    'ase', 'sgdml', 'mako', 'matplotlib'
+]
 
 setup_requirements = [ ]
 
-test_requirements = ['pytest>=5.4.1']
+test_requirements = [
+    'pytest>=5.4.1', 'Click', 'natsort', 'cclib>=1.6.4', 'periodictable',
+    'numpy', 'dscribe', 'ase', 'sgdml', 'mako', 'matplotlib'
+]
 
 setup(
     author="Alex M. Maldonado",
@@ -34,7 +38,7 @@ setup(
         ],
     },
     install_requires=requirements,
-    extras_require={'calculations': ['mako>=1.1.2']},
+    extras_require={},
     license="MIT license",
     long_description=readme,
     include_package_data=True,
