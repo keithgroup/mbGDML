@@ -5,16 +5,16 @@
 <h4 align="center">Create, use, and analyze many-body gradient domain machine learning  models.</h4>
 
 <p align="center">
-    <a href="https://travis-ci.com/keithgroup/mbGDML">
+    <a href="https://travis-ci.com/keithgroup/mbGDML", target="_blank">
         <img src="https://travis-ci.com/keithgroup/mbGDML.svg?branch=master" alt="Build Status ">
     </a>
-    <a href="https://codecov.io/gh/keithgroup/mbGDML">
+    <a href="https://codecov.io/gh/keithgroup/mbGDML", target="_blank">
         <img src="https://codecov.io/gh/keithgroup/mbGDML/branch/master/graph/badge.svg?token=P643JEUWZC" alt="Codecov">
     </a>
-    <a href="https://lgtm.com/projects/g/keithgroup/mbGDML/context:python">
+    <a href="https://lgtm.com/projects/g/keithgroup/mbGDML/context:python", target="_blank">
         <img src="https://img.shields.io/lgtm/grade/python/g/keithgroup/mbGDML.svg?logo=lgtm&logoWidth=18" alt="Language grade: Python">
     </a>
-    <a href="https://github.com/keithgroup/mbGDML/blob/master/LICENSE">
+    <a href="https://github.com/keithgroup/mbGDML/blob/master/LICENSE", target="_blank">
         <img src="https://img.shields.io/github/license/keithgroup/mbGDML" alt="License">
     </a>
 </p>
