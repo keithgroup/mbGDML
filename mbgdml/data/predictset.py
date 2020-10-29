@@ -23,16 +23,9 @@
 # pylint: disable=E1101
 
 
-import os
-import re
 import numpy as np
-from cclib.io import ccread
-from cclib.parser.utils import convertor
 from sgdml import __version__
-from sgdml.utils import io as sgdml_io
 from mbgdml.data import mbGDMLData
-from mbgdml import utils
-import mbgdml.solvents as solvents
 from mbgdml.predict import mbGDMLPredict
 
 # TODO finish documenting

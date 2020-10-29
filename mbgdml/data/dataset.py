@@ -8,7 +8,7 @@
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-
+#
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
 # 
@@ -29,7 +29,6 @@ from cclib.parser.utils import convertor
 from sgdml import __version__
 from sgdml.utils import io as sgdml_io
 from mbgdml.data import mbGDMLData
-from mbgdml.data import PartitionOutput
 from mbgdml.data import mbGDMLModel
 from mbgdml import utils
 from mbgdml.predict import mbGDMLPredict
@@ -318,7 +317,7 @@ class mbGDMLDataset(mbGDMLData):
 
         # Converts energies and forces if units are not the same as GDML units.
         if e_units != e_units_gdml or r_units != r_units_gdml:
-            if e_units_calc == None or r_units_calc == None:
+            if e_units_calc is None or r_units_calc is None:
                 raise ValueError(
                     'The energy or coordinate units do not match GDML units.'
                     'Please specify calculation units for conversion.'

@@ -20,10 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import os
-import numpy as np
 import cclib
-from periodictable import elements
 from mbgdml import solvents, utils
 
 def parse_coords(fileName):

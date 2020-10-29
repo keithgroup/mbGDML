@@ -242,7 +242,7 @@ def convert_forces(
         e_units_calc = defined_packages[package]['e_unit']
         r_units_calc = defined_packages[package]['r_unit']
     else:
-        if e_units_calc == None or r_units_calc == None:
+        if e_units_calc is None or r_units_calc is None:
             raise ValueError(
                 'Please specify e_units_calc and r_units_calc.'
             )

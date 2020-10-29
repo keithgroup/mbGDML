@@ -22,22 +22,17 @@
 
 import os
 import subprocess
-
 import numpy as np
 from mako.template import Template
-from periodictable import elements
 from sgdml.predict import GDMLPredict
 from cclib.parser.utils import convertor
-
 from ase.calculators.calculator import Calculator
 from ase.io import read
 from ase.optimize import QuasiNewton
 from ase.md.velocitydistribution import (MaxwellBoltzmannDistribution, Stationary, ZeroRotation)
 from ase.md.verlet import VelocityVerlet
 from ase import units
-
 from mbgdml import utils
-from mbgdml import parse
 from mbgdml import partition
 from mbgdml.predict import mbGDMLPredict
 from mbgdml.data import mbGDMLData
@@ -374,7 +369,7 @@ class ORCA:
         templateOrcaSubmit = Template(self.template_orca_submit_string)
 
         # Guesses default calculation run time based on type is not already specified
-        if self.timeDays == None or self.timeHours == None:
+        if self.timeDays is None or self.timeHours is None:
             if str(self.calcType).lower() == 'opt':
                 self.timeDays = '1'
                 self.timeHours = '00'
@@ -548,4 +543,4 @@ def partition_engrad(
             bash_command.split(),
             stdout=subprocess.PIPE
         )
-        output, error = submit_process.communicate()
+        _, _ = submit_process.communicate()

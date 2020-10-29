@@ -22,18 +22,7 @@
 
 import os
 import subprocess
-import sys
-import re
 import numpy as np
-
-from cclib.io import ccread
-from cclib.parser.utils import convertor
-
-from periodictable import elements
-
-from sgdml.train import GDMLTrain
-import sgdml.cli as sGDML_cli
-
 from mbgdml import utils
 from mbgdml.data import mbGDMLModel
 

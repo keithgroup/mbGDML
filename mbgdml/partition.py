@@ -21,13 +21,7 @@
 # SOFTWARE.
 
 import itertools
-import os
-
 import numpy as np
-from cclib.io import ccread
-from cclib.parser.utils import convertor
-from periodictable import elements
-from mbgdml import utils
 from mbgdml import parse
 from mbgdml import solvents
 
