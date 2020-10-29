@@ -25,8 +25,6 @@
 import logging
 import numpy as np
 import matplotlib.pyplot as plt
-from mbgdml.data import structure
-from mbgdml.data import mbGDMLPredictset
 from mbgdml.utils import norm_path
 from mbgdml.utils import atoms_by_element
 logging.getLogger("matplotlib").setLevel(logging.ERROR)
@@ -129,8 +127,6 @@ class NBody:
             sim_list.append(self.cluster_force_similarity(
                 predict_set, struct
             ))
-        num_nbody = list(range(1, sim_list[0].shape[1] + 1))
-        num_nbody = [str(i) for i in num_nbody]
         if len(structure_list) != 1:
             sim_mean = np.zeros(sim_list[0].shape)
             for atom in list(range(0, sim_list[0].shape[0])):
@@ -220,7 +216,7 @@ class NBodyHeatMaps(NBody):
         save_dir = norm_path(save_dir)
         sim_mean = self.average_force_similarity(predict_set, structure_list)
         atoms = atoms_by_element(predict_set.z.tolist())
-        num_nbody = list(range(1, sim_mean.shape[1] + 1))
+        num_nbody = list(range(1, np.shape(sim_mean)[1] + 1))
         num_nbody = [str(i) for i in num_nbody]
         name = f'{base_name}-average'
         self.create_heatmap(
