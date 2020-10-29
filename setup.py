@@ -7,15 +7,13 @@ from setuptools import setup, find_packages
 with open('README.rst') as readme_file:
     readme = readme_file.read()
 
-requirements = ['Click>=7.0', 'natsort>=7.0.1', 'cclib>=1.6.2',
-                'periodictable>=1.5.2', 'numpy>=1.18.2', 'dscribe>=0.4.0',
-                'ase>=3.20.1']
+requirements = ['Click', 'natsort', 'cclib>=1.6.4',
+                'periodictable', 'numpy', 'dscribe',
+                'ase', 'sgdml', 'mako', 'matplotlib']
 
 setup_requirements = [ ]
 
-test_requirements = ['pytest>=5.4.1', 'sgdml>=0.4.1', 'natsort>=7.0.1',
-                     'cclib>=1.6.2', 'periodictable>=1.5.2', 'mako>=1.1.2',
-                     'numpy>=1.18.2']
+test_requirements = ['pytest>=5.4.1']
 
 setup(
     author="Alex M. Maldonado",
