@@ -5,7 +5,7 @@ mbGDML
    :hidden:
 
    install
+   tutorials/tutorials
    API <doc/modules>
    contributing
-
 

@@ -102,3 +102,5 @@ ENV/
 .vscode/
 .idea/
 
+# Doc builds
+docs/source/_build

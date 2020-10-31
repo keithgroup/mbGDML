@@ -39,34 +39,21 @@ class mbGDMLDataset(mbGDMLData):
 
     Attributes
     ----------
-    dataset : dict
+    dataset : `dict`
         Contains all information and arrays stored in data set.
-    
-    Methods
-    -------
-    load(dataset_path)
-        Use numpy.load to read information from data set.
-    read_trajectory(file_path)
-        Use cclib to read trajectory (usually xyz format) and assign z and R
-        attributes.
-    read_forces(file_path)
-        Use cclib to read file (usually xyz format) to assign F attribute.
-    create_dataset(gdml_data_dir, dataset_name, atoms, coords, energies, forces,
-    e_units, e_units_calc, r_units_calc, theory='unknown',
-    gdml_r_units='Angstrom', gdml_e_units='kcal/mol', write=True)
-        Creates and writes a single GDML data set.
     """
 
     def __init__(self):
         pass
 
-    
     def load(self, dataset_path):
-        """Uses numpy.load to read data set
+        """Uses ``numpy.load`` to read data set.
 
-        Sets dataset, z, R, E, and F attributes.
+        Parameters
+        ----------
+        dataset_path : `str`
+            Path to NumPy ``npz`` file.
         """
-
         self._dataset_npz = np.load(dataset_path)
         self.dataset = dict(self._dataset_npz)
         self._z = self.dataset['z']
@@ -78,18 +65,19 @@ class mbGDMLDataset(mbGDMLData):
     # TODO: write read_extended_xyz function
 
 
-    def read_trajectory(self, file_path):
-        """Use cclib to read trajectory (usually xyz format) and assign z and R
-        attributes.
+    def read_coordinates(self, file_path):
+        """Reads atomic numbers and coordinates from XYZ file.
 
         Parameters
         ----------
-        file_path : str
-            Path to file.
+        file_path : `str`
+            Path to xyz file.
+        
+        Notes
+        -----
+
         """
-
         self._user_data = True
-
         parsed_data = ccread(file_path)
         self._z = parsed_data.atomnos
         self._R = parsed_data.atomcoords
@@ -103,9 +91,7 @@ class mbGDMLDataset(mbGDMLData):
         file_path : str
             Path to file.
         """
-
         self._user_data = True
-        
         parsed_data = ccread(file_path)
         self._F = parsed_data.atomcoords
     
@@ -272,16 +258,16 @@ class mbGDMLDataset(mbGDMLData):
         
         Parameters
         ----------
-        gdml_data_dir : str
+        gdml_data_dir : :py:obj:`str`
             Path to common GDML data set directory for a particular cluster.
-        dataset_name : str
+        dataset_name : :obj:`str`
             The name to label the dataset.
-        z : numpy.ndarray
+        z : `numpy.ndarray`
             A (n,) array containing atomic numbers of n atoms.
-        R : numpy.ndarray
+        R : `numpy.ndarray`
             A (m, n, 3) array containing the atomic coordinates of n atoms of
             m MD steps.
-        E : numpy.ndarray
+        E : `numpy.ndarray`
             A (m,) array containing the energies of m MD steps.
         F : numpy.ndarray
             A (m, n, 3) array containing the atomic forces of n atoms of

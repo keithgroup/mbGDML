@@ -35,15 +35,6 @@ class mbGDMLData():
     ----------
     system_info : dict
         Information describing the system.
-    
-    Methods
-    -------
-    get_system_info(atoms)
-        Sets the system_info attribute.
-    add_system_info(dict_data)
-        Adds system information to data set.
-    save(name, data, save_dir, is_dataset)
-        Saves data set.
     """
 
     def __init__(self):
