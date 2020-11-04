@@ -31,11 +31,6 @@ class structure:
     Makes using structures with mbGDML easier by providing a
     simple-to-use class to automate parsing of xyz or calculation files or
     manually specifying atoms and coordinates.
-
-    Methods
-    -------
-    parse(file_path)
-        Parses file using cclib for atomic numbers and xyz coordinates.
     
     Attributes
     ----------

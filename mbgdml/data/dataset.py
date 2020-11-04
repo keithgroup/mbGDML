@@ -65,43 +65,43 @@ class mbGDMLDataset(mbGDMLData):
     # TODO: write read_extended_xyz function
 
 
-    def read_coordinates(self, file_path):
-        """Reads atomic numbers and coordinates from XYZ file.
+    def read_xyz(self, file_path, xyz_type, energy_comments=False):
+        """Reads data from xyz files.
 
         Parameters
         ----------
-        file_path : `str`
+        file_path : :obj:`str`
             Path to xyz file.
+        xyz_type : :obj:`str`
+            Type of data. Either ``coords`` or ``forces``.
+        energy_comments : :obj:`bool`
+            If there are comments specifying the energies of the structures.
         
-        Notes
-        -----
-
+        Raises
+        ------
+        ValueError
+            If ``xyz_type`` is not ``coords`` or ``forces``.
         """
         self._user_data = True
-        parsed_data = ccread(file_path)
-        self._z = parsed_data.atomnos
-        self._R = parsed_data.atomcoords
-    
 
-    def read_forces(self, file_path):
-        """Use cclib to read file (usually xyz format) to assign F attribute.
-
-        Parameters
-        ----------
-        file_path : str
-            Path to file.
-        """
-        self._user_data = True
+        with open(file_path, 'r') as f:
+            pass
         parsed_data = ccread(file_path)
-        self._F = parsed_data.atomcoords
+        if xyz_type == 'coords':
+            self._z = parsed_data.atomnos
+            self._R = parsed_data.atomcoords
+        elif xyz_type == 'forces':
+            self._F = parsed_data.atomcoords
+        else:
+            raise ValueError(f'{xyz_type} is not a valid xyz data type.')
     
 
     @property
     def z(self):
         """Atomic numbers of all atoms in data set structures.
         
-        A (n,) shape array of type numpy.int32 containing atomic numbers of
-        atoms in the structures in order as they appear.
+        A (n,) shape array of type :obj:`numpy.int32` containing atomic numbers
+        of atoms in the structures in order as they appear.
 
         Raises
         ------
@@ -206,7 +206,7 @@ class mbGDMLDataset(mbGDMLData):
         return dataset_name
     
 
-    def _organization_dirs(self, gdml_data_dir, dataset_name):
+    def _organization_dirs(self, save_dir, dataset_name):
         """Determines where a dataset should be saved.
 
         The dataset will be written in a directory that depends on the
@@ -214,7 +214,7 @@ class mbGDMLDataset(mbGDMLData):
         
         Parameters
         ----------
-        gdml_data_dir : str
+        save_dir : str
             Path to a common directory for GDML datasets.
 
         Returns
@@ -224,12 +224,12 @@ class mbGDMLDataset(mbGDMLData):
         """
 
 
-        gdml_data_dir = utils.norm_path(gdml_data_dir)
+        save_dir = utils.norm_path(save_dir)
 
         # Preparing directories.
         if self.system_info['system'] == 'solvent':
             partition_size_dir = utils.norm_path(
-                gdml_data_dir + str(self.system_info['cluster_size']) + 'mer'
+                save_dir + str(self.system_info['cluster_size']) + 'mer'
             )
 
             os.makedirs(partition_size_dir, exist_ok=True)
@@ -239,7 +239,7 @@ class mbGDMLDataset(mbGDMLData):
 
     def create_dataset(
         self,
-        gdml_data_dir,
+        save_dir,
         dataset_name,
         z,
         R,
@@ -254,44 +254,44 @@ class mbGDMLDataset(mbGDMLData):
         r_units_calc=None,
         write=True
     ):
-        """Creates and writes GDML dataset.
+        """Creates and writes a data set.
         
         Parameters
         ----------
-        gdml_data_dir : :py:obj:`str`
-            Path to common GDML data set directory for a particular cluster.
+        save_dir : :obj:`str`
+            Path to directory to save data set.
         dataset_name : :obj:`str`
-            The name to label the dataset.
-        z : `numpy.ndarray`
-            A (n,) array containing atomic numbers of n atoms.
-        R : `numpy.ndarray`
-            A (m, n, 3) array containing the atomic coordinates of n atoms of
-            m MD steps.
-        E : `numpy.ndarray`
-            A (m,) array containing the energies of m MD steps.
-        F : numpy.ndarray
-            A (m, n, 3) array containing the atomic forces of n atoms of
+            The name to label the data set.
+        z : :obj:`numpy.ndarray`
+            A ``(n,)`` array containing atomic numbers of ``n`` atoms.
+        R : :obj:`numpy.ndarray`
+            A ``(m, n, 3)`` array containing the atomic coordinates of ``n``
+            atoms of ``m`` structures.
+        E : :obj:`numpy.ndarray`
+            A ``(m,)`` array containing the energies of ``m`` structures.
+        F : :obj:`numpy.ndarray`
+            A ``(m, n, 3)`` array containing the atomic forces of n atoms of
             m MD steps. Simply the negative of grads.
-        e_units : str
-            The energy units of `energies`.
-        r_units : str
-            The distance units of `coords`.
-        e_units_calc : str
+        e_units : :obj:`str`
+            Units of energy.
+        r_units : :obj:`str`
+            Units of distance.
+        e_units_calc : :obj:`str`
             The units of energies reported in the partition calculation output
-            file. This is used to convert forces. Options are 'eV', 'hartree',
-            'kcal/mol', and 'kJ/mol'.
-        r_units_calc : str
-            The units of the coordinates in the partition calculation output
+            file. This is used to convert forces. Options are ``eV``,
+            ``hartree``, ``kcal/mol``, and ``kJ/mol``.
+        r_units_calc : :obj:`str`
+            Units of distance in the partition calculation output
             file. This is only used convert forces if needed.
             Options are 'Angstrom' or 'bohr'.
-        theory : str, optional
+        theory : :obj:`str`, optional
             The level of theory and basis set used for the partition
             calculations. For example, 'MP2.def2TZVP. Defaults to 'unknown'.
-        r_units_gdml : str, optional
+        r_units_gdml : :obj:`str`, optional
             Desired coordinate units for the GDML data set. Defaults to 'Angstrom'.
-        e_units_gdml : str, optional
+        e_units_gdml : :obj:`str`, optional
             Desired energy units for the GDML dataset. Defaults to 'kcal/mol'.
-        write : bool, optional
+        write : :obj:`bool`, optional
             Whether or not the dataset is written to disk. Defaults to True.
 
         Raises
@@ -351,7 +351,7 @@ class mbGDMLDataset(mbGDMLData):
         # Writes dataset.
         if write:
             self.dataset_dir = self._organization_dirs(
-                gdml_data_dir, dataset_name
+                save_dir, dataset_name
             )
             os.chdir(self.dataset_dir)
             self.dataset_path = self.dataset_dir + dataset_name + '.npz'
