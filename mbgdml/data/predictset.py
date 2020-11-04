@@ -55,7 +55,7 @@ class mbGDMLPredictset(mbGDMLData):
     n_R : `int`
         Number of structures in the predict set.
     R : `numpy.ndarray`
-        Atomic coordinates of every structure with shape (``n_R``, ``n_z``, 3).
+        Atomic coordinates of every structure with shape ``(n_R, n_z, 3)``.
     r_unit : `str`
         Units of space for the structures' coordinates.
     e_unit : `str`
@@ -63,7 +63,7 @@ class mbGDMLPredictset(mbGDMLData):
     E_true : `numpy.ndarray`
         Reference energies with shape ``n_R``.
     F_true : `numpy.ndarray`
-        Reference atomic forces with shape (``n_R``, ``n_z``, 3).
+        Reference atomic forces with shape ``(n_R, n_z, 3)``.
     """
 
     def __init__(self, *args):

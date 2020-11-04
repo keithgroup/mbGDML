@@ -123,24 +123,28 @@ def cluster_size(xyz_path, solvent):
             line = xyz_file.readline()
 
 def parse_stringfile(stringfile_path):
-    """Parses xyz stringfile into ***
+    """Parses data from string file.
+
+    A string file is data presented as consecutive xyz data. The data could be
+    three Cartesian coordinates for each atom, three atomic force vector
+    components, or both coordinates and atomic forces in one line (referred to
+    as extended xyz).
     
     Parameters
     ----------
-    stringfile_path : str
-        Specifies path to stringfile.
+    stringfile_path : :obj:`str`
+        Path to string file.
     
     Returns
     -------
     TODO
     """
-    
     # TODO write custom function to parse string files with different numbers of atoms
-    # cclib cannot be used because xyz parse cannot handle different solvents or sizes
-    # probably have to manually parse each structure and build a dict
-    # Or maybe use cclib individually for each structure
-   
-    pass
+    with open(stringfile_path, 'r') as f:
+        for _, line in enumerate(f):
+            line = line.strip()
+            print(line)
+    
 
 
 def parse_cluster(cluster_data):
