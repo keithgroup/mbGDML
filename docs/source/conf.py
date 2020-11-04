@@ -30,7 +30,8 @@ author = 'Alex M. Maldonado'
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
-    'sphinx.ext.napoleon'
+    'sphinx.ext.napoleon',
+    'sphinx.ext.intersphinx'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -44,6 +45,12 @@ exclude_patterns = []
 # Updating master docs
 master_doc = 'index'
 
+# Add mappings
+intersphinx_mapping = {
+    'urllib3': ('http://urllib3.readthedocs.org/en/latest', None),
+    'python': ('http://docs.python.org/3', None),
+    'numpy': ('http://docs.scipy.org/doc/numpy/', None)
+}
 
 # -- Options for HTML output -------------------------------------------------
 
