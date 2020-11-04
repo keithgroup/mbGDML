@@ -137,14 +137,30 @@ def parse_stringfile(stringfile_path):
     
     Returns
     -------
-    TODO
+    :obj:`tuple`
     """
-    # TODO write custom function to parse string files with different numbers of atoms
+    z, comments, data = [], [], []
     with open(stringfile_path, 'r') as f:
         for _, line in enumerate(f):
             line = line.strip()
-            print(line)
-    
+            if not line:
+                # Skips blank lines
+                pass
+            else:
+                line_split = line.split()
+                if len(line_split) == 1 \
+                    and float(line_split[0]) % int(line_split[0]) == 0.0:
+                    # Skips number of atoms line, adds comment line, and
+                    # prepares next z and data item.
+                    comment_line = next(f)
+                    comments.append(comment_line.strip())
+                    z.append([])
+                    data.append([])
+                else:
+                    # Grabs z and data information.
+                    z[-1].append(line_split[0])
+                    data[-1].append([float(i) for i in line_split[1:]])
+    return z, comments, data
 
 
 def parse_cluster(cluster_data):

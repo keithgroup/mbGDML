@@ -29,12 +29,14 @@
 # About
 
 Atomistic insight is fundamental for computational predictive studies of chemical and physical processes.
-Machine learning force fields provide a route to high-level ab initio calculations (i.e., CCSD(T)) at a fraction of the cost.
-[Symmetric gradient domain machine learning (sGDML)](http://quantum-machine.org/gdml/), a kernel-based method, learns the relationship between atomic coordinates and interatomic forces.
+Machine learning force fields provide a route to high-level ab initio calculations at a fraction of the cost.
+[Symmetric gradient domain machine learning (sGDML)](http://quantum-machine.org/gdml/), a kernel-based method, directly learns the relationship between atomic coordinates and interatomic forces.
 However, training in the gradient domain sacrifices generalized transferability to other species or number of atoms.
 
-[Many-body GDML (mbGDML)](https://github.com/keithgroup/mbGDML), is a technique for sGDML transferability to *n*-sized systems by using machine learning models for specific *n*-body interactions.
-Every aspect of the process from preparing ORCA 4 calculations, data set creation, training and use of mbGDML force fields is taken care of in this user-friendly Python package.
+[Many-body GDML (mbGDML)](https://github.com/keithgroup/mbGDML), is a technique for sGDML transferability to *n*-sized systems by using many-body machine learning models.
+Every aspect of the process from preparing ORCA calculations, data set creation, training, and use of mbGDML force fields is taken care of in this user-friendly Python package.
+
+**Disclaimer**: This package is still under active development and is not ready for production.
 
 # Features
 
@@ -45,12 +47,12 @@ Creating mbGDML models:
 * Conversion between data sets ([NumPy npz](https://numpy.org/doc/stable/reference/routines.io.html) files) and output files.
 * Train sGDML models.
 
-Use mbGDML models:
+Using mbGDML models:
 
 * Energy and force prediction of structures with mbGDML models.
 * Interface with the [atomic simulation environment (ASE)](https://wiki.fysik.dtu.dk/ase/).
 
-Analyze mbGDML models:
+Analyzing mbGDML models:
 
 * Store mbGDML predictions into predict data sets.
 * Analyze n-body contributions and create heat maps.
@@ -84,6 +86,6 @@ Then, clone and install the repository.
 
 ```
 git clone https://github.com/keithgroup/mbGDML
-cd mbgdml
+cd mbGDML
 pip install .
 ```

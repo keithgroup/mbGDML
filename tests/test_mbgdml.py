@@ -29,13 +29,42 @@ import pytest
 import numpy as np
 
 import mbgdml.data as data
+import mbgdml.parse as parse
 import mbgdml.utils as utils
 
 # Must be run from mbGDML root directory.
 
+def test_data_parsexyz():
+    xyz_coord = './tests/data/md/4h2o.abc0-orca.md-mp2.def2tzvp.300k-1.traj'
+    xyz_forces = './tests/data/md/4h2o.abc0-orca.md-mp2.def2tzvp.300k-1.force'
+
+    test = data.dataset.mbGDMLDataset()
+    test.read_xyz(xyz_coord, 'coords', energy_comments=True)
+    assert np.allclose(test.z, np.array([8, 1, 1, 8, 1, 1, 8, 1, 1, 8, 1, 1]))
+    assert np.allclose(
+        test.R[0],
+        np.array(
+            [[ 1.52130901,  1.11308001,  0.393073  ],
+             [ 2.36427601,  1.14014601, -0.069582  ],
+             [ 0.836238,    1.27620401, -0.29389   ],
+             [-1.46657701, -1.16374701, -0.450198  ],
+             [-1.42656001, -2.00822501, -0.909142  ],
+             [-0.862336,   -1.25204501,  0.32113   ],
+             [-0.492192,    1.17937301, -1.44036201],
+             [-0.921458,    0.325184,   -1.20811001],
+             [-1.19965901,  1.83111901, -1.44995301],
+             [ 0.437461,   -1.12870701,  1.49748701],
+             [ 0.261939,   -0.963037,    2.42868001],
+             [ 0.947557,   -0.349345,    1.18086801]]
+        )
+    )
+    assert np.allclose(
+        test.R[32][4], np.array([-1.17377958, -2.02524385, -0.77258406])
+    )
+
 def test_data_create_dataset():
-    ref_output_path = 'tests/data/partition-calcs/out-4H2O-300K-1-ABC.out'
-    write_path = 'tests/data/write/'
+    ref_output_path = './tests/data/partition-calcs/out-4H2O-300K-1-ABC.out'
+    write_path = './tests/data/write/'
 
     test_partition = data.PartitionOutput(
         ref_output_path,

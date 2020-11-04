@@ -1,5 +1,15 @@
 # Quick file to test parts of mbGDML as they are developed.
 import mbgdml
+import numpy as np
+
+xyz_coord = './tests/data/md/4h2o.abc0-orca.md-mp2.def2tzvp.300k-1.traj'
+xyz_forces = './tests/data/md/4h2o.abc0-orca.md-mp2.def2tzvp.300k-1.force'
+
+z, comments, data = mbgdml.parse.parse_stringfile(xyz_coord)
+comments[2] = 'test'
+data = np.array(data)
+z = [mbgdml.utils.atoms_by_number(i) for i in z]
+print(np.array(z[0]))
 
 '''
 mbgdml.data.create_datasets(
@@ -7,16 +17,12 @@ mbgdml.data.create_datasets(
     '/home/alex/Dropbox/keith/projects/mbgdml/data/datasets/',
     'bohr', 'hartree', theory='MP2.def2-TZVP'
 )
-'''
 
-'''
 mbgdml.data.combine_datasets(
     '/home/alex/Dropbox/keith/projects/mbgdml/data/datasets/5H2O/5mer',
     '/home/alex/Dropbox/keith/projects/mbgdml/data/datasets/5H2O'
 )
-'''
 
-'''
 train_num = 300
 validate_num = 300
 test_num = 300
@@ -27,9 +33,7 @@ test.train_GDML(
     '/home/alex/Dropbox/keith/projects/mbgdml/data/models/',
     train_num, validate_num, test_num, sigma_range
 )
-'''
 
-'''
 # Info from here on out.
 solvent_label = '4H2O'  # ***
 nbody = 4  # ***
@@ -56,8 +60,7 @@ sigma_range = '80:10:180'  # Original is 2:10:100
 test = mbgdml.train.MBGDMLTrain()
 test.load_dataset(mb_dataset_path)
 test.train_GDML(models_dir, train_num, validate_num, test_num, sigma_range)
-'''
-'''
+
 # Testing MD
 model_paths = [
     '/home/alex/Dropbox/keith/projects/mbgdml/data/models/4H2O/4H2O-1mer-model-MP2.def2-TZVP-train300-sym6.npz',
@@ -73,7 +76,6 @@ md = mbgdml.calculate.mbGDMLMD(
 md.load_calculator(model_paths)
 md.relax()
 md.run(100, 0.5, 300)
-'''
 
 # Testing prediction set
 model_paths = [
@@ -106,7 +108,7 @@ test.create_predictset()
 
 test.save(test.base_vars['name'], test.base_vars, '/home/alex/Dropbox/keith/projects/mbgdml/data/predictsets/4MeCN/', False)
 
-'''
+
 # Testing prediction set
 model_paths = [
     '/home/alex/Dropbox/keith/projects/mbgdml/data/models/4MeOH/4MeOH-1mer-model-MP2.def2-TZVP-train300-sym6.npz',

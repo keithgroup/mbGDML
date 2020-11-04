@@ -30,6 +30,7 @@ from sgdml import __version__
 from sgdml.utils import io as sgdml_io
 from mbgdml.data import mbGDMLData
 from mbgdml.data import mbGDMLModel
+from mbgdml.parse import parse_stringfile
 from mbgdml import utils
 from mbgdml.predict import mbGDMLPredict
   
@@ -73,25 +74,35 @@ class mbGDMLDataset(mbGDMLData):
         file_path : :obj:`str`
             Path to xyz file.
         xyz_type : :obj:`str`
-            Type of data. Either ``coords`` or ``forces``.
+            Type of data. Either ``'coords'``, ``'forces'``, or ``'extended'``.
         energy_comments : :obj:`bool`
             If there are comments specifying the energies of the structures.
-        
-        Raises
-        ------
-        ValueError
-            If ``xyz_type`` is not ``coords`` or ``forces``.
         """
         self._user_data = True
-
-        with open(file_path, 'r') as f:
-            pass
-        parsed_data = ccread(file_path)
-        if xyz_type == 'coords':
-            self._z = parsed_data.atomnos
-            self._R = parsed_data.atomcoords
+        z, comments, data = parse_stringfile(file_path)
+        z = [utils.atoms_by_number(i) for i in z]
+        # If all the structures have the same order of atoms (as required by
+        # sGDML), condense into a one-dimensional array.
+        if len(set(tuple(i) for i in z)) == 1:
+            z = np.array(z[0])
+        else:
+            z = np.array(z)
+        self._z = z
+        if energy_comments:
+            try:
+                E = np.array([float(i) for i in comments])
+                self._E = E
+            except ValueError as e:
+                bad_comment = str(e).split(': ')[-1]
+                raise ValueError(f'{bad_comment} should only contain a float.')
+        data = np.array(data)
+        if xyz_type == 'extended':
+            self._R = data[:,:,3:]
+            self._F = data[:,:,:3]
+        elif xyz_type == 'coords':
+            self._R = data
         elif xyz_type == 'forces':
-            self._F = parsed_data.atomcoords
+            self._F = data
         else:
             raise ValueError(f'{xyz_type} is not a valid xyz data type.')
     
@@ -100,8 +111,8 @@ class mbGDMLDataset(mbGDMLData):
     def z(self):
         """Atomic numbers of all atoms in data set structures.
         
-        A (n,) shape array of type :obj:`numpy.int32` containing atomic numbers
-        of atoms in the structures in order as they appear.
+        A ``(n,)`` shape array of type :obj:`numpy.int32` containing atomic
+        numbers of atoms in the structures in order as they appear.
 
         Raises
         ------
