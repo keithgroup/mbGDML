@@ -272,3 +272,18 @@ def atoms_by_element(atom_list):
         atom_list_elements.append(str(elements[atom]))
 
     return atom_list_elements
+
+def atoms_by_number(atom_list):
+    """Converts a list of atoms identified by their elemental symbol to their
+    atomic number.
+    
+    Parameters
+    atom_list : :obj:`list`
+        Contains numbers that represent atomic numbers.
+    
+    Returns
+    -------
+    :obj:`list` [:obj:`int`]
+        Contains atomic numbers of atoms in atom_list.
+    """
+    return [int(elements.symbol(i).number) for i in atom_list]
