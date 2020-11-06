@@ -34,7 +34,7 @@ class mbGDMLPredict():
         
         Parameters
         ----------
-        models : list
+        models : :obj:`list`
             Contains paths to either standard or many-body GDML models.
         """
         self._load_models(models)
@@ -45,13 +45,13 @@ class mbGDMLPredict():
         
         Parameters
         ----------
-        models : list
+        models : :obj:`list`
             Contains paths to either standard or many-body GDML models.
         """
         self.gdmls = []
         self.models = []
         for model in models:
-            loaded = np.load(model)
+            loaded = np.load(model, allow_pickle=True)
             self.models.append(loaded)
             gdml = GDMLPredict(loaded)
             self.gdmls.append(gdml)

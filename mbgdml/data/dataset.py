@@ -36,37 +36,38 @@ from mbgdml.predict import mbGDMLPredict
   
 
 class mbGDMLDataset(mbGDMLData):
-    """For creating, loading, manipulating, and using GDML data sets.
+    """For creating, loading, manipulating, and using data sets.
 
     Attributes
     ----------
     dataset : `dict`
         Contains all information and arrays stored in data set.
     """
-
     def __init__(self):
         pass
 
     def load(self, dataset_path):
-        """Uses ``numpy.load`` to read data set.
+        """Uses :function:``numpy.load`` to read data set.
 
         Parameters
         ----------
         dataset_path : `str`
             Path to NumPy ``npz`` file.
         """
-        self._dataset_npz = np.load(dataset_path)
+        self._dataset_npz = np.load(dataset_path, allow_pickle=True)
         self.dataset = dict(self._dataset_npz)
         self._z = self.dataset['z']
         self._R = self.dataset['R']
         self._E = self.dataset['E']
         self._F = self.dataset['F']
+        self.r_unit = self.dataset['r_unit']
+        self.e_unit = self.dataset['e_unit']
 
 
-    # TODO: write read_extended_xyz function
-
-
-    def read_xyz(self, file_path, xyz_type, energy_comments=False):
+    def read_xyz(
+        self, file_path, xyz_type, r_unit=None, e_unit=None,
+        energy_comments=False
+    ):
         """Reads data from xyz files.
 
         Parameters
@@ -74,9 +75,21 @@ class mbGDMLDataset(mbGDMLData):
         file_path : :obj:`str`
             Path to xyz file.
         xyz_type : :obj:`str`
-            Type of data. Either ``'coords'``, ``'forces'``, or ``'extended'``.
-        energy_comments : :obj:`bool`
+            Type of data. Either ``'coords'``, ``'forces'``, ``'grads'``, or
+            ``'extended'``.
+        r_units : :obj:`str`, optional
+            Units of distance. Options are ``'Angstrom'`` or ``'bohr'``
+        e_units : :obj:`str`, optional
+            Units of energy. Options are ``'eV'``, ``'hartree'``,
+            ``'kcal/mol'``, and ``'kJ/mol'``.
+        energy_comments : :obj:`bool`, optional
             If there are comments specifying the energies of the structures.
+            Defaults to ``False``.
+        
+        Notes
+        -----
+        If ``xyz_type`` is ``'grads'``, it will take the negative and store as
+        forces.
         """
         self._user_data = True
         z, comments, data = parse_stringfile(file_path)
@@ -101,10 +114,17 @@ class mbGDMLDataset(mbGDMLData):
             self._F = data[:,:,:3]
         elif xyz_type == 'coords':
             self._R = data
+        elif xyz_type == 'grads':
+            self._F = np.negative(data)
         elif xyz_type == 'forces':
             self._F = data
         else:
             raise ValueError(f'{xyz_type} is not a valid xyz data type.')
+
+        if r_unit is not None:
+            self.r_unit = r_unit
+        if e_unit is not None:
+            self.e_unit = e_unit
     
 
     @property
@@ -113,13 +133,7 @@ class mbGDMLDataset(mbGDMLData):
         
         A ``(n,)`` shape array of type :obj:`numpy.int32` containing atomic
         numbers of atoms in the structures in order as they appear.
-
-        Raises
-        ------
-        AttributeError
-            If there is no created or loaded data set.
         """
-
         if hasattr(self, '_user_data') or hasattr(self, 'dataset'):
             return self._z
         else:
@@ -128,17 +142,12 @@ class mbGDMLDataset(mbGDMLData):
 
     @property
     def R(self):
-        """The atomic positions of structure(s).
+        """Atomic coordinates of structure(s).
         
-        A numpy.ndarray with shape of (m, n, 3) where m is the number of
-        structures and n is the number of atoms with 3 positional coordinates.
-
-        Raises
-        ------
-        AttributeError
-            If there is no created or loaded data set.
+        A :obj:`numpy.ndarray` with shape of ``(m, n, 3)`` where ``m`` is the
+        number of calculations and ``n`` is the number of atoms with three 
+        Cartesian components.
         """
-
         if hasattr(self, '_user_data') or hasattr(self, 'dataset'):
             return self._R
         else:
@@ -147,17 +156,12 @@ class mbGDMLDataset(mbGDMLData):
 
     @property
     def F(self):
-        """The atomic forces of atoms in structure(s).
+        """Atomic forces of atoms in structure(s).
         
-        A numpy.ndarray with shape of (m, n, 3) where m is the number of
-        structures and n is the number of atoms with 3 positional coordinates.
-
-        Raises
-        ------
-        AttributeError
-            If there is no created or loaded data set.
+        A :obj:`numpy.ndarray` with shape of ``(m, n, 3)`` where ``m`` is the
+        number of calculations and ``n`` is the number of atoms with three 
+        Cartesian components.
         """
-
         if hasattr(self, '_user_data') or hasattr(self, 'dataset'):
             return self._F
         else:
@@ -168,14 +172,9 @@ class mbGDMLDataset(mbGDMLData):
     def E(self):
         """The energies of structure(s).
         
-        A numpy.ndarray with shape of (n,) where n is the number of atoms.
-
-        Raises
-        ------
-        AttributeError
-            If there is no created or loaded data set.
+        A :obj:`numpy.ndarray` with shape of ``(n,)`` where ``n`` is the number
+        of atoms.
         """
-
         if hasattr(self, '_user_data') or hasattr(self, 'dataset'):
             if not hasattr(self, '_E'):
                 raise AttributeError('No energies were provided in data set.')
@@ -183,6 +182,51 @@ class mbGDMLDataset(mbGDMLData):
                 return self._E
         else:
             raise AttributeError('There is no data loaded.')
+    
+    def convertE(self, E_units):
+        """Convert energies and updates :attribute:`e_unit`.
+
+        Parameters
+        ----------
+        E_units : :obj:`str`
+            Desired units of energy. Options are ``'eV'``, ``'hartree'``,
+            ``'kcal/mol'``, and ``'kJ/mol'``.
+        """
+        self._E = convertor(self.E, self.e_unit, E_units)
+        self.e_unit = E_units
+    
+    
+    def convertR(self, R_units):
+        """Convert coordinates and updates :attribute:`r_unit`.
+
+        Parameters
+        ----------
+        R_units : :obj:`str`
+            Desired units of coordinates. Options are ``'Angstrom'`` or
+            ``'bohr'``.
+        """
+        self._R = convertor(self.R, self.r_unit, R_units)
+        self.r_unit = R_units
+
+
+    def convertF(self, E_units, R_units):
+        """Convert forces.
+
+        Does not change :attribute:`e_unit` or :attribute:`r_unit`.
+
+        Parameters
+        ----------
+        E_units : :obj:`str`
+            Desired units of energy. Options are ``'eV'``, ``'hartree'``,
+            ``'kcal/mol'``, or ``'kJ/mol'``.
+        R_units : :obj:`str`
+            Desired units of coordinates. Options are ``'Angstrom'`` or
+            ``'bohr'``.
+        """
+        self._F = utils.convert_forces(
+            'unknown', self.F, E_units, R_units, e_units_calc=self.e_units,
+            r_units_calc=self.r_units
+        )
 
 
     def partition_dataset_name(
@@ -192,28 +236,26 @@ class mbGDMLDataset(mbGDMLData):
         
         Parameters
         ----------
-        cluster_label : str
+        cluster_label : :obj:`str`
             The label identifying the parent cluster of the partition.
-            For example, '4H2O.abc0'.
-        partition_label : str
+            For example, ``'4H2O.abc0'``.
+        partition_label : :obj:`str`
             Identifies what solvent molecules are in the partition.
-            For example, 'AB'.
-        md_temp : int
+            For example, ``'AB'``.
+        md_temp : :obj:`int`
             Set point temperautre for the MD thermostat in Kelvin.
-        md_iter : int
-            Identifies the iteration of the MD iteration.
+        md_iter : :obj:`int`
+            Identifies the iteration of the MD simulation.
         
         Returns
         -------
-        str
+        :obj:`str`
             Standardized data set name.
         """
-        
         dataset_name =  '-'.join([
             cluster_label, partition_label, str(md_temp) + 'K', str(md_iter),
             'dataset'
         ])
-
         return dataset_name
     
 
@@ -225,26 +267,21 @@ class mbGDMLDataset(mbGDMLData):
         
         Parameters
         ----------
-        save_dir : str
+        save_dir : :obj:`str`
             Path to a common directory for GDML datasets.
 
         Returns
         -------
-        str
+        :obj:`str`
             Path to save directory of data set.
         """
-
-
         save_dir = utils.norm_path(save_dir)
-
         # Preparing directories.
         if self.system_info['system'] == 'solvent':
             partition_size_dir = utils.norm_path(
                 save_dir + str(self.system_info['cluster_size']) + 'mer'
             )
-
             os.makedirs(partition_size_dir, exist_ok=True)
-            
             return partition_size_dir
 
 
@@ -281,25 +318,28 @@ class mbGDMLDataset(mbGDMLData):
         E : :obj:`numpy.ndarray`
             A ``(m,)`` array containing the energies of ``m`` structures.
         F : :obj:`numpy.ndarray`
-            A ``(m, n, 3)`` array containing the atomic forces of n atoms of
-            m MD steps. Simply the negative of grads.
+            A ``(m, n, 3)`` array containing the atomic forces of ``n`` atoms of
+            ``m`` structures. Simply the negative of gradients.
         e_units : :obj:`str`
-            Units of energy.
+            Units of energy. Options are ``'eV'``, ``'hartree'``,
+            ``'kcal/mol'``, and ``'kJ/mol'``.
         r_units : :obj:`str`
-            Units of distance.
-        e_units_calc : :obj:`str`
+            Units of distance. Options are ``'Angstrom'`` or ``'bohr'``
+        e_units_calc : :obj:`str`, optional
             The units of energies reported in the partition calculation output
-            file. This is used to convert forces. Options are ``eV``,
-            ``hartree``, ``kcal/mol``, and ``kJ/mol``.
-        r_units_calc : :obj:`str`
+            file. This is used to convert forces. Options are ``'eV'``,
+            ``'hartree'``, ``'kcal/mol'``, and ``'kJ/mol'``.
+        r_units_calc : :obj:`str`, optional
             Units of distance in the partition calculation output
             file. This is only used convert forces if needed.
-            Options are 'Angstrom' or 'bohr'.
+            Options are ``'Angstrom'`` or ``'bohr'``.
         theory : :obj:`str`, optional
             The level of theory and basis set used for the partition
-            calculations. For example, 'MP2.def2TZVP. Defaults to 'unknown'.
+            calculations. For example, ``'MP2.def2TZVP'``. Defaults to
+            ``'unknown'``.
         r_units_gdml : :obj:`str`, optional
-            Desired coordinate units for the GDML data set. Defaults to 'Angstrom'.
+            Desired coordinate units for the GDML data set. Defaults to
+            ``'Angstrom'``.
         e_units_gdml : :obj:`str`, optional
             Desired energy units for the GDML dataset. Defaults to 'kcal/mol'.
         write : :obj:`bool`, optional
@@ -311,7 +351,6 @@ class mbGDMLDataset(mbGDMLData):
             If units do not match GDML units and no calculation units were
             provided.
         """
-
         # Converts energies and forces if units are not the same as GDML units.
         if e_units != e_units_gdml or r_units != r_units_gdml:
             if e_units_calc is None or r_units_calc is None:
@@ -327,10 +366,8 @@ class mbGDMLDataset(mbGDMLData):
                     e_units_calc=e_units_calc,
                     r_units_calc=r_units_calc
                 )
-
         if not hasattr(self, 'system_info'):
             self.get_system_info(z.tolist())
-
         # sGDML variables.
         dataset = {
             'type': 'd',  # Designates dataset or model.
@@ -352,13 +389,10 @@ class mbGDMLDataset(mbGDMLData):
             'F_mean': np.mean(F.ravel()),  # Force mean.
             'F_var': np.var(F.ravel())  # Force variance.
         }
-
         # mbGDML variables.
         dataset = self.add_system_info(dataset)
-
         dataset['md5'] = sgdml_io.dataset_md5(dataset)
         self.dataset = dataset
-
         # Writes dataset.
         if write:
             self.dataset_dir = self._organization_dirs(
@@ -366,7 +400,6 @@ class mbGDMLDataset(mbGDMLData):
             )
             os.chdir(self.dataset_dir)
             self.dataset_path = self.dataset_dir + dataset_name + '.npz'
-
             self.save(dataset_name, self.dataset, self.dataset_dir, True)
      
 
@@ -492,13 +525,14 @@ class mbGDMLDataset(mbGDMLData):
     def mb_dataset(self, nbody, models_dir):
         """Creates a many-body data set.
 
-        Removes n-body contributions of energy and forces from a data set.
+        Removes lower order n-body contributions of energy and forces from a
+        data set.
 
         Parameters
         ----------
-        nbody : int
+        nbody : :obj:`int`
             Number of n-body contributions to include.
-        models_dir : str
+        models_dir : :obj:`str`
             Path to directory containing GDML files.
 
         Raises
