@@ -37,99 +37,104 @@ class PartitionOutput:
 
     Parameters
     ----------
-    output_path : str
+    output_path : :obj:`str`
         Path to computational chemistry output file that contains energies
         and gradients (preferably ab initio) of all MD steps of a
         single partition.
-    cluster_label : str
+    cluster_label : :obj:`str`
         Identifies the cluster where this partition originates from. Specifies
         at least the solvent and size of the parent cluster. For example, if
         this partition is the number 23 structure from ABCluster
-        for a four water cluster, this could be '4H2O.abc23'.
-    partition_label : str
+        for a four water cluster, this could be ``'4H2O.abc23'``.
+    partition_label : :obj:`str`
         Specifies the molecules composing this partition. Typically we use a
         single uppercase letter per molecule in the order it appears in the
         xyz coordinates. For example, a partition from a 4H2O cluster with the
-        first and third water molecules would be 'AC'.
-    md_temp : int
+        first and third water molecules would be ``'AC'``.
+    md_temp : :obj:`int`
         The set point for the MD thermostat. This only affects labeling and
         directory organization as it has a significant impact on geometry
         sampling.
-    md_iter : int, optional
+    md_iter : :obj:`int`, optional
         Specifies the MD iteration for labeling and data-tracking purposes.
-        Defaults to 0.
-    e_units : str, optional
-        Desired units of energy. Available units implemented are 'eV',
-        'hartree', 'kcal/mol', and 'kJ/mol'. Defaults to 'kcal/mol'.
-    r_units : str, optional
+        Defaults to ``0``.
+    e_unit : :obj:`str`, optional
+        Desired units of energy. Available units implemented are ``'eV'``,
+        ``'hartree'``, ``'kcal/mol'``, and ``'kJ/mol'``. Defaults to
+        ``'kcal/mol'``.
+    r_unit : :obj:`str`, optional
         Desired units of distance. Available units implemented in cclib's
-        convertor function are 'Angstrom' and 'bohr'.
+        convertor function are ``'Angstrom'`` and ``'bohr'``.
+    theory : :obj:`str`, optional
+        Level of theory for the calculations. For example, ``'mp2.def2tzvp'``.
+        Defaults to ``'unknown'``.
 
-    Note
-    ----
-        Typical GDML units are kcal/mol and kcal/(mol * Angstrom) for energies
-        and forces, respectively.
+    Notes
+    -----
+    Typical GDML units are kcal/mol and kcal/mol/Angstrom for energies
+    and forces, respectively.
 
     Attributes
     ----------
-    output_path : str
+    output_path : :obj:`str`
         Path to computational chemistry output file that contains energies
         and gradients (preferably ab initio) of all MD steps of a
         single partition.
-    cluster_label : str
+    cluster_label : :obj:`str`
         Identifies the cluster where this partition originates from. Specifies
         at least the solvent and size of the parent cluster. For example, if
         this partition is the number 23 structure from ABCluster
         for a four water cluster, this could be '4H2O.abc23'.
-    partition_label : str
+    partition_label : :obj:`str`
         Specifies the molecules composing this partition. Typically we use a
         single uppercase letter per molecule in the order it appears in the
         xyz coordinates. For example, a partition from a 4H2O cluster with the
         first and third water molecules would be 'AC'.
-    md_temp : int
+    md_temp : :obj:`int`
         The set point for the MD thermostat. This only affects labeling and
         directory organization as it has a significant impact on geometry
         sampling.
-    md_iter : int, optional
+    md_iter : :obj:`int`, optional
         Specifies the MD iteration for labeling and data-tracking purposes.
         Defaults to 0.
-    e_units : str, optional
+    e_unit : :obj:`str`, optional
         Desired units of energy. Available units implemented are 'eV',
         'hartree', 'kcal/mol', and 'kJ/mol'. Defaults to 'kcal/mol'.
-    r_units : str, optional
+    r_unit : :obj:`str`, optional
         Desired units of distance. Available units implemented in cclib's
         convertor function are 'Angstrom' and 'bohr'.
-    output_name : str
+    output_name : :obj:`str`
         The name of the quantum chemistry output file (no extension).
-    partition_size : int
+    partition_size : :obj:`int`
         The number of solvent molecules in the partition.
-    cclib_data : cclib.ccdata
+    cclib_data : :obj:`cclib.parser.data.ccData``
         Contains all data parsed from output file.
-    z : numpy.ndarray
+    z : :obj:`numpy.ndarray`
         A (n,) array containing n atomic numbers.
-    R : numpy.ndarray
+    R : :obj:`numpy.ndarray`
         A (m, n, 3) array containing the atomic coordinates
         of n atoms of m MD steps.
-    E : numpy.ndarray
+    E : :obj:`numpy.ndarray`
         A (m,) array containing the energies of m structures.
-    G : numpy.ndarray
+    G : :obj:`numpy.ndarray`
         A (m, n, 3) array containing the atomic gradients of n atoms of m MD
         steps.
-    F : numpy.ndarray
+    F : :obj:`numpy.ndarray`
         A (m, n, 3) array containing the atomic forces
         of n atoms of m MD steps. Simply the negative of grads.
-    system : str
+    system : :obj:`str`
         From mbgdml.solvents and designates the system. Currently
         only 'solvent' is implemented.
-    solvent_info : dict
+    solvent_info : :obj:`dict`
         If the system is 'solvent', contains information
         about the system and solvent. 'solvent_name', 'solvent_label',
         'solvent_molec_size', and 'cluster_size'.
     """
 
 
-    def __init__(self, output_path, cluster_label, partition_label,
-                 md_temp, md_iter=0, e_units='kcal/mol', r_units='Angstrom'):
+    def __init__(
+        self, output_path, cluster_label, partition_label, md_temp, md_iter=0,
+        e_unit='kcal/mol', r_unit='Angstrom', theory='unknown'):
         
         self.output_path = output_path
         self.output_name = self.output_path.split('/')[-1].split('.')[0]
@@ -138,15 +143,16 @@ class PartitionOutput:
         self.partition_size = int(len(self.partition_label))
         self.md_temp = md_temp
         self.md_iter = md_iter
-        self.e_units = e_units
-        self.r_units = r_units
+        self.e_unit = e_unit
+        self.r_unit = r_unit
+        self.theory = theory
         
         self.cclib_data = ccread(self.output_path)
         self._get_gdml_data()
-        self.E = convertor(self.E, 'eV', self.e_units)
+        self.E = convertor(self.E, 'eV', self.e_unit)
         self.G = convert_forces(
-            self.cclib_data.metadata['package'], self.G, self.e_units,
-            self.r_units
+            self.cclib_data.metadata['package'], self.G, self.e_unit,
+            self.r_unit
         )
         self.F = np.negative(self.G)
 
