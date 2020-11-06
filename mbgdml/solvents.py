@@ -177,6 +177,7 @@ class solvent():
                     pass
 
         if not hasattr(self, 'solvent_name'):
+            self.system = 'unknown'
             print('The solvent could not be identified.')
 
 
@@ -185,14 +186,28 @@ def system_info(atoms):
     
     Parameters
     ----------
-    atoms : list
+    atoms : :obj:`list`
         Atomic numbers of all atoms in the system.
     
     Returns
     -------
-    dict
-        System information useful for mbGDML. Information includes 'system' 
-        which categorizes the system and provides specific information.
+    :obj:`dict`
+        System information useful for mbGDML. Always will contain the following
+        key:
+
+        ``'system'``
+
+        If ``'system'`` is equal to ``'solvent'``, then the following keys will
+        be included:
+
+        ``'solvent_name'``
+            Common name for the identified solvent.
+        ``'solvent_label'``
+            Standardized shorthand label for the solvent.
+        ``'solvent_molec_size'``
+            Number of atoms in a single solvent molecule.
+        ``'cluster_size'``
+            Number of solvent molecules in the cluster.
     
     Notes
     -----
@@ -212,15 +227,15 @@ def system_info(atoms):
 
 solvent_data = {
     "water": {
-        "label": "H2O",
+        "label": "h2o",
         "formula": "H2O"
     },
     "acetonitrile": {
-        "label": "acn",
+        "label": "mecn",
         "formula": "C2H3N"
     },
     "methanol": {
-        "label": "MeOH",
+        "label": "meoh",
         "formula": "CH3OH"
     }
 }
