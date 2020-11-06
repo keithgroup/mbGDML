@@ -42,16 +42,17 @@ class mbGDMLData():
 
 
     def get_system_info(self, atoms):
-        """Describes the dataset system.
+        """Describes the data set system.
         
         Parameters
         ----------
-        atoms : list
+        atoms : :obj:`list`
             Atomic symbols of all atoms in the system. The atoms
             are repeated; for example, water is ['H', 'H', 'O'].
         """
-
         self.system_info = solvents.system_info(atoms)
+        for key in self.system_info.keys():
+            setattr(self, key, self.system_info[key])
     
 
     def add_system_info(self, dict_data):
@@ -59,15 +60,14 @@ class mbGDMLData():
         
         Parameters
         ----------
-        dataset : dict
-            Custom data structure that contains all information for a
-            GDML dataset.
+        dataset : :obj:`dict`
+            Contains all data as :obj:`numpy.ndarray` objects.
         
         Returns
         -------
-        dict
-            An updated GDML dataset with additional information regarding
-            the system.
+        :obj:`dict`
+            Contains all data as :obj:`numpy.ndarray` objects along with added
+            system information.
         
         Notes
         -----
@@ -77,16 +77,18 @@ class mbGDMLData():
 
         if not hasattr(self, 'system_info'):
             self.get_system_info(dict_data['z'].tolist())
-        
-        dict_data['system'] = self.system_info['system']
+        dict_data['system'] = np.array(self.system_info['system'])
         if dict_data['system'] == 'solvent':
-            dict_data['solvent'] = self.system_info['solvent_name']
-            dict_data['cluster_size'] = self.system_info['cluster_size']
-        
+            dict_data['solvent'] = np.array(
+                self.system_info['solvent_name']
+            )
+            dict_data['cluster_size'] = np.array(
+                self.system_info['cluster_size']
+            )
         return dict_data
 
 
-    def save(self, name, data, save_dir, is_dataset):
+    def save(self, name, data, save_dir):
         """General save function for GDML data sets and models.
         
         Parameters
@@ -98,14 +100,8 @@ class mbGDMLData():
             Base variables for dataset or model.
         save_dir : str
             Directory to save the file.
-        is_dataset : bool
-            Is the file a dataset? Controls whether the md5 of
-            the file is saved.
         """
-
         save_dir = utils.norm_path(save_dir)
-        if is_dataset:
-            data['md5'] = sgdml_io.dataset_md5(data)
         save_path = save_dir + name + '.npz'
         np.savez_compressed(save_path, **data)
 
