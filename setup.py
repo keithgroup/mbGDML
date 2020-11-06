@@ -15,7 +15,7 @@ requirements = [
 setup_requirements = [ ]
 
 test_requirements = [
-    'pytest>=5.4.1', 'Click', 'natsort', 'cclib>=1.6.4', 'periodictable',
+    'pytest', 'Click', 'natsort', 'cclib>=1.6.4', 'periodictable',
     'numpy', 'dscribe', 'ase', 'sgdml', 'mako', 'matplotlib'
 ]
 

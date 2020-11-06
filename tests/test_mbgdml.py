@@ -39,7 +39,10 @@ def test_data_parsexyz():
     xyz_forces = './tests/data/md/4h2o.abc0-orca.md-mp2.def2tzvp.300k-1.force'
 
     test = data.dataset.mbGDMLDataset()
-    test.read_xyz(xyz_coord, 'coords', energy_comments=True)
+    test.read_xyz(
+        xyz_coord, 'coords', energy_comments=True, r_unit='Angstrom',
+        e_unit='hartree'
+    )
     assert np.allclose(test.z, np.array([8, 1, 1, 8, 1, 1, 8, 1, 1, 8, 1, 1]))
     assert np.allclose(
         test.R[0],
@@ -61,6 +64,10 @@ def test_data_parsexyz():
     assert np.allclose(
         test.R[32][4], np.array([-1.17377958, -2.02524385, -0.77258406])
     )
+    assert test.r_unit == 'Angstrom'
+    assert test.e_unit == 'hartree'
+    test.convertE('kcal/mol')
+    assert test.e_unit == 'kcal/mol'
 
 def test_data_create_dataset():
     ref_output_path = './tests/data/partition-calcs/out-4H2O-300K-1-ABC.out'
@@ -130,8 +137,8 @@ def test_data_create_predictset():
 
     dataset_path = 'tests/data/datasets/4H2O-2mer-dataset.npz'
     model_paths = [
-        'tests/data/models/4H2O-1mer-model-MP2.def2-TZVP-train300-sym2.npz',
-        'tests/data/models/4H2O-2body-model-MP2.def2-TZVP-train300-sym8.npz'
+        './tests/data/models/4H2O-1mer-model-MP2.def2-TZVP-train300-sym2.npz',
+        './tests/data/models/4H2O-2body-model-MP2.def2-TZVP-train300-sym8.npz'
     ]
 
     test_predictset = data.mbGDMLPredictset()

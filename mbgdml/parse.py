@@ -36,61 +36,63 @@ def parse_coords(fileName):
     
     return {'atoms': atoms, 'coords': coords}
 
-def parse_gdml_data(out_file):
-    """Parses GDML-relevant data from partition output file.
+def parse_engrad(out_file):
+    """Parses GDML-relevant data (coordinates, energies, and gradients)
+    from partition output file.
+
+    Uses :module:`cclib` to parse data from computational chemistry calculations
+    involving multiple calculations of structures containing same atoms in 
+    different configurations.
     
     Parameters
     ----------
-    out_file : str
+    out_file : :obj:`str`
         Path to computational chemistry output file. This should contain all MD 
         steps for the partition.
     
     Returns
     -------
-    dict:
-        Contains all information needed to build GDML data sets. 'atoms' is a 
-        (n) numpy array containing the atomic numbers of the atoms in the 
-        partition. 'coords' is a (m, n, 3) numpy array containing the m MD 
-        step coordinates of the n atoms in the partition. 'grads' is a 
-        (m, n, 3) numpy array containing the gradients of the m MD steps 
-        containing the n atoms in the partition. 'energies' is a (m, 1) numpy 
-        array containing the electronic energies of each m MD steps for the 
-        partition.
-    """
+    :obj:`dict`
+        All information needed to build GDML data sets. Contains the following
+        keys:
 
+            ``'z'``
+                ``(n,)`` :obj:`numpy.ndarray` of atomic numbers.
+            ``'R'``
+                ``(m, n, 3)`` :obj:`numpy.ndarray` containing the coordinates of
+                ``m`` calculations of the ``n`` atoms in the structure.
+            ``'E'``
+                ``(m, 1)`` :obj:`numpy.ndarray` containing the energies of
+                ``m`` calculations.
+            ``'G'``
+                ``(m, n, 3)`` :obj:`numpy.ndarray` containing the gradients of
+                ``m`` calculations of the ``n`` atoms in the structure.
+    """
     try:
         data = cclib.io.ccread(out_file)
-
         atoms = data.atomnos
         coords = data.atomcoords
         grads = data.grads
         if hasattr(data, 'mpenergies'):
-            energies = data.mpenergies
+            energies = data.mpenergies[:,0]
         elif hasattr(data, 'scfenergies'):
-            energies = data.scfenergies
+            energies = data.scfenergies[:,0]
         else:
-            raise KeyError
+            raise KeyError('cclib energies were not found.')
+        parsed_data = {'z': atoms, 'R': coords, 'E': energies, 'G': grads}
+        return parsed_data
     except:
         print('Something happened while parsing output file.')
-        return None
-
-    parsed_data = {
-        'atoms': atoms,
-        'coords': coords,
-        'grads': grads,
-        'energies': energies
-    }
-
-    return parsed_data
+        raise 
 
 def cluster_size(xyz_path, solvent):
     """Determines number of solvent molecules in a xyz file.
     
     Parameters
     ----------
-    xyz_path : str
+    xyz_path : :obj:`str`
         Path to xyz file of interest.
-    solvent : lst
+    solvent : :obj:`list`
         Specifies solvents to determine the number of atoms included in a 
         molecule.
     
@@ -137,7 +139,9 @@ def parse_stringfile(stringfile_path):
     
     Returns
     -------
-    :obj:`tuple`
+    :obj:`tuple` [:obj:`list`]
+        Parsed atoms (as element symbols :obj:`str`), comments, and data as
+        :obj:`float` from string file.
     """
     z, comments, data = [], [], []
     with open(stringfile_path, 'r') as f:
