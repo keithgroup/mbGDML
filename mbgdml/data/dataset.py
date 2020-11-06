@@ -38,31 +38,80 @@ from mbgdml.predict import mbGDMLPredict
 class mbGDMLDataset(mbGDMLData):
     """For creating, loading, manipulating, and using data sets.
 
+    Parameters
+    ----------
+    dataset_path : :obj:`str`, optional
+        Path to a saved :obj:`numpy.lib.npyio.NpzFile`.
+
     Attributes
     ----------
-    dataset : `dict`
-        Contains all information and arrays stored in data set.
+    dataset : :obj:`dict`
+        Contains all data as :obj:`numpy.ndarray` objects.
+    name : :obj:`str`
+        Name of the data set. Defaults to ``'dataset'``.
+    r_unit : :obj:`str`
+        Units of distance. Options are ``'Angstrom'`` or ``'bohr'``.
+    e_unit : :obj:`str`
+        Units of energy. Options are ``'eV'``, ``'hartree'``,
+            ``'kcal/mol'``, and ``'kJ/mol'``.
+    code_verstion
+        The version of :mod:`sgdml`.
+    theory : :obj:`str`
+        The level of theory used to compute energy and gradients of the data
+        set.
+    mb : :obj:`int`
+        The order of n-body corrections this data set is intended for. For
+        example, a tetramer solvent cluster with one-, two-, and three-body
+        contributions removed will have a ``mb`` order of 4.
     """
-    def __init__(self):
-        pass
 
-    def load(self, dataset_path):
-        """Uses :function:``numpy.load`` to read data set.
+
+    def __init__(self, dataset_path=None):
+        self.type = 'd'
+        self.name = 'dataset'
+        if dataset_path is not None:
+            self.load(dataset_path)
+
+
+    def _update(self, dataset):
+        """Updates object attributes.
 
         Parameters
         ----------
-        dataset_path : `str`
-            Path to NumPy ``npz`` file.
+        dataset : :obj:`dict`
+            Contains all information and arrays stored in data set.
         """
-        self._dataset_npz = np.load(dataset_path, allow_pickle=True)
-        self.dataset = dict(self._dataset_npz)
+        self.dataset = dict(dataset)
         self._z = self.dataset['z']
         self._R = self.dataset['R']
         self._E = self.dataset['E']
         self._F = self.dataset['F']
-        self.r_unit = self.dataset['r_unit']
-        self.e_unit = self.dataset['e_unit']
+        self.r_unit = str(self.dataset['r_unit'][()])
+        self.e_unit = str(self.dataset['e_unit'][()])
+        self.code_version = str(self.dataset['code_version'][()])
+        self.name = str(self.dataset['name'][()])
+        self.theory = str(self.dataset['theory'][()])
+        # mbGDML added data set information.
+        if self.z.ndim == 1:
+            self.get_system_info(self.z.tolist())
+        if 'mb' in self.dataset.keys():
+            self.mb = str(self.dataset['mb'][()])
 
+    def load(self, dataset_path):
+        """Uses :func:``numpy.load`` to read data set.
+
+        Parameters
+        ----------
+        dataset_path : :obj:`str`
+            Path to NumPy ``npz`` file.
+        """
+        dataset_npz = np.load(dataset_path, allow_pickle=True)
+        npz_type = str(dataset_npz.f.type[()])
+        if npz_type != 'd':
+            raise ValueError(f'{npz_type} is not a data set.')
+        else:
+            self._update(dict(dataset_npz))
+    
 
     def read_xyz(
         self, file_path, xyz_type, r_unit=None, e_unit=None,
@@ -78,7 +127,7 @@ class mbGDMLDataset(mbGDMLData):
             Type of data. Either ``'coords'``, ``'forces'``, ``'grads'``, or
             ``'extended'``.
         r_units : :obj:`str`, optional
-            Units of distance. Options are ``'Angstrom'`` or ``'bohr'``
+            Units of distance. Options are ``'Angstrom'`` or ``'bohr'``.
         e_units : :obj:`str`, optional
             Units of energy. Options are ``'eV'``, ``'hartree'``,
             ``'kcal/mol'``, and ``'kJ/mol'``.
@@ -101,6 +150,8 @@ class mbGDMLDataset(mbGDMLData):
         else:
             z = np.array(z)
         self._z = z
+        if self.z.ndim == 1:
+            self.get_system_info(self.z.tolist())
         if energy_comments:
             try:
                 E = np.array([float(i) for i in comments])
@@ -120,12 +171,30 @@ class mbGDMLDataset(mbGDMLData):
             self._F = data
         else:
             raise ValueError(f'{xyz_type} is not a valid xyz data type.')
-
         if r_unit is not None:
             self.r_unit = r_unit
         if e_unit is not None:
             self.e_unit = e_unit
     
+
+    def from_partitioncalc(self, partcalc):
+        """Creates data set from partition calculations.
+
+        Parameters
+        ----------
+        partcalc : :obj:`mbgdml.data.PartitionOutput`
+            Data from energy and gradient calculations of same partition.
+        """
+        self._z = partcalc.z
+        self._R = partcalc.R
+        self._E = partcalc.E
+        self._F = partcalc.F
+        self.r_unit = partcalc.r_unit
+        self.e_unit = partcalc.e_unit
+        self.code_version = __version__
+        self.theory = partcalc.theory
+        self.create()
+
 
     @property
     def z(self):
@@ -133,11 +202,15 @@ class mbGDMLDataset(mbGDMLData):
         
         A ``(n,)`` shape array of type :obj:`numpy.int32` containing atomic
         numbers of atoms in the structures in order as they appear.
+
+        :type: :obj:`numpy.ndarray`
         """
-        if hasattr(self, '_user_data') or hasattr(self, 'dataset'):
-            return self._z
-        else:
-            raise AttributeError('There is no data loaded.')
+        return self._z
+    
+
+    @z.setter
+    def z(self, var):
+        self._z = var
     
 
     @property
@@ -147,11 +220,15 @@ class mbGDMLDataset(mbGDMLData):
         A :obj:`numpy.ndarray` with shape of ``(m, n, 3)`` where ``m`` is the
         number of calculations and ``n`` is the number of atoms with three 
         Cartesian components.
+
+        :type: :obj:`numpy.ndarray`
         """
-        if hasattr(self, '_user_data') or hasattr(self, 'dataset'):
-            return self._R
-        else:
-            raise AttributeError('There is no data set.')
+        return self._R
+    
+
+    @R.setter
+    def R(self, var):
+        self._R = var
     
 
     @property
@@ -161,11 +238,15 @@ class mbGDMLDataset(mbGDMLData):
         A :obj:`numpy.ndarray` with shape of ``(m, n, 3)`` where ``m`` is the
         number of calculations and ``n`` is the number of atoms with three 
         Cartesian components.
+
+        :type: :obj:`numpy.ndarray`
         """
-        if hasattr(self, '_user_data') or hasattr(self, 'dataset'):
-            return self._F
-        else:
-            raise AttributeError('There is no data loaded.')
+        return self._F
+    
+
+    @F.setter
+    def F(self, var):
+        self._F = var
     
 
     @property
@@ -174,17 +255,103 @@ class mbGDMLDataset(mbGDMLData):
         
         A :obj:`numpy.ndarray` with shape of ``(n,)`` where ``n`` is the number
         of atoms.
+
+        :type: :obj:`numpy.ndarray`
         """
-        if hasattr(self, '_user_data') or hasattr(self, 'dataset'):
-            if not hasattr(self, '_E'):
-                raise AttributeError('No energies were provided in data set.')
-            else:
-                return self._E
+        if hasattr(self, '_E'):
+            return self._E
         else:
-            raise AttributeError('There is no data loaded.')
+            raise AttributeError('No energies were provided in data set.')
     
+
+    @E.setter
+    def E(self, var):
+        self._E = var
+    
+
+    @property
+    def E_min(self):
+        """Minimum energy of all structures.
+
+        :type: :obj:`float`
+        """
+        return float(np.min(self.E.ravel()))
+    
+
+    @property
+    def E_max(self):
+        """Maximum energy of all structures.
+
+        :type: :obj:`float`
+        """
+        return float(np.max(self.E.ravel()))
+    
+
+    @property
+    def E_var(self):
+        """Energy variance.
+
+        :type: :obj:`float`
+        """
+        return float(np.var(self.E.ravel()))
+        
+    
+    @property
+    def E_mean(self):
+        """Mean of all energies.
+
+        :type: :obj:`float`
+        """
+        return float(np.mean(self.E.ravel()))
+    
+
+    @property
+    def F_min(self):
+        """Minimum atomic force in all structures.
+
+        :type: :obj:`float`
+        """
+        return float(np.min(self.F.ravel()))
+    
+
+    @property
+    def F_max(self):
+        """Maximum atomic force in all structures.
+
+        :type: :obj:`float`
+        """
+        return float(np.max(self.F.ravel()))
+    
+
+    @property
+    def F_var(self):
+        """Force variance.
+
+        :type: :obj:`float`
+        """
+        return float(np.var(self.F.ravel()))
+    
+
+    @property
+    def F_mean(self):
+        """Mean of all forces.
+
+        :type: :obj:`float`
+        """
+        return float(np.mean(self.F.ravel()))
+    
+
+    @property
+    def md5(self):
+        """Unique MD5 hash of data set. Encoded with UTF-8.
+
+        :type: :obj:`bytes`
+        """
+        return sgdml_io.dataset_md5(self.dataset)
+    
+
     def convertE(self, E_units):
-        """Convert energies and updates :attribute:`e_unit`.
+        """Convert energies and updates :attr:`e_unit`.
 
         Parameters
         ----------
@@ -197,7 +364,7 @@ class mbGDMLDataset(mbGDMLData):
     
     
     def convertR(self, R_units):
-        """Convert coordinates and updates :attribute:`r_unit`.
+        """Convert coordinates and updates :attr:`r_unit`.
 
         Parameters
         ----------
@@ -212,7 +379,7 @@ class mbGDMLDataset(mbGDMLData):
     def convertF(self, E_units, R_units):
         """Convert forces.
 
-        Does not change :attribute:`e_unit` or :attribute:`r_unit`.
+        Does not change :attr:`e_unit` or :attr:`r_unit`.
 
         Parameters
         ----------
@@ -229,7 +396,7 @@ class mbGDMLDataset(mbGDMLData):
         )
 
 
-    def partition_dataset_name(
+    def name_partition(
         self, cluster_label, partition_label, md_temp, md_iter
     ):
         """Automates and standardizes partition datasets names.
@@ -246,17 +413,11 @@ class mbGDMLDataset(mbGDMLData):
             Set point temperautre for the MD thermostat in Kelvin.
         md_iter : :obj:`int`
             Identifies the iteration of the MD simulation.
-        
-        Returns
-        -------
-        :obj:`str`
-            Standardized data set name.
         """
-        dataset_name =  '-'.join([
+        self.name =  '-'.join([
             cluster_label, partition_label, str(md_temp) + 'K', str(md_iter),
             'dataset'
         ])
-        return dataset_name
     
 
     def _organization_dirs(self, save_dir, dataset_name):
@@ -285,296 +446,132 @@ class mbGDMLDataset(mbGDMLData):
             return partition_size_dir
 
 
-    def create_dataset(
-        self,
-        save_dir,
-        dataset_name,
-        z,
-        R,
-        E,
-        F,
-        e_units,
-        r_units,
-        theory='unknown',
-        e_units_gdml='kcal/mol',
-        r_units_gdml='Angstrom',
-        e_units_calc=None,
-        r_units_calc=None,
-        write=True
-    ):
+    def create(self):
         """Creates and writes a data set.
-        
-        Parameters
-        ----------
-        save_dir : :obj:`str`
-            Path to directory to save data set.
-        dataset_name : :obj:`str`
-            The name to label the data set.
-        z : :obj:`numpy.ndarray`
-            A ``(n,)`` array containing atomic numbers of ``n`` atoms.
-        R : :obj:`numpy.ndarray`
-            A ``(m, n, 3)`` array containing the atomic coordinates of ``n``
-            atoms of ``m`` structures.
-        E : :obj:`numpy.ndarray`
-            A ``(m,)`` array containing the energies of ``m`` structures.
-        F : :obj:`numpy.ndarray`
-            A ``(m, n, 3)`` array containing the atomic forces of ``n`` atoms of
-            ``m`` structures. Simply the negative of gradients.
-        e_units : :obj:`str`
-            Units of energy. Options are ``'eV'``, ``'hartree'``,
-            ``'kcal/mol'``, and ``'kJ/mol'``.
-        r_units : :obj:`str`
-            Units of distance. Options are ``'Angstrom'`` or ``'bohr'``
-        e_units_calc : :obj:`str`, optional
-            The units of energies reported in the partition calculation output
-            file. This is used to convert forces. Options are ``'eV'``,
-            ``'hartree'``, ``'kcal/mol'``, and ``'kJ/mol'``.
-        r_units_calc : :obj:`str`, optional
-            Units of distance in the partition calculation output
-            file. This is only used convert forces if needed.
-            Options are ``'Angstrom'`` or ``'bohr'``.
-        theory : :obj:`str`, optional
-            The level of theory and basis set used for the partition
-            calculations. For example, ``'MP2.def2TZVP'``. Defaults to
-            ``'unknown'``.
-        r_units_gdml : :obj:`str`, optional
-            Desired coordinate units for the GDML data set. Defaults to
-            ``'Angstrom'``.
-        e_units_gdml : :obj:`str`, optional
-            Desired energy units for the GDML dataset. Defaults to 'kcal/mol'.
-        write : :obj:`bool`, optional
-            Whether or not the dataset is written to disk. Defaults to True.
-
-        Raises
-        ------
-        ValueError
-            If units do not match GDML units and no calculation units were
-            provided.
         """
-        # Converts energies and forces if units are not the same as GDML units.
-        if e_units != e_units_gdml or r_units != r_units_gdml:
-            if e_units_calc is None or r_units_calc is None:
-                raise ValueError(
-                    'The energy or coordinate units do not match GDML units.'
-                    'Please specify calculation units for conversion.'
-                )
-            else:
-                E = convertor(E, e_units, e_units_gdml)
-                F = utils.convert_forces(
-                    'unknown', F,
-                    e_units, r_units,
-                    e_units_calc=e_units_calc,
-                    r_units_calc=r_units_calc
-                )
-        if not hasattr(self, 'system_info'):
-            self.get_system_info(z.tolist())
         # sGDML variables.
         dataset = {
-            'type': 'd',  # Designates dataset or model.
-            'code_version': __version__,  # sGDML version.
-            'name': dataset_name,  # Name of the output file.
-            'theory': theory,  # Theory used to calculate the data.
-            'z': z,  # Atomic numbers of all atoms in system.
-            'R': R,  # Cartesian coordinates.
-            'r_unit': r_units_gdml,  # Units for coordinates.
-            'E': E,  # Energy of the structures.
-            'e_unit': e_units_gdml,  # Units of energy.
-            'E_min': np.min(E.ravel()),  # Energy minimum.
-            'E_max': np.max(E.ravel()),  # Energy maximum.
-            'E_mean': np.mean(E.ravel()),  # Energy mean.
-            'E_var': np.var(E.ravel()),  # Energy variance.
-            'F': F,  # Atomic forces for each atom.
-            'F_min': np.min(F.ravel()),  # Force minimum.
-            'F_max': np.max(F.ravel()),  # Force maximum.
-            'F_mean': np.mean(F.ravel()),  # Force mean.
-            'F_var': np.var(F.ravel())  # Force variance.
+            'type': np.array('d'),  # Designates dataset or model.
+            'code_version': np.array(__version__),  # sGDML version.
+            'name': np.array(self.name),  # Name of the output file.
+            'theory': np.array(self.theory),  # Theory used to calculate the data.
+            'z': np.array(self.z),  # Atomic numbers of all atoms in system.
+            'R': np.array(self.R),  # Cartesian coordinates.
+            'r_unit': np.array(self.r_unit),  # Units for coordinates.
+            'E': np.array(self.E),  # Energy of the structures.
+            'e_unit': np.array(self.e_unit),  # Units of energy.
+            'E_min': np.array(self.E_min),  # Energy minimum.
+            'E_max': np.array(self.E_max),  # Energy maximum.
+            'E_mean': np.array(self.E_mean),  # Energy mean.
+            'E_var': np.array(self.E_var),  # Energy variance.
+            'F': np.array(self.F),  # Atomic forces for each atom.
+            'F_min': np.array(self.F_min),  # Force minimum.
+            'F_max': np.array(self.F_max),  # Force maximum.
+            'F_mean': np.array(self.F_mean),  # Force mean.
+            'F_var': np.array(self.F_var)  # Force variance.
         }
         # mbGDML variables.
+        if self.z.ndim == 1:
+            self.get_system_info(self.z.tolist())
         dataset = self.add_system_info(dataset)
-        dataset['md5'] = sgdml_io.dataset_md5(dataset)
+        dataset['md5'] = np.array(sgdml_io.dataset_md5(dataset))
         self.dataset = dataset
-        # Writes dataset.
-        if write:
-            self.dataset_dir = self._organization_dirs(
-                save_dir, dataset_name
-            )
-            os.chdir(self.dataset_dir)
-            self.dataset_path = self.dataset_dir + dataset_name + '.npz'
-            self.save(dataset_name, self.dataset, self.dataset_dir, True)
      
 
-    def combine_datasets(self, partition_dir, write_dir):
-        """Combines GDML datasets.
+    def from_combined(self, dataset_dir, name=None):
+        """Combines multiple data sets into one.
         
         Finds all files labeled with 'dataset.npz' (defined in 
         PartitionCalcOutput.create_dataset) in a user specified directory
         and combines them. Typically used on a single partition size (e.g.,
-        monomer, dimer, trimer, etc.) to represent the complete dataset of that
-        partition size.
+        monomer, dimer, trimer, etc.) to represent the complete dataset.
 
         Parameters
         ----------
-        partition_dir : str
-            Path to directory containing GDML datasets. Typically to a
+        dataset_dir : :obj:`str`
+            Path to directory containing GDML data sets. Typically to a
             directory containing only a single partition size
             of a single solvent.
-        write_dir (str): Path to the directory where the partition-size GDML
-            dataset will be written. Usually the cluster directory in the 
-            gdml-dataset directory.
         """
-
         # Normalizes directories.
-        partition_dir = utils.norm_path(partition_dir)
-        write_dir = utils.norm_path(write_dir)
-
+        partition_dir = utils.norm_path(dataset_dir)
         # Gets all GDML datasets within a partition directory.
         all_dataset_paths = utils.natsort_list(
             utils.get_files(partition_dir, '.npz')
         )
-
         # Prepares initial combined dataset from the first dataset found.
-        dataset_npz = np.load(all_dataset_paths[0])
-        dataset = dict(dataset_npz)
-        del dataset_npz
-        original_name = str(dataset['name'][()])
-        parent_label = original_name.split('-')[0]
-        size_label = ''.join([str(dataset['cluster_size']), 'mer'])
-        dataset['name'][()] = '-'.join([parent_label, size_label, 'dataset'])
-
+        self.load(all_dataset_paths[0])
+        if name is not None:
+            self.name = name
         # Adds the remaining datasets to the new dataset.
         index_dataset = 1
         while index_dataset < len (all_dataset_paths):
             dataset_add = np.load(all_dataset_paths[index_dataset])
             print('Adding %s dataset to %s ...' % (dataset_add.f.name[()],
-                dataset['name'][()]))
-
+                self.name))
             # Ensuring the datasets are compatible.
             try:
-                assert np.array_equal(dataset['type'], dataset_add.f.type)
-                assert np.array_equal(dataset['z'], dataset_add.f.z)
-                assert np.array_equal(dataset['r_unit'], dataset_add.f.r_unit)
-                assert np.array_equal(dataset['e_unit'], dataset_add.f.e_unit)
-                assert np.array_equal(dataset['system'], dataset_add.f.system)
-                assert np.array_equal(dataset['solvent'], dataset_add.f.solvent)
-                assert np.array_equal(dataset['cluster_size'],
-                                    dataset_add.f.cluster_size)
+                assert np.array_equal(self.type, dataset_add.f.type)
+                assert np.array_equal(self.z, dataset_add.f.z)
+                assert np.array_equal(self.r_unit, dataset_add.f.r_unit)
+                assert np.array_equal(self.e_unit, dataset_add.f.e_unit)
+                if hasattr(self, 'system'):
+                    assert np.array_equal(self.system, dataset_add.f.system)
+                if hasattr(self, 'solvent'):
+                    assert np.array_equal(self.solvent, dataset_add.f.solvent)
+                if hasattr(self, 'cluster_size'):
+                    assert np.array_equal(self.cluster_size,
+                                        dataset_add.f.cluster_size)
             except AssertionError:
                 base_filename = all_dataset_paths[0].split('/')[-1]
                 incompat_filename = all_dataset_paths[index_dataset].split('/')[-1]
                 raise ValueError('File %s is not compatible with %s' %
                                 (incompat_filename, base_filename))
-
             # Seeing if the theory is always the same.
             # If theories are different, we change theory to 'unknown'.
             try:
-                assert str(dataset['theory'][()]) == str(dataset_add.f.theory[()])
+                assert self.theory == str(dataset_add.f.theory[()])
             except AssertionError:
-                dataset['theory'][()] = 'unknown'
-
+                self.theory = 'unknown'
             # Concatenating relevant arrays.
-            dataset['R'] = np.concatenate(
-                (dataset['R'], dataset_add.f.R), axis=0
-            )
-            dataset['E'] = np.concatenate(
-                (dataset['E'], dataset_add.f.E), axis=0
-            )
-            dataset['F'] = np.concatenate(
-                (dataset['F'], dataset_add.f.F), axis=0
-            )
-
+            self._R = np.concatenate((self.R, dataset_add.f.R), axis=0)
+            self._E = np.concatenate((self.E, dataset_add.f.E), axis=0)
+            self._F = np.concatenate((self.F, dataset_add.f.F), axis=0)
             index_dataset += 1
+        if self.z.ndim == 1:
+            self.get_system_info(self.z.tolist())
+        self.create()
         
-        # Updating min, max, mean, an variances.
-        dataset['E_min'] = np.min(dataset['E'].ravel())
-        dataset['E_max'] = np.max(dataset['E'].ravel())
-        dataset['E_mean'] = np.mean(dataset['E'].ravel())
-        dataset['E_var'] = np.var(dataset['E'].ravel())
-        dataset['F_min'] = np.min(dataset['F'].ravel())
-        dataset['F_max'] = np.max(dataset['F'].ravel())
-        dataset['F_mean'] = np.mean(dataset['F'].ravel())
-        dataset['F_var'] = np.var(dataset['F'].ravel())
 
-        # Writing combined dataset.
-        dataset['md5'] = sgdml_io.dataset_md5(dataset)
-        dataset_path = write_dir + str(dataset['name'][()]) + '.npz'
-        np.savez_compressed(dataset_path, **dataset)
 
     def print(self):
         """Prints all structure coordinates, energies, and force of a data set.
-
-        Raises
-        ------
-        AttributeError
-            If there is no data set loaded.
         """
-
-        if not hasattr(self, 'dataset'):
-            raise AttributeError('Please load a data set first.')
-        
-        R = self.dataset['R']
-        E = self.dataset['E']
-        F = self.dataset['F']
-
-        num_config = R.shape[0]
+        num_config = self.R.shape[0]
         for config in range(num_config):
             print(f'-----Configuration {config}-----')
-            print(f'Energy: {E[config][()]} kcal/mol')
-            print(f'Forces:\n{F[config]}')
+            print(f'Energy: {self.E[config]} kcal/mol')
+            print(f'Forces:\n{self.F[config]}')
 
     
-    def mb_dataset(self, nbody, models_dir):
+    def create_mb(self, ref_dataset, model_paths):
         """Creates a many-body data set.
 
-        Removes lower order n-body contributions of energy and forces from a
-        data set.
+        Removes energy and force predictions from the reference data set using
+        GDML models in ``model_paths``.
 
         Parameters
         ----------
-        nbody : :obj:`int`
-            Number of n-body contributions to include.
-        models_dir : :obj:`str`
-            Path to directory containing GDML files.
-
-        Raises
-        ------
-        AttributeError
-            If there is no data set loaded.
-        ValueError
-            If there are more than one models with the same name.
+        ref_dataset : :obj:`mbgdml.data.mbGDMLDataset`
+            Reference data set of structures, energies, and forces. This is the
+            data where mbGDML predictions will be subtracted from.
+        model_paths : :obj:`list` [:obj:`str`]
+            Paths to saved many-body GDML models in the form of
+            :obj:`numpy.lib.npyio.NpzFile`.
         """
-        
         if not hasattr(self, 'dataset'):
             raise AttributeError('Please load a data set first.')
-
-        nbody_index = 1
-        while nbody_index < nbody:
-
-            # Gets model.
-            if nbody_index == 1:
-                model_paths = utils.get_files(models_dir, '-1mer-')
-            else:
-                search_string = ''.join(['-', str(nbody_index), 'body-'])
-                model_paths = utils.get_files(models_dir, search_string)
-
-            # Removes logs that are found as well.
-            model_paths = [path for path in model_paths if '.npz' in path]
-
-            if len(model_paths) == 1:
-                model_path = model_paths[0]
-            else:
-                raise ValueError(
-                    f'There seems to be multiple {nbody_index}body models.'
-                )
-            
-            # Removes n-body contributions.
-            print(f'Removing {nbody_index}body contributions ...')
-            nbody_model = mbGDMLModel()
-            nbody_model.load(model_path)
-            predict = mbGDMLPredict([nbody_model.model])
-            self.dataset = predict.remove_nbody(self.dataset)
-
-            nbody_index += 1
-
-        # Removes old dataset attribute.
-        if hasattr(self, 'dataset'):
-            delattr(self, 'dataset')
+        print(f'Removing /contributions ...')
+        predict = mbGDMLPredict(model_paths)
+        self.dataset = predict.remove_nbody(ref_dataset.dataset)
+        self._update
