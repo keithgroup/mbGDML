@@ -30,6 +30,7 @@ from sgdml import __version__
 from sgdml.utils import io as sgdml_io
 from mbgdml.data import mbGDMLData
 from mbgdml.data import mbGDMLModel
+import mbgdml.solvents as solvents
 from mbgdml.parse import parse_stringfile
 from mbgdml import utils
 from mbgdml.predict import mbGDMLPredict
@@ -66,11 +67,11 @@ class mbGDMLDataset(mbGDMLData):
     """
 
 
-    def __init__(self, dataset_path=None):
+    def __init__(self, path=None):
         self.type = 'd'
         self.name = 'dataset'
-        if dataset_path is not None:
-            self.load(dataset_path)
+        if path is not None:
+            self.load(path)
 
 
     def _update(self, dataset):
@@ -81,7 +82,8 @@ class mbGDMLDataset(mbGDMLData):
         dataset : :obj:`dict`
             Contains all information and arrays stored in data set.
         """
-        self.dataset = dict(dataset)
+        dataset = self.add_system_info(dataset)
+        self.dataset = dataset
         self._z = self.dataset['z']
         self._R = self.dataset['R']
         self._E = self.dataset['E']
@@ -92,10 +94,8 @@ class mbGDMLDataset(mbGDMLData):
         self.name = str(self.dataset['name'][()])
         self.theory = str(self.dataset['theory'][()])
         # mbGDML added data set information.
-        if self.z.ndim == 1:
-            self.get_system_info(self.z.tolist())
         if 'mb' in self.dataset.keys():
-            self.mb = str(self.dataset['mb'][()])
+            self.mb = int(self.dataset['mb'][()])
 
     def load(self, dataset_path):
         """Uses :func:``numpy.load`` to read data set.
@@ -150,8 +150,6 @@ class mbGDMLDataset(mbGDMLData):
         else:
             z = np.array(z)
         self._z = z
-        if self.z.ndim == 1:
-            self.get_system_info(self.z.tolist())
         if energy_comments:
             try:
                 E = np.array([float(i) for i in comments])
@@ -211,6 +209,17 @@ class mbGDMLDataset(mbGDMLData):
     @z.setter
     def z(self, var):
         self._z = var
+
+    
+    @property
+    def system_info(self):
+        """
+        """
+        if self.z.ndim == 1:
+            z_symbols = utils.atoms_by_element(self.z.tolist())
+            return solvents.system_info(z_symbols)
+        else:
+            return {'system': 'unknown'}
     
 
     @property
@@ -376,23 +385,29 @@ class mbGDMLDataset(mbGDMLData):
         self.r_unit = R_units
 
 
-    def convertF(self, E_units, R_units):
+    def convertF(self, force_e_units, force_r_units, e_units, r_units):
         """Convert forces.
 
         Does not change :attr:`e_unit` or :attr:`r_unit`.
 
         Parameters
         ----------
-        E_units : :obj:`str`
-            Desired units of energy. Options are ``'eV'``, ``'hartree'``,
-            ``'kcal/mol'``, or ``'kJ/mol'``.
-        R_units : :obj:`str`
-            Desired units of coordinates. Options are ``'Angstrom'`` or
+        force_e_units : :obj:`str`
+            Specifies package-specific energy units used in calculation.
+            Available units are ``'eV'``, ``'hartree'``, ``'kcal/mol'``, and
+            ``'kJ/mol'``.
+        force_r_units : :obj:`str`
+            Specifies package-specific distance units used in calculation.
+            Available units are ``'Angstrom'`` and ``'bohr'``.
+        e_units : :obj:`str`
+            Desired units of energy. Available units are ``'eV'``,
+            ``'hartree'``, ``'kcal/mol'``, and ``'kJ/mol'``.
+        r_units : obj:`str`
+            Desired units of distance. Available units are ``'Angstrom'`` and
             ``'bohr'``.
         """
         self._F = utils.convert_forces(
-            'unknown', self.F, E_units, R_units, e_units_calc=self.e_units,
-            r_units_calc=self.r_units
+            self.F, force_e_units, force_r_units, e_units, r_units
         )
 
 
@@ -418,32 +433,6 @@ class mbGDMLDataset(mbGDMLData):
             cluster_label, partition_label, str(md_temp) + 'K', str(md_iter),
             'dataset'
         ])
-    
-
-    def _organization_dirs(self, save_dir, dataset_name):
-        """Determines where a dataset should be saved.
-
-        The dataset will be written in a directory that depends on the
-        partition size (e.g., 2mer).
-        
-        Parameters
-        ----------
-        save_dir : :obj:`str`
-            Path to a common directory for GDML datasets.
-
-        Returns
-        -------
-        :obj:`str`
-            Path to save directory of data set.
-        """
-        save_dir = utils.norm_path(save_dir)
-        # Preparing directories.
-        if self.system_info['system'] == 'solvent':
-            partition_size_dir = utils.norm_path(
-                save_dir + str(self.system_info['cluster_size']) + 'mer'
-            )
-            os.makedirs(partition_size_dir, exist_ok=True)
-            return partition_size_dir
 
 
     def create(self):
@@ -471,14 +460,12 @@ class mbGDMLDataset(mbGDMLData):
             'F_var': np.array(self.F_var)  # Force variance.
         }
         # mbGDML variables.
-        if self.z.ndim == 1:
-            self.get_system_info(self.z.tolist())
         dataset = self.add_system_info(dataset)
         dataset['md5'] = np.array(sgdml_io.dataset_md5(dataset))
         self.dataset = dataset
      
 
-    def from_combined(self, dataset_dir, name=None):
+    def from_combined(self, dataset_paths, name=None):
         """Combines multiple data sets into one.
         
         Finds all files labeled with 'dataset.npz' (defined in 
@@ -488,25 +475,16 @@ class mbGDMLDataset(mbGDMLData):
 
         Parameters
         ----------
-        dataset_dir : :obj:`str`
-            Path to directory containing GDML data sets. Typically to a
-            directory containing only a single partition size
-            of a single solvent.
+        dataset_paths : :obj:`list` [:obj:`str`]
+            Paths to data sets to combine.
         """
-        # Normalizes directories.
-        partition_dir = utils.norm_path(dataset_dir)
-        # Gets all GDML datasets within a partition directory.
-        all_dataset_paths = utils.natsort_list(
-            utils.get_files(partition_dir, '.npz')
-        )
-        # Prepares initial combined dataset from the first dataset found.
-        self.load(all_dataset_paths[0])
+        # Prepares initial combined dataset from the first dataset.
+        self.load(dataset_paths[0])
         if name is not None:
             self.name = name
         # Adds the remaining datasets to the new dataset.
-        index_dataset = 1
-        while index_dataset < len (all_dataset_paths):
-            dataset_add = np.load(all_dataset_paths[index_dataset])
+        for dataset_path in dataset_paths[1:]:
+            dataset_add = np.load(dataset_path)
             print('Adding %s dataset to %s ...' % (dataset_add.f.name[()],
                 self.name))
             # Ensuring the datasets are compatible.
@@ -523,8 +501,8 @@ class mbGDMLDataset(mbGDMLData):
                     assert np.array_equal(self.cluster_size,
                                         dataset_add.f.cluster_size)
             except AssertionError:
-                base_filename = all_dataset_paths[0].split('/')[-1]
-                incompat_filename = all_dataset_paths[index_dataset].split('/')[-1]
+                base_filename = dataset_paths[0].split('/')[-1]
+                incompat_filename = dataset_path.split('/')[-1]
                 raise ValueError('File %s is not compatible with %s' %
                                 (incompat_filename, base_filename))
             # Seeing if the theory is always the same.
@@ -537,11 +515,7 @@ class mbGDMLDataset(mbGDMLData):
             self._R = np.concatenate((self.R, dataset_add.f.R), axis=0)
             self._E = np.concatenate((self.E, dataset_add.f.E), axis=0)
             self._F = np.concatenate((self.F, dataset_add.f.F), axis=0)
-            index_dataset += 1
-        if self.z.ndim == 1:
-            self.get_system_info(self.z.tolist())
         self.create()
-        
 
 
     def print(self):
@@ -569,9 +543,7 @@ class mbGDMLDataset(mbGDMLData):
             Paths to saved many-body GDML models in the form of
             :obj:`numpy.lib.npyio.NpzFile`.
         """
-        if not hasattr(self, 'dataset'):
-            raise AttributeError('Please load a data set first.')
         print(f'Removing /contributions ...')
         predict = mbGDMLPredict(model_paths)
         self.dataset = predict.remove_nbody(ref_dataset.dataset)
-        self._update
+        self._update(self.dataset)

@@ -39,20 +39,6 @@ class mbGDMLData():
 
     def __init__(self):
         pass
-
-
-    def get_system_info(self, atoms):
-        """Describes the data set system.
-        
-        Parameters
-        ----------
-        atoms : :obj:`list`
-            Atomic symbols of all atoms in the system. The atoms
-            are repeated; for example, water is ['H', 'H', 'O'].
-        """
-        self.system_info = solvents.system_info(atoms)
-        for key in self.system_info.keys():
-            setattr(self, key, self.system_info[key])
     
 
     def add_system_info(self, dict_data):
@@ -74,16 +60,15 @@ class mbGDMLData():
         If the system is a solvent, the 'solvent' name and 'cluster_size'
         is included.
         """
-
-        if not hasattr(self, 'system_info'):
-            self.get_system_info(dict_data['z'].tolist())
-        dict_data['system'] = np.array(self.system_info['system'])
+        z_symbols = utils.atoms_by_element(dict_data['z'].tolist())
+        system_info = solvents.system_info(z_symbols)
+        dict_data['system'] = np.array(system_info['system'])
         if dict_data['system'] == 'solvent':
             dict_data['solvent'] = np.array(
-                self.system_info['solvent_name']
+                system_info['solvent_name']
             )
             dict_data['cluster_size'] = np.array(
-                self.system_info['cluster_size']
+                system_info['cluster_size']
             )
         return dict_data
 
