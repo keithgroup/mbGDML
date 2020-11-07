@@ -231,11 +231,10 @@ class mbGDMLPredict():
 
         Parameters
         ----------
-        ref_dataset : :obj:`mbgdml.data.mbGDMLDataset`
-            Reference data set of structures, energies, and forces. This is the
-            data where mbGDML predictions will be subtracted from.
+        ref_dataset : :obj:`dict`
+            Contains all data as :obj:`numpy.ndarray` objects.
         """
-        nbody_dataset = ref_dataset.dataset
+        nbody_dataset = ref_dataset
         z = nbody_dataset['z']
         R = nbody_dataset['R']
         E = nbody_dataset['E']
@@ -243,7 +242,7 @@ class mbGDMLPredict():
         num_config = R.shape[0]
         system = str(nbody_dataset['system'][()])
         if system == 'solvent':
-            dataset_info = solvents.system_info(ref_dataset.z.tolist())
+            dataset_info = solvents.system_info(ref_dataset['z'].tolist())
             system_size = dataset_info['cluster_size']
         # Removing all n-body contributions for every configuration.
         for config in range(num_config):
