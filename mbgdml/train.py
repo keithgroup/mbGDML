@@ -151,5 +151,5 @@ class MBGDMLTrain():
             model.add_manybody_info(int(self.dataset.f.mb[()]))
 
         # Saving model.
-        model.save(model.name, model.base_vars, self.model_dir, False)
+        model.save(model.name, model.base_vars, self.model_dir)
 
