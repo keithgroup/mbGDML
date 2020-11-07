@@ -133,8 +133,10 @@ class PartitionOutput:
 
 
     def __init__(
-        self, output_path, cluster_label, partition_label, md_temp, md_iter=0,
-        e_unit='kcal/mol', r_unit='Angstrom', theory='unknown'):
+        self, output_path, cluster_label, partition_label, md_temp, grad_e_unit,
+        grad_r_unit, md_iter=0, e_unit='kcal/mol', r_unit='Angstrom',
+        theory='unknown'
+    ):
         
         self.output_path = output_path
         self.output_name = self.output_path.split('/')[-1].split('.')[0]
@@ -151,8 +153,7 @@ class PartitionOutput:
         self._get_gdml_data()
         self.E = convertor(self.E, 'eV', self.e_unit)
         self.G = convert_forces(
-            self.cclib_data.metadata['package'], self.G, self.e_unit,
-            self.r_unit
+            self.G, grad_e_unit, grad_r_unit, self.e_unit, self.r_unit
         )
         self.F = np.negative(self.G)
 
