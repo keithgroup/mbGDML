@@ -186,70 +186,39 @@ def string_coords(atoms, coords):
 
 
 def convert_forces(
-    package, forces, e_units, r_units, e_units_calc=None, r_units_calc=None
+    forces, e_units_calc, r_units_calc, e_units, r_units
 ):
     """Converts forces (or gradients) to specified units.
 
-    cclib automatically converts energy units to eV, but does not convert
-    gradients. GDML needs consistent energy and force units, so we convert
-    them.
-
     Parameters
     ----------
-    package : str
-        Computational chemistry package used for computations.
-    forces : numpy.ndarray
+    forces : :obj:`numpy.ndarray`
         An array with units of energy and distance matching `e_units_calc`
         and `r_units_calc`.
-    e_units : str
-        Desired units of energy. Available units are 'eV', 'hartree',
-        'kcal/mol', and 'kJ/mol'.
-    r_units : str
-        Desired units of distance. Available units implemented in cclib's
-        convertor function are 'Angstrom' and 'bohr'.
-    e_units_calc : str, optional
-        Specifies package-specific energy units used in calculation.
-        Defaults to None.
-    r_units_calc : str, optional
-        Specifies package-specific distance units used in calculation.
-        Defaults to None.
-    
-    Raises
-    ------
-    ValueError
-        If the selected energy units are not implemented.
-    ValueError
-        If the selected distance units are not implemented.
-    ValueError
-        If calculation package is not defined here for known energy and
-        distance units.
-    
-    Notes
-    -----
-    Only supports 'ORCA' for automatically determining calc units.
-    Otherwise, manually specify `e_units_calc` and `r_units_calc`.
+    e_units_calc : :obj:`str`
+        Specifies package-specific energy units used in calculation. Available
+        units are ``'eV'``, ``'hartree'``, ``'kcal/mol'``, and ``'kJ/mol'``.
+    r_units_calc : :obj:`str`
+        Specifies package-specific distance units used in calculation. Available
+        units are ``'Angstrom'`` and ``'bohr'``.
+    e_units : :obj:`str`
+        Desired units of energy. Available units are ``'eV'``, ``'hartree'``,
+        ``'kcal/mol'``, and ``'kJ/mol'``.
+    r_units : obj:`str`
+        Desired units of distance. Available units are ``'Angstrom'`` and
+        ``'bohr'``.
     """
-
-    defined_packages = {
-        'ORCA': {'e_unit': 'hartree', 'r_unit': 'bohr'}
-    }
-
-    if e_units not in {'eV', 'hartree', 'kcal/mol', 'kJ/mol'}:
+    #'ORCA': {'e_unit': 'hartree', 'r_unit': 'bohr'}
+    if e_units not in ['eV', 'hartree', 'kcal/mol', 'kJ/mol']:
         raise ValueError(f'{e_units} is not an available energy unit.')
-    if r_units not in {'Angstrom', 'bohr'}:
+    if r_units not in ['Angstrom', 'bohr']:
         raise ValueError(f'{r_units} is not an available distance unit.')
-    if package in defined_packages:
-        e_units_calc = defined_packages[package]['e_unit']
-        r_units_calc = defined_packages[package]['r_unit']
-    else:
-        if e_units_calc is None or r_units_calc is None:
-            raise ValueError(
-                'Please specify e_units_calc and r_units_calc.'
-            )
-    
-    forces_conv = cclib.parser.utils.convertor(forces, e_units_calc, e_units)
-    forces_conv = cclib.parser.utils.convertor(forces_conv, r_units, r_units_calc)
-    
+    forces_conv = cclib.parser.utils.convertor(
+        forces, e_units_calc, e_units
+    )
+    forces_conv = cclib.parser.utils.convertor(
+        forces_conv, r_units, r_units_calc
+    )
     return forces_conv
 
 
