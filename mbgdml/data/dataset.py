@@ -24,12 +24,10 @@
 
 import os
 import numpy as np
-from cclib.io import ccread
 from cclib.parser.utils import convertor
 from sgdml import __version__
 from sgdml.utils import io as sgdml_io
 from mbgdml.data import mbGDMLData
-from mbgdml.data import mbGDMLModel
 import mbgdml.solvents as solvents
 from mbgdml.parse import parse_stringfile
 from mbgdml import utils

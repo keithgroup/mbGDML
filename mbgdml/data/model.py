@@ -36,15 +36,6 @@ class mbGDMLModel(mbGDMLData):
         Path to the npz file.
     model : numpy.npzfile
         GDML model for predicting energies and forces.
-        
-    Methods
-    -------
-    load(model_path)
-        Loads GDML model.
-    get_model_name(log_path)
-        Retrives GDML model's name from log file.
-    add_manybody_info(mb_order)
-        Adds many-body (mb) information to GDML model.
     """
     
     def __init__(self):
