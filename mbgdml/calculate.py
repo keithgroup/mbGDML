@@ -41,7 +41,7 @@ from mbgdml.data import mbGDMLData
 class mbGDMLCalculator(Calculator):
     """Initializes mbGDML calculator with models and units.
     
-    Parameteres
+    Parameters
     -----------
     model_paths : list
         Paths of all models to be used for GDML prediction.
@@ -90,7 +90,7 @@ class mbGDMLCalculator(Calculator):
     def load_models(self, model_paths):
         """Loads models for GDML prediction.
         
-        Parameteres
+        Parameters
         -----------
         model_paths : list
             Contains paths of all GDML models to be loaded. All of these models 
@@ -153,7 +153,7 @@ class mbGDMLMD(mbGDMLData):
     def _load_structure(self, structure_name, structure_path):
         """Sets the appropriate attributes for structure information.
         
-        Parameteres
+        Parameters
         -----------
         structure_name : str
             Name of the structure. Mainly for file naming.
@@ -168,7 +168,7 @@ class mbGDMLMD(mbGDMLData):
     def load_calculator(self, model_paths):
         """Loads the many-body GDML ASE calculator.
         
-        Parameteres
+        Parameters
         -----------
         model_paths : list
             Paths to all many-body GDML models to be used.
@@ -180,7 +180,7 @@ class mbGDMLMD(mbGDMLData):
     def relax(self, max_force=1e-4, steps=100):
         """Short relaxation of structure.
         
-        Parameteres
+        Parameters
         -----------
         max_force : float, optional
             Maximum force. Defaults to 1e-4.
@@ -202,7 +202,7 @@ class mbGDMLMD(mbGDMLData):
     def printenergy(self, a):
         """Quick function to print MD information during simulation.
         
-        Parameteres
+        Parameters
         -----------
         a : `ase.atoms`
             Atoms object from ASE.
@@ -217,7 +217,7 @@ class mbGDMLMD(mbGDMLData):
     def run(self, steps, t_step, temp):
         """Runs a MD simulation using the Verlet algorithm in ASE.
         
-        Parameteres
+        Parameters
         -----------
         steps : `int`
             Number of steps for the MD simulation.
@@ -437,7 +437,7 @@ def partition_engrad(
     
     Can be submitted or just have the input files prepared.
     
-    Parameteres
+    Parameters
     -----------
     package : `str`
         Specifies the quantum chemistry program to be used. ORCA is currently
