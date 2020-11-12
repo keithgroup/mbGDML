@@ -224,16 +224,17 @@ def convert_forces(
 
 def atoms_by_element(atom_list):
     """Converts a list of atoms identified by their atomic number to their
-    elemental symbol.
+    elemental symbol in the same order.
     
     Parameters
-    atom_list : list
-        Contains numbers that represent atomic numbers.
+    ----------
+    atom_list : :obj:`list` [:obj:`int`]
+        Atomic numbers of atoms within a structure.
     
     Returns
     -------
-    list
-        Contains strings of elemental symbols matching atom_list.
+    :obj:`list` [:obj:`str`]
+        Element symbols of atoms within a structure.
     """
 
     atom_list_elements = []
@@ -247,12 +248,13 @@ def atoms_by_number(atom_list):
     atomic number.
     
     Parameters
-    atom_list : :obj:`list`
-        Contains numbers that represent atomic numbers.
+    ----------
+    atom_list : :obj:`list` [:obj:`str`]
+        Element symbols of atoms within a structure.
     
     Returns
     -------
     :obj:`list` [:obj:`int`]
-        Contains atomic numbers of atoms in atom_list.
+        Atomic numbers of atoms within a structure.
     """
     return [int(elements.symbol(i).number) for i in atom_list]
