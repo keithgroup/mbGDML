@@ -104,3 +104,5 @@ ENV/
 
 # Doc builds
 docs/source/_build
+docs/html
+docs/source/doc
