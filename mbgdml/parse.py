@@ -173,13 +173,13 @@ def parse_cluster(cluster_data):
     
     Parameters
     ----------
-    cluster_data : dict
+    cluster_data : :obj:`dict`
         Contains 'atoms' that is a list of elements organized by molecule and 
         matches the order of the numpy array containing atomic coordinates
     
     Returns
     -------
-    dict
+    :obj:`dict`
         Contains solvent molecules with keys of uppercase characters with dicts 
         as values containing 'atoms' and 'coords'.
 

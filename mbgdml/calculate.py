@@ -91,7 +91,7 @@ class mbGDMLCalculator(Calculator):
         """Loads models for GDML prediction.
         
         Parameters
-        -----------
+        ----------
         model_paths : list
             Contains paths of all GDML models to be loaded. All of these models 
             will be used during the MD run. 
@@ -154,7 +154,7 @@ class mbGDMLMD(mbGDMLData):
         """Sets the appropriate attributes for structure information.
         
         Parameters
-        -----------
+        ----------
         structure_name : str
             Name of the structure. Mainly for file naming.
         structure_path : str
@@ -169,7 +169,7 @@ class mbGDMLMD(mbGDMLData):
         """Loads the many-body GDML ASE calculator.
         
         Parameters
-        -----------
+        ----------
         model_paths : list
             Paths to all many-body GDML models to be used.
         """
@@ -181,7 +181,7 @@ class mbGDMLMD(mbGDMLData):
         """Short relaxation of structure.
         
         Parameters
-        -----------
+        ----------
         max_force : float, optional
             Maximum force. Defaults to 1e-4.
         steps : int, optional
@@ -203,7 +203,7 @@ class mbGDMLMD(mbGDMLData):
         """Quick function to print MD information during simulation.
         
         Parameters
-        -----------
+        ----------
         a : `ase.atoms`
             Atoms object from ASE.
         """
@@ -218,7 +218,7 @@ class mbGDMLMD(mbGDMLData):
         """Runs a MD simulation using the Verlet algorithm in ASE.
         
         Parameters
-        -----------
+        ----------
         steps : `int`
             Number of steps for the MD simulation.
         t_step : `float`
@@ -438,7 +438,7 @@ def partition_engrad(
     Can be submitted or just have the input files prepared.
     
     Parameters
-    -----------
+    ----------
     package : `str`
         Specifies the quantum chemistry program to be used. ORCA is currently
         the only package directly supported.
