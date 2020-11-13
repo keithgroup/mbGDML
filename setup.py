@@ -31,7 +31,7 @@ setup(
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.7'
     ],
-    description="Many-body implementation of symmetric gradient domain machine learning",
+    description="Many-body implementation of symmetric gradient-domain machine learning force fields",
     entry_points={
         'console_scripts': [
             'mbgdml=mbgdml.cli:main',
