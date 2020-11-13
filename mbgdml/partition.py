@@ -31,14 +31,14 @@ def partition_cluster(cluster, nbody):
     
     Parameters
     ----------
-    cluster : dict
+    cluster : :obj:`dict`
         Dictionary of solvent molecules in cluster from parse_cluster
-    nbody : int
+    nbody : :obj:`int`
         Desired number of solvent molecules in combination.
     
     Returns
     -------
-    dict
+    :obj:`dict`
         All nonrepeating solvent molecule combinations from cluster with keys 
         being uppercase concatenations of molecule labels and values being the 
         string of coordinates.
@@ -90,12 +90,12 @@ def partition_trajectory(traj_path):
     
     Parameters
     ----------
-    traj_path : str
+    traj_path : :obj:`str`
         Path to trajectory with xyz coordinates.
     
     Returns
     -------
-    dict
+    :obj:`dict`
         All nonrepeating solvent molecule combinations from cluster with keys 
         being uppercase concatenations of molecule labels and values being the 
         string of coordinates.
