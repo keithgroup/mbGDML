@@ -1,7 +1,7 @@
 Basic concepts
 ==============
 
-This tutorial covers, well, the basics of many-body gradient domain machine
+This tutorial covers, well, the basics of many-body gradient-domain machine
 learning (mbGDML) force fields.
 Please read through this before moving to other tutorials.
 
