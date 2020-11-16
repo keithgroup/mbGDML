@@ -9,5 +9,6 @@ Tutorials
    basics
    partitioning
    datasets
+   training
    predictions
 

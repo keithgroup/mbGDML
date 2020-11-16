@@ -40,12 +40,10 @@ class mbGDMLDataset(mbGDMLData):
     Parameters
     ----------
     dataset_path : :obj:`str`, optional
-        Path to a saved :obj:`numpy.lib.npyio.NpzFile`.
+        Path to a saved :obj:`numpy.NpzFile`.
 
     Attributes
     ----------
-    dataset : :obj:`dict`
-        Contains all data as :obj:`numpy.ndarray` objects.
     name : :obj:`str`
         Name of the data set. Defaults to ``'dataset'``.
     code_verstion
@@ -84,23 +82,21 @@ class mbGDMLDataset(mbGDMLData):
         dataset : :obj:`dict`
             Contains all information and arrays stored in data set.
         """
-        dataset = self.add_system_info(dataset)
-        self.dataset = dataset
-        self._z = self.dataset['z']
-        self._R = self.dataset['R']
-        self._E = self.dataset['E']
-        self._F = self.dataset['F']
-        self._r_unit = str(self.dataset['r_unit'][()])
-        self._e_unit = str(self.dataset['e_unit'][()])
-        self.code_version = str(self.dataset['code_version'][()])
-        self.name = str(self.dataset['name'][()])
-        self.theory = str(self.dataset['theory'][()])
+        self._z = dataset['z']
+        self._R = dataset['R']
+        self._E = dataset['E']
+        self._F = dataset['F']
+        self._r_unit = str(dataset['r_unit'][()])
+        self._e_unit = str(dataset['e_unit'][()])
+        self.code_version = str(dataset['code_version'][()])
+        self.name = str(dataset['name'][()])
+        self.theory = str(dataset['theory'][()])
         # mbGDML added data set information.
-        if 'mb' in self.dataset.keys():
-            self.mb = int(self.dataset['mb'][()])
+        if 'mb' in dataset.keys():
+            self.mb = int(dataset['mb'][()])
 
     def load(self, dataset_path):
-        """Uses :func:``numpy.load`` to read data set.
+        """Read data set.
 
         Parameters
         ----------
@@ -140,7 +136,8 @@ class mbGDMLDataset(mbGDMLData):
         Notes
         -----
         If ``xyz_type`` is ``'grads'``, it will take the negative and store as
-        forces.
+        forces. If it is ``'extended'`` the three rightmost data will be stored
+        as forces.
         """
         self._user_data = True
         z, comments, data = parse_stringfile(file_path)
@@ -182,7 +179,7 @@ class mbGDMLDataset(mbGDMLData):
 
         Parameters
         ----------
-        partcalc : :obj:`mbgdml.data.PartitionOutput`
+        partcalc : :obj:`~mbgdml.data.calculation.PartitionOutput`
             Data from energy and gradient calculations of same partition.
         """
         self._z = partcalc.z
@@ -193,7 +190,6 @@ class mbGDMLDataset(mbGDMLData):
         self.e_unit = partcalc.e_unit
         self.code_version = __version__
         self.theory = partcalc.theory
-        self.create()
 
 
     def name_partition(
@@ -219,13 +215,15 @@ class mbGDMLDataset(mbGDMLData):
             'dataset'
         ])
 
+    @property
+    def dataset(self):
+        """Contains all data as :obj:`numpy.ndarray` objects.
 
-    def create(self):
-        """Creates and writes a data set.
+        :type: :obj:`dict`
         """
         # sGDML variables.
         dataset = {
-            'type': np.array('d'),  # Designates dataset or model.
+            'type': np.array('d'),  # Designates dataset.
             'code_version': np.array(__version__),  # sGDML version.
             'name': np.array(self.name),  # Name of the output file.
             'theory': np.array(self.theory),  # Theory used to calculate the data.
@@ -247,21 +245,21 @@ class mbGDMLDataset(mbGDMLData):
         # mbGDML variables.
         dataset = self.add_system_info(dataset)
         dataset['md5'] = np.array(sgdml_io.dataset_md5(dataset))
-        self.dataset = dataset
+        return dataset
      
 
     def from_combined(self, dataset_paths, name=None):
         """Combines multiple data sets into one.
         
-        Finds all files labeled with 'dataset.npz' (defined in 
-        PartitionCalcOutput.create_dataset) in a user specified directory
-        and combines them. Typically used on a single partition size (e.g.,
-        monomer, dimer, trimer, etc.) to represent the complete dataset.
+        Typically used on a single partition size (e.g., monomer, dimer, trimer,
+        etc.) to represent the complete dataset.
 
         Parameters
         ----------
         dataset_paths : :obj:`list` [:obj:`str`]
             Paths to data sets to combine.
+        name : :obj:`str`, optional
+            Name for the combined data set.
         """
         # Prepares initial combined dataset from the first dataset.
         self.load(dataset_paths[0])
@@ -300,7 +298,6 @@ class mbGDMLDataset(mbGDMLData):
             self._R = np.concatenate((self.R, dataset_add.f.R), axis=0)
             self._E = np.concatenate((self.E, dataset_add.f.E), axis=0)
             self._F = np.concatenate((self.F, dataset_add.f.F), axis=0)
-        self.create()
 
 
     def print(self):
@@ -321,14 +318,14 @@ class mbGDMLDataset(mbGDMLData):
 
         Parameters
         ----------
-        ref_dataset : :obj:`mbgdml.data.mbGDMLDataset`
+        ref_dataset : :obj:`~mbgdml.data.dataset.mbGDMLDataset`
             Reference data set of structures, energies, and forces. This is the
             data where mbGDML predictions will be subtracted from.
         model_paths : :obj:`list` [:obj:`str`]
             Paths to saved many-body GDML models in the form of
-            :obj:`numpy.lib.npyio.NpzFile`.
+            :obj:`numpy.NpzFile`.
         """
         print(f'Removing /contributions ...')
         predict = mbGDMLPredict(model_paths)
-        self.dataset = predict.remove_nbody(ref_dataset.dataset)
-        self._update(self.dataset)
+        dataset = predict.remove_nbody(ref_dataset.dataset)
+        self._update(dataset)
