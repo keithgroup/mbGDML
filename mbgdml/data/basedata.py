@@ -74,7 +74,7 @@ class mbGDMLData():
         """Atomic coordinates of structure(s).
         
         A :obj:`numpy.ndarray` with shape of ``(m, n, 3)`` where ``m`` is the
-        number of calculations and ``n`` is the number of atoms with three 
+        number of structures and ``n`` is the number of atoms with three 
         Cartesian components.
 
         :type: :obj:`numpy.ndarray`
@@ -106,7 +106,7 @@ class mbGDMLData():
         """Atomic forces of atoms in structure(s).
         
         A :obj:`numpy.ndarray` with shape of ``(m, n, 3)`` where ``m`` is the
-        number of calculations and ``n`` is the number of atoms with three 
+        number of structures and ``n`` is the number of atoms with three 
         Cartesian components.
 
         :type: :obj:`numpy.ndarray`
@@ -269,7 +269,7 @@ class mbGDMLData():
         e_units : :obj:`str`
             Desired units of energy. Available units are ``'eV'``,
             ``'hartree'``, ``'kcal/mol'``, and ``'kJ/mol'``.
-        r_units : obj:`str`
+        r_units : :obj:`str`
             Desired units of distance. Available units are ``'Angstrom'`` and
             ``'bohr'``.
         """
@@ -315,13 +315,12 @@ class mbGDMLData():
         
         Parameters
         ----------
-        name : str
-            Name of the file to be saved not including the
-            extension.
-        data : dict
-            Base variables for dataset or model.
-        save_dir : str
-            Directory to save the file.
+        name : :obj:`str`
+            Name of the file to be saved not including the ``npz`` extension.
+        data : :obj:`dict`
+            Data to be saved to ``npz`` file.
+        save_dir : :obj:`str`
+            Directory to save the file (with or without the ``'/'`` suffix).
         """
         save_dir = utils.norm_path(save_dir)
         save_path = save_dir + name + '.npz'
