@@ -2,7 +2,7 @@
 
 <h1 align="center">mbGDML</h1>
 
-<h4 align="center">Create, use, and analyze many-body gradient-domain machine learning force fields.</h4>
+<h4 align="center">Create, use, and analyze many-body gradient domain machine learning force fields.</h4>
 
 <p align="center">
     <a href="https://travis-ci.com/keithgroup/mbGDML">
@@ -30,7 +30,7 @@
 
 Atomistic insight is fundamental for computational predictive studies of chemical and physical processes.
 Machine learning force fields provide a route to high-level ab initio calculations at a fraction of the cost.
-[Symmetric gradient-domain machine learning (sGDML)](http://quantum-machine.org/gdml/), a kernel-based method, directly learns the relationship between atomic coordinates and interatomic forces.
+[Symmetric gradient domain machine learning (sGDML)](http://quantum-machine.org/gdml/), a kernel-based method, directly learns the relationship between atomic coordinates and interatomic forces.
 However, training in the gradient domain sacrifices generalized transferability to other species or number of atoms.
 
 [Many-body GDML (mbGDML)](https://github.com/keithgroup/mbGDML), is a technique for sGDML transferability to *n*-sized systems by using many-body machine learning models.
