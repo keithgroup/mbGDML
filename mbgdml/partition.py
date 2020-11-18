@@ -23,16 +23,17 @@
 import itertools
 import numpy as np
 from mbgdml import parse
+from mbgdml import utils
 from mbgdml import solvents
 
-def partition_cluster(cluster, nbody):
-    """Creates dictionary with all possible n-body combinations of solvent
-    cluster.
+def _partition_cluster(cluster, nbody):
+    """All possible n-body combinations from a cluster.
     
     Parameters
     ----------
     cluster : :obj:`dict`
-        Dictionary of solvent molecules in cluster from parse_cluster
+        Dictionary of solvent molecules in cluster from
+        :func:`~mbgdml.parse.parse_cluster`.
     nbody : :obj:`int`
         Desired number of solvent molecules in combination.
     
@@ -40,25 +41,32 @@ def partition_cluster(cluster, nbody):
     -------
     :obj:`dict`
         All nonrepeating solvent molecule combinations from cluster with keys 
-        being uppercase concatenations of molecule labels and values being the 
-        string of coordinates.
+        being ``'#,#,#'`` where each ``#`` represents a molecule index. For
+        example, ``'0,11,19'`` would be a cluster with molecules 0, 11, and 19
+        from the super cluster. Each value is a dictionary containing
+
+        ``'z'``
+            A ``(n,)`` shape array of type :obj:`numpy.int32` containing atomic
+            numbers of atoms in the structures in order as they appear.
+        
+        ``'R'``
+            A :obj:`numpy.ndarray` with shape of ``(n, 3)`` where ``n`` is the
+            number of atoms with three Cartesian components.
 
     Notes
     -----
-    ABC is considered the same as BAC and only included once.
+    0,1,2 is considered the same as 2,1,3 and only included once.
     """
-
     segments = {}
 
-    # Creates list of combinations of cluster dictionary keys
-    # comb_list is a list of tuples,
-    # e.g. [('A', 'B'), ('A', 'C'), ('A', 'D'), ('B', 'C'), ('B', 'D'), ('C', 'D')].
+    # Creates list of combinations of cluster dictionary keys.
+    # comb_list is a list of tuples, 
+    # e.g. [(0, 1), (0, 2), (0, 3), (1, 2), (1, 3), (2, 3)].
     comb_list = list(itertools.combinations(cluster, nbody))
-    
     # Adds each solvent molecule coordinates in each combination
     # to a dictionary.
     for combination in comb_list:
-        # Combination is tuple of solvent solvent molecules, e.g. ('B', 'C').
+        # Combination is tuple of solvent solvent molecules, e.g. (0, 1).
         
         for molecule in combination:
             # Molecule is the letter assigned to the solvent molecule, e.g. 'A'.
@@ -66,17 +74,21 @@ def partition_cluster(cluster, nbody):
             # Tries to concatenate two molecules; if it fails it initializes
             # the variable.
             try:
-                combined_atoms = np.concatenate((combined_atoms,
-                                                 cluster[molecule]['atoms']))
-                combined_coords = np.concatenate((combined_coords,
-                                                 cluster[molecule]['coords']))
+                combined_atoms = np.concatenate(
+                    (combined_atoms, cluster[molecule]['z'])
+                )
+                combined_coords = np.concatenate(
+                    (combined_coords, cluster[molecule]['R'])
+                )
             except UnboundLocalError:
-                combined_atoms = cluster[molecule]['atoms']
-                combined_coords = cluster[molecule]['coords']
+                combined_atoms = cluster[molecule]['z']
+                combined_coords = cluster[molecule]['R']
 
         # Adds the segment to the dict.
-        segments[''.join(combination)] = {'atoms': combined_atoms,
-                                          'coords': combined_coords}
+        comb_key = ','.join([str(i) for i in combination])
+        segments[comb_key] = {
+            'z': combined_atoms, 'R': combined_coords
+        }
 
         # Clears segment variables for the next one.
         del combined_atoms, combined_coords
@@ -84,9 +96,13 @@ def partition_cluster(cluster, nbody):
     return segments
 
 
-def partition_trajectory(traj_path):
-    """Partitions MD trajectory into separate trajectories for each possible
-    segment.
+def partition_stringfile(file_path):
+    """Partitions an XYZ file.
+
+    Takes a cluster of molecules and separates into individual partitions. A
+    partition being a monomer, dimer, trimer, etc. from the original cluster.
+    For example, a structure of three solvent molecules will provide three
+    individual partitions of monomers, three dimers, and one trimer.
     
     Parameters
     ----------
@@ -96,61 +112,58 @@ def partition_trajectory(traj_path):
     Returns
     -------
     :obj:`dict`
-        All nonrepeating solvent molecule combinations from cluster with keys 
+        All nonrepeating molecule combinations from original cluster with keys 
         being uppercase concatenations of molecule labels and values being the 
         string of coordinates.
+    
+    Raises
+    ------
+    ValueError
+        If any structure has a different order of atoms.
     """
 
     # Parses trajectory.
-    parsed_traj = parse.parse_coords(traj_path)
+    z_all, _, R_list = parse.parse_stringfile(file_path)
+    try:
+        assert len(set(tuple(i) for i in z_all)) == 1
+    except AssertionError:
+        raise ValueError(f'{file_path} contains atoms in different order.')
+    z_elements = z_all[0]
+    R = np.array(R_list)
+    # Gets system information
+    z = np.array(utils.atoms_by_number(z_elements))
+    sys_info = solvents.system_info(z.tolist())
 
-    # Gets length of trajectory.
-    traj_steps = parsed_traj['coords'].shape[0]
-
-    # Gets solvent information.
-    solvent_info = solvents.system_info(parsed_traj['atoms'])
-
-    # Directory containing all partitions atoms and coords.
-    traj_partition = {}  
-    # Loops through each step in the MD trajectory.
-    step_index = 0
-    while step_index < traj_steps:
-        cluster = parse.parse_cluster(
-            {'atoms': parsed_traj['atoms'],
-             'coords': parsed_traj['coords'][step_index]}
-        )
-
+    # Gets 
+    all_partitions = {}  
+    for coords in R:
+        cluster = parse.parse_cluster(z, coords)
         # Loops through all possible n-body partitions and adds the atoms once
         # and adds each step traj_partition.
-        nbody_index = 1
-        while nbody_index <= solvent_info['cluster_size']:
-            partitions = partition_cluster(cluster, nbody_index)
+        for i_nbody in range(1, sys_info['cluster_size'] + 1):
+            partitions = _partition_cluster(cluster, i_nbody)
             partition_labels = list(partitions.keys())
-            
             # Tries to add the next trajectory step to 'coords'; if it fails it
             # initializes 'atoms' and 'coords' for that partition.
             for label in partition_labels:
                 partition_info = solvents.system_info(
-                    partitions[label]['atoms']
+                    partitions[label]['z'].tolist()
                 )
 
                 try:
-                    traj_partition[label]['coords'] = np.append(
-                        traj_partition[label]['coords'],
-                        np.array([partitions[label]['coords']]),
+                    all_partitions[label]['R'] = np.append(
+                        all_partitions[label]['R'],
+                        np.array([partitions[label]['R']]),
                         axis=0
                     )
                 except KeyError:
-                    traj_partition[label] = {
+                    all_partitions[label] = {
                         'solvent_label': partition_info['solvent_label'],
-                        'cluster_size': solvent_info['cluster_size'],
+                        'cluster_size': sys_info['cluster_size'],
                         'partition_label': label,
                         'partition_size': partition_info['cluster_size'],
-                        'atoms': partitions[label]['atoms'],
-                        'coords': np.array([partitions[label]['coords']])
+                        'z': partitions[label]['z'],
+                        'R': np.array([partitions[label]['R']])
                     }
-            
-            nbody_index += 1
-        step_index += 1
-    
-    return traj_partition
+
+    return all_partitions
