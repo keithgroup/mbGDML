@@ -29,6 +29,7 @@ import pytest
 import numpy as np
 
 import mbgdml.data as data
+import mbgdml.partition as partition
 import mbgdml.parse as parse
 import mbgdml.utils as utils
 
@@ -262,3 +263,72 @@ def test_data_create_predictset():
 
     #TODO Add assert statements
 
+
+def test_parse_parse_cluster():
+
+    coord_path = './tests/data/md/4h2o.abc0-orca.md-mp2.def2tzvp.300k-1.traj'
+
+    z_all, _, R_list = parse.parse_stringfile(coord_path)
+    assert len(set(tuple(i) for i in z_all)) == 1
+    z_elements = z_all[0]
+    assert z_elements == [
+        'O', 'H', 'H', 'O', 'H', 'H', 'O', 'H', 'H', 'O', 'H', 'H'
+    ]
+    z = np.array(utils.atoms_by_number(z_elements))
+    R = np.array(R_list)
+    cluster = parse.parse_cluster(z, R[0])
+    assert list(cluster.keys()) == [0, 1, 2, 3]
+    assert np.allclose(cluster[0]['z'], np.array([8, 1, 1]))
+    assert np.allclose(
+        cluster[0]['R'],
+        np.array(
+            [[ 1.52130901,  1.11308001,  0.393073  ],
+             [ 2.36427601,  1.14014601, -0.069582  ],
+             [ 0.836238,    1.27620401, -0.29389   ]]
+        )
+    )
+
+def test_partition_stringfile():
+    coord_path = './tests/data/md/4h2o.abc0-orca.md-mp2.def2tzvp.300k-1.traj'
+    test_partitions = partition.partition_stringfile(coord_path)
+
+    assert list(test_partitions.keys()) == [
+        '0', '1', '2', '3', '0,1', '0,2', '0,3', '1,2', '1,3', '2,3', '0,1,2',
+        '0,1,3', '0,2,3', '1,2,3', '0,1,2,3'
+    ]
+    test_partition_1 = test_partitions['2']
+    assert list(test_partition_1.keys()) == [
+        'solvent_label', 'cluster_size', 'partition_label', 'partition_size',
+        'z', 'R'
+    ]
+    assert np.allclose(test_partition_1['z'], np.array([8, 1, 1]))
+    assert test_partition_1['R'].shape[0] == 101
+    assert test_partition_1['R'].shape[2] == 3
+    assert np.allclose(
+        test_partition_1['R'][2],
+        np.array(
+            [[-0.48381516,  1.17384211, -1.4413092 ],
+             [-0.90248552,  0.33071306, -1.24479905],
+             [-1.21198585,  1.83409853, -1.4187445 ]]
+        )
+    )
+
+    test_partition_3 = test_partitions['0,1,2']
+    assert list(test_partition_1.keys()) == list(test_partition_3.keys())
+    assert test_partition_3['R'].shape[0] == 101
+    assert test_partition_3['R'].shape[2] == 3
+    assert np.allclose(
+        test_partition_3['R'][2],
+        np.array(
+            [[ 1.53804814,  1.11857593,  0.40316032],
+             [ 2.35482839,  1.1215564,  -0.05145675],
+             [ 0.80073022,  1.28633895, -0.3291415 ],
+             [-1.4580503,  -1.16136864, -0.43897336],
+             [-1.3726833,  -2.02344751, -0.89453557],
+             [-0.83691991, -1.2963126,   0.3429272 ],
+             [-0.48381516,  1.17384211, -1.4413092 ],
+             [-0.90248552,  0.33071306, -1.24479905],
+             [-1.21198585,  1.83409853, -1.4187445 ]]
+        )
+    )
+    
