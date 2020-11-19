@@ -148,38 +148,34 @@ def natsort_list(unsorted_list):
     return sorted_list
 
 
-def string_coords(atoms, coords):
+def string_coords(z, R):
     """Puts atomic coordinates into a Python string. Typically used for 
     writing to an input file.
     
     Parameters
-    atoms : numpy.ndarray
-        A (n, 1) numpy array containing all n elements labled by their atomic 
+    atoms : :obj:`numpy.ndarray`
+        A (n,) numpy array containing all ``n`` elements labled by their atomic 
         number.
-    coords : numpy.array
+    coords : :obj:`numpy.array`
         Contains atomic positions in a (n, 3) numpy array where the x, y, and z 
         Cartesian coordinates in Angstroms are given for the n atoms.
     
     Returns
     -------
-    str
-        all atomic coordinates contained in a string.
+    :obj:`str`
+        XYZ atomic coordinates as a string.
     """
-
     atom_coords_string = ''
-
     atom_index = 0
-    while atom_index < len(atoms):
-        atom_element = str(elements[atoms[atom_index]])
+    while atom_index < len(z):
+        atom_element = str(elements[z[atom_index]])
         coords_string = np.array2string(
-            coords[atom_index],
+            R[atom_index],
             suppress_small=True, separator='   ',
             formatter={'float_kind':'{:0.9f}'.format}
         )[1:-1] + '\n'
-        
         atom_coords_string += (atom_element + '   ' \
                                + coords_string).replace(' -', '-')
-
         atom_index += 1
     
     return atom_coords_string
