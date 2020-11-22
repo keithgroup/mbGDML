@@ -58,7 +58,7 @@ class mbGDMLPredict():
 
 
 
-    def _calculate(self, z, R, system_size, molecule_size, gdml):
+    def _calculate(self, R, system_size, molecule_size, gdml):
         """The actual calculate/predict function for a single GDML model.
 
         Predicts the energy and forces of a structure from a single GDML model.
@@ -67,8 +67,6 @@ class mbGDMLPredict():
         
         Parameters
         ----------
-        z : list
-            Atomic numbers of all atoms in the system.
         R : numpy.ndarray
             Cartesian coordinates of all atoms of the structure specified in 
             the same order as z. The array should have shape (n, 3) where n is 
@@ -136,12 +134,13 @@ class mbGDMLPredict():
         
         Parameters
         ----------
-        z : list
-            Atomic numbers of all atoms in the system.
-        R : numpy.ndarray
-            Cartesian coordinates of all atoms of the structure specified in 
-            the same order as z. The array should have shape (n, 3) where n is 
-            the number of atoms.
+        z : :obj:`numpy.ndarray`
+            A ``(n,)`` shape array of type :obj:`numpy.int32` containing atomic
+            numbers of atoms in the structures in order as they appear.
+        R : :obj:`numpy.ndarray`
+            A :obj:`numpy.ndarray` with shape of ``(m, n, 3)`` where ``m`` is
+            the number of structures and ``n`` is the number of atoms with three 
+            Cartesian components.
         
         Returns
         -------
@@ -192,7 +191,7 @@ class mbGDMLPredict():
             
             nbody_order = int(gdml.n_atoms/molecule_size)
             E_contributions[nbody_order], F_contributions[nbody_order] = \
-                self._calculate(z, R, system_size, molecule_size, gdml)
+                self._calculate(R, system_size, molecule_size, gdml)
 
             # Adds contributions to total energy and forces.
             E_contributions['T'] += E_contributions[nbody_order]['T']
