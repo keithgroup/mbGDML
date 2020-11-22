@@ -66,12 +66,174 @@ class mbGDMLDataset(mbGDMLData):
     
 
     @property
+    def F(self):
+        """Atomic forces of atoms in structure(s).
+        
+        A :obj:`numpy.ndarray` with shape of ``(m, n, 3)`` where ``m`` is the
+        number of structures and ``n`` is the number of atoms with three 
+        Cartesian components.
+
+        :type: :obj:`numpy.ndarray`
+        """
+        return self._F
+    
+
+    @F.setter
+    def F(self, var):
+        self._F = var
+    
+
+    @property
+    def E(self):
+        """The energies of structure(s).
+        
+        A :obj:`numpy.ndarray` with shape of ``(n,)`` where ``n`` is the number
+        of atoms.
+
+        :type: :obj:`numpy.ndarray`
+        """
+        if hasattr(self, '_E'):
+            return self._E
+        else:
+            raise AttributeError('No energies were provided in data set.')
+    
+
+    @E.setter
+    def E(self, var):
+        self._E = var
+    
+
+    @property
+    def E_min(self):
+        """Minimum energy of all structures.
+
+        :type: :obj:`float`
+        """
+        return float(np.min(self.E.ravel()))
+    
+
+    @property
+    def E_max(self):
+        """Maximum energy of all structures.
+
+        :type: :obj:`float`
+        """
+        return float(np.max(self.E.ravel()))
+    
+
+    @property
+    def E_var(self):
+        """Energy variance.
+
+        :type: :obj:`float`
+        """
+        return float(np.var(self.E.ravel()))
+        
+    
+    @property
+    def E_mean(self):
+        """Mean of all energies.
+
+        :type: :obj:`float`
+        """
+        return float(np.mean(self.E.ravel()))
+    
+
+    @property
+    def F_min(self):
+        """Minimum atomic force in all structures.
+
+        :type: :obj:`float`
+        """
+        return float(np.min(self.F.ravel()))
+    
+
+    @property
+    def F_max(self):
+        """Maximum atomic force in all structures.
+
+        :type: :obj:`float`
+        """
+        return float(np.max(self.F.ravel()))
+    
+
+    @property
+    def F_var(self):
+        """Force variance.
+
+        :type: :obj:`float`
+        """
+        return float(np.var(self.F.ravel()))
+    
+
+    @property
+    def F_mean(self):
+        """Mean of all forces.
+
+        :type: :obj:`float`
+        """
+        return float(np.mean(self.F.ravel()))
+    
+
+    @property
     def md5(self):
         """Unique MD5 hash of data set. Encoded with UTF-8.
 
         :type: :obj:`bytes`
         """
         return sgdml_io.dataset_md5(self.dataset)
+    
+
+    def convertE(self, E_units):
+        """Convert energies and updates :attr:`e_unit`.
+
+        Parameters
+        ----------
+        E_units : :obj:`str`
+            Desired units of energy. Options are ``'eV'``, ``'hartree'``,
+            ``'kcal/mol'``, and ``'kJ/mol'``.
+        """
+        self._E = convertor(self.E, self.e_unit, E_units)
+        self.e_unit = E_units
+    
+    
+    def convertR(self, R_units):
+        """Convert coordinates and updates :attr:`r_unit`.
+
+        Parameters
+        ----------
+        R_units : :obj:`str`
+            Desired units of coordinates. Options are ``'Angstrom'`` or
+            ``'bohr'``.
+        """
+        self._R = convertor(self.R, self.r_unit, R_units)
+        self.r_unit = R_units
+
+
+    def convertF(self, force_e_units, force_r_units, e_units, r_units):
+        """Convert forces.
+
+        Does not change :attr:`e_unit` or :attr:`r_unit`.
+
+        Parameters
+        ----------
+        force_e_units : :obj:`str`
+            Specifies package-specific energy units used in calculation.
+            Available units are ``'eV'``, ``'hartree'``, ``'kcal/mol'``, and
+            ``'kJ/mol'``.
+        force_r_units : :obj:`str`
+            Specifies package-specific distance units used in calculation.
+            Available units are ``'Angstrom'`` and ``'bohr'``.
+        e_units : :obj:`str`
+            Desired units of energy. Available units are ``'eV'``,
+            ``'hartree'``, ``'kcal/mol'``, and ``'kJ/mol'``.
+        r_units : :obj:`str`
+            Desired units of distance. Available units are ``'Angstrom'`` and
+            ``'bohr'``.
+        """
+        self._F = utils.convert_forces(
+            self.F, force_e_units, force_r_units, e_units, r_units
+        )
 
 
     def _update(self, dataset):

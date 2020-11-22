@@ -256,11 +256,11 @@ def test_data_create_predictset():
     test_predictset.load_dataset(dataset_path)
 
     # Reducing number of data to the first five structures
-    test_predictset.dataset['R'] = test_predictset.dataset['R'][0:5, :, :]
-    test_predictset.dataset['E'] = test_predictset.dataset['E'][0:5]
-    test_predictset.dataset['F'] = test_predictset.dataset['F'][0:5, :, :]
+    test_predictset.R = test_predictset.dataset['R'][0:5, :, :]
+    test_predictset.E = test_predictset.dataset['E'][0:5]
+    test_predictset.F = test_predictset.dataset['F'][0:5, :, :]
 
-    test_predictset.create_predictset()
+    test_predictset.predictset
 
     #TODO Add assert statements
 
