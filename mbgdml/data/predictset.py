@@ -39,13 +39,11 @@ class mbGDMLPredictset(mbGDMLData):
 
     Attributes
     ----------
-    predictset : `dict`
-        Dictionary of loaded npz predict set file.
-    sgdml_version : `str`
+    sgdml_version : :obj:`str`
         The sGDML Python package version used for predictions.
-    name : `str`
+    name : :obj:`str`
         File name of the predict set.
-    theory : `str`
+    theory : :obj:`str`
         Specifies the level of theory used for GDML training.
     """
 
@@ -106,37 +104,38 @@ class mbGDMLPredictset(mbGDMLData):
 
     @property
     def predictset(self):
-        """
+        """Contains all data as :obj:`numpy.ndarray` objects.
+
+        :type: :obj:`dict`
         """        
         predictset = {
-            'type': self.type,
+            'type': np.array('p'),
             #'code_version': self.sgdml_version,
-            'name': self.name,
-            'theory': self.theory,
+            'name': np.array(self.name),
+            'theory': np.array(self.theory),
             'z': self.z,
             'R': self.R,
-            'r_unit': self.r_unit,
+            'r_unit': np.array(self.r_unit),
             'E_true': self.E_true,
-            'e_unit': self.e_unit,
+            'e_unit': np.array(self.e_unit),
             'F_true': self.F_true,
         }
 
-        if self._loaded == False or self._predicted == False:
-            if not hasattr(self, 'dataset'):
-                raise AttributeError('Please load a data set.')
-            if not hasattr(self, 'mbgdml'):
-                raise AttributeError('Please load GDML models.')
-            all_E, all_F = self._calc_contributions()
+        if self._loaded == False and self._predicted == False:
+            if not hasattr(self, 'dataset') or not hasattr(self, 'mbgdml'):
+                raise AttributeError(
+                    'No data can be predicted or is not loaded.'
+                )
+            else: 
+                all_E, all_F = self._calc_contributions()
         
-            for order in all_E:
-                E_name = f'E_{order}'
-                F_name = f'F_{order}'
-                setattr(self, f'_{E_name}', all_E[order])
-                setattr(self, f'_{F_name}', all_F[order])
-            self.sgdml_version = __version__
-            self._predicted = True
+                for order in all_E:
+                    setattr(self, f'_E_{order}', all_E[order])
+                    setattr(self, f'_F_{order}', all_F[order])
+                self.sgdml_version = __version__
+                self._predicted = True
         
-        predictset['sgdml_version'] = self.sgdml_version
+        predictset['sgdml_version'] = np.array(self.sgdml_version)
 
         n_index = 1
         while hasattr(self, f'_E_{n_index}'):
@@ -172,7 +171,7 @@ class mbGDMLPredictset(mbGDMLData):
         predictset_path : :obj:`str`
             Path to predict set ``.npz`` file.
         """
-        predictset = np.load(predictset_path, allow_pickle=True)
+        predictset = dict(np.load(predictset_path, allow_pickle=True))
         self.sgdml_version = str(predictset['code_version'][()])
         self.name = str(predictset['name'][()])
         self.theory = str(predictset['theory'][()])
@@ -182,6 +181,11 @@ class mbGDMLPredictset(mbGDMLData):
         self._e_unit = str(predictset['e_unit'][()])
         self._E_true = predictset['E_true']
         self._F_true = predictset['F_true']
+        n_index = 1
+        while f'E_{n_index}' in predictset.keys():
+            setattr(self, f'_E_{n_index}', predictset[f'E_{n_index}'])
+            setattr(self, f'_F_{n_index}', predictset[f'F_{n_index}'])
+            n_index += 1
         self._loaded = True
     
     
@@ -226,7 +230,7 @@ class mbGDMLPredictset(mbGDMLData):
 
         Parameters
         ----------
-        nbody_order : `int`
+        nbody_order : :obj:`int`
             Highest many-body order corrections to include.
         
         Returns
