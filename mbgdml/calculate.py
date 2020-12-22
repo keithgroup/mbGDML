@@ -605,8 +605,9 @@ def partition_engrad(
         else:
             step_z = z[step_index]
         step_R = R[step_index]
-        engrad.template_input = templates.add_job \
-                                    + templates.input
+        if step_index != 0:
+            engrad.template_input = templates.add_job \
+                                        + templates.input
 
         step_R_string = utils.string_coords(step_z, step_R)
         _, calc_string = engrad.input(
