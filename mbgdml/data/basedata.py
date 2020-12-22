@@ -52,12 +52,10 @@ class mbGDMLData():
         """
         return self._z
     
-
     @z.setter
     def z(self, var):
         self._z = var
     
-
     @property
     def n_z(self):
         """Number of atoms.
@@ -68,7 +66,6 @@ class mbGDMLData():
             return int(self.z.shape[0])
         elif self.z.ndim == 3:
             return int(self.z.shape[1])
-
     
     @property
     def system_info(self):
@@ -79,7 +76,6 @@ class mbGDMLData():
             return solvents.system_info(z_symbols)
         else:
             return {'system': 'unknown'}
-    
 
     @property
     def R(self):
@@ -92,12 +88,10 @@ class mbGDMLData():
         :type: :obj:`numpy.ndarray`
         """
         return self._R
-    
 
     @R.setter
     def R(self, var):
         self._R = var
-    
 
     @property
     def n_R(self):
@@ -109,7 +103,6 @@ class mbGDMLData():
             return 1
         elif self.R.ndim == 3:
             return int(self.R.shape[0])
-    
 
     @property
     def r_unit(self):
@@ -119,11 +112,9 @@ class mbGDMLData():
         """
         return self._r_unit
     
-
     @r_unit.setter
     def r_unit(self, var):
         self._r_unit = var
-    
 
     @property
     def e_unit(self):
@@ -133,12 +124,10 @@ class mbGDMLData():
         :type: :obj:`str`
         """
         return self._e_unit
-    
 
     @e_unit.setter
     def e_unit(self, var):
         self._e_unit = var
-    
 
     def add_system_info(self, dict_data):
         """Adds information about the system to the model.
@@ -170,7 +159,6 @@ class mbGDMLData():
                 system_info['cluster_size']
             )
         return dict_data
-
 
     def save(self, name, data, save_dir):
         """General save function for GDML data sets and models.
