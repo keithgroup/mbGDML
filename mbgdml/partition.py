@@ -26,7 +26,7 @@ from mbgdml import parse
 from mbgdml import utils
 from mbgdml import solvents
 
-def _partition_cluster(cluster, nbody):
+def partition_cluster(cluster, nbody):
     """All possible n-body combinations from a cluster.
     
     Parameters
@@ -55,7 +55,7 @@ def _partition_cluster(cluster, nbody):
 
     Notes
     -----
-    0,1,2 is considered the same as 2,1,3 and only included once.
+    0,1,2 is considered the same as 2,1,0 and only included once.
     """
     segments = {}
 
@@ -96,7 +96,7 @@ def _partition_cluster(cluster, nbody):
     return segments
 
 
-def partition_stringfile(file_path):
+def partition_stringfile(file_path, max_nbody=4):
     """Partitions an XYZ file.
 
     Takes a cluster of molecules and separates into individual partitions. A
@@ -108,6 +108,8 @@ def partition_stringfile(file_path):
     ----------
     traj_path : :obj:`str`
         Path to trajectory with xyz coordinates.
+    max_nbody: :obj:`int`, optional
+        Highest order of n-body structure to include.
     
     Returns
     -------
@@ -140,8 +142,9 @@ def partition_stringfile(file_path):
         cluster = parse.parse_cluster(z, coords)
         # Loops through all possible n-body partitions and adds the atoms once
         # and adds each step traj_partition.
-        for i_nbody in range(1, sys_info['cluster_size'] + 1):
-            partitions = _partition_cluster(cluster, i_nbody)
+        i_nbody = 1
+        while i_nbody <= sys_info['cluster_size'] and i_nbody <= max_nbody:
+            partitions = partition_cluster(cluster, i_nbody)
             partition_labels = list(partitions.keys())
             # Tries to add the next trajectory step to 'coords'; if it fails it
             # initializes 'atoms' and 'coords' for that partition.
@@ -165,5 +168,6 @@ def partition_stringfile(file_path):
                         'z': partitions[label]['z'],
                         'R': np.array([partitions[label]['R']])
                     }
+            i_nbody += 1
 
     return all_partitions
