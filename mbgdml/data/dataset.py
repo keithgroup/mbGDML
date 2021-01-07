@@ -46,8 +46,6 @@ class mbGDMLDataset(mbGDMLData):
     ----------
     name : :obj:`str`
         Name of the data set. Defaults to ``'dataset'``.
-    code_verstion
-        The version of :mod:`sgdml`.
     theory : :obj:`str`
         The level of theory used to compute energy and gradients of the data
         set.
@@ -58,12 +56,11 @@ class mbGDMLDataset(mbGDMLData):
     """
 
 
-    def __init__(self, path=None):
+    def __init__(self, *args):
         self.type = 'd'
         self.name = 'dataset'
-        if path is not None:
-            self.load(path)
-    
+        if len(args) == 1:
+            self.load(args[0])
 
     @property
     def F(self):
@@ -250,7 +247,7 @@ class mbGDMLDataset(mbGDMLData):
         self._F = dataset['F']
         self._r_unit = str(dataset['r_unit'][()])
         self._e_unit = str(dataset['e_unit'][()])
-        self.code_version = str(dataset['code_version'][()])
+        self.mbgdml_version = str(dataset['mbgdml_version'][()])
         self.name = str(dataset['name'][()])
         self.theory = str(dataset['theory'][()])
         # mbGDML added data set information.
@@ -487,7 +484,6 @@ class mbGDMLDataset(mbGDMLData):
             Paths to saved many-body GDML models in the form of
             :obj:`numpy.NpzFile`.
         """
-        print(f'Removing /contributions ...')
         predict = mbGDMLPredict(model_paths)
         dataset = predict.remove_nbody(ref_dataset.dataset)
         self._update(dataset)

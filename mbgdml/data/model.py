@@ -22,9 +22,10 @@
 
 # pylint: disable=E1101
 
-
+import os
 import numpy as np
 from mbgdml.data import mbGDMLData
+from mbgdml import __version__
 
 
 class mbGDMLModel(mbGDMLData):
@@ -32,9 +33,9 @@ class mbGDMLModel(mbGDMLData):
 
     Attributes
     ----------
-    model_path : str
+    model_path : :obj:`str`
         Path to the npz file.
-    model : numpy.npzfile
+    model : :obj:`numpy.npzfile`
         GDML model for predicting energies and forces.
     """
     
@@ -63,43 +64,41 @@ class mbGDMLModel(mbGDMLData):
         
         Parameters
         ----------
-        model_path : str
-            Path to GDML model.
+        model_path : :obj:`str`
+            Path to mbGDML model.
 
         Raises
         ------
         AttributeError
             If npz file is not a GDML model.
         """
-        self.model_path = model_path
-        self.model = np.load(model_path, allow_pickle=True)
-        self._model_data = dict(self.model_npz)
+        self.path = model_path
+        self.name = os.path.splitext(os.path.basename(model_path))[0]
+        self.model = dict(np.load(model_path, allow_pickle=True))
 
-        if self._model_data['type'][()] != 'm':
-            raise AttributeError('This npz is not a GDML model.')
+        if self.model['type'][()] != 'm':
+            raise AttributeError('This npz is not a mbGDML model.')
     
+    def add_modifications(self):
+        """mbGDML-specific modifications of models.
 
-    def get_model_name(self, log_path):
-        """Retrives GDML model's name from log file.
-        
-        Parameters
-        ----------
-        log_path : str
-            Path to the log file.
+        - Adds system information if possible which could include ``'system'``,
+          ``'solvent'``, and ``'cluster_size'``.
+        - Adds mbGDML version with ``'mbgdml_version'``.
         """
 
-        for line in reversed(list(open(log_path))):
-            if 'This is your model file' in line:
-                self.name = line.split(':')[-1][2:-6]
-                break
-    
+        # Adding system info.
+        self.add_system_info(self.model)
 
+        # Adding mbGDML version
+        self.model['mbgdml_version'] = np.array(__version__)
+    
     def add_manybody_info(self, mb_order):
         """Adds many-body (mb) information to GDML model.
         
         Parameters
         ----------
-        mb_order : int
+        mb_order : :obj:`int`
             The max order of many-body predictions removed from the dataset.
 
         Raises
@@ -108,8 +107,8 @@ class mbGDMLModel(mbGDMLData):
             If accessing information when no model is loaded.
         """
 
-        if not hasattr(self, 'model_data'):
-            raise AttributeError('There is no model loaded.')
+        if not hasattr(self, 'model'):
+            raise AttributeError('There is no mbGDML model loaded.')
 
-        self.model_data['mb'] = mb_order
+        self.model['mb'] = mb_order
         
