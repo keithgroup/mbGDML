@@ -1,42 +1,6 @@
 Data sets
 =========
 
-Data
-----
-
-The following data are available from data sets.
-
-.. autoattribute:: mbgdml.data.dataset.mbGDMLDataset.z
-
-.. autoattribute:: mbgdml.data.dataset.mbGDMLDataset.R
-
-.. autoattribute:: mbgdml.data.dataset.mbGDMLDataset.r_unit
-
-.. autoattribute:: mbgdml.data.dataset.mbGDMLDataset.E
-
-.. autoattribute:: mbgdml.data.dataset.mbGDMLDataset.e_unit
-
-.. autoattribute:: mbgdml.data.dataset.mbGDMLDataset.E_max
-
-.. autoattribute:: mbgdml.data.dataset.mbGDMLDataset.E_mean
-
-.. autoattribute:: mbgdml.data.dataset.mbGDMLDataset.E_min
-
-.. autoattribute:: mbgdml.data.dataset.mbGDMLDataset.E_var
-
-.. autoattribute:: mbgdml.data.dataset.mbGDMLDataset.F
-
-.. autoattribute:: mbgdml.data.dataset.mbGDMLDataset.F_max
-
-.. autoattribute:: mbgdml.data.dataset.mbGDMLDataset.F_mean
-
-.. autoattribute:: mbgdml.data.dataset.mbGDMLDataset.F_min
-
-.. autoattribute:: mbgdml.data.dataset.mbGDMLDataset.F_var
-
-.. autoattribute:: mbgdml.data.dataset.mbGDMLDataset.md5
-
-
 Loading and saving
 ------------------
 
@@ -319,3 +283,38 @@ accomplished by first :doc:`training a sGDML model<training>` on monomers
     Each mbGDML model is dependent on the ones used to prepare the many-body 
     data set. For example, a 3-body GDML model can only be used with the 1-body
     and 2-body models used to create the many-body data set.
+
+Available data
+----
+
+The following data are available from data sets.
+
+.. autoattribute:: mbgdml.data.dataset.mbGDMLDataset.z
+
+.. autoattribute:: mbgdml.data.dataset.mbGDMLDataset.R
+
+.. autoattribute:: mbgdml.data.dataset.mbGDMLDataset.r_unit
+
+.. autoattribute:: mbgdml.data.dataset.mbGDMLDataset.E
+
+.. autoattribute:: mbgdml.data.dataset.mbGDMLDataset.e_unit
+
+.. autoattribute:: mbgdml.data.dataset.mbGDMLDataset.E_max
+
+.. autoattribute:: mbgdml.data.dataset.mbGDMLDataset.E_mean
+
+.. autoattribute:: mbgdml.data.dataset.mbGDMLDataset.E_min
+
+.. autoattribute:: mbgdml.data.dataset.mbGDMLDataset.E_var
+
+.. autoattribute:: mbgdml.data.dataset.mbGDMLDataset.F
+
+.. autoattribute:: mbgdml.data.dataset.mbGDMLDataset.F_max
+
+.. autoattribute:: mbgdml.data.dataset.mbGDMLDataset.F_mean
+
+.. autoattribute:: mbgdml.data.dataset.mbGDMLDataset.F_min
+
+.. autoattribute:: mbgdml.data.dataset.mbGDMLDataset.F_var
+
+.. autoattribute:: mbgdml.data.dataset.mbGDMLDataset.md5
