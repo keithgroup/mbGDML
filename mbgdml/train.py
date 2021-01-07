@@ -21,13 +21,24 @@
 # SOFTWARE.
 
 import os
+import re
 import subprocess
 import numpy as np
 from mbgdml import utils
 from mbgdml.data import mbGDMLModel
 
-class MBGDMLTrain():
+class mbGDMLTrain():
+    """
 
+    Attributes
+    ----------
+    dataset_path : :obj:`str`
+        Path to data set.
+    dataset_name : :obj:`str`
+        Data set file name without extension.
+    dataset : :obj:`dict`
+        mbGDML data set for training.
+    """
 
     def __init__(self):
         pass
@@ -37,119 +48,100 @@ class MBGDMLTrain():
         
         Parameters
         ----------
-        dataset_path : str
-            Path to stored numpy arrays representing a GDML dataset of a single 
-            solvent partition size.
+        dataset_path : :obj:`str`
+            Path to NumPy npz file representing a GDML dataset of a single 
+            cluster size (e.g., two water molecules).
         """
         self.dataset_path = dataset_path
-        self.dataset = np.load(dataset_path)
-    
+        self.dataset_name = os.path.splitext(os.path.basename(dataset_path))[0]
+        self.dataset = dict(np.load(dataset_path))
 
-    def _organization_dirs(self, model_dir):
-        """Determines where a model should be saved.
-
-        The model will be written in a directory that depends on the
-        parent solvent cluster (e.g. 4MeOH).
-        
-        Parameters
-        ----------
-        model_dir : str
-            Path to a common directory for GDML models.
-
-        Notes
-        -----
-        Requires the 'dataset' attribute. Sets the 'model_dir' attribute for 
-        writing GDML models.
-        """
-
-        model_dir = utils.norm_path(model_dir)
-
-        if not hasattr(self, 'dataset'):
-            raise AttributeError('There is currently no dataset loaded.')
-        
-        # Parsing information from the dataset_name.
-        parent_cluster, partition_size, _ = self.dataset.f.name[()].split('-')
-
-        # Preparing directories.
-        if str(self.dataset.f.system[()]) == 'solvent':
-            model_solvent_dir = utils.norm_path(
-                model_dir + parent_cluster
-            )
-            try:
-                os.makedirs(model_solvent_dir)
-            except FileExistsError:
-                pass
-            os.chdir(model_solvent_dir)
-        
-        self.model_dir = model_solvent_dir
-    
-
-    def train_GDML(self, model_dir, num_train, num_validate, num_test,
-                   sigma_range='2:10:100'):
+    def train_GDML(
+        self, model_name, num_train, num_validate, num_test,
+        sigma_range='2:10:100', save_dir='.', overwrite=False, torch=False
+    ):
         """Trains a GDML model through the command line interface.
         
         Parameters
         ----------
-        model_dir : str
-            Path to a common directory for GDML models.
-        num_train : int
+        model_name : :obj:`str`
+            User-defined model name.
+        num_train : :obj:`int`
             The number of training points to sample.
-        num_validate : int
+        num_validate : :obj:`int`
             The number of validation points to sample, without replacement.
-        num_test : int
+        num_test : :obj:`int`
             The number of test points to test the validated GDML model.
-        sigma_range : str, optional
+        sigma_range : :obj:`str`, optional
             Range of kernel length scales to train and validate GDML values 
             one. Format is `<start>:<interval>:<stop>`. Note, the more length 
             scales the longer the training time. Two is the minimum value.
+        save_dir : :obj:`str`, optional
+            Path to train and save the mbGDML model. Defaults to current
+            directory.
+        overwrite : :obj:`bool`, optional
+            Overwrite existing files. Defaults to false.
+        torch : :obj:`bool`, optional
+            Use PyTorch to enable GPU acceleration.
         """
         # TODO add remaining options for CLI sGDML as optional arguments.
 
+        if save_dir[-1] != '/':
+            save_dir += '/'
+        if save_dir != './':
+            os.chdir(save_dir)
+
         # Makes log file name.
-        dataset_name = self.dataset_path.split('/')[-1].split('.')[0]
-        log_name = ''.join([dataset_name.replace('dataset', 'model'),
-                            '-train.log'])
+        log_name = model_name + '.log'
 
-        # Prepares directory to save in
-        self._organization_dirs(model_dir)
-
+        # sGDML command to be executed.
         sGDML_command = [
             'sgdml', 'all',
             str(self.dataset_path),
             str(num_train), str(num_test), str(num_validate),
-            '-s', str(sigma_range)
+            '-s', sigma_range,
+            '--model_file', model_name
         ]
-        print('Running sGDML training on ' + dataset_name + ' ...')
-        subprocess.run(
-            sGDML_command,
-            stdout=open(log_name, 'w'),
-            encoding='unicode',
-            bufsize=1
-        ) # TODO Fix encoding
 
-        # Adding input information to log file
-        with open(log_name, 'a') as log:
-            log.write('\n\n The following command was used for this file: ')
-            log.write(' '.join(sGDML_command))
-            log.write('\n Note, the model name will have "model" instead')
-            log.write(' of "dataset".')
+        if overwrite:
+            sGDML_command.append('-o')
+        else:
+            if os.path.exists(model_name + '.npz'):
+                print(f'{model_name}.npz already exists, and overwrite is False.')
+                return
+        if torch:
+            sGDML_command.append('--torch')
+        
+        print('Running sGDML training on ' + self.dataset_name + ' ...')
+        
+        completed_process = subprocess.run(
+            sGDML_command,
+            capture_output=True
+        )
+        
+        cli_output = completed_process.stdout.decode('ascii')
+        ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+        log_output = ansi_escape.sub('', cli_output)
+
+        if 'Training assistant finished sucessfully.' not in cli_output:
+            print(completed_process.stderr.decode('ascii'))
+            return
+    
+        print(cli_output)
+        with open(log_name, 'w') as log:
+            log.write(log_output)
         
         # Adding additional mbGDML info to the model.
         model = mbGDMLModel()
-        model.get_model_name(log_name)
-        model.load(model.name + '.npz')
-        os.remove(model.name + '.npz')
-
-        # Changing model name.
-        model.name = model.name.replace('-dataset-', '-model-')
-
-        # Adding system info.
-        model.add_system_info(model.base_vars)
+        model.load(model_name + '.npz')
+        
+        # Adding mbGDML-specific modifications to model.
+        model.add_modifications()
 
         # Adding many-body information if present in dataset.
         if 'mb' in self.dataset.keys():
-            model.add_manybody_info(int(self.dataset.f.mb[()]))
+            model.add_manybody_info(int(self.dataset['mb'][()]))
 
         # Saving model.
-        model.save(model.name, model.base_vars, self.model_dir)
+        model.save(model_name, model.model, save_dir)
 
