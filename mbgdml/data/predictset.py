@@ -24,7 +24,7 @@
 
 
 import numpy as np
-from sgdml import __version__
+from sgdml import __version__ as sgdml_version
 from mbgdml.data import mbGDMLData
 from mbgdml.predict import mbGDMLPredict
 
@@ -132,7 +132,7 @@ class mbGDMLPredictset(mbGDMLData):
                 for order in all_E:
                     setattr(self, f'_E_{order}', all_E[order])
                     setattr(self, f'_F_{order}', all_F[order])
-                self.sgdml_version = __version__
+                self.sgdml_version = sgdml_version
                 self._predicted = True
         
         predictset['sgdml_version'] = np.array(self.sgdml_version)
