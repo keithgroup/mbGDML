@@ -25,10 +25,10 @@
 import os
 import numpy as np
 from cclib.parser.utils import convertor
-from sgdml import __version__
 from sgdml.utils import io as sgdml_io
 from mbgdml.data import mbGDMLData
 import mbgdml.solvents as solvents
+from mbgdml import __version__
 from mbgdml.parse import parse_stringfile
 from mbgdml import utils
 from mbgdml.predict import mbGDMLPredict
@@ -350,7 +350,7 @@ class mbGDMLDataset(mbGDMLData):
         self._F = partcalc.F
         self.r_unit = partcalc.r_unit
         self.e_unit = partcalc.e_unit
-        self.code_version = __version__
+        self.mbgdml_version = __version__
         self.theory = partcalc.theory
 
 
@@ -386,7 +386,7 @@ class mbGDMLDataset(mbGDMLData):
         # sGDML variables.
         dataset = {
             'type': np.array('d'),  # Designates dataset.
-            'code_version': np.array(__version__),  # sGDML version.
+            'mbgdml_version': np.array(__version__),  # sGDML version.
             'name': np.array(self.name),  # Name of the output file.
             'theory': np.array(self.theory),  # Theory used to calculate the data.
             'z': np.array(self.z),  # Atomic numbers of all atoms in system.
