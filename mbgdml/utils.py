@@ -203,18 +203,26 @@ def convert_forces(
     r_units : obj:`str`
         Desired units of distance. Available units are ``'Angstrom'`` and
         ``'bohr'``.
+    
+    Returns
+    -------
+    :obj:`numpy.ndarray`
+        Forces converted into the desired units.
     """
     #'ORCA': {'e_unit': 'hartree', 'r_unit': 'bohr'}
     if e_units not in ['eV', 'hartree', 'kcal/mol', 'kJ/mol']:
         raise ValueError(f'{e_units} is not an available energy unit.')
     if r_units not in ['Angstrom', 'bohr']:
         raise ValueError(f'{r_units} is not an available distance unit.')
-    forces_conv = cclib.parser.utils.convertor(
-        forces, e_units_calc, e_units
-    )
-    forces_conv = cclib.parser.utils.convertor(
-        forces_conv, r_units, r_units_calc
-    )
+    forces_conv = forces
+    if e_units_calc != e_units:
+        forces_conv = cclib.parser.utils.convertor(
+            forces_conv, e_units_calc, e_units
+        )
+    if r_units_calc != r_units:
+        forces_conv = cclib.parser.utils.convertor(
+            forces_conv, r_units, r_units_calc
+        )
     return forces_conv
 
 
