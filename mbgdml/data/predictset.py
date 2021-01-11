@@ -48,12 +48,12 @@ class mbGDMLPredictset(mbGDMLData):
     """
 
     def __init__(self, *args):
-        for arg in args:
-            self.load(arg)
         self.name = 'predictset'
         self.type = 'p'
         self._loaded = False
         self._predicted = False
+        for arg in args:
+            self.load(arg)
     
 
     def _calc_contributions(self):
@@ -135,7 +135,7 @@ class mbGDMLPredictset(mbGDMLData):
                 self.sgdml_version = sgdml_version
                 self._predicted = True
         
-        predictset['sgdml_version'] = np.array(self.sgdml_version)
+        # predictset['sgdml_version'] = np.array(self.sgdml_version)
 
         n_index = 1
         while hasattr(self, f'_E_{n_index}'):
@@ -172,7 +172,7 @@ class mbGDMLPredictset(mbGDMLData):
             Path to predict set ``.npz`` file.
         """
         predictset = dict(np.load(predictset_path, allow_pickle=True))
-        self.sgdml_version = str(predictset['code_version'][()])
+        #self.sgdml_version = str(predictset['code_version'][()])
         self.name = str(predictset['name'][()])
         self.theory = str(predictset['theory'][()])
         self._z = predictset['z']
