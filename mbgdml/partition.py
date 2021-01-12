@@ -95,9 +95,8 @@ def partition_cluster(cluster, nbody):
 
     return segments
 
-
-def partition_stringfile(file_path, max_nbody=4):
-    """Partitions an XYZ file.
+def partition_structures(z, R, max_nbody):
+    """Creates all partitions from given atoms and coordinates.
 
     Takes a cluster of molecules and separates into individual partitions. A
     partition being a monomer, dimer, trimer, etc. from the original cluster.
@@ -106,37 +105,39 @@ def partition_stringfile(file_path, max_nbody=4):
     
     Parameters
     ----------
-    traj_path : :obj:`str`
-        Path to trajectory with xyz coordinates.
-    max_nbody: :obj:`int`, optional
-        Highest order of n-body structure to include.
+    z : :obj:`numpy.ndarray`
+        A ``(n,)`` shape array of type :obj:`numpy.int32` containing atomic
+        numbers of atoms in the structures in order as they appear.
+    R: :obj:`numpy.ndarray`
+        A :obj:`numpy.ndarray` with shape of ``(m, n, 3)`` where ``m`` is the
+        number of structures and ``n`` is the number of atoms with three 
+        Cartesian components.
     
     Returns
     -------
     :obj:`dict`
-        All nonrepeating molecule combinations from original cluster with keys 
-        being uppercase concatenations of molecule labels and values being the 
-        string of coordinates.
+        All nonrepeating solvent molecule combinations from cluster with keys 
+        being ``'#,#,#'`` where each ``#`` represents a molecule index. For
+        example, ``'0,11,19'`` would be a cluster with molecules 0, 11, and 19
+        from the super cluster. Each value is a dictionary containing
+
+        ``'z'``
+            A ``(n,)`` shape array of type :obj:`numpy.int32` containing atomic
+            numbers of atoms in the structures in order as they appear.
+        
+        ``'R'``
+            A :obj:`numpy.ndarray` with shape of ``(n, 3)`` where ``n`` is the
+            number of atoms with three Cartesian components.
     
     Raises
     ------
     ValueError
         If any structure has a different order of atoms.
     """
+    assert R.ndim == 3
 
-    # Parses trajectory.
-    z_all, _, R_list = parse.parse_stringfile(file_path)
-    try:
-        assert len(set(tuple(i) for i in z_all)) == 1
-    except AssertionError:
-        raise ValueError(f'{file_path} contains atoms in different order.')
-    z_elements = z_all[0]
-    R = np.array(R_list)
-    # Gets system information
-    z = np.array(utils.atoms_by_number(z_elements))
     sys_info = solvents.system_info(z.tolist())
 
-    # Gets 
     all_partitions = {}  
     for coords in R:
         cluster = parse.parse_cluster(z, coords)
@@ -169,5 +170,43 @@ def partition_stringfile(file_path, max_nbody=4):
                         'R': np.array([partitions[label]['R']])
                     }
             i_nbody += 1
+
+    return all_partitions
+
+def partition_stringfile(file_path, max_nbody=4):
+    """Partitions an XYZ file.
+    
+    Parameters
+    ----------
+    file_path : :obj:`str`
+        Path to trajectory with xyz coordinates.
+    max_nbody: :obj:`int`, optional
+        Highest order of n-body structure to include.
+    
+    Returns
+    -------
+    :obj:`dict`
+        All nonrepeating molecule combinations from original cluster with keys 
+        being uppercase concatenations of molecule labels and values being the 
+        string of coordinates.
+    
+    Raises
+    ------
+    ValueError
+        If any structure has a different order of atoms.
+    """
+
+    # Parses trajectory.
+    z_all, _, R_list = parse.parse_stringfile(file_path)
+    try:
+        assert len(set(tuple(i) for i in z_all)) == 1
+    except AssertionError:
+        raise ValueError(f'{file_path} contains atoms in different order.')
+    z_elements = z_all[0]
+    R = np.array(R_list)
+    # Gets system information
+    z = np.array(utils.atoms_by_number(z_elements))
+
+    all_partitions = partition_structures(z, R, max_nbody)
 
     return all_partitions
