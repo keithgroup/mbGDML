@@ -569,7 +569,6 @@ def partition_engrad(
     if calc_dir[-1] != '/':
         calc_dir += '/'
     os.makedirs(calc_dir, exist_ok=True)
-    os.chdir(calc_dir)
 
     if z.ndim == 1:
         z = np.array([z])
@@ -621,6 +620,7 @@ def partition_engrad(
             options=options,
             control_blocks=control_blocks,
             write=False,
+            write_dir=calc_dir
         )
         if input_file_string == '':
             input_file_string = calc_string
@@ -628,7 +628,7 @@ def partition_engrad(
             input_file_string += calc_string
     
     if write:
-        with open(input_name + '.' + engrad.input_extension, 'w') as f:
+        with open(calc_dir + input_name + '.' + engrad.input_extension, 'w') as f:
             f.write(input_file_string)
     
     if submit:
