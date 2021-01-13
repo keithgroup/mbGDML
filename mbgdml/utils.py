@@ -180,6 +180,37 @@ def string_coords(z, R):
     
     return atom_coords_string
 
+def write_xyz(z, R, save_dir, file_name):
+    """Write XYZ file given atomic numbers and Cartesian coordinates.
+
+    Parameters
+    ----------
+    z : :obj:`numpy.ndarray`
+        A ``(n,)`` shape array of type :obj:`numpy.int32` containing atomic
+        numbers of atoms in the structures in order as they appear.
+    R : :obj:`numpy.ndarray`
+        A :obj:`numpy.ndarray` with shape of ``(m, n, 3)`` where ``m`` is the
+        number of structures and ``n`` is the number of atoms with three 
+        Cartesian components.
+    save_dir : :obj:`str`
+        Path to directory to save XYZ file.
+    file_name : :obj:`str`
+        Name to save the file.
+    """
+    if R.ndim == 2:
+        R = np.array([R])
+    
+    if save_dir[-1] != '/':
+        save_dir += '/'
+    
+    num_atoms = len(z)
+    with open(f'{save_dir}{file_name}.xyz', 'w') as f:
+        for structure in R:
+            f.writelines(
+                [f'{num_atoms}\n', '\n', string_coords(z, structure)]
+            )
+
+
 
 def convert_forces(
     forces, e_units_calc, r_units_calc, e_units, r_units
