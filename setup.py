@@ -8,16 +8,13 @@ with open('README.md') as readme_file:
     readme = readme_file.read()
 
 requirements = [
-    'Click', 'natsort', 'cclib>=1.6.4', 'periodictable', 'numpy', 'dscribe',
-    'ase', 'sgdml', 'mako', 'matplotlib'
+    'natsort', 'cclib>=1.7', 'numpy', 'dscribe', 'ase', 'sgdml', 'mako',
+    'matplotlib'
 ]
 
 setup_requirements = [ ]
 
-test_requirements = [
-    'pytest', 'Click', 'natsort', 'cclib>=1.6.4', 'periodictable',
-    'numpy', 'dscribe', 'ase', 'sgdml', 'mako', 'matplotlib'
-]
+test_requirements = requirements.append(['pytest'])
 
 setup(
     author="Alex M. Maldonado",
@@ -32,11 +29,6 @@ setup(
         'Programming Language :: Python :: 3.7'
     ],
     description="Many-body implementation of symmetric  domain machine learning force fields",
-    entry_points={
-        'console_scripts': [
-            'mbgdml=mbgdml.cli:main',
-        ],
-    },
     install_requires=requirements,
     extras_require={},
     license="MIT license",

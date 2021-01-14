@@ -20,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from periodictable import elements
+from mbgdml.utils import z_to_element
 
 class solvent():
     """Identifies and describes the solvent for MB-GDML.
@@ -121,7 +121,7 @@ class solvent():
         if str(atom_list[0]).isdigit():
             atom_list_elements = []
             for atom in atom_list:
-                atom_list_elements.append(str(elements[atom]))
+                atom_list_elements.append(str(z_to_element[atom]))
             atom_list = atom_list_elements
 
         # Determines quantity of each element in atom list.
