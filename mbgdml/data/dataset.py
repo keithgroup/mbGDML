@@ -247,7 +247,12 @@ class mbGDMLDataset(mbGDMLData):
         self._F = dataset['F']
         self._r_unit = str(dataset['r_unit'][()])
         self._e_unit = str(dataset['e_unit'][()])
-        self.mbgdml_version = str(dataset['mbgdml_version'][()])
+        try:
+            self.mbgdml_version = str(dataset['mbgdml_version'][()])
+        except KeyError:
+            # Some old data sets do not have this information.
+            # This is unessential, so we will just ignore this.
+            pass
         self.name = str(dataset['name'][()])
         self.theory = str(dataset['theory'][()])
         # mbGDML added data set information.
