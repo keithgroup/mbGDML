@@ -9,21 +9,19 @@ Requirements
 The following packages are required:
 
 * ase
-* cclib (>=1.6.4)
-* click
+* cclib (>=1.7)
 * dscribe
 * mako
 * matplotlib
 * natsort
 * numpy
-* periodictable
 * sgdml
 
 All of these required packages can be installed with:
 
 ::
 
-    pip install ase 'cclib>=1.6.4' click dscribe mako matplotlib natsort numpy periodictable sgdml
+    pip install ase 'cclib>=1.7' dscribe mako matplotlib natsort numpy sgdml
 
 
 Then, clone and install the repository.
