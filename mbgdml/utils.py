@@ -51,41 +51,48 @@ def norm_path(path):
     return normd_path
 
 
-def get_files(path, expression):
+def get_files(path, expression, recursive=True):
     """Returns paths to all files in a given directory that matches a provided
     expression in the file name. Commonly used to find all files of a certain
     type, e.g. output or xyz files.
     
     Parameters
     ----------
-    path : str
+    path : :obj:`str`
         Specifies the directory to search.
-    expression : str
+    expression : :obj:`str`
         Expression to be tested against all file names in 'path'.
+    recursive :obj:`bool`, optional
+        Recursively find all files in all subdirectories.
     
     Returns
     -------
-    list
-        all absolute paths to files matching the provided expression.
+    :obj:`list` [:obj:`str`]
+        All absolute paths to files matching the provided expression.
     """
-    path = norm_path(path)
-    
-    all_files = []
-    for (dirpath, _, filenames) in os.walk(path):
-        index = 0
-        while index < len(filenames):
-            filenames[index] = norm_path(dirpath) + filenames[index]
-            index += 1
-
-        all_files.extend(filenames)
-        
-    files = []
-    for file in all_files:
-        if expression in file:
-            files.append(file)
-
+    if path[-1] != '/':
+        path += '/'
+    if recursive:
+        all_files = []
+        for (dirpath, _, filenames) in os.walk(path):
+            index = 0
+            while index < len(filenames):
+                if dirpath[-1] != '/':
+                    dirpath += '/'
+                filenames[index] = dirpath + filenames[index]
+                index += 1
+            all_files.extend(filenames)
+        files = []
+        for f in all_files:
+            if expression in f:
+                files.append(f)
+    else:
+        files = []
+        for f in os.listdir(path):
+            filename = os.path.basename(f)
+            if expression in filename:
+                files.append(os.path.abspath(f))
     return files
-
 
 def make_folder(folder):
     """Creates folder at specified path.
@@ -102,17 +109,13 @@ def make_folder(folder):
     str
         Final path of new folder; ends in '/'.
     """
-    
     # First tries to create the desired directory.
     try:
-
         os.mkdir(folder)
         return folder + '/'
-
     # If there is already a directory with the same name,
     # append a positive integer until there is no previously existing directory.
     except FileExistsError:
-
         indexDir = 1
         dirExists = True
         while dirExists:
@@ -127,7 +130,6 @@ def make_folder(folder):
             # Increments number by 1 until it finds the lowest number.
             except FileExistsError:
                 indexDir += 1
-
 
 def natsort_list(unsorted_list):
     """Basic function that organizes a list based on human (or natural) sorting
@@ -146,7 +148,6 @@ def natsort_list(unsorted_list):
     sorted_list = natsorted(unsorted_list, alg=ns.IGNORECASE)
 
     return sorted_list
-
 
 def string_coords(z, R):
     """Puts atomic coordinates into a Python string. Typically used for 
@@ -209,8 +210,6 @@ def write_xyz(z, R, save_dir, file_name):
             f.writelines(
                 [f'{num_atoms}\n', '\n', string_coords(z, structure)]
             )
-
-
 
 def convert_forces(
     forces, e_units_calc, r_units_calc, e_units, r_units
