@@ -215,7 +215,7 @@ def test_mbdataset():
     dataset_2mer_path = './tests/data/datasets/4H2O-2mer-dataset.npz'
     model_1mer_path = './tests/data/models/4H2O-1mer-model-MP2.def2-TZVP-train300-sym2.npz'
     
-    dataset = data.mbGDMLDataset(path=dataset_2mer_path)
+    dataset = data.mbGDMLDataset(dataset_2mer_path)
     mb_dataset = data.mbGDMLDataset()
     mb_dataset.create_mb(dataset, [model_1mer_path])
 
