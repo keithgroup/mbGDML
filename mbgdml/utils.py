@@ -94,43 +94,6 @@ def get_files(path, expression, recursive=True):
                 files.append(os.path.abspath(f))
     return files
 
-def make_folder(folder):
-    """Creates folder at specified path.
-    If the current folder exists, it creates another folder
-    with an added number.
-    
-    Parameters
-    ----------
-    pathFolder : str
-        Path to desired folder.
-    
-    Returns
-    -------
-    str
-        Final path of new folder; ends in '/'.
-    """
-    # First tries to create the desired directory.
-    try:
-        os.mkdir(folder)
-        return folder + '/'
-    # If there is already a directory with the same name,
-    # append a positive integer until there is no previously existing directory.
-    except FileExistsError:
-        indexDir = 1
-        dirExists = True
-        while dirExists:
-            try:
-                pathFolderIteration = folder + '-' + str(indexDir)
-                os.mkdir(pathFolderIteration)
-
-                dirExists = False
-
-                return pathFolderIteration + '/'
-
-            # Increments number by 1 until it finds the lowest number.
-            except FileExistsError:
-                indexDir += 1
-
 def natsort_list(unsorted_list):
     """Basic function that organizes a list based on human (or natural) sorting
     methodology.
