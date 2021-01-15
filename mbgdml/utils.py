@@ -110,7 +110,7 @@ def get_files(path, expression, recursive=True):
         for f in os.listdir(path):
             filename = os.path.basename(f)
             if expression in filename:
-                files.append(os.path.abspath(f))
+                files.append(path + f)
     return files
 
 def natsort_list(unsorted_list):
