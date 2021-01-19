@@ -12,7 +12,7 @@ the path to the ``dataset.npz`` file or explicitly use the
 
     from mbgdml.data import mbGDMLDataset
 
-    my_dataset = mbGDMLDataset(path='./path/to/dataset.npz')
+    my_dataset = mbGDMLDataset('./path/to/dataset.npz')
     # Or
     my_dataset = mbGDMLDataset()
     my_dataset.load('./path/to/dataset.npz')
