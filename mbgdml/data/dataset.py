@@ -25,7 +25,6 @@
 import os
 import numpy as np
 from cclib.parser.utils import convertor
-from sgdml.utils import io as sgdml_io
 from mbgdml.data import mbGDMLData
 import mbgdml.solvents as solvents
 from mbgdml import __version__
@@ -178,7 +177,7 @@ class mbGDMLDataset(mbGDMLData):
 
         :type: :obj:`bytes`
         """
-        return sgdml_io.dataset_md5(self.dataset)
+        return utils.md5_data(self.dataset, ['z', 'R', 'E', 'F'])
     
 
     def convertE(self, E_units):
@@ -408,7 +407,7 @@ class mbGDMLDataset(mbGDMLData):
         }
         # mbGDML variables.
         dataset = self.add_system_info(dataset)
-        dataset['md5'] = np.array(sgdml_io.dataset_md5(dataset))
+        dataset['md5'] = np.array(utils.md5_data(dataset, ['z', 'R', 'E', 'F']))
         return dataset
      
 
