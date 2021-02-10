@@ -25,6 +25,7 @@ import os
 import numpy as np
 import cclib
 from natsort import natsorted, ns
+import hashlib
 
 element_to_z = {
     'H': 1, 'He': 2, 'Li': 3, 'Be': 4, 'B': 5, 'C': 6, 'N': 7, 'O': 8, 'F': 9,
@@ -274,3 +275,29 @@ def atoms_by_number(atom_list):
         Atomic numbers of atoms within a structure.
     """
     return [int(element_to_z[i]) for i in atom_list]
+
+def md5_data(data, info=['z', 'R']):
+    """Creates MD5 hash for a set of data.
+
+    Parameters
+    ----------
+    set : :obj:`mbGDML.mbGDMLData`
+        Any supported mbGDML data type. Includes structure sets, data sets, and
+        models.
+    info : :obj:`list`, optional
+        List of set keys to include in the MD5 hash. At minimum it defaults to
+        ``z`` (atomic numbers) and ``R`` (atomic coordinates). Other information
+        such as ``E`` (energies) and ``F`` (forces) are highly encourged.
+    
+    Returns
+    -------
+    :obj:`str`
+        MD5 hash of the data.
+    """
+    md5_hash = hashlib.md5()
+    for i in info:
+        d = data[i]
+        if type(d) is np.ndarray:
+            d = d.ravel()
+        md5_hash.update(hashlib.md5(d).digest())
+    return md5_hash.hexdigest()
