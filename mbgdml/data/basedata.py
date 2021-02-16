@@ -20,22 +20,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-
 import numpy as np
-from sgdml.utils import io as sgdml_io
-from cclib.parser.utils import convertor
 from mbgdml import utils
 import mbgdml.solvents as solvents
 
-
 class mbGDMLData():
-    """
-    Parent class for mbGDML data and predict sets.
-
-    Attributes
-    ----------
-    system_info : dict
-        Information describing the system.
+    """Parent class for mbGDML structure, data, and predict sets.
     """
 
     def __init__(self):
@@ -69,7 +59,9 @@ class mbGDMLData():
     
     @property
     def system_info(self):
-        """
+        """Information describing the system.
+
+        :type: :obj:`dict`
         """
         if self.z.ndim == 1:
             z_symbols = utils.atoms_by_element(self.z.tolist())
@@ -115,19 +107,6 @@ class mbGDMLData():
     @r_unit.setter
     def r_unit(self, var):
         self._r_unit = var
-
-    @property
-    def e_unit(self):
-        """Units of energy. Options are ``'eV'``, ``'hartree'``,
-        ``'kcal/mol'``, and ``'kJ/mol'``.
-
-        :type: :obj:`str`
-        """
-        return self._e_unit
-
-    @e_unit.setter
-    def e_unit(self, var):
-        self._e_unit = var
 
     def add_system_info(self, dict_data):
         """Adds information about the system to the model.
@@ -175,4 +154,3 @@ class mbGDMLData():
         save_dir = utils.norm_path(save_dir)
         save_path = save_dir + name + '.npz'
         np.savez_compressed(save_path, **data)
-

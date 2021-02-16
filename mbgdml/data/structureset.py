@@ -96,20 +96,20 @@ class structureSet(mbGDMLData):
         else:
             self._update(dict(structureset_npz))
 
-    def read_xyz(self, file_path, xyz_type, r_unit=None):
-        """Reads data from xyz files.
+    def from_xyz(self, file_path, r_unit):
+        """Reads data from xyz files and sets z and R data.
+
+        If using the extended XYZ format will assume coordinates are the first
+        three data columns (after atom symbols)
 
         Parameters
         ----------
         file_path : :obj:`str`
             Path to xyz file.
-        xyz_type : :obj:`str`
-            Type of data. Either ``'coords'`` or ``'extended'``. Will discard
-            any extended data.
-        r_units : :obj:`str`, optional
-            Units of distance. Options are ``'Angstrom'`` or ``'bohr'``.
+        r_units : :obj:`str`
+            Units of distance. Options are ``'Angstrom'`` or ``'bohr'`` (defined
+            by cclib).
         """
-        self._user_data = True
         z, _, data = parse_stringfile(file_path)
         z = [utils.atoms_by_number(i) for i in z]
 
@@ -123,15 +123,14 @@ class structureSet(mbGDMLData):
 
         # Stores Cartesian coordinates.
         data = np.array(data)
-        if xyz_type == 'extended':
+        if data.shape[2] == 6:
             self._R = data[:,:,3:]
-        elif xyz_type == 'coords':
+        elif data.shape[2] == 3:
             self._R = data
         else:
-            raise ValueError(f'{xyz_type} is not a valid xyz data type.')
-
-        if r_unit is not None:
-            self.r_unit = r_unit
+            raise ValueError(f'There was an issue parsing R from {file_path}.')
+        
+        self.r_unit = r_unit
 
     @property
     def structureset(self):

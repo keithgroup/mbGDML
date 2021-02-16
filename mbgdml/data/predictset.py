@@ -144,6 +144,19 @@ class predictSet(mbGDMLData):
             n_index += 1
         
         return predictset
+    
+    @property
+    def e_unit(self):
+        """Units of energy. Options are ``'eV'``, ``'hartree'``,
+        ``'kcal/mol'``, and ``'kJ/mol'``.
+
+        :type: :obj:`str`
+        """
+        return self._e_unit
+
+    @e_unit.setter
+    def e_unit(self, var):
+        self._e_unit = var
 
     @property
     def E_true(self):
