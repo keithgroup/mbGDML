@@ -28,7 +28,7 @@ from mbgdml.data import mbGDMLData
 from mbgdml import __version__
 
 
-class mbGDMLModel(mbGDMLData):
+class model(mbGDMLData):
     """A class to load, inspect, and modify GDML models.
 
     Attributes

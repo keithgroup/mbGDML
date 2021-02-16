@@ -44,7 +44,7 @@ def test_dataset_from_partitioncalc():
         md_iter=1,
         theory='mp2.def2tzvp'
     )
-    test_dataset = data.mbGDMLDataset()
+    test_dataset = data.dataSet()
     test_dataset.name_partition(
         test_partition.cluster_label,
         test_partition.partition_label,
@@ -85,7 +85,7 @@ def test_dataset_from_xyz():
     coord_paths = './tests/data/md/4h2o.abc0-orca.md-mp2.def2tzvp.300k-1.traj'
     force_paths = './tests/data/md/4h2o.abc0-orca.md-mp2.def2tzvp.300k-1.forces'
 
-    test_dataset = data.mbGDMLDataset()
+    test_dataset = data.dataSet()
     test_dataset.read_xyz(
         coord_paths, 'coords', r_unit='Angstrom', energy_comments=True,
         e_unit='hartree'
@@ -139,10 +139,10 @@ def test_dataset_from_combined():
         './tests/data/datasets/C-4H2O-300K-1-dataset.npz',
         './tests/data/datasets/D-4H2O-300K-1-dataset.npz'
     ]
-    datasetA = data.mbGDMLDataset(monomer_paths[0])
-    datasetB = data.mbGDMLDataset(monomer_paths[1])
-    datasetC = data.mbGDMLDataset(monomer_paths[2])
-    datasetD = data.mbGDMLDataset(monomer_paths[3])
+    datasetA = data.dataSet(monomer_paths[0])
+    datasetB = data.dataSet(monomer_paths[1])
+    datasetC = data.dataSet(monomer_paths[2])
+    datasetD = data.dataSet(monomer_paths[3])
     
     combined_R = np.concatenate(
         (datasetA.R, datasetB.R, datasetC.R, datasetD.R)
@@ -154,7 +154,7 @@ def test_dataset_from_combined():
         (datasetA.F, datasetB.F, datasetC.F, datasetD.F)
     )
 
-    combined_dataset = data.mbGDMLDataset()
+    combined_dataset = data.dataSet()
     combined_dataset.from_combined(monomer_paths)
 
     assert combined_dataset.type == 'd'
@@ -170,8 +170,8 @@ def test_mbdataset():
     dataset_2mer_path = './tests/data/datasets/4H2O-2mer-dataset.npz'
     model_1mer_path = './tests/data/models/4H2O-1mer-model-MP2.def2-TZVP-train300-sym2.npz'
     
-    dataset = data.mbGDMLDataset(dataset_2mer_path)
-    mb_dataset = data.mbGDMLDataset()
+    dataset = data.dataSet(dataset_2mer_path)
+    mb_dataset = data.dataSet()
     mb_dataset.create_mb(dataset, [model_1mer_path])
 
     assert mb_dataset.mb == 2

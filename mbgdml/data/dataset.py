@@ -31,7 +31,7 @@ from mbgdml import utils
 from mbgdml.predict import mbGDMLPredict
   
 
-class mbGDMLDataset(mbGDMLData):
+class dataSet(mbGDMLData):
     """For creating, loading, manipulating, and using data sets.
 
     Parameters
@@ -480,7 +480,7 @@ class mbGDMLDataset(mbGDMLData):
 
         Parameters
         ----------
-        ref_dataset : :obj:`~mbgdml.data.dataset.mbGDMLDataset`
+        ref_dataset : :obj:`~mbgdml.data.dataset.dataSet`
             Reference data set of structures, energies, and forces. This is the
             data where mbGDML predictions will be subtracted from.
         model_paths : :obj:`list` [:obj:`str`]

@@ -25,7 +25,7 @@ import re
 import subprocess
 import numpy as np
 from mbgdml import utils
-from mbgdml.data import mbGDMLModel
+from mbgdml.data import model
 
 class mbGDMLTrain():
     """
@@ -132,7 +132,7 @@ class mbGDMLTrain():
             log.write(log_output)
         
         # Adding additional mbGDML info to the model.
-        model = mbGDMLModel()
+        model = model()
         model.load(model_name + '.npz')
         
         # Adding mbGDML-specific modifications to model.

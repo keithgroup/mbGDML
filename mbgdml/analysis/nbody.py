@@ -70,7 +70,7 @@ class NBody:
 
         Parameters
         ----------
-        predict_set : `mbgdml.data.mbGDMLPredictset`
+        predict_set : `mbgdml.data.predictSet`
             Object with loaded predict set.
         structure_index : `int`
             Index of the structure in the predict set arrays.
@@ -107,7 +107,7 @@ class NBody:
 
         Parameters
         ----------
-        predict_set : `mbgdml.data.mbGDMLPredictset`
+        predict_set : `mbgdml.data.predictSet`
             Object with loaded predict set.
         structure_list : `list`
             Indices of structures to include in the heatmap. To select all
@@ -201,7 +201,7 @@ class NBodyHeatMaps(NBody):
 
         Parameters
         ----------
-        predict_set : `mbgdml.data.mbGDMLPredictset`
+        predict_set : `mbgdml.data.predictSet`
             Object with loaded predict set.
         structure_list : `list`
             Indices of structures to include in the heatmap.
