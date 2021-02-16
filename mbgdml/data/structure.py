@@ -36,7 +36,7 @@ class structure:
 
     Parameters
     ----------
-    file_path : :obj:`str`
+    file_path : :obj:`str`, optional
         Path to xyz file.
     """
 

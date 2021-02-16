@@ -20,8 +20,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-# pylint: disable=E1101
-
 import os
 import numpy as np
 from cclib.parser.utils import convertor
@@ -424,6 +422,7 @@ class mbGDMLDataset(mbGDMLData):
         name : :obj:`str`, optional
             Name for the combined data set.
         """
+        # pylint: disable=E1101
         # Prepares initial combined dataset from the first dataset.
         self.load(dataset_paths[0])
         if name is not None:
