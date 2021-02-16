@@ -6,19 +6,19 @@ Loading and saving
 
 Data sets are stored as NumPy ``.npz`` files. To load a data set, you can pass
 the path to the ``dataset.npz`` file or explicitly use the
-:func:`~mbgdml.data.dataset.mbGDMLDataset.load` function.
+:func:`~mbgdml.data.dataset.dataSet.load` function.
 
 .. code-block:: python
 
-    from mbgdml.data import mbGDMLDataset
+    from mbgdml.data import dataSet
 
-    my_dataset = mbGDMLDataset('./path/to/dataset.npz')
+    my_dataset = dataSet('./path/to/dataset.npz')
     # Or
-    my_dataset = mbGDMLDataset()
+    my_dataset = dataSet()
     my_dataset.load('./path/to/dataset.npz')
 
 
-.. automethod:: mbgdml.data.dataset.mbGDMLDataset.load
+.. automethod:: mbgdml.data.dataset.dataSet.load
 
 Saving a data set is just as easy.
 
@@ -26,7 +26,7 @@ Saving a data set is just as easy.
 
     my_dataset.save('dataset', my_dataset.dataset, './path/to')
 
-.. automethod:: mbgdml.data.dataset.mbGDMLDataset.save
+.. automethod:: mbgdml.data.dataset.dataSet.save
 
 
 Input formats
@@ -78,20 +78,20 @@ of each structure as a comment in Hartrees (Eh).
     ...
 
 This would provide both Cartesian coordinates and energies for our data set.
-We can this use the :func:`~mbgdml.data.dataset.mbGDMLDataset.read_xyz`
+We can this use the :func:`~mbgdml.data.dataset.dataSet.read_xyz`
 function to 
 
 .. code-block:: python
 
-    from mbgdml.data import mbGDMLDataset
+    from mbgdml.data import dataSet
 
-    my_dataset = mbGDMLDataset()
+    my_dataset = dataSet()
     my_dataset.read_xyz(
         './4h2o.traj', 'coords', r_unit='Angstrom', e_unit='hartree',
         energy_comments=True
     )
 
-.. automethod:: mbgdml.data.dataset.mbGDMLDataset.read_xyz
+.. automethod:: mbgdml.data.dataset.dataSet.read_xyz
 
 
 Now, we just need to include the forces from the file ``4h2o.forces`` (Eh/Bohr):
@@ -210,10 +210,10 @@ partition-calcs/out-4H2O-300K-1-ABC.out>`_ for a water trimer from a tetramer.
         theory='mp2.def2tzvp'
     )
     
-    test_dataset = data.mbGDMLDataset()
+    test_dataset = data.dataSet()
     test_dataset.from_partitioncalc(partition_calc)
 
-.. automethod:: mbgdml.data.dataset.mbGDMLDataset.from_partitioncalc
+.. automethod:: mbgdml.data.dataset.dataSet.from_partitioncalc
 
 Unit conversion
 ---------------
@@ -221,11 +221,11 @@ Unit conversion
 mbGDML provides a simple way to convert Cartesian coordinates, energies, or 
 forces to a variety of units.
 
-.. automethod:: mbgdml.data.dataset.mbGDMLDataset.convertR
+.. automethod:: mbgdml.data.dataset.dataSet.convertR
 
-.. automethod:: mbgdml.data.dataset.mbGDMLDataset.convertE
+.. automethod:: mbgdml.data.dataset.dataSet.convertE
 
-.. automethod:: mbgdml.data.dataset.mbGDMLDataset.convertF
+.. automethod:: mbgdml.data.dataset.dataSet.convertF
 
 So, say we wanted to convert the energies and forces of ``my_dataset`` to 
 kcal/mol and kcal/mol/A. The coordinates are already in Angstroms, so we just
@@ -253,7 +253,7 @@ for example, multiple MD simulations or partitions.
     The data sets can only be combined if they are the same system and units.
     Meaning the same number and order of atoms, units, and array dimensions.
 
-.. automethod:: mbgdml.data.dataset.mbGDMLDataset.from_combined
+.. automethod:: mbgdml.data.dataset.dataSet.from_combined
 
 
 Many-body data sets
@@ -267,16 +267,16 @@ accomplished by first :doc:`training a sGDML model<training>` on monomers
 
 .. code-block:: python
 
-    from mbgdml.data import mbGDMLDataset
+    from mbgdml.data import dataSet
 
     # Load the dimer data set.
-    my_2mer_dataset = data.mbGDMLDataset(path='./path/to/2mer-dataset.npz')
+    my_2mer_dataset = data.dataSet(path='./path/to/2mer-dataset.npz')
 
     # Create the 2-body data set.
-    my_mb_dataset = data.mbGDMLDataset()
+    my_mb_dataset = data.dataSet()
     my_mb_dataset.create_mb(my_2mer_dataset, ['./path/to/1mer-model.npz'])
 
-.. automethod:: mbgdml.data.dataset.mbGDMLDataset.create_mb
+.. automethod:: mbgdml.data.dataset.dataSet.create_mb
 
 .. warning::
 
@@ -289,32 +289,32 @@ Available data
 
 The following data are available from data sets.
 
-.. autoattribute:: mbgdml.data.dataset.mbGDMLDataset.z
+.. autoattribute:: mbgdml.data.dataset.dataSet.z
 
-.. autoattribute:: mbgdml.data.dataset.mbGDMLDataset.R
+.. autoattribute:: mbgdml.data.dataset.dataSet.R
 
-.. autoattribute:: mbgdml.data.dataset.mbGDMLDataset.r_unit
+.. autoattribute:: mbgdml.data.dataset.dataSet.r_unit
 
-.. autoattribute:: mbgdml.data.dataset.mbGDMLDataset.E
+.. autoattribute:: mbgdml.data.dataset.dataSet.E
 
-.. autoattribute:: mbgdml.data.dataset.mbGDMLDataset.e_unit
+.. autoattribute:: mbgdml.data.dataset.dataSet.e_unit
 
-.. autoattribute:: mbgdml.data.dataset.mbGDMLDataset.E_max
+.. autoattribute:: mbgdml.data.dataset.dataSet.E_max
 
-.. autoattribute:: mbgdml.data.dataset.mbGDMLDataset.E_mean
+.. autoattribute:: mbgdml.data.dataset.dataSet.E_mean
 
-.. autoattribute:: mbgdml.data.dataset.mbGDMLDataset.E_min
+.. autoattribute:: mbgdml.data.dataset.dataSet.E_min
 
-.. autoattribute:: mbgdml.data.dataset.mbGDMLDataset.E_var
+.. autoattribute:: mbgdml.data.dataset.dataSet.E_var
 
-.. autoattribute:: mbgdml.data.dataset.mbGDMLDataset.F
+.. autoattribute:: mbgdml.data.dataset.dataSet.F
 
-.. autoattribute:: mbgdml.data.dataset.mbGDMLDataset.F_max
+.. autoattribute:: mbgdml.data.dataset.dataSet.F_max
 
-.. autoattribute:: mbgdml.data.dataset.mbGDMLDataset.F_mean
+.. autoattribute:: mbgdml.data.dataset.dataSet.F_mean
 
-.. autoattribute:: mbgdml.data.dataset.mbGDMLDataset.F_min
+.. autoattribute:: mbgdml.data.dataset.dataSet.F_min
 
-.. autoattribute:: mbgdml.data.dataset.mbGDMLDataset.F_var
+.. autoattribute:: mbgdml.data.dataset.dataSet.F_var
 
-.. autoattribute:: mbgdml.data.dataset.mbGDMLDataset.md5
+.. autoattribute:: mbgdml.data.dataset.dataSet.md5

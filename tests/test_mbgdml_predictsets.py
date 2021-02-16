@@ -40,7 +40,7 @@ def test_data_create_predictset():
         './tests/data/models/4H2O-2body-model-MP2.def2-TZVP-train300-sym8.npz'
     ]
 
-    test_predictset = data.mbGDMLPredictset()
+    test_predictset = data.predictSet()
     test_predictset.load_models(model_paths)
     test_predictset.load_dataset(dataset_path)
 

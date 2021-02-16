@@ -29,7 +29,7 @@ from mbgdml.data import mbGDMLData
 from mbgdml.predict import mbGDMLPredict
 
 # TODO finish documenting
-class mbGDMLPredictset(mbGDMLData):
+class predictSet(mbGDMLData):
     """A predict set is a data set with mbGDML predicted energy and forces
     instead of training data.
 
