@@ -31,31 +31,84 @@ from mbgdml.data import structureSet
 
 # Must be run from mbGDML root directory.
 
-def test_structureset_from_xyz():
-    coord_paths = './tests/data/md/4h2o.abc0-orca.md-mp2.def2tzvp.300k-1.traj'
+def example_10h2o(structureset):
+    """
+
+    Parameters
+    ----------
+    structureset : :obj:`mbgdml.data.structureSet`
+    """
+    # Data type
+    assert structureset.type == 's'
+
+    # Name
+    assert structureset.name == '10h2o.abc0.iter1.gfn2.md.gfn2.300k.iter1-mbgdml.structset'
+
+    # Atomic numbers are parsed correctly.
+    z = np.array([
+        8, 1, 1, 8, 1, 1, 8, 1, 1, 8, 1, 1, 8, 1, 1, 8, 1, 1, 8, 1, 1, 8, 1, 1,
+        8, 1, 1, 8, 1, 1
+    ])
+    assert np.all(
+        [structureset.z, z]
+    )
+    
+    # Cartesian coordinates
+    assert structureset.R.shape == (1000, 30, 3)
+    assert structureset.r_unit == 'Angstrom'
+
+    R_32 = np.array(
+      [[ 0.2138409 , -0.75317578, -2.48212431],
+       [ 0.38055613, -1.52595188, -2.03658303],
+       [-0.60671654, -0.21418841, -2.2235319 ],
+       [ 1.3443991 ,  1.06432415,  2.17585386],
+       [ 1.40262807,  1.36107255,  3.07521589],
+       [ 2.23704987,  0.68888485,  1.89998245],
+       [-2.37423348,  1.70412911,  0.41693788],
+       [-1.5484107 ,  2.2369671 ,  0.44993361],
+       [-3.01823576,  2.06705508, -0.12824116],
+       [-2.10489634, -0.48412267, -1.35111349],
+       [-1.85391629, -1.37302174, -1.16407834],
+       [-1.94728712,  0.01046818, -0.58781186],
+       [ 0.16968427,  2.6591918 ,  0.10431118],
+       [ 0.42945943,  1.8467232 ,  0.5897933 ],
+       [ 0.80306083,  2.68773632, -0.57365869],
+       [ 2.54191418, -0.29254   ,  0.13050749],
+       [ 1.84102152, -0.79450526, -0.32687938],
+       [ 2.79765557,  0.35865574, -0.46586859],
+       [-1.27296288, -2.45416689,  0.70374188],
+       [-1.37855492, -3.28124341,  1.21104697],
+       [-1.34421001, -1.8217866 ,  1.52231902],
+       [-1.2790591 ,  0.02730456,  2.19232099],
+       [-0.45834748,  0.39290178,  2.04539741],
+       [-1.91630844,  0.46989582,  1.72914227],
+       [ 0.99620097, -2.51709331, -0.32970352],
+       [ 0.28924176, -2.13394154,  0.13745409],
+       [ 0.96327268, -3.43010222, -0.15911778],
+       [ 1.63534332,  1.28281417, -1.86431889],
+       [ 1.13350646,  0.40488563, -1.92332564],
+       [ 1.96419952,  1.76601828, -2.58558329]]
+    )
+    assert np.allclose(R_32, structureset.R[32])
+
+    # MD5 hash
+    assert structureset.md5 == 'cd0cfdc29ebc52eb40d2a028124cfd18'
+
+def test_structureset_from_traj():
+    traj_path = './tests/data/md/10h2o.abc0.iter1.gfn2-xtb.md-gfn2.300k-1.traj'
 
     test_structureset = structureSet()
-    test_structureset.read_xyz(coord_paths, 'coords', r_unit='Angstrom')
-    assert np.all(
-        [test_structureset.z, np.array([8, 1, 1, 8, 1, 1, 8, 1, 1, 8, 1, 1])]
-    )
-    assert np.allclose(
-        test_structureset.R[13],
-        np.array(
-            [[ 1.60356892,  1.15940522,  0.45120149],
-             [ 2.44897814,  0.98409976, -0.02443958],
-             [ 0.91232083,  1.31043934, -0.32129452],
-             [-1.38698267, -1.18108194, -0.36717795],
-             [-1.24963245, -1.95197596, -0.92292253],
-             [-0.81853711, -1.22776338,  0.45900949],
-             [-0.43544764,  1.15521674, -1.45105255],
-             [-0.8170486 ,  0.26677825, -1.2961774 ],
-             [-1.15593236,  1.75261822, -1.2450081 ],
-             [ 0.48310408, -1.085288  ,  1.49429163],
-             [ 0.25663241, -0.85432318,  2.40218465],
-             [ 0.75853895, -0.23317651,  1.09461031]]
-        )
-    )
+    test_structureset.from_xyz(traj_path, 'Angstrom')
+
+    # Naming of the structure set.
     assert test_structureset.name == 'structureset'
-    assert test_structureset.r_unit == 'Angstrom'
-    assert test_structureset.md5 == 'e157c5e33c7e94e7970d5cb4b3156e66'
+    test_structureset.name = '10h2o.abc0.iter1.gfn2.md.gfn2.300k.iter1-mbgdml.structset'
+
+    example_10h2o(test_structureset)
+
+def test_structureset_load():
+    structureset_path = './tests/data/structuresets/10h2o.abc0.iter1.gfn2.md.gfn2.300k.iter1-mbgdml.structset.npz'
+
+    test_structureset = structureSet(structureset_path)
+
+    example_10h2o(test_structureset)

@@ -52,7 +52,6 @@ class dataSet(mbGDMLData):
         contributions removed will have a ``mb`` order of 4.
     """
 
-
     def __init__(self, *args):
         self.type = 'd'
         self.name = 'dataset'
@@ -70,12 +69,10 @@ class dataSet(mbGDMLData):
         :type: :obj:`numpy.ndarray`
         """
         return self._F
-    
 
     @F.setter
     def F(self, var):
         self._F = var
-    
 
     @property
     def E(self):
@@ -90,12 +87,23 @@ class dataSet(mbGDMLData):
             return self._E
         else:
             raise AttributeError('No energies were provided in data set.')
-    
 
     @E.setter
     def E(self, var):
         self._E = var
     
+    @property
+    def e_unit(self):
+        """Units of energy. Options are ``'eV'``, ``'hartree'``,
+        ``'kcal/mol'``, and ``'kJ/mol'``.
+
+        :type: :obj:`str`
+        """
+        return self._e_unit
+
+    @e_unit.setter
+    def e_unit(self, var):
+        self._e_unit = var
 
     @property
     def E_min(self):
@@ -104,7 +112,6 @@ class dataSet(mbGDMLData):
         :type: :obj:`float`
         """
         return float(np.min(self.E.ravel()))
-    
 
     @property
     def E_max(self):
@@ -113,7 +120,6 @@ class dataSet(mbGDMLData):
         :type: :obj:`float`
         """
         return float(np.max(self.E.ravel()))
-    
 
     @property
     def E_var(self):
@@ -122,7 +128,6 @@ class dataSet(mbGDMLData):
         :type: :obj:`float`
         """
         return float(np.var(self.E.ravel()))
-        
     
     @property
     def E_mean(self):
@@ -131,7 +136,6 @@ class dataSet(mbGDMLData):
         :type: :obj:`float`
         """
         return float(np.mean(self.E.ravel()))
-    
 
     @property
     def F_min(self):
@@ -140,7 +144,6 @@ class dataSet(mbGDMLData):
         :type: :obj:`float`
         """
         return float(np.min(self.F.ravel()))
-    
 
     @property
     def F_max(self):
@@ -149,7 +152,6 @@ class dataSet(mbGDMLData):
         :type: :obj:`float`
         """
         return float(np.max(self.F.ravel()))
-    
 
     @property
     def F_var(self):
@@ -158,7 +160,6 @@ class dataSet(mbGDMLData):
         :type: :obj:`float`
         """
         return float(np.var(self.F.ravel()))
-    
 
     @property
     def F_mean(self):
@@ -167,7 +168,6 @@ class dataSet(mbGDMLData):
         :type: :obj:`float`
         """
         return float(np.mean(self.F.ravel()))
-    
 
     @property
     def md5(self):
@@ -175,8 +175,7 @@ class dataSet(mbGDMLData):
 
         :type: :obj:`bytes`
         """
-        return utils.md5_data(self.dataset, ['z', 'R', 'E', 'F'])
-    
+        return self.dataset['md5'][()]
 
     def convertE(self, E_units):
         """Convert energies and updates :attr:`e_unit`.
@@ -190,7 +189,6 @@ class dataSet(mbGDMLData):
         self._E = convertor(self.E, self.e_unit, E_units)
         self.e_unit = E_units
     
-    
     def convertR(self, R_units):
         """Convert coordinates and updates :attr:`r_unit`.
 
@@ -202,7 +200,6 @@ class dataSet(mbGDMLData):
         """
         self._R = convertor(self.R, self.r_unit, R_units)
         self.r_unit = R_units
-
 
     def convertF(self, force_e_units, force_r_units, e_units, r_units):
         """Convert forces.
@@ -228,7 +225,6 @@ class dataSet(mbGDMLData):
         self._F = utils.convert_forces(
             self.F, force_e_units, force_r_units, e_units, r_units
         )
-
 
     def _update(self, dataset):
         """Updates object attributes.
@@ -270,11 +266,9 @@ class dataSet(mbGDMLData):
             raise ValueError(f'{npz_type} is not a data set.')
         else:
             self._update(dict(dataset_npz))
-    
-
-    def read_xyz(
-        self, file_path, xyz_type, r_unit=None, e_unit=None,
-        energy_comments=False
+        
+    def forces_from_xyz(
+        self, file_path, xyz_type, r_units, e_units, 
     ):
         """Reads data from xyz files.
 
@@ -283,26 +277,15 @@ class dataSet(mbGDMLData):
         file_path : :obj:`str`
             Path to xyz file.
         xyz_type : :obj:`str`
-            Type of data. Either ``'coords'``, ``'forces'``, ``'grads'``, or
-            ``'extended'``.
+            Type of data. Either ``'coords'`` or ``'extended'``. Will discard
+            any extended data.
         r_units : :obj:`str`, optional
             Units of distance. Options are ``'Angstrom'`` or ``'bohr'``.
-        e_units : :obj:`str`, optional
-            Units of energy. Options are ``'eV'``, ``'hartree'``,
-            ``'kcal/mol'``, and ``'kJ/mol'``.
-        energy_comments : :obj:`bool`, optional
-            If there are comments specifying the energies of the structures.
-            Defaults to ``False``.
-        
-        Notes
-        -----
-        If ``xyz_type`` is ``'grads'``, it will take the negative and store as
-        forces. If it is ``'extended'`` the three rightmost data will be stored
-        as forces.
         """
         self._user_data = True
-        z, comments, data = parse_stringfile(file_path)
+        z, _, data = parse_stringfile(file_path)
         z = [utils.atoms_by_number(i) for i in z]
+
         # If all the structures have the same order of atoms (as required by
         # sGDML), condense into a one-dimensional array.
         if len(set(tuple(i) for i in z)) == 1:
@@ -310,30 +293,18 @@ class dataSet(mbGDMLData):
         else:
             z = np.array(z)
         self._z = z
-        if energy_comments:
-            try:
-                E = np.array([float(i) for i in comments])
-                self._E = E
-            except ValueError as e:
-                bad_comment = str(e).split(': ')[-1]
-                raise ValueError(f'{bad_comment} should only contain a float.')
+
+        # Stores Cartesian coordinates.
         data = np.array(data)
         if xyz_type == 'extended':
             self._R = data[:,:,3:]
-            self._F = data[:,:,:3]
         elif xyz_type == 'coords':
             self._R = data
-        elif xyz_type == 'grads':
-            self._F = np.negative(data)
-        elif xyz_type == 'forces':
-            self._F = data
         else:
             raise ValueError(f'{xyz_type} is not a valid xyz data type.')
+
         if r_unit is not None:
             self.r_unit = r_unit
-        if e_unit is not None:
-            self.e_unit = e_unit
-    
 
     def from_partitioncalc(self, partcalc):
         """Creates data set from partition calculations.
@@ -352,60 +323,53 @@ class dataSet(mbGDMLData):
         self.mbgdml_version = __version__
         self.theory = partcalc.theory
 
-
-    def name_partition(
-        self, cluster_label, partition_label, md_temp, md_iter
-    ):
-        """Automates and standardizes partition datasets names.
-        
-        Parameters
-        ----------
-        cluster_label : :obj:`str`
-            The label identifying the parent cluster of the partition.
-            For example, ``'4H2O.abc0'``.
-        partition_label : :obj:`str`
-            Identifies what solvent molecules are in the partition.
-            For example, ``'AB'``.
-        md_temp : :obj:`int`
-            Set point temperautre for the MD thermostat in Kelvin.
-        md_iter : :obj:`int`
-            Identifies the iteration of the MD simulation.
-        """
-        self.name =  '-'.join([
-            cluster_label, partition_label, str(md_temp) + 'K', str(md_iter),
-            'dataset'
-        ])
-
     @property
     def dataset(self):
         """Contains all data as :obj:`numpy.ndarray` objects.
 
         :type: :obj:`dict`
         """
-        # sGDML variables.
+        # Data always available for data sets.
         dataset = {
-            'type': np.array('d'),  # Designates dataset.
-            'mbgdml_version': np.array(__version__),  # sGDML version.
-            'name': np.array(self.name),  # Name of the output file.
-            'theory': np.array(self.theory),  # Theory used to calculate the data.
-            'z': np.array(self.z),  # Atomic numbers of all atoms in system.
-            'R': np.array(self.R),  # Cartesian coordinates.
-            'r_unit': np.array(self.r_unit),  # Units for coordinates.
-            'E': np.array(self.E),  # Energy of the structures.
-            'e_unit': np.array(self.e_unit),  # Units of energy.
-            'E_min': np.array(self.E_min),  # Energy minimum.
-            'E_max': np.array(self.E_max),  # Energy maximum.
-            'E_mean': np.array(self.E_mean),  # Energy mean.
-            'E_var': np.array(self.E_var),  # Energy variance.
-            'F': np.array(self.F),  # Atomic forces for each atom.
-            'F_min': np.array(self.F_min),  # Force minimum.
-            'F_max': np.array(self.F_max),  # Force maximum.
-            'F_mean': np.array(self.F_mean),  # Force mean.
-            'F_var': np.array(self.F_var)  # Force variance.
+            'type': np.array('d'),
+            'mbgdml_version': np.array(__version__),
+            'name': np.array(self.name),
+            'theory': np.array(self.theory),
+            'z': np.array(self.z),
+            'R': np.array(self.R),
+            'r_unit': np.array(self.r_unit)
         }
+        md5_properties = ['z', 'R']
+
+        # When starting a new data set from a structure set, there will not be
+        # any energy or force data. Thus, we try to add the data if available,
+        # but will not error out if the data is not available.
+        # Energies.
+        try:
+            dataset['E'] = np.array(self.E)
+            dataset['e_unit'] = np.array(self.e_unit)
+            dataset['E_min'] = np.array(self.E_min)
+            dataset['E_max'] = np.array(self.E_max)
+            dataset['E_mean'] = np.array(self.E_mean)
+            dataset['E_var'] = np.array(self.E_var)
+            md5_properties.append('E')
+        except:
+            pass
+        
+        # Forces.
+        try:
+            dataset['F'] = np.array(self.F)
+            dataset['F_min'] = np.array(self.F_min)
+            dataset['F_max'] = np.array(self.F_max)
+            dataset['F_mean'] = np.array(self.F_mean)
+            dataset['F_var'] = np.array(self.F_var)
+            md5_properties.append('F')
+        except:
+            pass
+
         # mbGDML variables.
         dataset = self.add_system_info(dataset)
-        dataset['md5'] = np.array(utils.md5_data(dataset, ['z', 'R', 'E', 'F']))
+        dataset['md5'] = np.array(utils.md5_data(dataset, md5_properties))
         return dataset
      
 
@@ -463,7 +427,7 @@ class dataSet(mbGDMLData):
 
 
     def print(self):
-        """Prints all structure coordinates, energies, and force of a data set.
+        """Prints all structure coordinates, energies, and forces of a data set.
         """
         num_config = self.R.shape[0]
         for config in range(num_config):

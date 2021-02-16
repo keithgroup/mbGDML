@@ -42,7 +42,6 @@ class model(mbGDMLData):
     def __init__(self):
         pass
 
-
     @property
     def code_version(self):
         """sGDML code version used to train the model.

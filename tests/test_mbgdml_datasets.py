@@ -45,12 +45,7 @@ def test_dataset_from_partitioncalc():
         theory='mp2.def2tzvp'
     )
     test_dataset = data.dataSet()
-    test_dataset.name_partition(
-        test_partition.cluster_label,
-        test_partition.partition_label,
-        test_partition.md_temp,
-        test_partition.md_iter
-    )
+    test_dataset.name = '4H2O-ABC-300K-1-dataset'
     assert test_dataset.name == '4H2O-ABC-300K-1-dataset'
     test_dataset.from_partitioncalc(test_partition)
 
@@ -77,60 +72,6 @@ def test_dataset_from_partitioncalc():
     assert test_dataset.dataset['solvent'] == 'water'
     assert test_dataset.dataset['cluster_size'] == 3
     assert test_dataset.dataset['theory'] == 'mp2.def2tzvp'
-
-
-def test_dataset_from_xyz():
-    # Energies are hartree
-    # Forces are hartree/angstrom
-    coord_paths = './tests/data/md/4h2o.abc0-orca.md-mp2.def2tzvp.300k-1.traj'
-    force_paths = './tests/data/md/4h2o.abc0-orca.md-mp2.def2tzvp.300k-1.forces'
-
-    test_dataset = data.dataSet()
-    test_dataset.read_xyz(
-        coord_paths, 'coords', r_unit='Angstrom', energy_comments=True,
-        e_unit='hartree'
-    )
-    test_dataset.read_xyz(force_paths, 'forces')
-    assert np.allclose(
-        test_dataset.R[13],
-        np.array(
-            [[ 1.60356892,  1.15940522,  0.45120149],
-             [ 2.44897814,  0.98409976, -0.02443958],
-             [ 0.91232083,  1.31043934, -0.32129452],
-             [-1.38698267, -1.18108194, -0.36717795],
-             [-1.24963245, -1.95197596, -0.92292253],
-             [-0.81853711, -1.22776338,  0.45900949],
-             [-0.43544764,  1.15521674, -1.45105255],
-             [-0.8170486 ,  0.26677825, -1.2961774 ],
-             [-1.15593236,  1.75261822, -1.2450081 ],
-             [ 0.48310408, -1.085288  ,  1.49429163],
-             [ 0.25663241, -0.85432318,  2.40218465],
-             [ 0.75853895, -0.23317651,  1.09461031]]
-        )
-    )
-    assert test_dataset.E.ndim == 1
-    assert test_dataset.E.shape[0] == 101
-    assert test_dataset.E[13] == -305.29216392
-    assert test_dataset.E_var == 6.919535397308176 * 10**(-6)
-    assert test_dataset.F.ndim == 3
-    assert np.allclose(
-        test_dataset.F[13],
-        np.array(
-            [[-0.02987315,  0.00745104, -0.08490761],
-             [-0.03294625,  0.00602651,  0.02012492],
-             [ 0.05300782, -0.01129793,  0.0567368 ],
-             [-0.00294407,  0.0179059 ,  0.00730871],
-             [ 0.00667818, -0.00859914,  0.01310209],
-             [-0.00719587, -0.01668633, -0.03287195],
-             [ 0.01113859,  0.00097779, -0.00269464],
-             [-0.00129241, -0.00433618,  0.01145648],
-             [-0.00686089,  0.00782671, -0.00039129],
-             [-0.01617564,  0.00134325,  0.00653721],
-             [ 0.00265876, -0.00343129,  0.0014132 ],
-             [ 0.02380493,  0.00281966,  0.00418609]]
-        )
-    )
-
 
 def test_dataset_from_combined():
     monomer_paths = [
