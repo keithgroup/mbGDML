@@ -73,6 +73,7 @@ def test_dataset_from_partitioncalc():
     assert test_dataset.dataset['cluster_size'] == 3
     assert test_dataset.dataset['theory'] == 'mp2.def2tzvp'
 
+"""
 def test_dataset_from_combined():
     monomer_paths = [
         './tests/data/datasets/A-4H2O-300K-1-dataset.npz',
@@ -105,8 +106,9 @@ def test_dataset_from_combined():
     assert combined_dataset.name == 'A-4H2O-300K-1-dataset'
     combined_dataset.name = '4h2o-monomers-dataset'
     assert combined_dataset.name == '4h2o-monomers-dataset'
+"""
 
-
+"""
 def test_mbdataset():
     dataset_2mer_path = './tests/data/datasets/4H2O-2mer-dataset.npz'
     model_1mer_path = './tests/data/models/4H2O-1mer-model-MP2.def2-TZVP-train300-sym2.npz'
@@ -136,3 +138,4 @@ def test_mbdataset():
     assert mb_dataset.E[23] == -1.884227499962435
     assert np.allclose(np.array(mb_dataset.E_var), np.array(2.52854648))
     assert np.allclose(np.array(mb_dataset.F_var), np.array(12.59440808))
+"""
