@@ -21,6 +21,7 @@
 # SOFTWARE.
 
 import os
+from random import randrange, sample
 import numpy as np
 from cclib.parser.utils import convertor
 from mbgdml.data import mbGDMLData
@@ -28,6 +29,7 @@ import mbgdml.solvents as solvents
 from mbgdml import __version__
 from mbgdml.parse import parse_stringfile
 from mbgdml import utils
+from mbgdml.data import structureSet
 from mbgdml.predict import mbGDMLPredict
   
 
@@ -57,6 +59,48 @@ class dataSet(mbGDMLData):
         self.name = 'dataset'
         if len(args) == 1:
             self.load(args[0])
+
+    @property
+    def Rset_md5(self):
+        """Specifies structure sets (Rset) IDs/labels and MD5 hashes.
+
+        Keys are the Rset IDs (:obj:`int`) and values are MD5 hashes
+        (:obj:`str`) for this particular data set.
+
+        :type: :obj:`dict`
+        """
+        if hasattr(self, '_Rset_md5'):
+            return self._Rset_md5
+        else:
+            return {}
+    
+    @Rset_md5.setter
+    def Rset_md5(self, var):
+        self._Rset_md5 = var
+    
+    @property
+    def Rset_info(self):
+        """An array specifying where each structure in R originates from.
+
+        A ``(n_R, 1 + n_z)`` array containing the Rset ID from ``Rset_md5`` in
+        the first column and then the atom indices of the structure with respect
+        to the full structure in the structure set, where ``n_R`` is the number
+        of structures in R and ``n_z`` the number of atoms in each structure in
+        this data set.
+
+        If there has been no previous sampling, an array of shape (1, 0)
+        is returned.
+
+        :type: :obj:`numpy.ndarray`
+        """
+        if hasattr(self, '_Rset_info'):
+            return self._Rset_info
+        else:
+            return np.array([[]])
+    
+    @Rset_info.setter
+    def Rset_info(self, var):
+        self._Rset_info = var
 
     @property
     def F(self):
@@ -266,45 +310,145 @@ class dataSet(mbGDMLData):
             raise ValueError(f'{npz_type} is not a data set.')
         else:
             self._update(dict(dataset_npz))
-        
-    def forces_from_xyz(
-        self, file_path, xyz_type, r_units, e_units, 
+    
+    def Rset_sample(
+        self, structureset_path, num, size, always=[]
     ):
-        """Reads data from xyz files.
+        """Adds structures from a structure set to the data set.
+
+        Parameters
+        ----------
+        structureset_path : :obj:`str`
+            Path to a mbGDML structure set.
+        num : :obj:`int`
+            Number of structures to sample from the structure set.
+        size : :obj:`int`
+            Desired number of molecules in each selection.
+        always : :obj:`list` [:obj:`int`]
+            Molecule indices that will be in every selection.
+        """
+        # Load structure set.
+        Rset = structureSet(structureset_path)
+
+        # Attempts to match any previous sampling to this structure set.
+        # If not, adds this structure set to the Rset_md5 information.
+        Rset_id = None
+        if self.Rset_md5 != {}:
+            new_k = 0  # New key should be one more than the last key.
+            for k,v in self.Rset_md5.items():
+                if v == Rset.md5:
+                    Rset_id = k
+                    break
+                new_k += 1
+            
+            # If no matches.
+            if Rset_id is None:
+                Rset_id == new_k
+        else:
+            Rset_id = 0
+        
+        # Prepares sampling procedure.
+        z = self.z
+        R = self.R
+        Rset_info = self.Rset_info
+        Rset_z = Rset.z
+        Rset_R = Rset.R
+        max_n_R = Rset.R.shape[0]
+        max_mol = Rset.mol_ids[-1] + 1
+        mol_ids = Rset.mol_ids
+
+        # New cluster routine.
+        i = 0  # Successful samples from structure set.
+        while i < num:
+            # Generates our sample using random integers.
+            struct_num_selection = randrange(max_n_R)
+            mol_selection = sorted(sample(range(max_mol), size))
+            Rset_selection = [Rset_id, struct_num_selection] + mol_selection
+
+            # If this selection is already in Rset_info, then we will not include it
+            # and try again.
+            # If there has been no previous sampling, an array of shape (1, 0)
+            # is returned.
+            if Rset_info.shape[1] != 0:
+                if (Rset_info[...]==Rset_selection).all(1).any():
+                    continue
+
+            # Adds new sampling into our Rset info.
+            if Rset_info.shape[1] == 0:  # No previous Rset_info.
+                Rset_axis = 1
+            else:
+                Rset_axis = 0
+            Rset_info = np.concatenate(
+                (Rset_info, np.array([Rset_selection])), axis=Rset_axis
+            )
+
+            # Adds selection's atomic coordinates to R.
+            ## Gets atomic indices from molecule_ids in the Rset.
+            atom_ids = []
+            for mol_id in Rset_selection[2:]:
+                atom_ids.extend(
+                    [i for i,x in enumerate(mol_ids) if x == mol_id]
+                )
+            # Checks compatibility with atoms.
+            if len(z) == 0:
+                z = Rset_z[atom_ids]
+            else:
+                if not np.all([z, Rset_z[atom_ids]]):
+                    print(f'z of data set: {z}')
+                    print(f'Rset_info of selection: {Rset_selection}')
+                    print(f'z of selection: {Rset_z[atom_ids]}')
+                    raise ValueError(f'z of the selection is incompatible.')
+            
+            ## Adds selection's Cartesian coordinates to R.
+            r_selection = np.array([Rset_R[struct_num_selection, atom_ids, :]])
+            if R.shape[2] == 0:  # No previous R.
+                R = r_selection
+            else:
+                R = np.concatenate(
+                (R, r_selection),
+                axis=0
+            )
+            
+            i += 1
+        
+        # Stores all information only if sampling is successful.
+        self.Rset_md5 = {**self.Rset_md5, **{Rset_id: Rset.md5}}
+        self.Rset_info = Rset_info
+        self.z = z
+        self.R = R
+
+
+        
+
+        
+    def forces_from_xyz(self, file_path):
+        """Reads forces from xyz files.
 
         Parameters
         ----------
         file_path : :obj:`str`
             Path to xyz file.
-        xyz_type : :obj:`str`
-            Type of data. Either ``'coords'`` or ``'extended'``. Will discard
-            any extended data.
-        r_units : :obj:`str`, optional
-            Units of distance. Options are ``'Angstrom'`` or ``'bohr'``.
         """
         self._user_data = True
         z, _, data = parse_stringfile(file_path)
-        z = [utils.atoms_by_number(i) for i in z]
 
-        # If all the structures have the same order of atoms (as required by
-        # sGDML), condense into a one-dimensional array.
+        # Checks that z of this xyz file is compatible with the z from the data
+        # set.
+        z = [utils.atoms_by_number(i) for i in z]
         if len(set(tuple(i) for i in z)) == 1:
             z = np.array(z[0])
         else:
             z = np.array(z)
-        self._z = z
+        assert np.all([z, self.z])
 
-        # Stores Cartesian coordinates.
+        # Stores Forces
         data = np.array(data)
-        if xyz_type == 'extended':
-            self._R = data[:,:,3:]
-        elif xyz_type == 'coords':
-            self._R = data
+        if data.shape[2] == 6:
+            self._F = data[:,:,:3]
+        elif data.shape[2] == 3:
+            self._F = data
         else:
-            raise ValueError(f'{xyz_type} is not a valid xyz data type.')
-
-        if r_unit is not None:
-            self.r_unit = r_unit
+            raise ValueError(f'There was an issue parsing F from {file_path}.')
 
     def from_partitioncalc(self, partcalc):
         """Creates data set from partition calculations.
@@ -334,7 +478,7 @@ class dataSet(mbGDMLData):
             'type': np.array('d'),
             'mbgdml_version': np.array(__version__),
             'name': np.array(self.name),
-            'theory': np.array(self.theory),
+            'Rset_md5': np.array(self.Rset_md5),
             'z': np.array(self.z),
             'R': np.array(self.R),
             'r_unit': np.array(self.r_unit)
@@ -344,6 +488,12 @@ class dataSet(mbGDMLData):
         # When starting a new data set from a structure set, there will not be
         # any energy or force data. Thus, we try to add the data if available,
         # but will not error out if the data is not available.
+        # Theory.
+        try:
+            dataset['theory'] = np.array(self.theory)
+        except:
+            pass
+
         # Energies.
         try:
             dataset['E'] = np.array(self.E)
