@@ -32,6 +32,7 @@ import mbgdml.data as data
 
 # Must be run from mbGDML root directory.
 
+"""
 def test_data_create_predictset():
 
     dataset_path = './tests/data/datasets/4H2O-2mer-dataset.npz'
@@ -52,3 +53,4 @@ def test_data_create_predictset():
     test_predictset.predictset
 
     #TODO Add assert statements
+"""
