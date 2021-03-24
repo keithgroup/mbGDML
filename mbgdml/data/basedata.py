@@ -40,7 +40,10 @@ class mbGDMLData():
 
         :type: :obj:`numpy.ndarray`
         """
-        return self._z
+        if hasattr(self, '_z'):
+            return self._z
+        else:
+            return np.array([])
     
     @z.setter
     def z(self, var):
@@ -79,7 +82,10 @@ class mbGDMLData():
 
         :type: :obj:`numpy.ndarray`
         """
-        return self._R
+        if hasattr(self, '_R'):
+            return self._R
+        else:
+            return np.array([[[]]])
 
     @R.setter
     def R(self, var):
