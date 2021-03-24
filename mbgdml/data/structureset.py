@@ -20,6 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import os
 import numpy as np
 from cclib.parser.utils import convertor
 from mbgdml.data import mbGDMLData
@@ -46,6 +47,23 @@ class structureSet(mbGDMLData):
         self.name = 'structureset'
         if len(args) == 1:
             self.load(args[0])
+    
+    @property
+    def mol_ids(self):
+        """An array specifying which atoms belong to what molecules.
+
+        All atoms should be grouped together.
+
+        :type: :obj:`numpy.ndarray`
+        """
+        if hasattr(self, '_mol_ids'):
+            return self._mol_ids
+        else:
+            return None
+    
+    @mol_ids.setter
+    def mol_ids(self, var):
+        self._mol_ids = var
 
     @property
     def md5(self):
@@ -76,6 +94,7 @@ class structureSet(mbGDMLData):
             Contains all information and arrays stored in data set.
         """
         self.name = str(structureset['name'][()])
+        self.mol_ids = structureset['mol_ids']
         self._z = structureset['z']
         self._R = structureset['R']
         self._r_unit = str(structureset['r_unit'][()])
@@ -96,20 +115,27 @@ class structureSet(mbGDMLData):
         else:
             self._update(dict(structureset_npz))
 
-    def from_xyz(self, file_path, r_unit):
+    def from_xyz(self, file_path, r_unit, molecule_ids):
         """Reads data from xyz files and sets z and R data.
 
         If using the extended XYZ format will assume coordinates are the first
-        three data columns (after atom symbols)
+        three data columns (after atom symbols).
+
+        Molecule specifications are needed for data set sampling.
 
         Parameters
         ----------
         file_path : :obj:`str`
             Path to xyz file.
-        r_units : :obj:`str`
+        r_unit : :obj:`str`
             Units of distance. Options are ``'Angstrom'`` or ``'bohr'`` (defined
             by cclib).
+        molecule_ids : :obj:`list` [:obj:`int`]
+            List of molecule indices starting from ``0``. For example, a water
+            dimer would be ``[0, 0, 0, 1, 1, 1]``.
         """
+        self.name = os.path.splitext(os.path.basename(file_path))[0]
+
         z, _, data = parse_stringfile(file_path)
         z = [utils.atoms_by_number(i) for i in z]
 
@@ -131,6 +157,7 @@ class structureSet(mbGDMLData):
             raise ValueError(f'There was an issue parsing R from {file_path}.')
         
         self.r_unit = r_unit
+        self.mol_ids = np.array(molecule_ids)
 
     @property
     def structureset(self):
@@ -145,7 +172,11 @@ class structureSet(mbGDMLData):
             'z': np.array(self.z),
             'R': np.array(self.R),
             'r_unit': np.array(self.r_unit),
+            'mol_ids': self.mol_ids
         }
+
+        if len(structureset['z']) != len(structureset['mol_ids']):
+            raise ValueError('Number of atoms in z and mol_ids is not the same.')
 
         structureset = self.add_system_info(structureset)
         structureset['md5'] = np.array(utils.md5_data(structureset, ['z', 'R']))
