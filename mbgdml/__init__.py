@@ -10,3 +10,4 @@ from mbgdml import partition
 from mbgdml import solvents
 from mbgdml import train
 from mbgdml import utils
+from mbgdml import sample
