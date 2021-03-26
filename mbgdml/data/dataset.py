@@ -21,6 +21,7 @@
 # SOFTWARE.
 
 import os
+import itertools
 from random import randrange, sample
 import numpy as np
 from cclib.parser.utils import convertor
@@ -31,6 +32,7 @@ from mbgdml.parse import parse_stringfile
 from mbgdml import utils
 from mbgdml.data import structureSet
 from mbgdml.predict import mbGDMLPredict
+from mbgdml.partition import partition_structures
   
 
 class dataSet(mbGDMLData):
@@ -112,7 +114,10 @@ class dataSet(mbGDMLData):
 
         :type: :obj:`numpy.ndarray`
         """
-        return self._F
+        if hasattr(self, '_F'):
+            return self._F
+        else:
+            return np.array([[[]]])
 
     @F.setter
     def F(self, var):
@@ -130,7 +135,7 @@ class dataSet(mbGDMLData):
         if hasattr(self, '_E'):
             return self._E
         else:
-            raise AttributeError('No energies were provided in data set.')
+            return np.array([])
 
     @E.setter
     def E(self, var):
@@ -310,26 +315,22 @@ class dataSet(mbGDMLData):
             raise ValueError(f'{npz_type} is not a data set.')
         else:
             self._update(dict(dataset_npz))
-    
-    def Rset_sample(
-        self, structureset_path, num, size, always=[]
+
+    def _get_Rset_id(
+        self, Rset
     ):
-        """Adds structures from a structure set to the data set.
+        """Determines the numerical Rset ID for this data set.
 
         Parameters
         ----------
-        structureset_path : :obj:`str`
-            Path to a mbGDML structure set.
-        num : :obj:`int`
-            Number of structures to sample from the structure set.
-        size : :obj:`int`
-            Desired number of molecules in each selection.
-        always : :obj:`list` [:obj:`int`]
-            Molecule indices that will be in every selection.
+        Rset : :obj:`str`
+            A loaded :obj:`mbgdml.data.structureSet` object.
+        
+        Returns
+        -------
+        :obj:`int`
+            Numerical ID for the Rset.
         """
-        # Load structure set.
-        Rset = structureSet(structureset_path)
-
         # Attempts to match any previous sampling to this structure set.
         # If not, adds this structure set to the Rset_md5 information.
         Rset_id = None
@@ -347,19 +348,167 @@ class dataSet(mbGDMLData):
         else:
             Rset_id = 0
         
-        # Prepares sampling procedure.
-        z = self.z
-        R = self.R
-        Rset_info = self.Rset_info
+        return Rset_id
+    
+    def _Rset_sample_all(
+        self, z, R, E, F, Rset, Rset_id, Rset_info, size
+    ):
+        """Selects all Rset structures for data set.
+
+        Generally organized by adding all structures of a single mol_id one at
+        a time. For example, if we were adding all monomers from a cluster with
+        two water molecules, we would select the first molecule (``0``), add 
+        all of its information, then add the second molecule (``1``). This
+        method was chosen due to a previous methodology used to calculate
+        energy and gradients of partitions.
+
+        Parameters
+        ----------
+        z : :obj:`numpy.ndarray`
+            Atomic numbers of the atoms in every structure prior to sampling.
+        R : :obj:`numpy.ndarray`
+            Cartesian atomic coordinates of data set structures prior to
+            sampling.
+        E : :obj:`numpy.ndarray`
+            Energies of data set structures prior to sampling.
+        F : :obj:`numpy.ndarray`
+            Atomic forces of data set structures prior to sampling.
+        Rset : :obj:`mbgdml.data.structureSet`
+            A loaded structure set object.
+        Rset_id : :obj:`int`
+            The :obj:`int` that specifies the Rset (key in ``self.Rset_md5``).
+        Rset_info : :obj:`int`
+            An array specifying where each structure in R originates from.
+        size : :obj:`int`
+            Desired number of molecules in each selection.
+        
+        Returns
+        -------
+        :obj:`numpy.ndarray`
+            An array specifying where each structure in R originates from.
+        :obj:`numpy.ndarray`
+            Atomic coordinates of structure(s).
+        :obj:`numpy.ndarray`
+            The energies of structure(s). All are NaN.
+        :obj:`numpy.ndarray`
+            Atomic forces of atoms in structure(s). All are NaN.
+        """
         Rset_z = Rset.z
         Rset_R = Rset.R
+
+        # Getting all possible molecule combinations.
+        mol_ids = Rset.mol_ids
+        max_mol_i = max(mol_ids)
+        comb_list = list(itertools.combinations(range(max_mol_i + 1), size))
+        
+        # Loops though every possible molecule combination.
+        for comb in comb_list:
+            
+            # Adds Rset_id information for every structure in this combination.
+            for struct_i in range(Rset.R.shape[0]):
+                Rset_selection = [Rset_id, struct_i] + list(comb)
+                # Adds new sampling into our Rset info.
+                if Rset_info.shape[1] == 0:  # No previous Rset_info.
+                    Rset_axis = 1
+                else:
+                    Rset_axis = 0
+                Rset_info = np.concatenate(
+                    (Rset_info, np.array([Rset_selection])), axis=Rset_axis
+                )
+            
+            # Adds selection's atomic coordinates to R.
+            ## Gets atomic indices from molecule_ids in the Rset.
+            atom_ids = []
+            for mol_id in Rset_selection[2:]:
+                atom_ids.extend(
+                    [i for i,x in enumerate(mol_ids) if x == mol_id]
+                )
+            # Checks compatibility with atoms.
+            if len(z) == 0:
+                z = Rset_z[atom_ids]
+            else:
+                if not np.all([z, Rset_z[atom_ids]]):
+                    print(f'z of data set: {z}')
+                    print(f'Rset_info of selection: {Rset_selection}')
+                    print(f'z of selection: {Rset_z[atom_ids]}')
+                    raise ValueError(f'z of the selection is incompatible.')
+            
+            # Adds selection's Cartesian coordinates to R.
+            r_selection = np.array(Rset_R[:, atom_ids, :])
+            if R.shape[2] == 0:  # No previous R.
+                R = r_selection
+            else:
+                R = np.concatenate((R, r_selection), axis=0)
+
+            # Adds NaN for energies.
+            e_selection = np.empty((Rset.R.shape[0]))
+            e_selection[:] = np.NaN
+            if len(E.shape) == 0:  # No previous E.
+                E = e_selection
+            else:
+                E = np.concatenate((E, e_selection), axis=0)
+
+            # Adds NaN for forces.
+            ## Force array will be the same shape as R.
+            ## So we just take the r_selection array and make all values nan.
+            f_selection = np.copy(r_selection)
+            f_selection[:] = np.NaN
+            if F.shape[2] == 0:  # No previous F.
+                F = f_selection
+            else:
+                F = np.concatenate((F, f_selection), axis=0)
+        
+
+        return (Rset_info, z, R, E, F)
+    
+    def _Rset_sample_num(
+        self, z, R, E, F, Rset, Rset_id, Rset_info, quantity, size
+    ):
+        """Samples a structure set for data set.
+
+        Parameters
+        ----------
+        z : :obj:`numpy.ndarray`
+            Atomic numbers of the atoms in every structure prior to sampling.
+        R : :obj:`numpy.ndarray`
+            Cartesian atomic coordinates of data set structures prior to
+            sampling.
+        E : :obj:`numpy.ndarray`
+            Energies of data set structures prior to sampling.
+        F : :obj:`numpy.ndarray`
+            Atomic forces of data set structures prior to sampling.
+        Rset : :obj:`mbgdml.data.structureSet`
+            A loaded structure set object.
+        Rset_id : :obj:`int`
+            The :obj:`int` that specifies the Rset (key in ``self.Rset_md5``).
+        Rset_info : :obj:`int`
+            An array specifying where each structure in R originates from.
+        quantity : :obj:`int`
+            Number of structures to sample from the structure set.
+        size : :obj:`int`
+            Desired number of molecules in each selection.
+
+        Returns
+        -------
+        :obj:`numpy.ndarray`
+            An array specifying where each structure in R originates from.
+        :obj:`numpy.ndarray`
+            Atomic coordinates of structure(s).
+        :obj:`numpy.ndarray`
+            The energies of structure(s). All are NaN.
+        :obj:`numpy.ndarray`
+            Atomic forces of atoms in structure(s). All are NaN.
+        """
+        Rset_z = Rset.z
+        Rset_R = Rset.R
+
         max_n_R = Rset.R.shape[0]
         max_mol = Rset.mol_ids[-1] + 1
         mol_ids = Rset.mol_ids
 
         # New cluster routine.
         i = 0  # Successful samples from structure set.
-        while i < num:
+        while i < quantity:
             # Generates our sample using random integers.
             struct_num_selection = randrange(max_n_R)
             mol_selection = sorted(sample(range(max_mol), size))
@@ -399,27 +548,87 @@ class dataSet(mbGDMLData):
                     print(f'z of selection: {Rset_z[atom_ids]}')
                     raise ValueError(f'z of the selection is incompatible.')
             
-            ## Adds selection's Cartesian coordinates to R.
+            # Adds selection's Cartesian coordinates to R.
             r_selection = np.array([Rset_R[struct_num_selection, atom_ids, :]])
             if R.shape[2] == 0:  # No previous R.
                 R = r_selection
             else:
-                R = np.concatenate(
-                (R, r_selection),
-                axis=0
-            )
-            
+                R = np.concatenate((R, r_selection), axis=0)
+
+            # Adds NaN for energies.
+            e_selection = np.array([np.NaN])
+            if len(E.shape) == 0:  # No previous E.
+                E = e_selection
+            else:
+                E = np.concatenate((E, e_selection), axis=0)
+
+            # Adds NaN for forces.
+            ## Force array will be the same shape as R.
+            ## So we just take the r_selection array and make all values nan.
+            f_selection = np.copy(r_selection)
+            f_selection[:] = np.NaN
+            if F.shape[2] == 0:  # No previous F.
+                F = f_selection
+            else:
+                F = np.concatenate((F, f_selection), axis=0)
+
             i += 1
+        
+        return (Rset_info, z, R, E, F)
+    
+    def Rset_sample(
+        self, Rset, quantity, size, always=[]
+    ):
+        """Adds structures from a structure set to the data set.
+
+        Parameters
+        ----------
+        Rset : :obj:`mbgdml.data.structureSet`
+            A loaded structure set object.
+        quantity : :obj:`int`
+            Number of structures to sample from the structure set. For example,
+            ``'100'``, ``'452'``, or even ``'all'``.
+        size : :obj:`str`
+            Desired number of molecules in each selection.
+        always : :obj:`list` [:obj:`int`], optional
+            Molecule indices that will be in every selection.
+        """
+        # Gets Rset_id for this new sampling.
+        Rset_id = self._get_Rset_id(Rset)
+        
+        # Prepares sampling procedure.
+        z = self.z
+        R = self.R
+        E = self.E
+        F = self.F
+
+        Rset_info = self.Rset_info
+
+        if type(quantity) == 'int' or quantity.isdigit():
+            quantity = int(quantity)
+            Rset_info, z, R, E, F = self._Rset_sample_num(
+                z, R, E, F, Rset, Rset_id, Rset_info, quantity, size
+            )
+        elif quantity == 'all':
+            Rset_info, z, R, E, F = self._Rset_sample_all(
+                z, R, E, F, Rset, Rset_id, Rset_info, size
+            )
+        else:
+            raise ValueError(f'{quantity} is not a valid selection.')
         
         # Stores all information only if sampling is successful.
         self.Rset_md5 = {**self.Rset_md5, **{Rset_id: Rset.md5}}
         self.Rset_info = Rset_info
         self.z = z
         self.R = R
+        self.E = E
+        self.F = F
 
-
-        
-
+        if hasattr(self, '_r_unit'):
+            if self.r_unit != Rset.r_unit:
+                raise ValueError('r_unit of Rset is not compatible with dset.')
+        else:
+            self._r_unit = Rset.r_unit
         
     def forces_from_xyz(self, file_path):
         """Reads forces from xyz files.
@@ -581,9 +790,14 @@ class dataSet(mbGDMLData):
         """
         num_config = self.R.shape[0]
         for config in range(num_config):
+            rset_info = self.Rset_info[config]
             print(f'-----Configuration {config}-----')
-            print(f'Energy: {self.E[config]} kcal/mol')
-            print(f'Forces:\n{self.F[config]}')
+            print(f'Rset_id: {int(rset_info[0])}     '
+                  f'Structure index: {int(rset_info[1])}')
+            print(f'Molecule indices: {rset_info[2:]}')
+            print(f'Coordinates:\n{self.R[config]}')
+            print(f'Energy: {self.E[config]}')
+            print(f'Forces:\n{self.F[config]}\n')
 
     
     def create_mb(self, ref_dataset, model_paths):
