@@ -462,7 +462,8 @@ class dataSet(mbGDMLData):
         return (Rset_info, z, R, E, F)
     
     def _Rset_sample_num(
-        self, z, R, E, F, Rset, Rset_id, Rset_info, quantity, size
+        self, z, R, E, F, Rset, Rset_id, Rset_info, quantity, size,
+        criteria=None, z_slice=[], cutoff=[]
     ):
         """Samples a structure set for data set.
 
@@ -487,6 +488,13 @@ class dataSet(mbGDMLData):
             Number of structures to sample from the structure set.
         size : :obj:`int`
             Desired number of molecules in each selection.
+        criteria : :obj:`mbgdml.sample.sampleCritera`
+            Structure criteria during the sampling procedure.
+        z_slice : :obj:`numpy.ndarray`
+            Indices of the atoms to be used for the cutoff calculation.
+        cutoff : :obj:`list`
+            Distance cutoff between the atoms selected by ``z_slice``. Must be
+            in the same units (e.g., Angstrom) as ``R``.
 
         Returns
         -------
@@ -548,6 +556,12 @@ class dataSet(mbGDMLData):
                     print(f'z of selection: {Rset_z[atom_ids]}')
                     raise ValueError(f'z of the selection is incompatible.')
             
+            # Checks any structure criteria.
+            if criteria is not None:
+                if not criteria(z, r_selection, z_slice, cutoff):
+                    # If criteria is not met, will not include sample.
+                    continue
+            
             # Adds selection's Cartesian coordinates to R.
             r_selection = np.array([Rset_R[struct_num_selection, atom_ids, :]])
             if R.shape[2] == 0:  # No previous R.
@@ -577,7 +591,8 @@ class dataSet(mbGDMLData):
         return (Rset_info, z, R, E, F)
     
     def Rset_sample(
-        self, Rset, quantity, size, always=[]
+        self, Rset, quantity, size, always=[], criteria=None, z_slice=[],
+        cutoff=[]
     ):
         """Adds structures from a structure set to the data set.
 
@@ -592,6 +607,13 @@ class dataSet(mbGDMLData):
             Desired number of molecules in each selection.
         always : :obj:`list` [:obj:`int`], optional
             Molecule indices that will be in every selection.
+        criteria : :obj:`mbgdml.sample.sampleCritera`
+            Structure criteria during the sampling procedure.
+        z_slice : :obj:`numpy.ndarray`
+            Indices of the atoms to be used for the cutoff calculation.
+        cutoff : :obj:`list`
+            Distance cutoff between the atoms selected by ``z_slice``. Must be
+            in the same units (e.g., Angstrom) as ``R``.
         """
         # Gets Rset_id for this new sampling.
         Rset_id = self._get_Rset_id(Rset)
@@ -607,7 +629,8 @@ class dataSet(mbGDMLData):
         if type(quantity) == 'int' or quantity.isdigit():
             quantity = int(quantity)
             Rset_info, z, R, E, F = self._Rset_sample_num(
-                z, R, E, F, Rset, Rset_id, Rset_info, quantity, size
+                z, R, E, F, Rset, Rset_id, Rset_info, quantity, size,
+                criteria=criteria
             )
         elif quantity == 'all':
             Rset_info, z, R, E, F = self._Rset_sample_all(

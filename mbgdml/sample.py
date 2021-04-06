@@ -58,7 +58,7 @@ class sampleCritera:
             number of atoms with three Cartesian components.
         z_slice : :obj:`numpy.ndarray`
             Indices of the atoms to be used for the cutoff calculation.
-        cutoff : :obj:`float`
+        cutoff : :obj:`list` [:obj:`float`]
             Distance cutoff between the atoms selected by ``z_slice``. Must be
             in the same units (e.g., Angstrom) as ``R``.
 
@@ -67,12 +67,15 @@ class sampleCritera:
         :obj:`bool`
             If the distance between the two dimers is less than the cutoff.
         """
+        if len(cutoff) != 1:
+            raise ValueError('Only one distance can be provided.')
+
         all_pairs = list(itertools.combinations(z_slice, 2))
 
         # Checks if any pair of molecules is farther away than the cutoff.
         for pair in all_pairs:
             distance = self._calc_distance(R[pair[0]], R[pair[1]])
-            if distance > cutoff:
+            if distance > cutoff[0]:
                 return False
         # All pairs of molecules are within the cutoff.
         return True
