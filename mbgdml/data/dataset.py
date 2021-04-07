@@ -98,7 +98,7 @@ class dataSet(mbGDMLData):
         if hasattr(self, '_Rset_info'):
             return self._Rset_info
         else:
-            return np.array([[]])
+            return np.array([[]], dtype='int_')
     
     @Rset_info.setter
     def Rset_info(self, var):
@@ -283,6 +283,7 @@ class dataSet(mbGDMLData):
         dataset : :obj:`dict`
             Contains all information and arrays stored in data set.
         """
+        self.name = str(dataset['name'][()])
         self._z = dataset['z']
         self._R = dataset['R']
         self._E = dataset['E']
@@ -298,7 +299,6 @@ class dataSet(mbGDMLData):
             # Some old data sets do not have this information.
             # This is unessential, so we will just ignore this.
             pass
-        self.name = str(dataset['name'][()])
         try:
             self.theory = str(dataset['theory'][()])
         except KeyError:
@@ -306,6 +306,11 @@ class dataSet(mbGDMLData):
         # mbGDML added data set information.
         if 'mb' in dataset.keys():
             self.mb = int(dataset['mb'][()])
+        try:
+            self.Rset_info = dataset['Rset_info'][()]
+            self.Rset_md5 = dataset['Rset_md5'][()]
+        except KeyError:
+            pass
 
     def load(self, dataset_path):
         """Read data set.
@@ -350,10 +355,10 @@ class dataSet(mbGDMLData):
             
             # If no matches.
             if Rset_id is None:
-                Rset_id == new_k
+                Rset_id = new_k
         else:
             Rset_id = 0
-        
+
         return Rset_id
     
     def _Rset_sample_all(
@@ -718,6 +723,7 @@ class dataSet(mbGDMLData):
             'mbgdml_version': np.array(__version__),
             'name': np.array(self.name),
             'Rset_md5': np.array(self.Rset_md5),
+            'Rset_info': np.array(self.Rset_info),
             'z': np.array(self.z),
             'R': np.array(self.R),
             'r_unit': np.array(self.r_unit)

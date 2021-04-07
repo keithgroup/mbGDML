@@ -55,7 +55,7 @@ class mbGDMLData():
 
         :type: :obj:`int`
         """
-        if self.z.ndim == 2:
+        if self.z.ndim == 1 or self.z.ndim == 2:
             return int(self.z.shape[0])
         elif self.z.ndim == 3:
             return int(self.z.shape[1])
