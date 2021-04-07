@@ -571,7 +571,10 @@ class dataSet(mbGDMLData):
 
             # Checks any structure criteria.
             if criteria is not None:
-                if not criteria(z, r_selection, z_slice, cutoff):
+                # r_selection is 3 dimensions (to make it compatible to
+                # concatenate). So we make need to select the first (and only)
+                # structure.
+                if not criteria(z, r_selection[0], z_slice, cutoff):
                     # If criteria is not met, will not include sample.
                     continue
             
@@ -638,11 +641,11 @@ class dataSet(mbGDMLData):
 
         Rset_info = self.Rset_info
 
-        if type(quantity) == 'int' or quantity.isdigit():
+        if type(quantity) == 'int' or str(quantity).isdigit():
             quantity = int(quantity)
             Rset_info, z, R, E, F = self._Rset_sample_num(
                 z, R, E, F, Rset, Rset_id, Rset_info, quantity, size,
-                criteria=criteria
+                criteria=criteria, z_slice=z_slice, cutoff=cutoff
             )
         elif quantity == 'all':
             Rset_info, z, R, E, F = self._Rset_sample_all(
