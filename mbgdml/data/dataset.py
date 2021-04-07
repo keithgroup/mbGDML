@@ -288,7 +288,10 @@ class dataSet(mbGDMLData):
         self._E = dataset['E']
         self._F = dataset['F']
         self._r_unit = str(dataset['r_unit'][()])
-        self._e_unit = str(dataset['e_unit'][()])
+        try:
+            self._e_unit = str(dataset['e_unit'][()])
+        except KeyError:
+            self._e_unit = 'N/A'
         try:
             self.mbgdml_version = str(dataset['mbgdml_version'][()])
         except KeyError:
@@ -296,7 +299,10 @@ class dataSet(mbGDMLData):
             # This is unessential, so we will just ignore this.
             pass
         self.name = str(dataset['name'][()])
-        self.theory = str(dataset['theory'][()])
+        try:
+            self.theory = str(dataset['theory'][()])
+        except KeyError:
+            self.theory = 'N/A'
         # mbGDML added data set information.
         if 'mb' in dataset.keys():
             self.mb = int(dataset['mb'][()])
@@ -556,6 +562,8 @@ class dataSet(mbGDMLData):
                     print(f'z of selection: {Rset_z[atom_ids]}')
                     raise ValueError(f'z of the selection is incompatible.')
             
+            r_selection = np.array([Rset_R[struct_num_selection, atom_ids, :]])
+
             # Checks any structure criteria.
             if criteria is not None:
                 if not criteria(z, r_selection, z_slice, cutoff):
@@ -563,7 +571,6 @@ class dataSet(mbGDMLData):
                     continue
             
             # Adds selection's Cartesian coordinates to R.
-            r_selection = np.array([Rset_R[struct_num_selection, atom_ids, :]])
             if R.shape[2] == 0:  # No previous R.
                 R = r_selection
             else:
