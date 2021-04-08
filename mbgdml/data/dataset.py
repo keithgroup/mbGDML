@@ -837,6 +837,15 @@ class dataSet(mbGDMLData):
             print(f'Coordinates:\n{self.R[config]}')
             print(f'Energy: {self.E[config]}')
             print(f'Forces:\n{self.F[config]}\n')
+    
+    def write_xyz(self, save_dir):
+        """Saves xyz file of all structures in data set.
+
+        Parameters
+        ----------
+        save_dir : :obj:`str`
+        """
+        utils.write_xyz(self.z, self.R, save_dir, self.name)
 
     
     def create_mb(self, ref_dataset, model_paths):
