@@ -455,7 +455,7 @@ class ORCA:
             submit_script=self.submit_script
         )
 
-        file_name = 'submit-' + str(self.job_name).replace(' ', '-') + '.slurm'
+        file_name = 'submit-orca.420.slurm'
 
         if write:
             if write_dir[-1] != '/':
