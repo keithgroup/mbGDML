@@ -103,6 +103,55 @@ class dataSet(mbGDMLData):
     @Rset_info.setter
     def Rset_info(self, var):
         self._Rset_info = var
+    
+    @property
+    def criteria(self):
+        """Specifies structure criteria (if any) used to sample structures.
+
+        The name of the function used.
+
+        :type: :obj:`str`
+        """
+        if hasattr(self, '_criteria'):
+            return self._criteria
+        else:
+            return ''
+    
+    @criteria.setter
+    def criteria(self, var):
+        self._criteria = var
+    
+    @property
+    def z_slice(self):
+        """Specifies z_slice used for criteria.
+
+        The indices of atoms in each structure used by the criteria function.
+
+        :type: :obj:`list`
+        """
+        if hasattr(self, '_z_slice'):
+            return self._z_slice
+        else:
+            return []
+    
+    @z_slice.setter
+    def z_slice(self, var):
+        self._z_slice = var
+    
+    @property
+    def cutoff(self):
+        """Specifies cutoff(s) for the structure criteria.
+
+        :type: :obj:`list`
+        """
+        if hasattr(self, '_cutoff'):
+            return self._cutoff
+        else:
+            return []
+    
+    @cutoff.setter
+    def cutoff(self, var):
+        self._cutoff = var
 
     @property
     def F(self):
@@ -289,6 +338,13 @@ class dataSet(mbGDMLData):
         self._E = dataset['E']
         self._F = dataset['F']
         self._r_unit = str(dataset['r_unit'][()])
+        try:
+            self._criteria = str(dataset['criteria'][()])
+            self._z_slice = dataset['z_slice'][()]
+            self._cutoff = dataset['cutoff'][()]
+        except KeyError:
+            # Some old data sets will not have this information.
+            pass
         try:
             self._e_unit = str(dataset['e_unit'][()])
         except KeyError:
@@ -647,6 +703,12 @@ class dataSet(mbGDMLData):
                 z, R, E, F, Rset, Rset_id, Rset_info, quantity, size,
                 criteria=criteria, z_slice=z_slice, cutoff=cutoff
             )
+            # Adds criteria information to the data set (only if sampling is 
+            # successful).
+            if criteria is not None:
+                self.criteria = criteria.__name__
+                self.z_slice = z_slice
+                self.cutoff = cutoff
         elif quantity == 'all':
             Rset_info, z, R, E, F = self._Rset_sample_all(
                 z, R, E, F, Rset, Rset_id, Rset_info, size
@@ -767,6 +829,14 @@ class dataSet(mbGDMLData):
 
         # mbGDML variables.
         dataset = self.add_system_info(dataset)
+
+        try:
+            dataset['criteria'] = np.array(self.criteria)
+            dataset['z_slice'] = np.array(self.z_slice)
+            dataset['cutoff'] = np.array(self.cutoff)
+        except:
+            pass
+        
         dataset['md5'] = np.array(utils.md5_data(dataset, md5_properties))
         return dataset
      
