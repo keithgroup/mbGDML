@@ -35,11 +35,13 @@ def _calc_distance(r1, r2):
     """
     return np.linalg.norm(r1 - r2)
 
-def distance(z, R, z_slice, cutoff):
+def distance_all(z, R, z_slice, cutoff):
     """If the distance between all molecules is less than the cutoff.
 
     Distances larger than the cutoff will return ``False``, meaning they
     should not be included in the data set.
+
+    All criteria functions should have the same parameters.
 
     Parameters
     ----------
