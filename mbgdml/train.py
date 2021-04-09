@@ -26,6 +26,7 @@ import subprocess
 import numpy as np
 from mbgdml import utils
 from mbgdml.data import model
+from mbgdml.data import dataSet
 
 class mbGDMLTrain():
     """
@@ -54,7 +55,7 @@ class mbGDMLTrain():
         """
         self.dataset_path = dataset_path
         self.dataset_name = os.path.splitext(os.path.basename(dataset_path))[0]
-        self.dataset = dict(np.load(dataset_path))
+        self.dataset = dataSet(dataset_path).dataset
 
     def train_GDML(
         self, model_name, num_train, num_validate, num_test,
@@ -132,16 +133,18 @@ class mbGDMLTrain():
             log.write(log_output)
         
         # Adding additional mbGDML info to the model.
-        model = model()
-        model.load(model_name + '.npz')
+        new_model = model()
+        new_model.load(model_name + '.npz')
         
         # Adding mbGDML-specific modifications to model.
-        model.add_modifications()
+        new_model.add_modifications()
 
         # Adding many-body information if present in dataset.
         if 'mb' in self.dataset.keys():
-            model.add_manybody_info(int(self.dataset['mb'][()]))
+            mb_order = int(self.dataset['mb'][()])
+            mb_models_md5 = self.dataset['mb_models_md5']
+            new_model.add_manybody_info(mb_order, mb_models_md5)
 
         # Saving model.
-        model.save(model_name, model.model, save_dir)
+        new_model.save(model_name, new_model.model, save_dir)
 

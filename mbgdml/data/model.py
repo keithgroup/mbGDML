@@ -25,6 +25,7 @@
 import os
 import numpy as np
 from mbgdml.data import mbGDMLData
+from mbgdml.utils import md5_data
 from mbgdml import __version__
 
 
@@ -56,7 +57,23 @@ class model(mbGDMLData):
             return self._model_data['code_version'][()]
         else:
             raise AttributeError('No model is loaded.')
+    
+    @property
+    def md5(self):
+        """Unique MD5 hash of model. Encoded with UTF-8.
 
+        :type: :obj:`bytes`
+        """
+        md5_properties_all = [
+            'md5_train', 'z', 'R_desc', 'R_d_desc_alpha', 'interact_cut_off',
+            'sig', 'alphas_F'
+        ]
+        md5_properties = []
+        for key in md5_properties_all:
+            if key in self.model.keys():
+                md5_properties.append(key)
+        md5_string = md5_data(self.model, md5_properties)
+        return md5_string
 
     def load(self, model_path):
         """Loads GDML model.
@@ -85,20 +102,20 @@ class model(mbGDMLData):
           ``'solvent'``, and ``'cluster_size'``.
         - Adds mbGDML version with ``'mbgdml_version'``.
         """
-
-        # Adding system info.
         self.add_system_info(self.model)
-
-        # Adding mbGDML version
         self.model['mbgdml_version'] = np.array(__version__)
+        self.model['md5'] = np.array(self.md5)
     
-    def add_manybody_info(self, mb_order):
+    def add_manybody_info(self, mb_order, mb_models_md5):
         """Adds many-body (mb) information to GDML model.
         
         Parameters
         ----------
         mb_order : :obj:`int`
-            The max order of many-body predictions removed from the dataset.
+            The max order of many-body predictions removed from the data set.
+        mb_models_md5 : :obj:`list` [:obj:`str`]
+            The MD5 hashes of the models used to remove n-body contributions
+            from data set.
 
         Raises
         ------
@@ -110,4 +127,5 @@ class model(mbGDMLData):
             raise AttributeError('There is no mbGDML model loaded.')
 
         self.model['mb'] = mb_order
+        self.model['mb_models_md5'] = mb_models_md5
         

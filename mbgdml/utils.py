@@ -281,9 +281,9 @@ def md5_data(data, info=['z', 'R']):
 
     Parameters
     ----------
-    set : :obj:`mbGDML.mbGDMLData`
-        Any supported mbGDML data type. Includes structure sets, data sets, and
-        models.
+    data : :obj:`dict`
+        Any supported mbGDML data type as a dictionary. Includes structure sets,
+        data sets, and models.
     info : :obj:`list`, optional
         List of set keys to include in the MD5 hash. At minimum it defaults to
         ``z`` (atomic numbers) and ``R`` (atomic coordinates). Other information

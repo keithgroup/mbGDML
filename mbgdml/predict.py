@@ -256,7 +256,6 @@ class mbGDMLPredict():
             e, f = self.predict(z_predict, R[config])
             F[config] -= f
             E[config] -= e
-                
 
         # Updates dataset.
         nbody_dataset['E'] = np.array(E)
@@ -270,6 +269,14 @@ class mbGDMLPredict():
         nbody_dataset['F_mean'] = np.array(np.mean(F.ravel()))
         nbody_dataset['F_var'] = np.array(np.var(F.ravel()))
         nbody_dataset['mb'] = np.array(int(system_size))
+
+        # Tries to add model md5 hashes to data set
+        mb_models_md5 = []
+        for model in self.models:
+            model = dict(model)
+            if 'md5' in model.keys():
+                mb_models_md5.append(str(model['md5'][()]))
+        nbody_dataset['mb_models_md5'] = mb_models_md5
         
         # Generating new data set name
         name_old = str(nbody_dataset['name'][()])
