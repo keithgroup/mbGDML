@@ -63,7 +63,7 @@ def test_calculate_ORCA():
         write=False,
     )
     
-    assert slurm_file_name == 'submit-4h2o.abc0.2.step2.slurm'
+    assert slurm_file_name == 'submit-orca.420.slurm'
     assert slurm_file == (
         "#!/bin/bash\n"
         "#SBATCH --job-name=4h2o.abc0.2.step2\n"
