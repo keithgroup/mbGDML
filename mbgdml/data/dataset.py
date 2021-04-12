@@ -27,7 +27,7 @@ import numpy as np
 from cclib.parser.utils import convertor
 from mbgdml.data import mbGDMLData
 import mbgdml.solvents as solvents
-from mbgdml import __version__
+from mbgdml import __version__ as mbgdml_version
 from mbgdml.parse import parse_stringfile
 from mbgdml import utils
 from mbgdml.data import structureSet
@@ -365,7 +365,7 @@ class dataSet(mbGDMLData):
         # mbGDML added data set information.
         if 'mb' in dataset.keys():
             self.mb = int(dataset['mb'][()])
-            self.mb_models_md5 = dataset['mb_models_md5']
+            self.mb_models_md5 = dataset['mb_models_md5'].astype('U32')
         try:
             self.Rset_info = dataset['Rset_info'][()]
             self.Rset_md5 = dataset['Rset_md5'][()]
@@ -777,7 +777,7 @@ class dataSet(mbGDMLData):
         self._F = partcalc.F
         self.r_unit = partcalc.r_unit
         self.e_unit = partcalc.e_unit
-        self.mbgdml_version = __version__
+        self.mbgdml_version = mbgdml_version
         self.theory = partcalc.theory
 
     @property
@@ -789,7 +789,7 @@ class dataSet(mbGDMLData):
         # Data always available for data sets.
         dataset = {
             'type': np.array('d'),
-            'mbgdml_version': np.array(__version__),
+            'mbgdml_version': np.array(mbgdml_version),
             'name': np.array(self.name),
             'Rset_md5': np.array(self.Rset_md5),
             'Rset_info': np.array(self.Rset_info),
@@ -831,10 +831,11 @@ class dataSet(mbGDMLData):
         except:
             pass
 
-        # mbGDML variables.
+        # mbGDML information.
         dataset = self.add_system_info(dataset)
-        if hasattr(self, 'mb_models_md5'):
-            dataset['mb_models_md5'] = np.array(self.mb_models_md5)
+        if hasattr(self, 'mb'):
+            dataset['mb'] = np.array(self.mb)
+            dataset['mb_models_md5'] = np.array(self.mb_models_md5, dtype='S32')
 
         try:
             dataset['criteria'] = np.array(self.criteria)

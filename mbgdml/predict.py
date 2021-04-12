@@ -275,7 +275,7 @@ class mbGDMLPredict():
         for model in self.models:
             model = dict(model)
             if 'md5' in model.keys():
-                mb_models_md5.append(str(model['md5'][()]))
+                mb_models_md5.append(model['md5'][()])
         nbody_dataset['mb_models_md5'] = mb_models_md5
         
         # Generating new data set name
