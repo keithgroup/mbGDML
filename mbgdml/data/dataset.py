@@ -272,11 +272,11 @@ class dataSet(mbGDMLData):
 
     @property
     def md5(self):
-        """Unique MD5 hash of data set. Encoded with UTF-8.
+        """Unique MD5 hash of data set.
 
         :type: :obj:`bytes`
         """
-        return self.dataset['md5'][()]
+        return self.dataset['md5'][()].decode()
 
     def convertE(self, E_units):
         """Convert energies and updates :attr:`e_unit`.
@@ -843,7 +843,11 @@ class dataSet(mbGDMLData):
         except:
             pass
         
-        dataset['md5'] = np.array(utils.md5_data(dataset, md5_properties))
+        # sGDML only works with S32 type MD5 hashes, so during training the 
+        # data set MD5 mush be the same type (as they do comparisons).
+        dataset['md5'] = np.array(
+            utils.md5_data(dataset, md5_properties), dtype='S32'
+        )
         return dataset
      
 
