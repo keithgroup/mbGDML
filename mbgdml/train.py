@@ -144,6 +144,12 @@ class mbGDMLTrain():
             mb_order = int(self.dataset['mb'][()])
             mb_models_md5 = self.dataset['mb_models_md5']
             new_model.add_manybody_info(mb_order, mb_models_md5)
+        
+        # Adding sigma selection to log (not apparent because of removed
+        # formatting.
+        model_sigma = new_model.model['sig'][()]
+        with open(log_name, 'a') as log:
+            log.write(f'Model sigma: {model_sigma}\n')
 
         # Saving model.
         new_model.save(model_name, new_model.model, save_dir)
