@@ -365,7 +365,7 @@ class dataSet(mbGDMLData):
         # mbGDML added data set information.
         if 'mb' in dataset.keys():
             self.mb = int(dataset['mb'][()])
-            self.mb_models_md5 = dataset['mb_models_md5'][()]
+            self.mb_models_md5 = dataset['mb_models_md5']
         try:
             self.Rset_info = dataset['Rset_info'][()]
             self.Rset_md5 = dataset['Rset_md5'][()]
