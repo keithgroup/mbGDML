@@ -60,7 +60,7 @@ class model(mbGDMLData):
     
     @property
     def md5(self):
-        """Unique MD5 hash of model. Encoded with UTF-8.
+        """Unique MD5 hash of model.
 
         :type: :obj:`bytes`
         """
@@ -104,7 +104,7 @@ class model(mbGDMLData):
         """
         self.add_system_info(self.model)
         self.model['mbgdml_version'] = np.array(__version__)
-        self.model['md5'] = np.array(self.md5)
+        self.model['md5'] = np.array(self.md5, dtype='S32')
     
     def add_manybody_info(self, mb_order, mb_models_md5):
         """Adds many-body (mb) information to GDML model.
