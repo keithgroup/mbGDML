@@ -99,7 +99,7 @@ class mbGDMLTrain():
         sGDML_command = [
             'sgdml', 'all',
             str(self.dataset_path),
-            str(num_train), str(num_test), str(num_validate),
+            str(num_train), str(num_validate), str(num_test),
             '-s', sigma_range,
             '--model_file', model_name
         ]
