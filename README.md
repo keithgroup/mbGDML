@@ -25,7 +25,6 @@
     <a href="#installation">Installation</a>
 </p>
 
-
 # About
 
 Atomistic insight is fundamental for computational predictive studies of chemical and physical processes.
@@ -42,20 +41,20 @@ Every aspect of the process from preparing ORCA calculations, data set creation,
 
 Creating mbGDML models:
 
-* Partition structures into monomers, dimers, trimers, etc.
-* Prepare and submit [ORCA](https://sites.google.com/site/orcainputlibrary/) energy and gradient calculations.
-* Conversion between data sets ([NumPy npz](https://numpy.org/doc/stable/reference/routines.io.html) files) and output files.
-* Train sGDML models.
+- Partition structures into monomers, dimers, trimers, etc.
+- Prepare and submit [ORCA](https://sites.google.com/site/orcainputlibrary/) energy and gradient calculations.
+- Conversion between data sets ([NumPy npz](https://numpy.org/doc/stable/reference/routines.io.html) files) and output files.
+- Train sGDML models.
 
 Using mbGDML models:
 
-* Energy and force prediction of structures with mbGDML models.
-* Interface with the [atomic simulation environment (ASE)](https://wiki.fysik.dtu.dk/ase/).
+- Energy and force prediction of structures with mbGDML models.
+- Interface with the [atomic simulation environment (ASE)](https://wiki.fysik.dtu.dk/ase/).
 
 Analyzing mbGDML models:
 
-* Store mbGDML predictions into predict data sets.
-* Analyze n-body contributions and create heat maps.
+- Store mbGDML predictions into predict data sets.
+- Analyze n-body contributions and create heat maps.
 
 # Installation
 
@@ -65,24 +64,23 @@ At the moment, the only way to install mbGDML is directly from the [GitHub repos
 
 The following packages are required:
 
-* ase
-* cclib (>=1.7)
-* dscribe
-* mako
-* matplotlib
-* natsort
-* numpy
-* sgdml
+- ase
+- cclib (>=1.7)
+- mako
+- matplotlib
+- natsort
+- numpy
+- sgdml
 
 All of these required packages can be installed with:
 
-```
-pip install ase 'cclib>=1.7' dscribe mako matplotlib natsort numpy sgdml
+```text
+pip install ase 'cclib>=1.7' mako matplotlib natsort numpy sgdml
 ```
 
 Then, clone and install the repository.
 
-```
+```text
 git clone https://github.com/keithgroup/mbGDML
 cd mbGDML
 pip install .

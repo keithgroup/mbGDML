@@ -2,7 +2,7 @@ language: python
 python:
 - 3.7
 install:
-- pip install natsort 'cclib>=1.7' numpy dscribe ase sgdml mako matplotlib
+- pip install natsort 'cclib>=1.7' numpy ase sgdml mako matplotlib
 - pip install pytest-cov codecov sphinx_rtd_theme Sphinx coverage bump2version
 - pip install wheel watchdog tox twine
 script:
