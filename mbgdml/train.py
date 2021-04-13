@@ -59,7 +59,8 @@ class mbGDMLTrain():
 
     def train_GDML(
         self, model_name, num_train, num_validate, num_test,
-        sigma_range='2:10:100', save_dir='.', overwrite=False, torch=False
+        sigma_range='2:10:100', save_dir='.', overwrite=False, torch=False,
+        other_options=[]
     ):
         """Trains a GDML model through the command line interface.
         
@@ -84,6 +85,9 @@ class mbGDMLTrain():
             Overwrite existing files. Defaults to false.
         torch : :obj:`bool`, optional
             Use PyTorch to enable GPU acceleration.
+        other_options : :obj:`list` [:obj:`str`]
+            Other command line arguments to control sGDML training. For example,
+            ``['--E_cstr']``
         """
         # TODO add remaining options for CLI sGDML as optional arguments.
 
@@ -102,7 +106,7 @@ class mbGDMLTrain():
             str(num_train), str(num_validate), str(num_test),
             '-s', sigma_range,
             '--model_file', model_name
-        ]
+        ] + other_options
 
         if overwrite:
             sGDML_command.append('-o')
