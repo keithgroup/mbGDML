@@ -62,7 +62,7 @@ class predictSet(mbGDMLData):
         all_E = {}
         all_F = {}
         for i in range(self.n_R):
-            print(f'Predicting structure {i} out of {self.n_R} ...')
+            print(f'Predicting structure {i+1} out of {self.n_R} ...')
             e, f = self.mbgdml.decomposed_predict(
                 self.z, self.R[i]
             )
@@ -272,7 +272,7 @@ class predictSet(mbGDMLData):
             Path to data set.
         """
         self.dataset_path = dataset_path
-        self.dataset = dict(np.load(dataset_path))
+        self.dataset = dict(np.load(dataset_path, allow_pickle=True))
         self.theory = str(self.dataset['theory'][()])
         self._z = self.dataset['z']
         self._R = self.dataset['R']
