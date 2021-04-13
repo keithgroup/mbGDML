@@ -10,7 +10,6 @@ The following packages are required:
 
 * ase
 * cclib (>=1.7)
-* dscribe
 * mako
 * matplotlib
 * natsort
@@ -21,7 +20,7 @@ All of these required packages can be installed with:
 
 ::
 
-    pip install ase 'cclib>=1.7' dscribe mako matplotlib natsort numpy sgdml
+    pip install ase 'cclib>=1.7' mako matplotlib natsort numpy sgdml
 
 
 Then, clone and install the repository.

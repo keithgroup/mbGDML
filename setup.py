@@ -8,8 +8,7 @@ with open('README.md') as readme_file:
     readme = readme_file.read()
 
 requirements = [
-    'natsort', 'cclib>=1.7', 'numpy', 'dscribe', 'ase', 'sgdml', 'mako',
-    'matplotlib'
+    'natsort', 'cclib>=1.7', 'numpy', 'ase', 'sgdml', 'mako', 'matplotlib'
 ]
 
 setup_requirements = [ ]
