@@ -26,7 +26,7 @@ import numpy as np
 from sgdml.predict import GDMLPredict
 import mbgdml.solvents as solvents
 
-class mbGDMLPredict():
+class mbPredict():
     """Predict energies and forces of structures using GDML models.
     """
 

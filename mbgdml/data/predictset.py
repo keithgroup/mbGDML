@@ -26,7 +26,7 @@
 import numpy as np
 from sgdml import __version__ as sgdml_version
 from mbgdml.data import mbGDMLData
-from mbgdml.predict import mbGDMLPredict
+from mbgdml.predict import mbPredict
 
 # TODO finish documenting
 class predictSet(mbGDMLData):
@@ -291,5 +291,5 @@ class predictSet(mbGDMLData):
             ['/path/to/1body-model.npz', '/path/to/2body-model.npz'].
         """
         self.model_paths = model_paths
-        self.mbgdml = mbGDMLPredict(model_paths)
+        self.mbgdml = mbPredict(model_paths)
 
