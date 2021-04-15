@@ -34,7 +34,7 @@ from ase.md.verlet import VelocityVerlet
 from ase import units
 from mbgdml import utils
 from mbgdml import partition
-from mbgdml.predict import mbGDMLPredict
+from mbgdml.predict import mbPredict
 from mbgdml.data import mbGDMLData
 
 
@@ -62,7 +62,7 @@ class mbGDMLCalculator(Calculator):
         self.elements = elements
 
         self.load_models(model_paths)
-        self.gdml_predict = mbGDMLPredict(self.gdmls)
+        self.gdml_predict = mbPredict(self.gdmls)
 
         self.e_unit_model = e_unit_model
         self.r_unit_model = r_unit_model

@@ -31,7 +31,7 @@ from mbgdml import __version__ as mbgdml_version
 from mbgdml.parse import parse_stringfile
 from mbgdml import utils
 from mbgdml.data import structureSet
-from mbgdml.predict import mbGDMLPredict
+from mbgdml.predict import mbPredict
 from mbgdml.partition import partition_structures
   
 
@@ -944,6 +944,6 @@ class dataSet(mbGDMLData):
             Paths to saved many-body GDML models in the form of
             :obj:`numpy.NpzFile`.
         """
-        predict = mbGDMLPredict(model_paths)
+        predict = mbPredict(model_paths)
         dataset = predict.remove_nbody(ref_dataset.dataset)
         self._update(dataset)
