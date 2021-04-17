@@ -11,3 +11,4 @@ from mbgdml import solvents
 from mbgdml import train
 from mbgdml import utils
 from mbgdml import sample
+from mbgdml import analysis
