@@ -54,7 +54,7 @@ class dataSet(mbGDMLData):
         The order of n-body corrections this data set is intended for. For
         example, a tetramer solvent cluster with one-, two-, and three-body
         contributions removed will have a ``mb`` order of 4.
-    mb_models_md5 : :obj:`list` [:obj:`str`]
+    mb_models_md5 : :obj:`numpy.ndarray`
         The MD5 hash of the model used to remove n-body contributions from
         data set.
     """
@@ -365,7 +365,11 @@ class dataSet(mbGDMLData):
         # mbGDML added data set information.
         if 'mb' in dataset.keys():
             self.mb = int(dataset['mb'][()])
-            self.mb_models_md5 = dataset['mb_models_md5'].astype('U32')
+            try:
+                self.mb_models_md5 = dataset['mb_models_md5'].astype('U32')
+            except AttributeError:
+                # Ugly fix to get some unique scripts to work.
+                pass
         try:
             self.Rset_info = dataset['Rset_info'][()]
             self.Rset_md5 = dataset['Rset_md5'][()]
