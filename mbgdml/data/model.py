@@ -29,7 +29,7 @@ from mbgdml.utils import md5_data
 from mbgdml import __version__
 
 
-class model(mbGDMLData):
+class mbModel(mbGDMLData):
     """A class to load, inspect, and modify GDML models.
 
     Attributes
