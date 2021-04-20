@@ -27,7 +27,8 @@ import numpy as np
 from sgdml.utils.desc import Desc
 import umap.umap_ as umap
 
-from mbgdml.data import model
+from mbgdml import utils
+from mbgdml.data import mbModel
 
 class structureEmbedding:
     """Uses the uniform manifold approximation and projection to embed R
@@ -65,15 +66,22 @@ class structureEmbedding:
         """
         self.n_neighbors = n_neighbors
         self.min_dist = min_dist
-        self.random_state = random_state
+        if random_state is None:
+            self.random_state = np.random.randint(2**32 - 1)
+        else:
+            self.random_state = random_state
     
     @property
     def data_info(self):
         """Information about the data included in the UMAP npz.
 
-        Keys are names (:obj:`str`) specifying the origin of that data. These
-        values are nested dictionaries with the following keys:
+        The order of data information needs to be in the same order as the data
+        in ``R``, ``R_desc``, etc. was added. Each item in the list provides
+        information about the data source in a :obj:`dict` with the following
+        keys:
 
+        ``'name'``
+            Human-friendly name specifying the data source.
         ``'md5'``
             The MD5 hash of the data source.
         ``'type'``
@@ -83,16 +91,34 @@ class structureEmbedding:
             The number of structures included in the UMAP npz. This is used for
             slicing and separating data for plots.
 
-        :type: :obj:`dict`
+        :type: :obj:`list` [:obj:`dict`]
         """
         if hasattr(self, '_data_info'):
             return self._data_info
         else:
-            return {}
+            return []
     
     @data_info.setter
     def data_info(self, var):
         self._data_info = var
+    
+    @property
+    def z(self):
+        """Atomic numbers of all atoms in data set structures.
+        
+        A ``(n,)`` shape array of type :obj:`numpy.int32` containing atomic
+        numbers of atoms in the structures in order as they appear.
+
+        :type: :obj:`numpy.ndarray`
+        """
+        if hasattr(self, '_z'):
+            return self._z
+        else:
+            return np.array([])
+    
+    @z.setter
+    def z(self, var):
+        self._z = var
     
     @property
     def R(self):
@@ -230,22 +256,18 @@ class structureEmbedding:
         -------
         :obj:`numpy.ndarray`
             Inverse pairwise distance descriptors.
+        :obj:`numpy.ndarray`
+            Descriptor Jacobian.
         """
         desc = Desc(len(z))
-        R_desc, _ = desc.from_R(R)
-        return R_desc 
+        R_desc, R_d_desc = desc.from_R(R)
+        return (R_desc, R_d_desc)
 
-    def embed(self, R_desc):
+    def embed(self):
         """Embed the descriptors and derivatives in two dimensions.
 
         Will set the ``reducer`` attribute if it does not exist or update it
         if ``n_neighbors``, ``min_dist``, or ``random_state`` have changed.
-
-        Parameters
-        ----------
-        R_desc : :obj:`numpy.ndarray`
-            A 2D array where each row represents a single structure and the
-            columns are the inverse pairwise descriptors.
         
         Returns
         -------
@@ -267,16 +289,14 @@ class structureEmbedding:
         # We check if we need to update the reducer attribute. We always
         # reinitialize reducer as it takes very little time, but we still have
         # to check the random_state for reproducibility.
-        
-        if self.random_state is None:
-            self.random_state = np.random.randint(1e10)
         reducer = umap.UMAP(
             n_neighbors=self.n_neighbors, min_dist=self.min_dist,
             random_state=self.random_state
         )
         self.reducer = reducer
         
-        self.embedding = reducer.fit_transform(R_desc)
+        data = self.R_desc
+        self.embedding = reducer.fit_transform(data)
         return self.embedding
 
     @property
@@ -286,14 +306,83 @@ class structureEmbedding:
         :type: :obj:`dict`
         """
         data = {
+            'z': self.z,
             'R': self.R,
             'R_desc': self.R_desc,
-            'n_neighbors': self.n_neighbors,
-            'min_dist': self.min_dist,
-            'random_state': self.random_state,
             'E_true': self.E_true,
             'F_true': self.F_true,
             'E_pred': self.E_pred,
-            'F_pred': self.F_pred
+            'F_pred': self.F_pred,
+            'data_info': np.array(self.data_info),
+            'n_neighbors': np.array(self.n_neighbors),
+            'min_dist': np.array(self.min_dist),
+            'random_state': np.array(self.random_state)
         }
+
+        # Checks embedding.
+        if not hasattr(self, 'embedding'):
+            self.embed()
+        
+        if self.n_neighbors != self.reducer.n_neighbors \
+           or self.min_dist != self.reducer.min_dist \
+           or self.random_state != self.reducer.random_state:
+            self.embed()
+
+        data['embedding'] = self.embedding
+
         return data
+
+    def save(self, name, data, save_dir):
+        """Save UMAP data into an npz file.
+        
+        Parameters
+        ----------
+        name : :obj:`str`
+            Name of the file to be saved not including the ``npz`` extension.
+        data : :obj:`dict`
+            Data to be saved to ``npz`` file.
+        save_dir : :obj:`str`
+            Directory to save the file (with or without the ``'/'`` suffix).
+        """
+        save_dir = utils.norm_path(save_dir)
+        save_path = save_dir + name + '.npz'
+        np.savez_compressed(save_path, **data)
+    
+    def _update(self, umap_data):
+        """Updates UMAP object properties from ``umap_data`` :obj:`dict`.
+
+        Parameters
+        ----------
+        umap_data : :obj:`dict`
+
+        """
+
+        self.z = umap_data['z']
+        self.R = umap_data['R']
+        self.R_desc = umap_data['R_desc']
+        self.E_true = umap_data['E_true']
+        self.F_true = umap_data['F_true']
+        self.E_pred = umap_data['E_pred']
+        self.F_pred = umap_data['F_pred']
+        self.data_info = umap_data['data_info'].tolist()
+        self.n_neighbors = umap_data['n_neighbors'][()]
+        self.min_dist = umap_data['min_dist'][()]
+        self.random_state = umap_data['random_state'][()]
+        
+        self.reducer = umap.UMAP(
+            n_neighbors=self.n_neighbors, min_dist=self.min_dist,
+            random_state=self.random_state
+        )
+        self.embedding = umap_data['embedding']
+
+    
+    def load(self, umap_path):
+        """Load a UMAP npz file.
+
+        Parameters
+        ----------
+        umap_path : :obj:`str`
+            Path to UMAP data npz file.
+        """
+        umap_data = dict(np.load(umap_path, allow_pickle=True))
+        self._update(umap_data)
