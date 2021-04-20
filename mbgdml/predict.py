@@ -218,9 +218,9 @@ class mbPredict():
         
         Returns
         -------
-        :obj:`float`
+        :obj:`numpy.ndarray`
             Total energy of the system.
-        :obj:`numpy.ndarray
+        :obj:`numpy.ndarray`
             Atomic forces of the system in the same shape as ``R``.
         """
         e, f = self.decomposed_predict(z, R)
