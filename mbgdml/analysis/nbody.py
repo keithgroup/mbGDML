@@ -27,10 +27,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mbgdml.utils import norm_path
 from mbgdml.utils import atoms_by_element
-logging.getLogger("matplotlib").setLevel(logging.ERROR)
 
-class NBody:
-    """Probing individual n-body contributions of force fields.
+class forceComparison:
+    """Compare force vectors.
     """
 
     def __init__(self):
@@ -45,14 +44,14 @@ class NBody:
         
         Parameters
         ----------
-        predict_force : `numpy.ndarray`
+        predict_force : :obj:`numpy.ndarray`
             Array of the predicted force vector by GDML.
-        true_force : `numpy.ndarray`
+        true_force : :obj:`numpy.ndarray`
             Array of the true force vector of the same shape as predict_force
         
         Returns
         -------
-        `float`
+        :obj:`float`
             Similarity (accuracy) of predicted force vector for an atom. 0.0 is 
             perfect similarity and the further away from zero the less similar 
             (accurate).
@@ -70,14 +69,14 @@ class NBody:
 
         Parameters
         ----------
-        predict_set : `mbgdml.data.predictSet`
+        predict_set : :obj:`mbgdml.data.predictSet`
             Object with loaded predict set.
-        structure_index : `int`
+        structure_index : :obj:`int`
             Index of the structure in the predict set arrays.
 
         Returns
         -------
-        `numpy.ndarray`
+        :obj:`numpy.ndarray`
             Cosine similarities of all possible n-body corrections of a single
             structure in the shape of ``(n_z, nbodies)`` where ``n_z`` is the
             number of atoms in the structure and ``nbodies`` is the number of
@@ -107,16 +106,16 @@ class NBody:
 
         Parameters
         ----------
-        predict_set : `mbgdml.data.predictSet`
+        predict_set : :obj:`mbgdml.data.predictSet`
             Object with loaded predict set.
-        structure_list : `list`
+        structure_list : :obj:`list`
             Indices of structures to include in the heatmap. To select all
             structures, one could use
             ``list(range(0, predict_set.F_true.shape[0]))`` for example.
         
         Returns
         -------
-        `numpy.ndarray`
+        :obj:`numpy.ndarray`
             Average cosine distances of all possible n-body corrections over
             selected structures in the shape of ``(n_z, nbodies)`` where ``n_z``
             is the number of atoms in the structure and ``nbodies`` is the
@@ -141,7 +140,7 @@ class NBody:
         return sim_mean
 
 
-class NBodyHeatMaps(NBody):
+class nbodyHeatMaps(forceComparison):
     """Heat maps for n-body contribution accuracy.
     """
 
@@ -149,26 +148,32 @@ class NBodyHeatMaps(NBody):
         pass
 
     def create_heatmap(
-        self, similarity, y_labels, num_nbody, name, data_labels,
-        save_dir
+        self, similarity, y_labels, num_nbody, name, data_labels
     ):
         """
         Generates matplotlib heatmap figure.
 
         Parameters
         ----------
-        similarity : `numpy.ndarray`
+        similarity : :obj:`numpy.ndarray`
             Cosine distances in n x m array where n is the order of n-body
             contributions, and m is the number of atoms.
-        y_labels : `list` [`str`]
+        y_labels : :obj:`list` [:obj:`str`]
             Labels of the y axis of the heat map.
-        num_nbody : `list` [`str`]
+        num_nbody : :obj:`list` [:obj:`str`]
             Maximum number of n-body contributions to include.
-        name : `str`
+        name : :obj:`str`
             File name to save the heatmap.
-        data_labels : `bool`
+        data_labels : :obj:`bool`
             Whether or not to include values of cosine distance inside
             heatmap cells.
+        
+        Returns
+        -------
+        :obj:`matplotlib.figure`
+            Figure object.
+        :obj:`matplotlib.axes.Axes`
+            Axes object.
         """
         fig, heatmap = plt.subplots(figsize=(3, 4), constrained_layout=True)
         #norm = mpl.colors.Normalize(vmin=0, vmax=2.0)
@@ -190,30 +195,25 @@ class NBodyHeatMaps(NBody):
                     num = np.around(similarity[i, j], decimals=2)
                     heatmap.text(j, i, num,
                                 ha="center", va="center", color="black")
-        plt.savefig(f'{save_dir}{name}.png', dpi=600, bbox_inches='tight')
-        plt.close()
+        return fig, heatmap
     
     def force_heatmap(
-        self, predict_set, structure_list, base_name, save_dir,
-        data_labels=False
+        self, predict_set, structure_list, base_name, data_labels=False
     ):
         """Computes and saves force heat map of predict set.
 
         Parameters
         ----------
-        predict_set : `mbgdml.data.predictSet`
+        predict_set : :obj:`mbgdml.data.predictSet`
             Object with loaded predict set.
-        structure_list : `list`
+        structure_list : :obj:`list`
             Indices of structures to include in the heatmap.
-        base_name : `str`
+        base_name : :obj:`str`
             First part of saved file name.
-        save_dir : `str`
-            Path to save the heatmap to as a png.
-        data_labels : `bool`, optional
+        data_labels : :obj:`bool`, optional
             Whether or not to include values of cosine distance inside
             heatmap cells.
         """
-        save_dir = norm_path(save_dir)
         sim_mean = self.average_force_similarity(predict_set, structure_list)
         atoms = atoms_by_element(predict_set.z.tolist())
         num_nbody = list(range(1, np.shape(sim_mean)[1] + 1))
@@ -224,15 +224,5 @@ class NBodyHeatMaps(NBody):
             atoms,
             num_nbody,
             name,
-            data_labels,
-            save_dir
+            data_labels
         )
-
-
-class NBodyMD(NBody):
-
-    def __init__(self):
-        pass
-
-    
-    

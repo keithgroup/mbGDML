@@ -3,5 +3,5 @@
 __author__ = """Alex M. Maldonado"""
 __email__ = 'aalexmmaldonado@gmail.com'
 
-from mbgdml.analysis.nbody import NBodyHeatMaps
+from mbgdml.analysis.nbody import nbodyHeatMaps
 from mbgdml.analysis.structures import structureEmbedding
