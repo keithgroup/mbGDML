@@ -25,7 +25,6 @@
 import logging
 import numpy as np
 from sgdml.utils.desc import Desc
-import umap.umap_ as umap
 
 from mbgdml import utils
 from mbgdml.data import mbModel
@@ -64,6 +63,10 @@ class structureEmbedding:
             If :obj:`int`, the seed is used by the random number generator. If
             :obj:`None`, a random number is generated and passed into UMAP.
         """
+        # UMAP takes a decent amount of time to load, so we only load it if we
+        # are going to use it.
+        import umap.umap_ as umap
+
         self.n_neighbors = n_neighbors
         self.min_dist = min_dist
         if random_state is None:
@@ -286,6 +289,7 @@ class structureEmbedding:
         For more information on these parameters see
         https://umap-learn.readthedocs.io/en/latest/parameters.html.
         """
+        # pylint: disable=undefined-variable
         # We check if we need to update the reducer attribute. We always
         # reinitialize reducer as it takes very little time, but we still have
         # to check the random_state for reproducibility.
@@ -356,6 +360,7 @@ class structureEmbedding:
         umap_data : :obj:`dict`
 
         """
+        # pylint: disable=undefined-variable
 
         self.z = umap_data['z']
         self.R = umap_data['R']
@@ -386,3 +391,4 @@ class structureEmbedding:
         """
         umap_data = dict(np.load(umap_path, allow_pickle=True))
         self._update(umap_data)
+
