@@ -22,7 +22,7 @@
 
 """Analyses for structures."""
 
-import logging
+import itertools
 import numpy as np
 from sgdml.utils.desc import Desc
 
@@ -392,3 +392,191 @@ class structureEmbedding:
         umap_data = dict(np.load(umap_path, allow_pickle=True))
         self._update(umap_data)
 
+class mbExpansion:
+    """Predicts energies and forces of a structure using a many-body expansion.
+
+    Uses data sets with energy and force predictions up to and including
+    n molecules from a single structure. Can provide a theoretical maximum
+    accuracy of a many-body force field.
+    """
+
+    def __init__(self):
+        pass
+
+    def _contribution(self, E, F, mol_info, dsets, operation):
+        """Adds or removes energy and force contributions in data sets.
+
+        Forces are currently not updated but still returned.
+
+        Parameters
+        ----------
+        E : :obj:`numpy.ndarray`
+            Initial energy. Can be zero or nonzero.
+        F : :obj:`numpy.ndarray`
+            Initial forces. Can be zero or nonzero.
+        dsets : :obj:`list` [:obj:`mbgdml.data.dataset.dataSet`]
+            Data set contributions to be added or removed from ``E`` and ``F``.
+        operation : :obj:`str`
+            ``'add'`` or ``'remove'`` the contributions.
+        
+        Returns
+        -------
+        :obj:`numpy.ndarray`
+            Updated energies.
+        :obj:`numpy.ndarray`
+            Updated forces.
+        """
+        # Loop through every lower order n-body data set.
+        for dset_lower in dsets:
+            # Lower order information.
+            mol_info_lower = dset_lower.Rset_info[:,2:]
+            n_mol_lower = len(mol_info_lower[0])
+
+            # Loop through every structure.
+            for i_r in range(len(E)):
+                # We have to match the molecule information for each structure to
+                # remove the right information.
+                r_mol_info = mol_info[i_r]  # The molecules in this structure.
+                mol_combs = list(  # Molecule combinations to be removed
+                    itertools.combinations(r_mol_info, n_mol_lower)
+                )
+                mol_combs = np.array(mol_combs)
+
+                # Loop through every molecular combination.
+                for mol_comb in mol_combs:
+                    
+                    i_r_lower = np.where(  # Index of the structure in the lower data set.
+                        np.all(mol_info_lower == mol_comb, axis=1)
+                    )[0][0]
+
+                    e_r_lower = dset_lower.E[i_r_lower]
+                    f_r_lower = dset_lower.F[i_r_lower]
+
+                    # Removing energy contributions.
+                    if operation == 'add':
+                        E[i_r] += e_r_lower
+                    elif operation == 'remove':
+                        E[i_r] -= e_r_lower
+                    else:
+                        raise ValueError(f'{operation} is not "add" or "remove".')
+
+                    # Removing force contributions.
+                    # TODO: Force contributions.
+        
+        return E, F
+
+    def create_nbody_dset(self, dset, nbody_dsets):
+        """Creates a n-body data set with < n contributions removed from other data
+        sets.
+
+        Parameters
+        ----------
+        dset : :obj:`mbgdml.data.dataset.dataSet`
+            The n-body data set with total energies and forces.
+        nbody_dsets : :obj:`list` [:obj:`mbgdml.data.dataset.dataSet`]
+            A list of lower order n-body data sets.
+        
+        Returns
+        -------
+        :obj:`mbgdml.data.dataset.dataSet`
+            The same data set with the energies and forces being the n-body
+            contributions.
+        """
+        # Local variables to work with.
+        E = dset.E
+        F = dset.F
+        mol_info = dset.Rset_info[:, 2:]  # Molecule numbers for each structure.
+
+        # Loop through every lower order n-body data set.
+        E, F = self._contribution(E, F, mol_info, nbody_dsets, 'remove')
+        
+        # Updating energies and forces.
+        dset.E = E
+        dset.F = F
+        return dset
+
+    def nbody_contribution(
+        self, dset, n_molecules, n_atoms_per_molecule
+    ):
+        """Calculates contributions for n-body structures where n > 1.
+
+        Only works with data sets containing the same chemical species.
+
+        Parameters
+        ----------
+        dset : :obj:`mbgdml.data.dataset.dataSet`
+
+        n_molecules : :obj:`int`
+            The total number of molecules in the parent structure.
+        n_atoms_per_molecule : :obj:`int`
+            Number of atoms per molecule.
+        """
+        #pylint: disable=no-member
+        # Contributions to the parent structure.
+        E = np.zeros(1,)
+        F = np.zeros(dset.F.shape)
+        mol_info = dset.Rset_info[:, 2:]
+
+        for i in range(len(E)):
+            e, f = self._contribution(E, F, mol_info, [dset], 'add')
+            E[i] = e[0]
+            #F[i] = f
+
+        return E, F
+
+    def predict(self, nmer_dsets):
+        """Predict the energy and force of some structure using a many-body
+        decomposition.
+
+        Only works with data sets containing the same chemical species.
+
+        Parameters
+        ----------
+        nmer_dsets : :obj:`list` [:obj:`mbgdml.data.dataset.dataSet`]
+            All data sets of nmer clusters from a single structure. At the very
+            least, a 1mer data set must be provided.
+        
+        Returns
+        -------
+        :obj:`numpy.ndarray`
+            Theoretically predicted energy using a many-body expansion.
+        :obj:`numpy.ndarray`
+            Theoretically predicted forces using a many-body expansion. Not 
+            currently working.
+        """
+        # pylint: disable=not-an-iterable
+        # pylint: disable=unsubscriptable-object
+        # Determines increasing order n-body cluster size.
+        dset_n_z = [len(i.z) for i in nmer_dsets]  # Number of atoms
+        n_body_order = [dset_n_z.index(i) for i in sorted(dset_n_z)]
+        nmer_dsets = [nmer_dsets[i] for i in n_body_order]  # Smallest to largest molecules.
+        
+        # Creates many-body data sets.
+        nbody_dsets = [nmer_dsets[0]]
+        for i in range(1, len(nmer_dsets)):
+            nbody_dsets.append(
+                self.create_nbody_dset(nmer_dsets[i], nbody_dsets[:i])
+            )
+        
+        # Sets up energy and force variables.
+        n_molecules = nbody_dsets[0].n_R
+        n_atoms_per_molecule = nbody_dsets[0].n_z
+        E = np.zeros((1,))
+        F = np.zeros((n_molecules, n_atoms_per_molecule, 3))
+        
+        # Loop through every data set and add its contribution to E and F.
+        for i_dset in range(len(nbody_dsets)):
+            nbody_dset = nbody_dsets[i_dset]
+
+            # Total contributions of all structures in many-body data set.
+            e = np.array([np.sum(nbody_dset.E)])
+            f = np.array([np.sum(nbody_dset.F)])
+            
+            # Adds n-body contribution to total energy and forces.
+            E = np.add(E, e)
+            F = np.add(F, f)
+        
+        # Reshape F to match mbGDML data sets and predictions.
+        F = np.reshape(F, (n_molecules*n_atoms_per_molecule, 3))  # TODO: Maybe need 3D?
+
+        return E, F
