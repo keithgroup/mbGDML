@@ -10,5 +10,5 @@ from mbgdml import partition
 from mbgdml import solvents
 from mbgdml import train
 from mbgdml import utils
-from mbgdml import sample
+from mbgdml import criteria
 from mbgdml import analysis
