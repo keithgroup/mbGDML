@@ -74,4 +74,45 @@ def distance_all(z, R, z_slice, cutoff):
             return False
     # All pairs of molecules are within the cutoff.
     return True
-    
+
+def distance_sum(z, R, z_slice, cutoff):
+    """If the sum of pairwise distances from the cluster center is less than
+    the cutoff.
+
+    Distances larger than the cutoff will return ``False``, meaning they
+    should not be included in the data set.
+
+    All criteria functions should have the same parameters.
+
+    Parameters
+    ----------
+    z : :obj:`numpy.ndarray`
+        A ``(n,)`` shape array of type :obj:`numpy.int32` containing atomic
+        numbers of atoms in the structures in order as they appear.
+    R : :obj:`numpy.ndarray`
+        A :obj:`numpy.ndarray` with shape of ``(n, 3)`` where ``n`` is the
+        number of atoms with three Cartesian components.
+    z_slice : :obj:`numpy.ndarray`
+        Indices of the atoms to be used for the cutoff calculation.
+    cutoff : :obj:`list` [:obj:`float`]
+        Distance cutoff between the atoms selected by ``z_slice``. Must be
+        in the same units (e.g., Angstrom) as ``R``.
+
+    Returns
+    -------
+    :obj:`bool`
+        If the distance between the two dimers is less than the cutoff.
+    """
+    if len(cutoff) != 1:
+        raise ValueError('Only one distance can be provided.')
+
+    center = np.mean(R, axis=0)
+
+    d_sum = 0.0
+    # Calculates distance from center
+    for z_i in z_slice:
+        d_sum += _calc_distance(center, R[z_i])
+    if d_sum > cutoff[0]:
+        return False
+    else:
+        return True
