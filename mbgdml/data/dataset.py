@@ -430,7 +430,7 @@ class dataSet(mbGDMLData):
     ):
         """Selects all Rset structures for data set.
 
-        Generally organized by adding all structures of a single mol_id one at
+        Generally organized by adding all structures of a single entity_id one at
         a time. For example, if we were adding all monomers from a cluster with
         two water molecules, we would select the first molecule (``0``), add 
         all of its information, then add the second molecule (``1``). This
@@ -472,9 +472,9 @@ class dataSet(mbGDMLData):
         Rset_R = Rset.R
 
         # Getting all possible molecule combinations.
-        mol_ids = Rset.mol_ids
-        max_mol_i = max(mol_ids)
-        comb_list = list(itertools.combinations(range(max_mol_i + 1), size))
+        entity_ids = Rset.entity_ids
+        max_entity_i = max(entity_ids)
+        comb_list = list(itertools.combinations(range(max_entity_i + 1), size))
         
         # Loops though every possible molecule combination.
         for comb in comb_list:
@@ -494,9 +494,9 @@ class dataSet(mbGDMLData):
             # Adds selection's atomic coordinates to R.
             ## Gets atomic indices from molecule_ids in the Rset.
             atom_ids = []
-            for mol_id in Rset_selection[2:]:
+            for entity_id in Rset_selection[2:]:
                 atom_ids.extend(
-                    [i for i,x in enumerate(mol_ids) if x == mol_id]
+                    [i for i,x in enumerate(entity_ids) if x == entity_id]
                 )
             # Checks compatibility with atoms.
             if len(z) == 0:
@@ -586,16 +586,16 @@ class dataSet(mbGDMLData):
         Rset_R = Rset.R
 
         max_n_R = Rset.R.shape[0]
-        max_mol = Rset.mol_ids[-1] + 1
-        mol_ids = Rset.mol_ids
+        entity_ids = Rset.entity_ids
+        max_entity_id = max(entity_ids) + 1
 
         # New cluster routine.
         i = 0  # Successful samples from structure set.
         while i < quantity:
             # Generates our sample using random integers.
             struct_num_selection = randrange(max_n_R)
-            mol_selection = sorted(sample(range(max_mol), size))
-            Rset_selection = [Rset_id, struct_num_selection] + mol_selection
+            comp_selection = sorted(sample(range(max_entity_id), size))
+            Rset_selection = [Rset_id, struct_num_selection] + comp_selection
 
             # If this selection is already in Rset_info, then we will not include it
             # and try again.
@@ -617,9 +617,9 @@ class dataSet(mbGDMLData):
             # Adds selection's atomic coordinates to R.
             ## Gets atomic indices from molecule_ids in the Rset.
             atom_ids = []
-            for mol_id in Rset_selection[2:]:
+            for entity_id in Rset_selection[2:]:
                 atom_ids.extend(
-                    [i for i,x in enumerate(mol_ids) if x == mol_id]
+                    [i for i,x in enumerate(entity_ids) if x == entity_id]
                 )
             # Checks compatibility with atoms.
             if len(z) == 0:
@@ -931,17 +931,16 @@ class dataSet(mbGDMLData):
         save_dir : :obj:`str`
         """
         utils.write_xyz(self.z, self.R, save_dir, self.name)
-
     
-    def create_mb(self, ref_dataset, model_paths):
-        """Creates a many-body data set.
+    def create_mb(self, ref_dset, model_paths):
+        """Creates a many-body data set using mbGDML predictions.
 
         Removes energy and force predictions from the reference data set using
         GDML models in ``model_paths``.
 
         Parameters
         ----------
-        ref_dataset : :obj:`~mbgdml.data.dataset.dataSet`
+        ref_dset : :obj:`~mbgdml.data.dataset.dataSet`
             Reference data set of structures, energies, and forces. This is the
             data where mbGDML predictions will be subtracted from.
         model_paths : :obj:`list` [:obj:`str`]
@@ -949,5 +948,5 @@ class dataSet(mbGDMLData):
             :obj:`numpy.NpzFile`.
         """
         predict = mbPredict(model_paths)
-        dataset = predict.remove_nbody(ref_dataset.dataset)
+        dataset = predict.remove_nbody(ref_dset.dataset)
         self._update(dataset)
