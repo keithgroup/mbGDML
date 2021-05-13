@@ -51,20 +51,43 @@ class structureSet(mbGDMLData):
     @property
     def entity_ids(self):
         """An array specifying which atoms belong to what entities
-        (e.g., molecules).
+        (e.g., molecules). Similar to PDBx/mmCIF ``_atom_site.label_entity_ids``
+        data item.
 
-        Similar to PDBx/mmCIF ``_atom_site.label_entity_ids`` data item.
+        For example, a water and methanol molecule could be
+        ``[0, 0, 0, 1, 1, 1, 1, 1, 1]``.
 
         :type: :obj:`numpy.ndarray`
         """
         if hasattr(self, '_entity_ids'):
             return self._entity_ids
         else:
-            return None
+            return np.array([])
     
     @entity_ids.setter
     def entity_ids(self, var):
         self._entity_ids = var
+    
+    @property
+    def comp_ids(self):
+        """A 2D array relating ``entity_ids`` to a chemical component/species
+        id or label (``comp_id``). The first column is the unique ``entity_id``
+        and the second is a unique ``comp_id`` for that chemical species.
+        Each ``comp_id`` is reused for the same chemical species.
+
+        For example, two water and one methanol molecules could be
+        ``[['0', 'h2o'], ['1', 'h2o'], ['2', 'meoh']]``.
+
+        :type: :obj:`numpy.ndarray`
+        """
+        if hasattr(self, '_comp_ids'):
+            return self._comp_ids
+        else:
+            return np.array([[]])
+    
+    @comp_ids.setter
+    def comp_ids(self, var):
+        self._comp_ids = var
 
     @property
     def md5(self):
@@ -96,6 +119,7 @@ class structureSet(mbGDMLData):
         """
         self.name = str(structureset['name'][()])
         self.entity_ids = structureset['entity_ids']
+        self.comp_ids = structureset['comp_ids']
         self._z = structureset['z']
         self._R = structureset['R']
         self._r_unit = str(structureset['r_unit'][()])
@@ -116,7 +140,7 @@ class structureSet(mbGDMLData):
         else:
             self._update(dict(structureset_npz))
 
-    def from_xyz(self, file_path, r_unit, entity_ids):
+    def from_xyz(self, file_path, r_unit, entity_ids, comp_ids):
         """Reads data from xyz files and sets z and R data.
 
         If using the extended XYZ format will assume coordinates are the first
@@ -135,6 +159,13 @@ class structureSet(mbGDMLData):
             List of indices starting from ``0`` that specify chemically distinct
             portions of the structure. For example, a water
             dimer would be ``[0, 0, 0, 1, 1, 1]``.
+        comp_ids : :obj:`list`
+            A nested list with an item for every unique ``entity_id``. Each item
+            is a list containing two items. First, the ``entity_id`` as a
+            string. Second, a label for the specific chemical species/component.
+            For example, two water and one methanol molecules could be
+            ``[['0', 'h2o'], ['1', 'h2o'], ['2', 'meoh']]``.
+
         """
         self.name = os.path.splitext(os.path.basename(file_path))[0]
 
@@ -160,6 +191,7 @@ class structureSet(mbGDMLData):
         
         self.r_unit = r_unit
         self.entity_ids = np.array(entity_ids)
+        self.comp_ids = np.array(comp_ids)
 
     @property
     def structureset(self):
@@ -174,12 +206,12 @@ class structureSet(mbGDMLData):
             'z': np.array(self.z),
             'R': np.array(self.R),
             'r_unit': np.array(self.r_unit),
-            'entity_ids': self.entity_ids
+            'entity_ids': self.entity_ids,
+            'comp_ids': self.comp_ids
         }
 
         if len(structureset['z']) != len(structureset['entity_ids']):
             raise ValueError('Number of atoms in z and entity_ids is not the same.')
 
-        structureset = self.add_system_info(structureset)
         structureset['md5'] = np.array(utils.md5_data(structureset, ['z', 'R']))
         return structureset

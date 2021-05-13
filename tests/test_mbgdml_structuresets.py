@@ -41,9 +41,12 @@ def example_10h2o(structureset):
     # Information in structure set.
     keys = [
         'type', 'mbgdml_version', 'name', 'R', 'r_unit', 'entity_ids',
-        'system', 'solvent', 'cluster_size', 'md5', 'z'
+        'md5', 'z', 'comp_ids'
     ]
-    assert list(structureset.structureset.keys()).sort() == keys.sort()
+    keys.sort()
+    rset_keys = list(structureset.structureset.keys())
+    rset_keys.sort()
+    assert rset_keys == keys
 
     # Data type
     assert structureset.type == 's'
@@ -58,12 +61,19 @@ def example_10h2o(structureset):
     ])
     assert np.array_equal(structureset.z, z)
     
-    # Has molecule IDs.
+    # Has entity_ids.
     entity_ids = np.array([
         0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 6, 7, 7, 7,
         8, 8, 8, 9, 9, 9
     ])
     assert np.array_equal(structureset.entity_ids, entity_ids)
+
+    # Has comp_ids
+    comp_ids = np.array([
+        ['0', 'h2o'], ['1', 'h2o'], ['2', 'h2o'], ['3', 'h2o'], ['4', 'h2o'],
+        ['5', 'h2o'], ['6', 'h2o'], ['7', 'h2o'], ['8', 'h2o'], ['9', 'h2o']
+    ])
+    assert np.array_equal(structureset.comp_ids, comp_ids)
     
     # Cartesian coordinates
     assert structureset.R.shape == (1000, 30, 3)
@@ -109,21 +119,22 @@ def example_10h2o(structureset):
 def test_structureset_from_traj():
     traj_path = './tests/data/md/10h2o.abc0.iter1.gfn2-xtb.md-gfn2.300k-1.traj'
 
-    # Getting molecule IDs.
+    # Getting entity_ids.
     h2o_size = 3
     cluster_size = 10
     entity_ids = []
     for i in range(0, cluster_size):
         entity_ids.extend([i for _ in range(0, h2o_size)])
-    
-    assert entity_ids == [
-        0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 6, 7, 7, 7,
-        8, 8, 8, 9, 9, 9
-    ]
+
+    # Getting comp_ids
+    solvent = 'h2o'
+    comp_ids = []
+    for i in range(0, cluster_size):
+        comp_ids.append([str(i), solvent])
 
     # Creating structure set.
     test_structureset = structureSet()
-    test_structureset.from_xyz(traj_path, 'Angstrom', entity_ids)
+    test_structureset.from_xyz(traj_path, 'Angstrom', entity_ids, comp_ids)
 
     # Naming of the structure set.
     assert test_structureset.name == '10h2o.abc0.iter1.gfn2-xtb.md-gfn2.300k-1'
