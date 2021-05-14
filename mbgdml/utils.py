@@ -26,6 +26,7 @@ import numpy as np
 import cclib
 from natsort import natsorted, ns
 import hashlib
+import itertools
 
 element_to_z = {
     'H': 1, 'He': 2, 'Li': 3, 'Be': 4, 'B': 5, 'C': 6, 'N': 7, 'O': 8, 'F': 9,
@@ -301,3 +302,67 @@ def md5_data(data, info=['z', 'R']):
             d = d.ravel()
         md5_hash.update(hashlib.md5(d).digest())
     return md5_hash.hexdigest()
+
+def e_f_contribution(E, F, R_entity_ids, dsets, operation):
+    """Adds or removes energy and force contributions from data sets.
+
+    Forces are currently not updated but still returned.
+
+    Parameters
+    ----------
+    E : :obj:`numpy.ndarray`
+        Initial energy. Can be zero or nonzero.
+    F : :obj:`numpy.ndarray`
+        Initial forces. Can be zero or nonzero.
+    R_entity_ids : :obj:`numpy.ndarray`
+        comp indices of each structure from the reference data set. Can
+        usually be retrieved using ``dset.Rset_info[:, 2:]``. Should align
+        with the structures in ``E`` and ``R``.
+    dsets : :obj:`list` [:obj:`mbgdml.data.dataset.dataSet`]
+        Data set contributions to be added or removed from ``E`` and ``F``.
+    operation : :obj:`str`
+        ``'add'`` or ``'remove'`` the contributions.
+    
+    Returns
+    -------
+    :obj:`numpy.ndarray`
+        Updated energies.
+    :obj:`numpy.ndarray`
+        Updated forces.
+    """
+    # Loop through every lower order n-body data set.
+    for dset_lower in dsets:
+        # Lower order information.
+        R_entity_ids_lower = dset_lower.Rset_info[:, 2:]
+        n_mol_lower = len(R_entity_ids_lower[0])
+
+        # Loop through every structure.
+        for i_r in range(len(E)):
+            # We have to match the molecule information for each structure to
+            # remove the right information.
+            r_R_entity_ids = R_entity_ids[i_r]  # The molecules in this structure.
+            mol_combs = list(  # Molecule combinations to be removed
+                itertools.combinations(r_R_entity_ids, n_mol_lower)
+            )
+            mol_combs = np.array(mol_combs)
+
+            # Loop through every molecular combination.
+            for mol_comb in mol_combs:
+                
+                i_r_lower = np.where(  # Index of the structure in the lower data set.
+                    np.all(R_entity_ids_lower == mol_comb, axis=1)
+                )[0][0]
+
+                e_r_lower = dset_lower.E[i_r_lower]
+                f_r_lower = dset_lower.F[i_r_lower]
+
+                # Adding or removing contributions.
+                # TODO: Force contributions.
+                if operation == 'add':
+                    E[i_r] += e_r_lower
+                elif operation == 'remove':
+                    E[i_r] -= e_r_lower
+                else:
+                    raise ValueError(f'{operation} is not "add" or "remove".')
+    
+    return E, F
