@@ -277,6 +277,47 @@ class dataSet(mbGDMLData):
         :type: :obj:`bytes`
         """
         return self.dataset['md5'][()].decode()
+    
+    @property
+    def entity_ids(self):
+        """An array specifying which atoms belong to what entities
+        (e.g., molecules). Similar to PDBx/mmCIF ``_atom_site.label_entity_ids``
+        data item.
+
+        For example, a water and methanol molecule could be
+        ``[0, 0, 0, 1, 1, 1, 1, 1, 1]``.
+
+        :type: :obj:`numpy.ndarray`
+        """
+        if hasattr(self, '_entity_ids'):
+            return self._entity_ids
+        else:
+            return np.array([])
+    
+    @entity_ids.setter
+    def entity_ids(self, var):
+        self._entity_ids = var
+    
+    @property
+    def comp_ids(self):
+        """A 2D array relating ``entity_ids`` to a chemical component/species
+        id or label (``comp_id``). The first column is the unique ``entity_id``
+        and the second is a unique ``comp_id`` for that chemical species.
+        Each ``comp_id`` is reused for the same chemical species.
+
+        For example, two water and one methanol molecules could be
+        ``[['0', 'h2o'], ['1', 'h2o'], ['2', 'meoh']]``.
+
+        :type: :obj:`numpy.ndarray`
+        """
+        if hasattr(self, '_comp_ids'):
+            return self._comp_ids
+        else:
+            return np.array([[]])
+    
+    @comp_ids.setter
+    def comp_ids(self, var):
+        self._comp_ids = var
 
     def convertE(self, E_units):
         """Convert energies and updates :attr:`e_unit`.
@@ -373,6 +414,8 @@ class dataSet(mbGDMLData):
         try:
             self.Rset_info = dataset['Rset_info'][()]
             self.Rset_md5 = dataset['Rset_md5'][()]
+            self.entity_ids = dataset['entity_ids']
+            self.comp_ids = dataset['comp_ids']
         except KeyError:
             pass
 
@@ -587,14 +630,14 @@ class dataSet(mbGDMLData):
 
         max_n_R = Rset.R.shape[0]
         entity_ids = Rset.entity_ids
-        max_entity_id = max(entity_ids) + 1
+        max_entity_id = max(entity_ids)
 
         # New cluster routine.
         i = 0  # Successful samples from structure set.
         while i < quantity:
             # Generates our sample using random integers.
             struct_num_selection = randrange(max_n_R)
-            comp_selection = sorted(sample(range(max_entity_id), size))
+            comp_selection = sorted(sample(range(max_entity_id + 1), size))
             Rset_selection = [Rset_id, struct_num_selection] + comp_selection
 
             # If this selection is already in Rset_info, then we will not include it
@@ -625,9 +668,9 @@ class dataSet(mbGDMLData):
             if len(z) == 0:
                 z = Rset_z[atom_ids]
             else:
-                if not np.all([z, Rset_z[atom_ids]]):
-                    print(f'z of data set: {z}')
+                if not np.array_equal(z, Rset_z[atom_ids]):
                     print(f'Rset_info of selection: {Rset_selection}')
+                    print(f'z of data set: {z}')
                     print(f'z of selection: {Rset_z[atom_ids]}')
                     raise ValueError(f'z of the selection is incompatible.')
             
@@ -685,7 +728,8 @@ class dataSet(mbGDMLData):
         size : :obj:`str`
             Desired number of molecules in each selection.
         always : :obj:`list` [:obj:`int`], optional
-            Molecule indices that will be in every selection.
+            Molecule indices that will be in every selection. Not implemented
+            yet.
         criteria : :obj:`mbgdml.sample.sampleCritera`
             Structure criteria during the sampling procedure.
         z_slice : :obj:`numpy.ndarray`
@@ -705,7 +749,7 @@ class dataSet(mbGDMLData):
 
         Rset_info = self.Rset_info
 
-        if type(quantity) == 'int' or str(quantity).isdigit():
+        if isinstance(quantity, int) or str(quantity).isdigit():
             quantity = int(quantity)
             Rset_info, z, R, E, F = self._Rset_sample_num(
                 z, R, E, F, Rset, Rset_id, Rset_info, quantity, size,
@@ -723,6 +767,54 @@ class dataSet(mbGDMLData):
             )
         else:
             raise ValueError(f'{quantity} is not a valid selection.')
+        
+        # Checks and stores entity_ids and comp_ids.
+        ## Gets the Rset entity_ids from the newly sampled structures.
+        Rset_info_idx_new = np.where(np.any(Rset_info[:, :1] == 0, axis=1))[0]
+        Rset_entity_ids_sampled = np.split(  # A list of column arrays from entity_ids
+            Rset_info[Rset_info_idx_new][:, 2:],
+            Rset_info.shape[1] - 2,  # Rset_id and structure number not included.
+            axis=1
+        )
+
+        ## The entity_ids of the dset and rset will not match.
+        ## The comp_label for each entity (in the specific) order must match
+        ## as well as the number of atoms in each entity.
+
+        entity_ids = self.entity_ids
+        comp_ids = self.comp_ids
+        if len(entity_ids) == 0 and comp_ids.shape == (1, 0):
+            # If there is no previous sampling.
+            # Just need to check that the new entities are self compatible.
+            entity_ids = []  # Start a new entity id list.
+            comp_ids = []  # Start a new component id list.
+            
+            # Loops through every column/entity that we sampled.
+            for entity_id in range(len(Rset_entity_ids_sampled)):
+                # Gets the size of the entity in the first structure.
+
+                Rset_entity_id = Rset_entity_ids_sampled[entity_id][0][0]
+                ref_entity_size = np.count_nonzero(
+                    Rset.entity_ids == Rset_entity_id
+                )
+                # Adds the entity_ids of this entity
+                entity_ids.extend([entity_id for _ in range(ref_entity_size)])
+                # Adds comp_id
+                comp_id = Rset.comp_ids[Rset_entity_id][1]
+                comp_ids.append(
+                    [str(entity_id), comp_id]
+                )
+                
+                # We should not have to check the entities because we already
+                # check z.
+            self.entity_ids = np.array(entity_ids)
+            self.comp_ids = np.array(comp_ids)
+        else:
+            # If there was previous sampling
+            # Need to also check if compatible with the data set.
+            # We should not have to check the entities because we already
+            # check z.
+            pass
         
         # Stores all information only if sampling is successful.
         self.Rset_md5 = {**self.Rset_md5, **{Rset_id: Rset.md5}}
@@ -799,7 +891,9 @@ class dataSet(mbGDMLData):
             'Rset_info': np.array(self.Rset_info),
             'z': np.array(self.z),
             'R': np.array(self.R),
-            'r_unit': np.array(self.r_unit)
+            'r_unit': np.array(self.r_unit),
+            'entity_ids': self.entity_ids,
+            'comp_ids': self.comp_ids
         }
         md5_properties = ['z', 'R']
 
@@ -836,7 +930,6 @@ class dataSet(mbGDMLData):
             pass
 
         # mbGDML information.
-        dataset = self.add_system_info(dataset)
         if hasattr(self, 'mb'):
             dataset['mb'] = np.array(self.mb)
             dataset['mb_models_md5'] = np.array(self.mb_models_md5, dtype='S32')
@@ -885,13 +978,6 @@ class dataSet(mbGDMLData):
                 assert np.array_equal(self.z, dataset_add.f.z)
                 assert np.array_equal(self.r_unit, dataset_add.f.r_unit)
                 assert np.array_equal(self.e_unit, dataset_add.f.e_unit)
-                if hasattr(self, 'system'):
-                    assert np.array_equal(self.system, dataset_add.f.system)
-                if hasattr(self, 'solvent'):
-                    assert np.array_equal(self.solvent, dataset_add.f.solvent)
-                if hasattr(self, 'cluster_size'):
-                    assert np.array_equal(self.cluster_size,
-                                        dataset_add.f.cluster_size)
             except AssertionError:
                 base_filename = dataset_paths[0].split('/')[-1]
                 incompat_filename = dataset_path.split('/')[-1]
