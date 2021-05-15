@@ -68,9 +68,6 @@ def test_dataset_from_partitioncalc():
     assert isclose(test_dataset.dataset['F_var'], 373.3360402970)
     assert test_dataset.dataset['e_unit'] == 'kcal/mol'
     assert test_dataset.dataset['name'] == '4H2O-ABC-300K-1-dataset'
-    assert test_dataset.dataset['system'] == 'solvent'
-    assert test_dataset.dataset['solvent'] == 'water'
-    assert test_dataset.dataset['cluster_size'] == 3
     assert test_dataset.dataset['theory'] == 'mp2.def2tzvp'
 
 """
