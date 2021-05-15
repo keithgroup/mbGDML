@@ -36,7 +36,7 @@ def _calc_distance(r1, r2):
     """
     return np.linalg.norm(r1 - r2)
 
-def distance_all(z, R, z_slice, cutoff):
+def distance_all(z, R, z_slice, cutoff=None):
     """If the distance between all molecules is less than the cutoff.
 
     Distances larger than the cutoff will return ``False``, meaning they
@@ -62,23 +62,27 @@ def distance_all(z, R, z_slice, cutoff):
     -------
     :obj:`bool`
         If the distance between the two dimers is less than the cutoff.
-    :obj:`float`
-        Calculated distance metric.
+    :obj:`None`
+        No distance metric is useful for this.
     """
-    if len(cutoff) != 1:
-        raise ValueError('Only one distance can be provided.')
+    if cutoff is not None:
+        if len(cutoff) != 1:
+            raise ValueError('Only one distance can be provided.')
 
+    accept_r = None
     all_pairs = list(itertools.combinations(z_slice, 2))
 
     # Checks if any pair of molecules is farther away than the cutoff.
     for pair in all_pairs:
         distance = _calc_distance(R[pair[0]], R[pair[1]])
-        if distance > cutoff[0]:
-            return False, distance
+        if cutoff is not None:
+            if distance > cutoff[0]:
+                accept_r = False
+    accept_r = True
     # All pairs of molecules are within the cutoff.
-    return True, distance
+    return accept_r, None
 
-def distance_sum(z, R, z_slice, cutoff):
+def distance_sum(z, R, z_slice, cutoff=None):
     """If the sum of pairwise distances from the cluster center is less than
     the cutoff.
 
@@ -97,7 +101,7 @@ def distance_sum(z, R, z_slice, cutoff):
         number of atoms with three Cartesian components.
     z_slice : :obj:`numpy.ndarray`
         Indices of the atoms to be used for the cutoff calculation.
-    cutoff : :obj:`list` [:obj:`float`]
+    cutoff : :obj:`list` [:obj:`float`], optional
         Distance cutoff between the atoms selected by ``z_slice``. Must be
         in the same units (e.g., Angstrom) as ``R``.
 
@@ -105,19 +109,25 @@ def distance_sum(z, R, z_slice, cutoff):
     -------
     :obj:`bool`
         If the distance between the two dimers is less than the cutoff.
+        ``None`` if no cutoff is provided.
     :obj:`float`
         Calculated distance metric.
     """
-    if len(cutoff) != 1:
-        raise ValueError('Only one distance can be provided.')
+    if cutoff is not None:
+        if len(cutoff) != 1:
+            raise ValueError('Only one distance can be provided.')
 
+    accept_r = None
     center = np.mean(R, axis=0)
 
     d_sum = 0.0
     # Calculates distance from center
     for z_i in z_slice:
         d_sum += _calc_distance(center, R[z_i])
-    if d_sum > cutoff[0]:
-        return False, d_sum
-    else:
-        return True, d_sum
+    if cutoff is not None:
+        if d_sum > cutoff[0]:
+            accept_r = False
+        else:
+            accept_r = True
+    
+    return accept_r, d_sum
