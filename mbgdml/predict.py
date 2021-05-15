@@ -243,10 +243,8 @@ class mbPredict():
         E = nbody_dataset['E']
         F = nbody_dataset['F']
         num_config = R.shape[0]
-        system = str(nbody_dataset['system'][()])
-        if system == 'solvent':
-            dataset_info = solvents.system_info(ref_dataset['z'].tolist())
-            system_size = dataset_info['cluster_size']
+        entity_num = len(set(nbody_dataset.entity_ids))
+        
         # Removing all n-body contributions for every configuration.
         for config in range(num_config):
             if z.ndim == 1:
@@ -268,7 +266,7 @@ class mbPredict():
         nbody_dataset['F_max'] = np.array(np.max(F.ravel()))
         nbody_dataset['F_mean'] = np.array(np.mean(F.ravel()))
         nbody_dataset['F_var'] = np.array(np.var(F.ravel()))
-        nbody_dataset['mb'] = np.array(int(system_size))
+        nbody_dataset['mb'] = np.array(entity_num)
 
         # Tries to add model md5 hashes to data set
         mb_models_md5 = []
@@ -280,7 +278,7 @@ class mbPredict():
         
         # Generating new data set name
         name_old = str(nbody_dataset['name'][()])
-        nbody_label = str(int(system_size)) + 'body'
+        nbody_label = entity_num + 'body'
         name = '-'.join([name_old, nbody_label])
         nbody_dataset['name'] = np.array(name)
 
