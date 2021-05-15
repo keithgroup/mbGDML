@@ -303,66 +303,82 @@ def md5_data(data, info=['z', 'R']):
         md5_hash.update(hashlib.md5(d).digest())
     return md5_hash.hexdigest()
 
-def e_f_contribution(E, F, R_entity_ids, dsets, operation):
+def e_f_contribution(dset, dsets_lower, operation):
     """Adds or removes energy and force contributions from data sets.
 
     Forces are currently not updated but still returned.
 
     Parameters
     ----------
-    E : :obj:`numpy.ndarray`
-        Initial energy. Can be zero or nonzero.
-    F : :obj:`numpy.ndarray`
-        Initial forces. Can be zero or nonzero.
-    R_entity_ids : :obj:`numpy.ndarray`
-        comp indices of each structure from the reference data set. Can
-        usually be retrieved using ``dset.Rset_info[:, 2:]``. Should align
-        with the structures in ``E`` and ``R``.
-    dsets : :obj:`list` [:obj:`mbgdml.data.dataset.dataSet`]
+    dset : :obj:`mbgdml.data.dataset.dataSet`
+        The reference data set.
+    dsets_lower : :obj:`list` [:obj:`mbgdml.data.dataset.dataSet`]
         Data set contributions to be added or removed from ``E`` and ``F``.
     operation : :obj:`str`
         ``'add'`` or ``'remove'`` the contributions.
     
     Returns
     -------
-    :obj:`numpy.ndarray`
-        Updated energies.
-    :obj:`numpy.ndarray`
-        Updated forces.
+    :obj:`mbgdml.data.dataset.dataSet`
     """
-    # Loop through every lower order n-body data set.
-    for dset_lower in dsets:
-        # Lower order information.
-        R_entity_ids_lower = dset_lower.Rset_info[:, 2:]
-        n_mol_lower = len(R_entity_ids_lower[0])
+    E = dset.E
+    F = dset.F
 
-        # Loop through every structure.
-        for i_r in range(len(E)):
-            # We have to match the molecule information for each structure to
-            # remove the right information.
-            r_R_entity_ids = R_entity_ids[i_r]  # The molecules in this structure.
-            mol_combs = list(  # Molecule combinations to be removed
-                itertools.combinations(r_R_entity_ids, n_mol_lower)
+    # Loop through every lower order n-body data set.
+    for dset_lower in dsets_lower:
+        # Checks MD5 hashes
+        for Rset_id, Rset_md5 in dset.Rset_md5.items():
+            assert Rset_md5 == dset_lower.Rset_md5[Rset_id]
+
+        # Loop through every structure in the reference data set.
+        for i in range(len(dset.R)):
+            # We have to match the molecule information for each reference dset
+            # structure to the molecules in this lower dset to remove the right
+            # information.
+            r_info = dset.Rset_info[i]  # Rset info of this structure.
+            mol_combs = list(  # Molecule combinations to be removed from structure.
+                itertools.combinations(
+                    r_info[2:], len(set(dset_lower.entity_ids))  # Number of molecules in lower dset
+                )
             )
             mol_combs = np.array(mol_combs)
 
             # Loop through every molecular combination.
             for mol_comb in mol_combs:
+                r_info_lower_comb = np.block([r_info[:2], mol_comb])
                 
-                i_r_lower = np.where(  # Index of the structure in the lower data set.
-                    np.all(R_entity_ids_lower == mol_comb, axis=1)
+                # Index of the molecule combination in the lower data set.
+                i_r_lower = np.where(
+                    np.all(dset_lower.Rset_info == r_info_lower_comb, axis=1)
                 )[0][0]
 
                 e_r_lower = dset_lower.E[i_r_lower]
                 f_r_lower = dset_lower.F[i_r_lower]
 
                 # Adding or removing contributions.
-                # TODO: Force contributions.
                 if operation == 'add':
-                    E[i_r] += e_r_lower
+                    E[i] += e_r_lower
                 elif operation == 'remove':
-                    E[i_r] -= e_r_lower
+                    E[i] -= e_r_lower
                 else:
                     raise ValueError(f'{operation} is not "add" or "remove".')
-    
-    return E, F
+                
+                for Rset_id in r_info_lower_comb[2:]:
+                    entity_id = np.where(r_info[2:] == Rset_id)[0][0]
+                    entity_idx = np.where(dset.entity_ids == entity_id)[0]
+
+                    entity_id_lower = np.where(
+                        r_info_lower_comb[2:] == Rset_id
+                    )[0][0]
+                    entity_idx_lower = np.where(
+                        dset_lower.entity_ids == entity_id_lower
+                    )[0]
+                    
+                    if operation == 'add':
+                        F[i][entity_idx] += f_r_lower[entity_idx_lower]
+                    elif operation == 'remove':
+                        F[i][entity_idx] -= f_r_lower[entity_idx_lower]
+
+    dset.E = E
+    dset.F = F
+    return dset

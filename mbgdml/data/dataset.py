@@ -408,9 +408,12 @@ class dataSet(mbGDMLData):
             self.mb = int(dataset['mb'][()])
             try:
                 self.mb_models_md5 = dataset['mb_models_md5'].astype('U32')
-            except AttributeError:
-                # Ugly fix to get some unique scripts to work.
-                pass
+            except:
+                try:
+                    self.mb_dsets_md5 = dataset['mb_dsets_md5'].astype('U32')
+                except:
+                    # Ugly fix to get some unique scripts to work.
+                    pass
         try:
             self.Rset_info = dataset['Rset_info'][()]
             self.Rset_md5 = dataset['Rset_md5'][()]
@@ -932,7 +935,14 @@ class dataSet(mbGDMLData):
         # mbGDML information.
         if hasattr(self, 'mb'):
             dataset['mb'] = np.array(self.mb)
-            dataset['mb_models_md5'] = np.array(self.mb_models_md5, dtype='S32')
+            try:
+                dataset['mb_models_md5'] = np.array(self.mb_models_md5, dtype='S32')
+            except:
+                try:
+                    dataset['mb_dsets_md5'] = np.array(self.mb_dsets_md5, dtype='S32')
+                except:
+                    pass
+
 
         try:
             dataset['criteria'] = np.array(self.criteria)
@@ -1018,7 +1028,7 @@ class dataSet(mbGDMLData):
         """
         utils.write_xyz(self.z, self.R, save_dir, self.name)
     
-    def create_mb(self, ref_dset, model_paths):
+    def create_mb_from_models(self, ref_dset, model_paths):
         """Creates a many-body data set using mbGDML predictions.
 
         Removes energy and force predictions from the reference data set using
@@ -1036,3 +1046,41 @@ class dataSet(mbGDMLData):
         predict = mbPredict(model_paths)
         dataset = predict.remove_nbody(ref_dset.dataset)
         self._update(dataset)
+    
+    def create_mb_from_dsets(self, ref_dset, dset_lower_paths):
+        """Creates a many-body data set from lower-order data sets.
+
+        If ``ref_dset`` has n > 1 molecules, ``lower_dset_paths`` is a list
+        (of size n-1) data set paths with all possible lower-order contributions
+        removed. For example, if n is 3, paths to a monomer data set with
+        original energies and forces along with a dimer data set with monomer
+        contributions removed are required.
+
+        Parameters
+        ----------
+        ref_dset : :obj:`~mbgdml.data.dataset.dataSet`
+            Reference data set of structures, energies, and forces. This is the
+            data where mbGDML predictions will be subtracted from.
+        dset_lower_paths : :obj:`list` [:obj:`str`]
+            Paths to many-body data set contributions to be removed from
+            ``ref_dset``.
+        """
+        dsets_lower = [dataSet(dset_path) for dset_path in dset_lower_paths]
+        dset_n_z = [len(i.z) for i in dsets_lower]  # Number of atoms
+        n_body_order = [dset_n_z.index(i) for i in sorted(dset_n_z)]
+        dsets_lower = [dsets_lower[i] for i in n_body_order]  # Smallest to largest molecules.
+
+        # Remove energy and force contributions from data set.
+        ref_dset = utils.e_f_contribution(
+            ref_dset, dsets_lower, 'remove'
+        )
+
+        ref_dset.mb = len(set(ref_dset.entity_ids))
+
+        mb_dsets_md5 = []
+        for dset_lower in dsets_lower:
+            if hasattr(dset_lower, 'md5'):
+                mb_dsets_md5.append(dset_lower.md5)
+        ref_dset.mb_dsets_md5 = mb_dsets_md5
+        
+        self._update(ref_dset.dataset)
