@@ -684,7 +684,8 @@ class dataSet(mbGDMLData):
                 # r_selection is 3 dimensions (to make it compatible to
                 # concatenate). So we make need to select the first (and only)
                 # structure.
-                if not criteria(z, r_selection[0], z_slice, cutoff):
+                accept_r, _ = criteria(z, r_selection[0], z_slice, cutoff)
+                if not accept_r:
                     # If criteria is not met, will not include sample.
                     continue
             

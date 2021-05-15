@@ -22,6 +22,7 @@
 
 import itertools
 import numpy as np
+from numpy.core.arrayprint import dtype_short_repr
 
 def _calc_distance(r1, r2):
     """Calculates the Euclidean distance between two points.
@@ -61,6 +62,8 @@ def distance_all(z, R, z_slice, cutoff):
     -------
     :obj:`bool`
         If the distance between the two dimers is less than the cutoff.
+    :obj:`float`
+        Calculated distance metric.
     """
     if len(cutoff) != 1:
         raise ValueError('Only one distance can be provided.')
@@ -71,9 +74,9 @@ def distance_all(z, R, z_slice, cutoff):
     for pair in all_pairs:
         distance = _calc_distance(R[pair[0]], R[pair[1]])
         if distance > cutoff[0]:
-            return False
+            return False, distance
     # All pairs of molecules are within the cutoff.
-    return True
+    return True, distance
 
 def distance_sum(z, R, z_slice, cutoff):
     """If the sum of pairwise distances from the cluster center is less than
@@ -102,6 +105,8 @@ def distance_sum(z, R, z_slice, cutoff):
     -------
     :obj:`bool`
         If the distance between the two dimers is less than the cutoff.
+    :obj:`float`
+        Calculated distance metric.
     """
     if len(cutoff) != 1:
         raise ValueError('Only one distance can be provided.')
@@ -113,6 +118,6 @@ def distance_sum(z, R, z_slice, cutoff):
     for z_i in z_slice:
         d_sum += _calc_distance(center, R[z_i])
     if d_sum > cutoff[0]:
-        return False
+        return False, d_sum
     else:
-        return True
+        return True, d_sum
