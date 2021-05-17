@@ -678,13 +678,16 @@ class dataSet(mbGDMLData):
                     raise ValueError(f'z of the selection is incompatible.')
             
             r_selection = np.array([Rset_R[struct_num_selection, atom_ids, :]])
+            r_entity_ids = entity_ids[atom_ids]
 
             # Checks any structure criteria.
             if criteria is not None:
                 # r_selection is 3 dimensions (to make it compatible to
                 # concatenate). So we make need to select the first (and only)
                 # structure.
-                accept_r, _ = criteria(z, r_selection[0], z_slice, cutoff)
+                accept_r, _ = criteria(
+                    z, r_selection[0], z_slice, r_entity_ids, cutoff
+                )
                 if not accept_r:
                     # If criteria is not met, will not include sample.
                     continue
