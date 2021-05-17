@@ -721,7 +721,7 @@ class dataSet(mbGDMLData):
     
     def Rset_sample(
         self, Rset, quantity, size, always=[], criteria=None, z_slice=[],
-        cutoff=[]
+        cutoff=[], center_structures=False
     ):
         """Adds structures from a structure set to the data set.
 
@@ -737,13 +737,23 @@ class dataSet(mbGDMLData):
         always : :obj:`list` [:obj:`int`], optional
             Molecule indices that will be in every selection. Not implemented
             yet.
-        criteria : :obj:`mbgdml.sample.sampleCritera`
-            Structure criteria during the sampling procedure.
-        z_slice : :obj:`numpy.ndarray`
-            Indices of the atoms to be used for the cutoff calculation.
-        cutoff : :obj:`list`
+        criteria : :obj:`mbgdml.sample.sampleCritera`, optional
+            Structure criteria during the sampling procedure. Defaults to
+            ``None`` if no criteria should be used.
+        z_slice : :obj:`numpy.ndarray`, optional
+            Indices of the atoms to be used for the cutoff calculation. Defaults
+            to ``[]`` is no criteria is selected or if it is not required for
+            the selected criteria.
+        cutoff : :obj:`list`, optional
             Distance cutoff between the atoms selected by ``z_slice``. Must be
-            in the same units (e.g., Angstrom) as ``R``.
+            in the same units (e.g., Angstrom) as ``R``. Defaults to ``[]`` if
+            no criteria is selected or a cutoff is not desired.
+        center_structures : :obj:`bool`, optional
+            Move the center of mass of each structure to the origin thereby 
+            centering each structure (and loosing the actual coordinates of
+            the structure). While not required for correct use of mbGDML this
+            can be useful for other analysis or data set visualization. Defaults
+            to ``False``.
         """
         # Gets Rset_id for this new sampling.
         Rset_id = self._get_Rset_id(Rset)
@@ -822,6 +832,17 @@ class dataSet(mbGDMLData):
             # We should not have to check the entities because we already
             # check z.
             pass
+        
+        # Moves the center of mass of every structure to the origin.
+        if center_structures:
+            masses = np.empty(R[0].shape)  # Masses of each atom in the same shape of R.
+            for i in range(len(masses)):
+                masses[i,:] = utils.z_to_mass[z[i]]
+            
+            for i in range(len(R)):
+                r = R[i]
+                cm_r = np.average(r, axis=0, weights=masses)
+                R[i] = r - cm_r
         
         # Stores all information only if sampling is successful.
         self.Rset_md5 = {**self.Rset_md5, **{Rset_id: Rset.md5}}
