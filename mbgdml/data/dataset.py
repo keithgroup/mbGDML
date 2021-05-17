@@ -584,7 +584,7 @@ class dataSet(mbGDMLData):
     
     def _Rset_sample_num(
         self, z, R, E, F, Rset, Rset_id, Rset_info, quantity, size,
-        criteria=None, z_slice=[], cutoff=[]
+        criteria=None, z_slice=[], cutoff=[], sampling_updates=False
     ):
         """Samples a structure set for data set.
 
@@ -609,13 +609,20 @@ class dataSet(mbGDMLData):
             Number of structures to sample from the structure set.
         size : :obj:`int`
             Desired number of molecules in each selection.
-        criteria : :obj:`mbgdml.sample.sampleCritera`
-            Structure criteria during the sampling procedure.
-        z_slice : :obj:`numpy.ndarray`
-            Indices of the atoms to be used for the cutoff calculation.
-        cutoff : :obj:`list`
+        criteria : :obj:`mbgdml.sample.sampleCritera`, optional
+            Structure criteria during the sampling procedure. Defaults to
+            ``None`` if no criteria should be used.
+        z_slice : :obj:`numpy.ndarray`, optional
+            Indices of the atoms to be used for the cutoff calculation. Defaults
+            to ``[]`` is no criteria is selected or if it is not required for
+            the selected criteria.
+        cutoff : :obj:`list`, optional
             Distance cutoff between the atoms selected by ``z_slice``. Must be
-            in the same units (e.g., Angstrom) as ``R``.
+            in the same units (e.g., Angstrom) as ``R``. Defaults to ``[]`` if
+            no criteria is selected or a cutoff is not desired.
+        sampling_updates : :obj:`bool`, optional
+            Will print something for every 100 successfully sampled structures.
+            Defaults to ``False``.
 
         Returns
         -------
@@ -716,12 +723,16 @@ class dataSet(mbGDMLData):
                 F = np.concatenate((F, f_selection), axis=0)
 
             i += 1
+
+            if sampling_updates:
+                if i%100 == 0:
+                    print(f'Successfully found {i} structures')
         
         return (Rset_info, z, R, E, F)
     
     def Rset_sample(
         self, Rset, quantity, size, always=[], criteria=None, z_slice=[],
-        cutoff=[], center_structures=False
+        cutoff=[], center_structures=False, sampling_updates=False
     ):
         """Adds structures from a structure set to the data set.
 
@@ -754,6 +765,9 @@ class dataSet(mbGDMLData):
             the structure). While not required for correct use of mbGDML this
             can be useful for other analysis or data set visualization. Defaults
             to ``False``.
+        sampling_updates : :obj:`bool`, optional
+            Will print something for every 100 successfully sampled structures.
+            Defaults to ``False``.
         """
         # Gets Rset_id for this new sampling.
         Rset_id = self._get_Rset_id(Rset)
@@ -770,7 +784,8 @@ class dataSet(mbGDMLData):
             quantity = int(quantity)
             Rset_info, z, R, E, F = self._Rset_sample_num(
                 z, R, E, F, Rset, Rset_id, Rset_info, quantity, size,
-                criteria=criteria, z_slice=z_slice, cutoff=cutoff
+                criteria=criteria, z_slice=z_slice, cutoff=cutoff, 
+                sampling_updates=sampling_updates
             )
             # Adds criteria information to the data set (only if sampling is 
             # successful).
