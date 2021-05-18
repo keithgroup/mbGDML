@@ -67,11 +67,9 @@ The following packages are required:
 - ase
 - cclib (>=1.7)
 - mako
-- matplotlib
 - natsort
 - numpy
 - sgdml
-- umap-learn
 
 All of these required packages can be installed with:
 
@@ -85,4 +83,15 @@ Then, clone and install the repository.
 git clone https://github.com/keithgroup/mbGDML
 cd mbGDML
 pip install .
+```
+
+An analysis submodule is available that requires extra dependencies.
+
+- umap-learn
+- matplotlib
+
+To automatically include these dependencies you can use the "Package Extras" feature of pip like so.
+
+```text
+pip install .[analysis]
 ```

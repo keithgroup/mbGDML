@@ -8,8 +8,7 @@ with open('README.md') as readme_file:
     readme = readme_file.read()
 
 requirements = [
-    'natsort', 'cclib>=1.7', 'numpy', 'ase', 'sgdml', 'mako', 'matplotlib',
-    'umap-learn'
+    'natsort', 'cclib>=1.7', 'numpy', 'ase', 'sgdml', 'mako'
 ]
 
 setup_requirements = [ ]
@@ -30,7 +29,7 @@ setup(
     ],
     description="Many-body implementation of symmetric  domain machine learning force fields",
     install_requires=requirements,
-    extras_require={},
+    extras_require={'analysis': ['matplotlib', 'umap-learn']},
     license="MIT license",
     long_description=readme,
     include_package_data=True,
