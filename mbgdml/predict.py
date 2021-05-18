@@ -243,7 +243,7 @@ class mbPredict():
         E = nbody_dataset['E']
         F = nbody_dataset['F']
         num_config = R.shape[0]
-        entity_num = len(set(nbody_dataset.entity_ids))
+        entity_num = len(set(nbody_dataset['entity_ids']))
         
         # Removing all n-body contributions for every configuration.
         for config in range(num_config):
@@ -278,7 +278,7 @@ class mbPredict():
         
         # Generating new data set name
         name_old = str(nbody_dataset['name'][()])
-        nbody_label = entity_num + 'body'
+        nbody_label = str(entity_num) + 'body'
         name = '-'.join([name_old, nbody_label])
         nbody_dataset['name'] = np.array(name)
 

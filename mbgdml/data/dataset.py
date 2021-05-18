@@ -406,14 +406,11 @@ class dataSet(mbGDMLData):
         # mbGDML added data set information.
         if 'mb' in dataset.keys():
             self.mb = int(dataset['mb'][()])
-            try:
-                self.mb_models_md5 = dataset['mb_models_md5'].astype('U32')
-            except:
-                try:
-                    self.mb_dsets_md5 = dataset['mb_dsets_md5'].astype('U32')
-                except:
-                    # Ugly fix to get some unique scripts to work.
-                    pass
+        if 'mb_models_md5' in dataset.keys():
+            self.mb_models_md5 = dataset['mb_models_md5']
+        if 'mb_dsets_md5' in dataset.keys():
+            self.mb_dsets_md5 = dataset['mb_dsets_md5']
+
         try:
             self.Rset_info = dataset['Rset_info'][()]
             self.Rset_md5 = dataset['Rset_md5'][()]
@@ -975,14 +972,10 @@ class dataSet(mbGDMLData):
         # mbGDML information.
         if hasattr(self, 'mb'):
             dataset['mb'] = np.array(self.mb)
-            try:
-                dataset['mb_models_md5'] = np.array(self.mb_models_md5, dtype='S32')
-            except:
-                try:
-                    dataset['mb_dsets_md5'] = np.array(self.mb_dsets_md5, dtype='S32')
-                except:
-                    pass
-
+        if hasattr(self, 'mb_models_md5'):
+            dataset['mb_models_md5'] = np.array(self.mb_models_md5, dtype='S32')
+        if hasattr(self, 'mb_dsets_md5'):
+            dataset['mb_dsets_md5'] = np.array(self.mb_dsets_md5, dtype='S32')
 
         try:
             dataset['criteria'] = np.array(self.criteria)

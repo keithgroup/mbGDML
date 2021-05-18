@@ -141,13 +141,12 @@ class mbGDMLTrain():
         new_model.load(model_name + '.npz')
         
         # Adding mbGDML-specific modifications to model.
-        new_model.add_modifications()
+        new_model.add_modifications(self.dataset)
 
         # Adding many-body information if present in dataset.
         if 'mb' in self.dataset.keys():
-            mb_order = int(self.dataset['mb'][()])
-            mb_models_md5 = self.dataset['mb_models_md5']
-            new_model.add_manybody_info(mb_order, mb_models_md5)
+            new_model.model['mb'] = int(self.dataset['mb'][()])
+            new_model.model['mb_models_md5'] = self.dataset['mb_models_md5']
         
         # Adding sigma selection to log (not apparent because of removed
         # formatting.
