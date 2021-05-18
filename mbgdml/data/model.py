@@ -95,14 +95,19 @@ class mbModel(mbGDMLData):
         if self.model['type'][()] != 'm':
             raise AttributeError('This npz is not a mbGDML model.')
     
-    def add_modifications(self):
+    def add_modifications(self, dset):
         """mbGDML-specific modifications of models.
 
-        - Adds system information if possible which could include ``'system'``,
-          ``'solvent'``, and ``'cluster_size'``.
-        - Adds mbGDML version with ``'mbgdml_version'``.
+        Transfers information from data set to model.
+
+        Parameters
+        ----------
+        dset : :obj:`dict`
+            Dictionary of a mbGDML data set.
         """
-        self.add_system_info(self.model)
+        dset_keys = ['entity_ids', 'comp_ids', 'criteria', 'z_slice', 'cutoff']
+        for key in dset_keys:
+            self.model[key] = dset[key]
         self.model['mbgdml_version'] = np.array(__version__)
         self.model['md5'] = np.array(self.md5, dtype='S32')
     
