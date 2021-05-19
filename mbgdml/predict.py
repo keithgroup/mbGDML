@@ -318,7 +318,7 @@ class mbPredict():
         return e['T'], f['T']
 
 
-    def remove_nbody(self, ref_dataset):
+    def remove_nbody(self, ref_dataset, ignore_criteria=False, store_each=False):
         """Removes mbGDML prediced energies and forces from a reference data
         set.
 
@@ -326,6 +326,12 @@ class mbPredict():
         ----------
         ref_dataset : :obj:`dict`
             Contains all data as :obj:`numpy.ndarray` objects.
+        ignore_criteria : :obj:`bool`, optional
+            Whether to take into account structure criteria and their cutoffs
+            for each model. Defaults to ``False``.
+        store_each : :obj:`bool`, optional
+            Store each n-body combination's contribution in the :obj:`dict`.
+            Defaults to ``False``.
         """
         nbody_dataset = ref_dataset
         z = nbody_dataset['z']
@@ -337,13 +343,16 @@ class mbPredict():
         
         # Removing all n-body contributions for every configuration.
         for config in range(num_config):
+            if (config+1)%500 == 0:
+                print(f'Predicted {config+1} out of {num_config}')
             if z.ndim == 1:
                 z_predict = z
             else:
                 z_predict = z[config]
             e, f = self.predict(
                 z_predict, R[config], nbody_dataset['entity_ids'],
-                nbody_dataset['comp_ids'], ignore_criteria=False
+                nbody_dataset['comp_ids'], ignore_criteria=ignore_criteria,
+                store_each=store_each
             )
             F[config] -= f
             E[config] -= e
