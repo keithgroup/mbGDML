@@ -435,14 +435,19 @@ class dataSet(mbGDMLData):
             self._update(dict(dataset_npz))
 
     def _get_Rset_id(
-        self, Rset
+        self, data, selected_rset_id=None
     ):
         """Determines the numerical Rset ID for this data set.
 
         Parameters
         ----------
-        Rset : :obj:`str`
-            A loaded :obj:`mbgdml.data.structureSet` object.
+        Rset : :obj:`mbgdml.data`
+            A loaded :obj:`mbgdml.data.structureSet` or
+            :obj:`mbgdml.data.dataSet` object.
+        selected_rset_id : obj:`int`, optional
+            Currently dset sampling can only be done for one rset_id at a time.
+            This specifies which rset structures in the data set to sample from.
+            Defaults to ``None``.
         
         Returns
         -------
@@ -453,9 +458,13 @@ class dataSet(mbGDMLData):
         # If not, adds this structure set to the Rset_md5 information.
         Rset_id = None
         if self.Rset_md5 != {}:
+            if data.type == 's':
+                md5 = data.md5
+            elif data.type == 'd':
+                md5 = data.Rset_md5[selected_rset_id]
             new_k = 0  # New key should be one more than the last key.
             for k,v in self.Rset_md5.items():
-                if v == Rset.md5:
+                if v == md5:
                     Rset_id = k
                     break
                 new_k += 1
@@ -517,66 +526,70 @@ class dataSet(mbGDMLData):
         # Getting all possible molecule combinations.
         entity_ids = Rset.entity_ids
         max_entity_i = max(entity_ids)
-        comb_list = list(itertools.combinations(range(max_entity_i + 1), size))
-        
-        # Loops though every possible molecule combination.
-        for comb in comb_list:
-            
-            # Adds Rset_id information for every structure in this combination.
-            for struct_i in range(Rset.R.shape[0]):
+        comb_list = itertools.combinations(range(max_entity_i + 1), size)
+
+        # Adds Rset_id information for every structure in this combination.
+        for struct_i in range(Rset_R.shape[0]):
+            # Loops though every possible molecule combination.
+            for comb in comb_list:
+                
                 Rset_selection = [Rset_id, struct_i] + list(comb)
                 # Adds new sampling into our Rset info.
                 if Rset_info.shape[1] == 0:  # No previous Rset_info.
                     Rset_axis = 1
                 else:
                     Rset_axis = 0
+                    # Checks to see if combination is already in data set.
+                    if np.all(np.where(Rset_info == Rset_selection)):
+                        # Does not add the combination.
+                        continue
+                
                 Rset_info = np.concatenate(
                     (Rset_info, np.array([Rset_selection])), axis=Rset_axis
                 )
-            
-            # Adds selection's atomic coordinates to R.
-            ## Gets atomic indices from molecule_ids in the Rset.
-            atom_ids = []
-            for entity_id in Rset_selection[2:]:
-                atom_ids.extend(
-                    [i for i,x in enumerate(entity_ids) if x == entity_id]
-                )
-            # Checks compatibility with atoms.
-            if len(z) == 0:
-                z = Rset_z[atom_ids]
-            else:
-                if not np.all([z, Rset_z[atom_ids]]):
-                    print(f'z of data set: {z}')
-                    print(f'Rset_info of selection: {Rset_selection}')
-                    print(f'z of selection: {Rset_z[atom_ids]}')
-                    raise ValueError(f'z of the selection is incompatible.')
-            
-            # Adds selection's Cartesian coordinates to R.
-            r_selection = np.array(Rset_R[:, atom_ids, :])
-            if R.shape[2] == 0:  # No previous R.
-                R = r_selection
-            else:
-                R = np.concatenate((R, r_selection), axis=0)
 
-            # Adds NaN for energies.
-            e_selection = np.empty((Rset.R.shape[0]))
-            e_selection[:] = np.NaN
-            if len(E.shape) == 0:  # No previous E.
-                E = e_selection
-            else:
-                E = np.concatenate((E, e_selection), axis=0)
+                # Adds selection's atomic coordinates to R.
+                ## Gets atomic indices from molecule_ids in the Rset.
+                atom_ids = []
+                for entity_id in Rset_selection[2:]:
+                    atom_ids.extend(
+                        [i for i,x in enumerate(entity_ids) if x == entity_id]
+                    )
+                # Checks compatibility with atoms.
+                if len(z) == 0:
+                    z = Rset_z[atom_ids]
+                else:
+                    if not np.all([z, Rset_z[atom_ids]]):
+                        print(f'z of data set: {z}')
+                        print(f'Rset_info of selection: {Rset_selection}')
+                        print(f'z of selection: {Rset_z[atom_ids]}')
+                        raise ValueError(f'z of the selection is incompatible.')
+                
+                # Adds selection's Cartesian coordinates to R.
+                r_selection = np.array(Rset_R[:, atom_ids, :])
+                if R.shape[2] == 0:  # No previous R.
+                    R = r_selection
+                else:
+                    R = np.concatenate((R, r_selection), axis=0)
 
-            # Adds NaN for forces.
-            ## Force array will be the same shape as R.
-            ## So we just take the r_selection array and make all values nan.
-            f_selection = np.copy(r_selection)
-            f_selection[:] = np.NaN
-            if F.shape[2] == 0:  # No previous F.
-                F = f_selection
-            else:
-                F = np.concatenate((F, f_selection), axis=0)
+                # Adds NaN for energies.
+                e_selection = np.empty((Rset.R.shape[0]))
+                e_selection[:] = np.NaN
+                if len(E.shape) == 0:  # No previous E.
+                    E = e_selection
+                else:
+                    E = np.concatenate((E, e_selection), axis=0)
+
+                # Adds NaN for forces.
+                ## Force array will be the same shape as R.
+                ## So we just take the r_selection array and make all values nan.
+                f_selection = np.copy(r_selection)
+                f_selection[:] = np.NaN
+                if F.shape[2] == 0:  # No previous F.
+                    F = f_selection
+                else:
+                    F = np.concatenate((F, f_selection), axis=0)
         
-
         return (Rset_info, z, R, E, F)
     
     def _Rset_sample_num(
@@ -758,7 +771,7 @@ class dataSet(mbGDMLData):
             no criteria is selected or a cutoff is not desired.
         center_structures : :obj:`bool`, optional
             Move the center of mass of each structure to the origin thereby 
-            centering each structure (and loosing the actual coordinates of
+            centering each structure (and losing the actual coordinates of
             the structure). While not required for correct use of mbGDML this
             can be useful for other analysis or data set visualization. Defaults
             to ``False``.
@@ -776,7 +789,6 @@ class dataSet(mbGDMLData):
         F = self.F
 
         Rset_info = self.Rset_info
-
         if isinstance(quantity, int) or str(quantity).isdigit():
             quantity = int(quantity)
             Rset_info, z, R, E, F = self._Rset_sample_num(
