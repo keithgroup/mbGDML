@@ -157,6 +157,9 @@ def cm_distance_sum(z, R, z_slice, entity_ids, cutoff=None):
     if cutoff is not None:
         if len(cutoff) != 1:
             raise ValueError('Only one distance can be provided.')
+    
+    # Will error out if entity_ids is not an array.
+    assert isinstance(entity_ids, np.ndarray)
 
     accept_r = None
     masses = np.empty(R.shape)  # Masses of each atom in the same shape of R.
