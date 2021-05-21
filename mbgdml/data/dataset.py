@@ -296,7 +296,7 @@ class dataSet(mbGDMLData):
     
     @entity_ids.setter
     def entity_ids(self, var):
-        self._entity_ids = var
+        self._entity_ids = np.array(var)
     
     @property
     def comp_ids(self):
@@ -317,7 +317,7 @@ class dataSet(mbGDMLData):
     
     @comp_ids.setter
     def comp_ids(self, var):
-        self._comp_ids = var
+        self._comp_ids = np.array(var)
 
     def convertE(self, E_units):
         """Convert energies and updates :attr:`e_unit`.
@@ -477,8 +477,109 @@ class dataSet(mbGDMLData):
 
         return Rset_id
     
-    def _Rset_sample_all(
-        self, z, R, E, F, Rset, Rset_id, Rset_info, size
+    def _center_structures(self, z, R):
+        """Centers each structure's center of mass to the origin.
+
+        Previously centered structures should not be affected by this technique.
+
+        Parameters
+        ----------
+        z : :obj:`numpy.ndarray`
+            Atomic numbers of the atoms in every structure.
+        R : :obj:`numpy.ndarray`
+            Cartesian atomic coordinates of data set structures.
+        
+        Returns
+        -------
+        :obj:`numpy.ndarray`
+            Centered Cartesian atomic coordinates.
+        """
+        # Masses of each atom in the same shape of R.
+        if R.ndim == 2:
+            R = np.array([R])
+        
+        masses = np.empty(R[0].shape)
+        
+        for i in range(len(masses)):
+            masses[i,:] = utils.z_to_mass[z[i]]
+        
+        for i in range(len(R)):
+            r = R[i]
+            cm_r = np.average(r, axis=0, weights=masses)
+            R[i] = r - cm_r
+        
+        if R.shape[0] == 1:
+            return R[0]
+        else:
+            return R
+    
+    def _check_entity_comp_ids(
+        self, entity_ids, comp_ids, data_entity_ids, data_comp_ids,
+        sampled_entity_ids_split
+    ):
+        """
+        
+        Parameters
+        ----------
+        entity_ids : :obj:`numpy.ndarray`
+            Already sampled entity_ids of the data set. Could be an empty array.
+        comp_ids : :obj:`numpy.ndarray`
+            Already sampled comp_ids of the data set. Could be an empty array.
+        data_entity_ids :obj:`numpy.ndarray`
+            entity_ids of a data or structure set being sampled.
+        data_comp_ids :obj:`numpy.ndarray`
+            comp_ids of a data or structure set being sampled.
+        sampled_entity_ids_split : :obj:`list` [:obj:`numpy.ndarray`]
+            The unique data entity_ids of each new entity for this data set.
+            For example, all the data entity_ids (from a structure set) that
+            are included as entity_id = 0 in this data set.
+        
+        Returns
+        -------
+        :obj:`numpy.ndarray`
+            The correct entity_ids of this data set.
+        :obj:`numpy.ndarray`
+            The correct comp_ids of this data set.
+        """
+        if len(entity_ids) == 0 and comp_ids.shape == (1, 0):
+            # If there is no previous sampling.
+            # Just need to check that the new entities are self compatible.
+            entity_ids = []  # Start a new entity id list.
+            comp_ids = []  # Start a new component id list.
+            
+            # Loops through every column/entity that we sampled.
+            for entity_id in range(len(sampled_entity_ids_split)):
+                # Gets the size of the entity in the first structure.
+
+                data_entity_id = sampled_entity_ids_split[entity_id][0]
+                ref_entity_size = np.count_nonzero(
+                    data_entity_ids == data_entity_id
+                )
+                # Adds the entity_ids of this entity
+                entity_ids.extend([entity_id for _ in range(ref_entity_size)])
+                # Adds comp_id
+                comp_id = data_comp_ids[data_entity_id][1]
+                comp_ids.append(
+                    [str(entity_id), comp_id]
+                )
+                
+                # We should not have to check the entities because we already
+                # check z.
+
+            entity_ids = np.array(entity_ids)
+            comp_ids = np.array(comp_ids)
+        else:
+            # If there was previous sampling
+            # Need to also check if compatible with the data set.
+            # We should not have to check the entities because we already
+            # check z.
+            pass
+        
+        return entity_ids, comp_ids
+    
+    def _sample_all(
+        self, z, R, E, F, sample_data, Rset_id, Rset_info, size, criteria=None,
+        z_slice=[], cutoff=[], sampling_updates=False
     ):
         """Selects all Rset structures for data set.
 
@@ -500,14 +601,28 @@ class dataSet(mbGDMLData):
             Energies of data set structures prior to sampling.
         F : :obj:`numpy.ndarray`
             Atomic forces of data set structures prior to sampling.
-        Rset : :obj:`mbgdml.data.structureSet`
-            A loaded structure set object.
+        sample_data : :obj:`mbgdml.data`
+            A loaded structure or data set object.
         Rset_id : :obj:`int`
             The :obj:`int` that specifies the Rset (key in ``self.Rset_md5``).
         Rset_info : :obj:`int`
             An array specifying where each structure in R originates from.
         size : :obj:`int`
             Desired number of molecules in each selection.
+        criteria : :obj:`mbgdml.sample.sampleCritera`, optional
+            Structure criteria during the sampling procedure. Defaults to
+            ``None`` if no criteria should be used.
+        z_slice : :obj:`numpy.ndarray`, optional
+            Indices of the atoms to be used for the cutoff calculation. Defaults
+            to ``[]`` is no criteria is selected or if it is not required for
+            the selected criteria.
+        cutoff : :obj:`list`, optional
+            Distance cutoff between the atoms selected by ``z_slice``. Must be
+            in the same units (e.g., Angstrom) as ``R``. Defaults to ``[]`` if
+            no criteria is selected or a cutoff is not desired.
+        sampling_updates : :obj:`bool`, optional
+            Will print something for every 100 successfully sampled structures.
+            Defaults to ``False``.
         
         Returns
         -------
@@ -520,19 +635,28 @@ class dataSet(mbGDMLData):
         :obj:`numpy.ndarray`
             Atomic forces of atoms in structure(s). All are NaN.
         """
-        Rset_z = Rset.z
-        Rset_R = Rset.R
+        sample_data_z = sample_data.z
+        sample_data_R = sample_data.R
 
         # Getting all possible molecule combinations.
-        entity_ids = Rset.entity_ids
+        entity_ids = sample_data.entity_ids
         max_entity_i = max(entity_ids)
-        comb_list = itertools.combinations(range(max_entity_i + 1), size)
+        comb_list = list(itertools.combinations(range(max_entity_i + 1), size))
+        n_comb = len(comb_list)
 
         # Adds Rset_id information for every structure in this combination.
-        for struct_i in range(Rset_R.shape[0]):
+        num_R = sample_data_R.shape[0]
+        for struct_i in range(num_R):
+            if sampling_updates and (struct_i+1)%500 == 0:
+                print(
+                    f'Sampled clusters from {struct_i+1} out of {num_R} structures'
+                )
+            if sampling_updates and struct_i+1 == num_R:
+                print(f'Sampled all {num_R*n_comb} possible structures')
+            
             # Loops though every possible molecule combination.
             for comb in comb_list:
-                
+
                 Rset_selection = [Rset_id, struct_i] + list(comb)
                 # Adds new sampling into our Rset info.
                 if Rset_info.shape[1] == 0:  # No previous Rset_info.
@@ -540,40 +664,54 @@ class dataSet(mbGDMLData):
                 else:
                     Rset_axis = 0
                     # Checks to see if combination is already in data set.
-                    if np.all(np.where(Rset_info == Rset_selection)):
+                    if (Rset_info[...]==Rset_selection).all(1).any():
                         # Does not add the combination.
                         continue
-                
-                Rset_info = np.concatenate(
-                    (Rset_info, np.array([Rset_selection])), axis=Rset_axis
-                )
 
-                # Adds selection's atomic coordinates to R.
-                ## Gets atomic indices from molecule_ids in the Rset.
+                # Gets atomic indices from entity_ids in the Rset.
                 atom_ids = []
                 for entity_id in Rset_selection[2:]:
                     atom_ids.extend(
                         [i for i,x in enumerate(entity_ids) if x == entity_id]
                     )
+                
                 # Checks compatibility with atoms.
                 if len(z) == 0:
-                    z = Rset_z[atom_ids]
+                    z = sample_data_z[atom_ids]
                 else:
-                    if not np.all([z, Rset_z[atom_ids]]):
+                    if not np.all([z, sample_data_z[atom_ids]]):
                         print(f'z of data set: {z}')
                         print(f'Rset_info of selection: {Rset_selection}')
-                        print(f'z of selection: {Rset_z[atom_ids]}')
+                        print(f'z of selection: {sample_data_z[atom_ids]}')
                         raise ValueError(f'z of the selection is incompatible.')
                 
-                # Adds selection's Cartesian coordinates to R.
-                r_selection = np.array(Rset_R[:, atom_ids, :])
+                # Checks any structure criteria.
+                r_selection = np.array([sample_data_R[struct_i, atom_ids, :]])
+                r_entity_ids = entity_ids[atom_ids]
+                if criteria is not None:
+                    # r_selection is 3 dimensions (to make it compatible to
+                    # concatenate). So we make need to select the first (and only)
+                    # structure.
+                    accept_r, _ = criteria(
+                        z, r_selection[0], z_slice, r_entity_ids, cutoff
+                    )
+                    if not accept_r:
+                        # If criteria is not met, will not include sample.
+                        continue
+                
+                # SUCCESSFUL SAMPLE
+
+                Rset_info = np.concatenate(
+                    (Rset_info, np.array([Rset_selection])), axis=Rset_axis
+                )
+                
                 if R.shape[2] == 0:  # No previous R.
                     R = r_selection
                 else:
                     R = np.concatenate((R, r_selection), axis=0)
 
                 # Adds NaN for energies.
-                e_selection = np.empty((Rset.R.shape[0]))
+                e_selection = np.empty((1,))
                 e_selection[:] = np.NaN
                 if len(E.shape) == 0:  # No previous E.
                     E = e_selection
@@ -592,7 +730,7 @@ class dataSet(mbGDMLData):
         
         return (Rset_info, z, R, E, F)
     
-    def _Rset_sample_num(
+    def _sample_num(
         self, z, R, E, F, Rset, Rset_id, Rset_info, quantity, size,
         criteria=None, z_slice=[], cutoff=[], sampling_updates=False
     ):
@@ -668,15 +806,6 @@ class dataSet(mbGDMLData):
                 if (Rset_info[...]==Rset_selection).all(1).any():
                     continue
 
-            # Adds new sampling into our Rset info.
-            if Rset_info.shape[1] == 0:  # No previous Rset_info.
-                Rset_axis = 1
-            else:
-                Rset_axis = 0
-            Rset_info = np.concatenate(
-                (Rset_info, np.array([Rset_selection])), axis=Rset_axis
-            )
-
             # Adds selection's atomic coordinates to R.
             ## Gets atomic indices from molecule_ids in the Rset.
             atom_ids = []
@@ -708,6 +837,15 @@ class dataSet(mbGDMLData):
                 if not accept_r:
                     # If criteria is not met, will not include sample.
                     continue
+            
+            # SUCCESSFUL SAMPLE
+            if Rset_info.shape[1] == 0:  # No previous Rset_info.
+                Rset_axis = 1
+            else:
+                Rset_axis = 0
+            Rset_info = np.concatenate(
+                (Rset_info, np.array([Rset_selection])), axis=Rset_axis
+            )
             
             # Adds selection's Cartesian coordinates to R.
             if R.shape[2] == 0:  # No previous R.
@@ -788,10 +926,15 @@ class dataSet(mbGDMLData):
         E = self.E
         F = self.F
 
+        if R.shape[2] == 0:
+            n_R_initial = 0
+        else:
+            n_R_initial = R.shape[0]
+
         Rset_info = self.Rset_info
         if isinstance(quantity, int) or str(quantity).isdigit():
             quantity = int(quantity)
-            Rset_info, z, R, E, F = self._Rset_sample_num(
+            Rset_info, z, R, E, F = self._sample_num(
                 z, R, E, F, Rset, Rset_id, Rset_info, quantity, size,
                 criteria=criteria, z_slice=z_slice, cutoff=cutoff, 
                 sampling_updates=sampling_updates
@@ -803,70 +946,46 @@ class dataSet(mbGDMLData):
                 self.z_slice = z_slice
                 self.cutoff = cutoff
         elif quantity == 'all':
-            Rset_info, z, R, E, F = self._Rset_sample_all(
-                z, R, E, F, Rset, Rset_id, Rset_info, size
+            Rset_info, z, R, E, F = self._sample_all(
+                z, R, E, F, Rset, Rset_id, Rset_info, size,
+                sampling_updates=sampling_updates
             )
         else:
             raise ValueError(f'{quantity} is not a valid selection.')
         
-        # Checks and stores entity_ids and comp_ids.
-        ## Gets the Rset entity_ids from the newly sampled structures.
-        Rset_info_idx_new = np.where(np.any(Rset_info[:, :1] == 0, axis=1))[0]
-        Rset_entity_ids_sampled = np.split(  # A list of column arrays from entity_ids
+        # Ensures there are no duplicate structures.
+        if not Rset_info.shape == np.unique(Rset_info, axis=0).shape:
+            raise ValueError(
+                'There are duplicate structures in the data set'
+            )
+        
+        # Checks entity and comp ids.
+        Rset_info_idx_new = np.array(range(n_R_initial, len(Rset_info)))
+        Rset_entity_ids_sampled_split = np.split(  # A list of column arrays from entity_ids
             Rset_info[Rset_info_idx_new][:, 2:],
             Rset_info.shape[1] - 2,  # Rset_id and structure number not included.
             axis=1
         )
-
-        ## The entity_ids of the dset and rset will not match.
-        ## The comp_label for each entity (in the specific) order must match
-        ## as well as the number of atoms in each entity.
-
-        entity_ids = self.entity_ids
-        comp_ids = self.comp_ids
-        if len(entity_ids) == 0 and comp_ids.shape == (1, 0):
-            # If there is no previous sampling.
-            # Just need to check that the new entities are self compatible.
-            entity_ids = []  # Start a new entity id list.
-            comp_ids = []  # Start a new component id list.
-            
-            # Loops through every column/entity that we sampled.
-            for entity_id in range(len(Rset_entity_ids_sampled)):
-                # Gets the size of the entity in the first structure.
-
-                Rset_entity_id = Rset_entity_ids_sampled[entity_id][0][0]
-                ref_entity_size = np.count_nonzero(
-                    Rset.entity_ids == Rset_entity_id
-                )
-                # Adds the entity_ids of this entity
-                entity_ids.extend([entity_id for _ in range(ref_entity_size)])
-                # Adds comp_id
-                comp_id = Rset.comp_ids[Rset_entity_id][1]
-                comp_ids.append(
-                    [str(entity_id), comp_id]
-                )
-                
-                # We should not have to check the entities because we already
-                # check z.
-            self.entity_ids = np.array(entity_ids)
-            self.comp_ids = np.array(comp_ids)
-        else:
-            # If there was previous sampling
-            # Need to also check if compatible with the data set.
-            # We should not have to check the entities because we already
-            # check z.
-            pass
+        Rset_entity_ids_sampled_split = [
+            np.unique(i) for i in Rset_entity_ids_sampled_split
+        ]
+        entity_ids, comp_ids = self._check_entity_comp_ids(
+            self.entity_ids, self.comp_ids, Rset.entity_ids, Rset.comp_ids,
+            Rset_entity_ids_sampled_split
+        )
+        self.entity_ids = entity_ids
+        self.comp_ids = comp_ids
         
         # Moves the center of mass of every structure to the origin.
         if center_structures:
-            masses = np.empty(R[0].shape)  # Masses of each atom in the same shape of R.
-            for i in range(len(masses)):
-                masses[i,:] = utils.z_to_mass[z[i]]
-            
-            for i in range(len(R)):
-                r = R[i]
-                cm_r = np.average(r, axis=0, weights=masses)
-                R[i] = r - cm_r
+            R = self._center_structures(z, R)
+        
+        # Checks r_unit.
+        if hasattr(self, '_r_unit'):
+            if self.r_unit != Rset.r_unit:
+                raise ValueError('r_unit of is not compatible with dset.')
+        else:
+            self._r_unit = Rset.r_unit
         
         # Stores all information only if sampling is successful.
         self.Rset_md5 = {**self.Rset_md5, **{Rset_id: Rset.md5}}
@@ -876,11 +995,141 @@ class dataSet(mbGDMLData):
         self.E = E
         self.F = F
 
-        if hasattr(self, '_r_unit'):
-            if self.r_unit != Rset.r_unit:
-                raise ValueError('r_unit of Rset is not compatible with dset.')
+    def sample_structures(
+        self, data, quantity, size, selected_rset_id=None, always=[], criteria=None,
+        z_slice=[], cutoff=[], center_structures=False, sampling_updates=False
+    ):
+        """Samples all possible combinations from a data set.
+
+        Adds NaN to energies and forces.
+
+        Parameters
+        ----------
+        data : :obj:`mbgdml.data`
+            A loaded structure or data set object to sample from.
+        quantity : :obj:`int`
+            Number of structures to sample from the structure set. For example,
+            ``'100'``, ``'452'``, or even ``'all'``.
+        size : :obj:`str`
+            Desired number of molecules in each selection.
+        selected_rset_id : obj:`int`, optional
+            Currently sampling can only be done for one rset_id at a time. This
+            specifies which rset structures in the data set to sample from and
+            is required.
+        always : :obj:`list` [:obj:`int`], optional
+            Molecule indices that will be in every selection. Not implemented
+            yet.
+        criteria : :obj:`mbgdml.sample.sampleCritera`, optional
+            Structure criteria during the sampling procedure. Defaults to
+            ``None`` if no criteria should be used.
+        z_slice : :obj:`numpy.ndarray`, optional
+            Indices of the atoms to be used for the cutoff calculation. Defaults
+            to ``[]`` is no criteria is selected or if it is not required for
+            the selected criteria.
+        cutoff : :obj:`list`, optional
+            Distance cutoff between the atoms selected by ``z_slice``. Must be
+            in the same units (e.g., Angstrom) as ``R``. Defaults to ``[]`` if
+            no criteria is selected or a cutoff is not desired.
+        center_structures : :obj:`bool`, optional
+            Move the center of mass of each structure to the origin thereby 
+            centering each structure (and losing the actual coordinates of
+            the structure). While not required for correct use of mbGDML this
+            can be useful for other analysis or data set visualization. Defaults
+            to ``False``.
+        sampling_updates : :obj:`bool`, optional
+            Will print something for every 100 successfully sampled structures.
+            Defaults to ``False``.
+        """
+        data_type = data.type
+
+        # Gets Rset_id for this new sampling.
+        if data_type == 's':
+            Rset_id = self._get_Rset_id(data)
+            Rset_md5 = data.md5
+        elif data_type == 'd':
+            assert selected_rset_id is not None
+            Rset_id = self._get_Rset_id(data, selected_rset_id=selected_rset_id)
+            Rset_md5 = data.Rset_md5[selected_rset_id]
+
+        # Prepares sampling procedure.
+        z = self.z
+        R = self.R
+        E = self.E
+        F = self.F
+        Rset_info = self.Rset_info
+
+        if R.shape[2] == 0:
+            n_R_initial = 0
         else:
-            self._r_unit = Rset.r_unit
+            n_R_initial = R.shape[0]
+
+        if isinstance(quantity, int) or str(quantity).isdigit():
+            quantity = int(quantity)
+            Rset_info, z, R, E, F = self._Rset_sample_num(
+                z, R, E, F, data, Rset_id, Rset_info, quantity, size,
+                criteria=criteria, z_slice=z_slice, cutoff=cutoff, 
+                sampling_updates=sampling_updates
+            )
+            # Adds criteria information to the data set (only if sampling is 
+            # successful).
+            if criteria is not None:
+                self.criteria = criteria.__name__
+                self.z_slice = z_slice
+                self.cutoff = cutoff
+        elif quantity == 'all':
+            Rset_info, z, R, E, F = self._sample_all(
+                z, R, E, F, data, Rset_id, Rset_info, size,
+                criteria=criteria, z_slice=z_slice, cutoff=cutoff,
+                sampling_updates=sampling_updates
+            )
+        else:
+            raise ValueError(f'{quantity} is not a valid selection.')
+        
+        # Ensures there are no duplicate structures.
+        if not Rset_info.shape == np.unique(Rset_info, axis=0).shape:
+            raise ValueError(
+                'There are duplicate structures in the data set'
+            )
+        
+        # Checks entity and comp ids.
+        Rset_info_idx_new = np.array(range(n_R_initial, len(Rset_info)))
+        if len(Rset_info_idx_new) > 0:
+            Rset_entity_ids_sampled_split = np.split(  # A list of column arrays from entity_ids
+                Rset_info[Rset_info_idx_new][:, 2:],
+                Rset_info.shape[1] - 2,  # Rset_id and structure number not included.
+                axis=1
+            )
+            Rset_entity_ids_sampled_split = [
+                np.unique(i) for i in Rset_entity_ids_sampled_split
+            ]
+            entity_ids, comp_ids = self._check_entity_comp_ids(
+                self.entity_ids, self.comp_ids, data.entity_ids, data.comp_ids,
+                Rset_entity_ids_sampled_split
+            )
+            self.entity_ids = entity_ids
+            self.comp_ids = comp_ids
+        else:
+            # No new structures were sampled
+            return
+
+        # Moves the center of mass of every structure to the origin.
+        if center_structures:
+            R = self._center_structures(z, R)
+        
+        # Checks r_unit.
+        if hasattr(self, '_r_unit'):
+            if self.r_unit != data.r_unit:
+                raise ValueError('r_unit of is not compatible with dset.')
+        else:
+            self._r_unit = data.r_unit
+
+        # Stores all information only if sampling is successful.
+        self.Rset_md5 = {**self.Rset_md5, **{Rset_id: Rset_md5}}
+        self.Rset_info = Rset_info
+        self.z = z
+        self.R = R
+        self.E = E
+        self.F = F
         
     def forces_from_xyz(self, file_path):
         """Reads forces from xyz files.
@@ -1002,7 +1251,6 @@ class dataSet(mbGDMLData):
             utils.md5_data(dataset, md5_properties), dtype='S32'
         )
         return dataset
-     
 
     def from_combined(self, dataset_paths, name=None):
         """Combines multiple data sets into one.
@@ -1048,7 +1296,6 @@ class dataSet(mbGDMLData):
             self._R = np.concatenate((self.R, dataset_add.f.R), axis=0)
             self._E = np.concatenate((self.E, dataset_add.f.E), axis=0)
             self._F = np.concatenate((self.F, dataset_add.f.F), axis=0)
-
 
     def print(self):
         """Prints all structure coordinates, energies, and forces of a data set.
