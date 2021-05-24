@@ -156,6 +156,26 @@ def criteria_sampling_all_2mers(dset, data):
     )
     return dset
 
+def dset_sampling_all_2mers_criteria(dset, data):
+    """Samples five all dimers (2mers) from a structure or data set.
+    Criteria is not ignored.
+    """
+    quantity = 'all'
+    size = 2
+    selected_rset_id = 0  # Always None for structure sets.
+    r_criteria = criteria.cm_distance_sum
+    z_slice = np.array([])
+    cutoff = [6.0]
+    center_structures = True
+    sampling_updates = False
+
+    dset.sample_structures(
+        data, quantity, size, selected_rset_id=selected_rset_id,
+        criteria=r_criteria, z_slice=z_slice, cutoff=cutoff,
+        center_structures=center_structures, sampling_updates=sampling_updates
+    )
+    return dset
+
 def test_rset_sampling_all_2mers_normal():
     """Sampling all dimers (2mers) from trimmed 140h2o structure set.
     """
@@ -330,7 +350,6 @@ def test_rset_sampling_num_2mers_criteria():
 
         assert np.allclose(r_dset, r_rset_centered)
 
-
 def test_rset_sampling_num_2mers_additional():
     rset = trim_140h2o_rset()
 
@@ -378,36 +397,25 @@ def test_rset_sampling_num_2mers_additional():
 
         assert np.allclose(r_dset, r_rset_centered)
 
-    print(dset.E)
+def test_dset_sampling_all_2mers():
+    rset = trim_140h2o_rset()
 
-"""
-def test_mbdataset():
-    dataset_2mer_path = './tests/data/datasets/4H2O-2mer-dataset.npz'
-    model_1mer_path = './tests/data/models/4H2O-1mer-model-MP2.def2-TZVP-train300-sym2.npz'
-    
-    dataset = data.dataSet(dataset_2mer_path)
-    mb_dataset = data.dataSet()
-    mb_dataset.create_mb(dataset, [model_1mer_path])
+    dset = data.dataSet()
+    dset.name = '140h2o.sphere.gfn2.md.500k.prod1'
+    dset = centered_sampling_all_2mers(dset, rset)
 
-    assert mb_dataset.mb == 2
-    assert mb_dataset.system_info['system'] == 'solvent'
-    assert mb_dataset.system_info['solvent_name'] == 'water'
-    assert np.allclose(
-        mb_dataset.z,
-        np.array([8, 1, 1, 8, 1, 1])
+    dset_from_dset = data.dataSet()
+    dset_from_dset = dset_sampling_all_2mers_criteria(dset_from_dset, dset)
+
+    print(dset_from_dset.__dict__.keys())
+
+    assert np.array_equal(dset_from_dset.entity_ids, np.array([0, 0, 0, 1, 1, 1]))
+    assert np.array_equal(
+        dset_from_dset.comp_ids, np.array([['0', 'h2o'], ['1', 'h2o']])
     )
-    assert np.allclose(
-        mb_dataset.R[23],
-        np.array(
-            [[ 1.63125 ,  1.23959 ,  0.426174],
-             [ 2.346105,  1.075848, -0.216122],
-             [ 0.855357,  1.299862, -0.15629 ],
-             [-1.449062, -1.07853 , -0.450404],
-             [-1.366435, -1.86773 , -0.997238],
-             [-0.777412, -1.236662,  0.247103]]
-        )
-    )
-    assert mb_dataset.E[23] == -1.884227499962435
-    assert np.allclose(np.array(mb_dataset.E_var), np.array(2.52854648))
-    assert np.allclose(np.array(mb_dataset.F_var), np.array(12.59440808))
-"""
+    assert dset_from_dset.Rset_md5 == {0: 'da254c95956709d1a00512f1ac7c0bbb'}
+    assert dset_from_dset.Rset_info.shape == (12, 4)
+
+    assert dset_from_dset.R.shape == (12, 6, 3)
+    assert dset_from_dset.E.shape == (12,)
+    assert dset_from_dset.F.shape == (12, 6, 3)
