@@ -474,6 +474,170 @@ class ORCA:
            and 'mp2' in self.theory.lower():
             self.calc_type = 'NumFreq'
 
+def engrad_calculation(
+    package,
+    z,
+    R,
+    job_name,
+    input_name,
+    output_name,
+    theory='MP2',
+    basis_set='def2-TZVP',
+    charge=0,
+    multiplicity=1,
+    cluster='smp',
+    nodes=1,
+    cores=12,
+    days=0,
+    hours=24,
+    calc_dir='.',
+    options='',
+    control_blocks='',
+    submit_script='',
+    write=True,
+    submit=False
+):
+    """Partition ORCA 4 EnGrad calculation for trajectory.
+    
+    Can be submitted using ``sbatch`` or just have the input files prepared.
+    Default submission script is set for University of Pittsburgh's Center for
+    Research Computing cluster.
+    
+    Parameters
+    ----------
+    package : :obj:`str`
+        Specifies the quantum chemistry program to be used. ``'ORCA'`` is
+        currently the only package directly supported.
+    z : :obj:`numpy.ndarray`
+        A ``(n,)`` or ``(m, n)`` shape array of type :obj:`numpy.int32`
+        containing atomic numbers of atoms in the structures in order as they
+        appear for every ``m`` structure.
+    R : :obj:`numpy.ndarray`
+        A :obj:`numpy.ndarray` with shape of ``(n, 3)`` or ``(m, n, 3)`` where
+        ``m`` is the number of structures and ``n`` is the number of atoms with
+        three Cartesian components.
+    job_name : :obj:`str`
+            Name of the job for SLURM input file.
+    input_name : :obj:`str`
+        File name for the input file.
+    output_name : :obj:`str`
+        File name for the output file.
+    theory : :obj:`str`, optional
+        Keword that specifies the level of theory (e.g., MP2, BP86, B3LYP, 
+        etc.) used for calculations. Defaults to 'MP2' for ORCA 4.2.0.
+    basis_set : :obj:`str`, optional
+        Keyword that specifies the basis set (e.g., def2-SVP, def2-TZVP, etc.). 
+        Defaults to 'def2-TZVP'.
+    charge : :obj:`int`, optional
+        System charge. Defaults to ``0``.
+    multiplicity : :obj:`int`, optional
+        System multiplicity. Defaults to ``1``.
+    cluster : :obj:`str`
+        Name of cluster for calculations. For example, ``'smp'``.
+    nodes : :obj:`int`
+        Number of requested nodes.
+    cores : :obj:`int`
+        Number of processing cores for the calculation.
+    days : :obj:`int`
+        Requested run time days.
+    hours : :obj:`int`
+        Requested run time hours.
+    calc_dir : :obj:`str`, optional
+        Path to write calculation. Defaults to current directory (``'.'``).
+    options : :obj:`str`, optional
+        All options specifically for the EnGrad calculation (e.g., SCF 
+        convergence criteria, algorithms, etc.).
+    control_blocks : :obj:`str`, optional
+        All options that control the calculation.
+    submit_script : :obj:`str`, optional
+        The SLURM submission script content. Defaults to
+        ``pitt_crc_orca_submit``.
+    write : :obj:`bool`, optional
+        Whether or not to write the file. Defaults to ``True``.
+    submit : :obj:`bool`, optional
+        Controls whether the calculation is submitted. Defaults to ``False``.
+    
+    Returns
+    -------
+    :obj:`str`
+        The SLURM submission script.
+    :obj:`str`
+        The input file.
+    """
+    if calc_dir[-1] != '/':
+        calc_dir += '/'
+    os.makedirs(calc_dir, exist_ok=True)
+
+    if z.ndim == 1:
+        z = np.array([z])
+    if R.ndim == 2:
+        R = np.array([R])
+
+    # Prepares calculation
+    if package.lower() == 'orca':
+        engrad = ORCA(
+            job_name,
+            input_name,
+            output_name
+        )
+        templates = CalcTemplate('orca')
+
+    # Writes initial files
+    input_file_string = ''
+    if submit_script == '':
+        submit_script = pitt_crc_orca_submit
+    slurm_file_name, slurm_file = engrad.submit(
+        cluster,
+        nodes,
+        cores,
+        days,
+        hours,
+        submit_script,
+        write=write,
+        write_dir=calc_dir
+    )
+    for step_index in range(0, R.shape[0]):
+        if z.shape[0] == 1:
+            step_z = z[0]
+        else:
+            step_z = z[step_index]
+        step_R = R[step_index]
+        if step_index != 0:
+            engrad.template_input = templates.add_job \
+                                        + templates.input
+
+        step_R_string = utils.string_coords(step_z, step_R)
+        _, calc_string = engrad.input(
+            'EnGrad',
+            step_R_string,
+            theory,
+            basis_set,
+            charge,
+            multiplicity,
+            cores,
+            options=options,
+            control_blocks=control_blocks,
+            write=False,
+            write_dir=calc_dir
+        )
+        if input_file_string == '':
+            input_file_string = calc_string
+        else:
+            input_file_string += calc_string
+
+    if write:
+        with open(calc_dir + input_name + '.' + engrad.input_extension, 'w') as f:
+            f.write(input_file_string)
+
+    if submit:
+        bash_command = 'sbatch ' + slurm_file_name
+        submit_process = subprocess.Popen(
+            bash_command.split(),
+            stdout=subprocess.PIPE
+        )
+        _, _ = submit_process.communicate()
+
+    return slurm_file, input_file_string
 
 pitt_crc_orca_submit = (
     "cd $SBATCH_O_WORKDIR\n"

@@ -131,3 +131,37 @@ def test_calculate_ORCA():
         "H  -1.211985850   1.834098530  -1.418744500\n"
         "*\n"
     )
+
+def test_calculate_engrad_calculation():
+    coord_path = './tests/data/md/4h2o.abc0-orca.md-mp2.def2tzvp.300k-1.traj'
+    z_all, _, R_list = parse.parse_stringfile(coord_path)
+    try:
+        assert len(set(tuple(i) for i in z_all)) == 1
+    except AssertionError:
+        raise ValueError(f'coord_path contains atoms in different order.')
+    z = np.array(utils.atoms_by_number(z_all[0]))
+    R = np.array(R_list)
+
+    submit_file, input_file = calculate.engrad_calculation(
+        'ORCA',
+        z,
+        R,
+        '4h2o.abc0.0,1,2,3',
+        '4h2o.abc0.0,1,2,3-orca.engrad-mp2.def2tzvp.tightscf.frozencore',
+        '4h2o.abc0.0,1,2,3-orca.engrad-mp2.def2tzvp.tightscf.frozencore',
+        theory='MP2',
+        basis_set='def2-TZVP',
+        charge=0,
+        multiplicity=1,
+        cluster='smp',
+        nodes=1,
+        cores=6,
+        days=0,
+        hours=12,
+        calc_dir='.',
+        options='TightSCF FrozenCore',
+        control_blocks='%scf\n    ConvForced true\nend\n%maxcore 8000\n',
+        submit_script=calculate.pitt_crc_orca_submit,
+        write=False,
+        submit=False
+    )
