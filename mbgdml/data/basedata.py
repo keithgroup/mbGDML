@@ -22,7 +22,6 @@
 
 import numpy as np
 from mbgdml import utils
-import mbgdml.solvents as solvents
 
 class mbGDMLData():
     """Parent class for mbGDML structure, data, and predict sets.
@@ -59,18 +58,6 @@ class mbGDMLData():
             return int(self.z.shape[0])
         elif self.z.ndim == 3:
             return int(self.z.shape[1])
-    
-    @property
-    def system_info(self):
-        """Information describing the system.
-
-        :type: :obj:`dict`
-        """
-        if self.z.ndim == 1:
-            z_symbols = utils.atoms_by_element(self.z.tolist())
-            return solvents.system_info(z_symbols)
-        else:
-            return {'system': 'unknown'}
 
     @property
     def R(self):
@@ -113,37 +100,6 @@ class mbGDMLData():
     @r_unit.setter
     def r_unit(self, var):
         self._r_unit = var
-
-    def add_system_info(self, dict_data):
-        """Adds information about the system to the model.
-        
-        Parameters
-        ----------
-        dataset : :obj:`dict`
-            Contains all data as :obj:`numpy.ndarray` objects.
-        
-        Returns
-        -------
-        :obj:`dict`
-            Contains all data as :obj:`numpy.ndarray` objects along with added
-            system information.
-        
-        Notes
-        -----
-        If the system is a solvent, the 'solvent' name and 'cluster_size'
-        is included.
-        """
-        z_symbols = utils.atoms_by_element(dict_data['z'].tolist())
-        system_info = solvents.system_info(z_symbols)
-        dict_data['system'] = np.array(system_info['system'])
-        if dict_data['system'] == 'solvent':
-            dict_data['solvent'] = np.array(
-                system_info['solvent_name']
-            )
-            dict_data['cluster_size'] = np.array(
-                system_info['cluster_size']
-            )
-        return dict_data
 
     def save(self, name, data, save_dir):
         """General save function for GDML data sets and models.

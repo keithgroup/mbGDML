@@ -24,8 +24,6 @@ import itertools
 
 import numpy as np
 from sgdml.predict import GDMLPredict
-from torch.functional import cartesian_prod
-import mbgdml.solvents as solvents
 from mbgdml import criteria
 
 class mbPredict():

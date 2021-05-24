@@ -6,8 +6,6 @@ __version__ = '0.0.1'
 
 from mbgdml import data
 from mbgdml import parse
-from mbgdml import partition
-from mbgdml import solvents
 from mbgdml import train
 from mbgdml import utils
 from mbgdml import criteria

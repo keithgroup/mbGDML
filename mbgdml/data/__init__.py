@@ -10,7 +10,6 @@
 
 from mbgdml.data.basedata import mbGDMLData
 from mbgdml.data.calculation import PartitionOutput
-from mbgdml.data.structure import structure
 from mbgdml.data.structureset import structureSet
 from mbgdml.data.model import mbModel
 from mbgdml.data.predictset import predictSet
