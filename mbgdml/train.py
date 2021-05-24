@@ -146,6 +146,7 @@ class mbGDMLTrain():
         # Adding many-body information if present in dataset.
         if 'mb' in self.dataset.keys():
             new_model.model['mb'] = int(self.dataset['mb'][()])
+        if 'mb_models_md5' in self.dataset.keys():
             new_model.model['mb_models_md5'] = self.dataset['mb_models_md5']
         
         # Adding sigma selection to log (not apparent because of removed
