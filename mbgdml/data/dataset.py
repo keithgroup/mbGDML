@@ -26,13 +26,11 @@ from random import randrange, sample
 import numpy as np
 from cclib.parser.utils import convertor
 from mbgdml.data import mbGDMLData
-import mbgdml.solvents as solvents
 from mbgdml import __version__ as mbgdml_version
 from mbgdml.parse import parse_stringfile
 from mbgdml import utils
 from mbgdml.data import structureSet
 from mbgdml.predict import mbPredict
-from mbgdml.partition import partition_structures
   
 
 class dataSet(mbGDMLData):
@@ -135,11 +133,11 @@ class dataSet(mbGDMLData):
         if hasattr(self, '_z_slice'):
             return self._z_slice
         else:
-            return []
+            return np.array([])
     
     @z_slice.setter
     def z_slice(self, var):
-        self._z_slice = var
+        self._z_slice = np.array(var)
     
     @property
     def cutoff(self):
@@ -150,11 +148,11 @@ class dataSet(mbGDMLData):
         if hasattr(self, '_cutoff'):
             return self._cutoff
         else:
-            return []
+            return np.array([])
     
     @cutoff.setter
     def cutoff(self, var):
-        self._cutoff = var
+        self._cutoff = np.array(var)
 
     @property
     def F(self):
@@ -276,7 +274,11 @@ class dataSet(mbGDMLData):
 
         :type: :obj:`bytes`
         """
-        return self.dataset['md5'][()].decode()
+        try:
+            return self.dataset['md5'][()].decode()
+        except:
+            print('Not enough information in dset for MD5')
+            raise
     
     @property
     def entity_ids(self):
@@ -418,6 +420,9 @@ class dataSet(mbGDMLData):
             self.comp_ids = dataset['comp_ids']
         except KeyError:
             pass
+        
+        if 'centered' in dataset.keys():
+            self.centered = dataset['centered'][()]
 
     def load(self, dataset_path):
         """Read data set.
@@ -808,23 +813,20 @@ class dataSet(mbGDMLData):
 
             # Adds selection's atomic coordinates to R.
             ## Gets atomic indices from molecule_ids in the Rset.
-            atom_ids = []
-            for entity_id in Rset_selection[2:]:
-                atom_ids.extend(
-                    [i for i,x in enumerate(entity_ids) if x == entity_id]
-                )
+            atom_idx = utils.get_R_slice(Rset_selection[2:], entity_ids)
+            
             # Checks compatibility with atoms.
             if len(z) == 0:
-                z = Rset_z[atom_ids]
+                z = Rset_z[atom_idx]
             else:
-                if not np.array_equal(z, Rset_z[atom_ids]):
+                if not np.array_equal(z, Rset_z[atom_idx]):
                     print(f'Rset_info of selection: {Rset_selection}')
                     print(f'z of data set: {z}')
-                    print(f'z of selection: {Rset_z[atom_ids]}')
+                    print(f'z of selection: {Rset_z[atom_idx]}')
                     raise ValueError(f'z of the selection is incompatible.')
             
-            r_selection = np.array([Rset_R[struct_num_selection, atom_ids, :]])
-            r_entity_ids = entity_ids[atom_ids]
+            r_selection = np.array([Rset_R[struct_num_selection, atom_idx, :]])
+            r_entity_ids = entity_ids[atom_idx]
 
             # Checks any structure criteria.
             if criteria is not None:
@@ -1065,7 +1067,7 @@ class dataSet(mbGDMLData):
 
         if isinstance(quantity, int) or str(quantity).isdigit():
             quantity = int(quantity)
-            Rset_info, z, R, E, F = self._Rset_sample_num(
+            Rset_info, z, R, E, F = self._sample_num(
                 z, R, E, F, data, Rset_id, Rset_info, quantity, size,
                 criteria=criteria, z_slice=z_slice, cutoff=cutoff, 
                 sampling_updates=sampling_updates
@@ -1115,6 +1117,7 @@ class dataSet(mbGDMLData):
         # Moves the center of mass of every structure to the origin.
         if center_structures:
             R = self._center_structures(z, R)
+            self.centered = True
         
         # Checks r_unit.
         if hasattr(self, '_r_unit'):
@@ -1159,23 +1162,6 @@ class dataSet(mbGDMLData):
             self._F = data
         else:
             raise ValueError(f'There was an issue parsing F from {file_path}.')
-
-    def from_partitioncalc(self, partcalc):
-        """Creates data set from partition calculations.
-
-        Parameters
-        ----------
-        partcalc : :obj:`~mbgdml.data.calculation.PartitionOutput`
-            Data from energy and gradient calculations of same partition.
-        """
-        self._z = partcalc.z
-        self._R = partcalc.R
-        self._E = partcalc.E
-        self._F = partcalc.F
-        self.r_unit = partcalc.r_unit
-        self.e_unit = partcalc.e_unit
-        self.mbgdml_version = mbgdml_version
-        self.theory = partcalc.theory
 
     @property
     def dataset(self):
@@ -1244,6 +1230,9 @@ class dataSet(mbGDMLData):
             dataset['cutoff'] = np.array(self.cutoff)
         except:
             pass
+        
+        if hasattr(self, 'centered'):
+            dataset['centered'] = np.array(self.centered)
         
         # sGDML only works with S32 type MD5 hashes, so during training the 
         # data set MD5 mush be the same type (as they do comparisons).
