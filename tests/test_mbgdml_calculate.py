@@ -29,7 +29,6 @@ import pytest
 import numpy as np
 
 import mbgdml.data as data
-import mbgdml.partition as partition
 import mbgdml.parse as parse
 import mbgdml.utils as utils
 import mbgdml.calculate as calculate
@@ -131,38 +130,4 @@ def test_calculate_ORCA():
         "H  -0.902485520   0.330713060  -1.244799050\n"
         "H  -1.211985850   1.834098530  -1.418744500\n"
         "*\n"
-    )
-
-def test_calculate_partition_engrad():
-    coord_path = './tests/data/md/4h2o.abc0-orca.md-mp2.def2tzvp.300k-1.traj'
-    z_all, _, R_list = parse.parse_stringfile(coord_path)
-    try:
-        assert len(set(tuple(i) for i in z_all)) == 1
-    except AssertionError:
-        raise ValueError(f'coord_path contains atoms in different order.')
-    z = np.array(utils.atoms_by_number(z_all[0]))
-    R = np.array(R_list)
-
-    submit_file, input_file = calculate.partition_engrad(
-        'ORCA',
-        z,
-        R,
-        '4h2o.abc0.0,1,2,3',
-        '4h2o.abc0.0,1,2,3-orca.engrad-mp2.def2tzvp.tightscf.frozencore',
-        '4h2o.abc0.0,1,2,3-orca.engrad-mp2.def2tzvp.tightscf.frozencore',
-        'MP2',
-        'def2-TZVP',
-        0,
-        1,
-        'smp',
-        1,
-        6,
-        0,
-        12,
-        calc_dir='.',
-        options='TightSCF FrozenCore',
-        control_blocks='%scf\n    ConvForced true\nend\n%maxcore 8000\n',
-        submit_script=calculate.pitt_crc_orca_submit,
-        write=False,
-        submit=False
     )

@@ -21,7 +21,7 @@
 # SOFTWARE.
 
 import cclib
-from mbgdml import solvents, utils
+from mbgdml import utils
 
 def parse_coords(fileName):
     
@@ -165,62 +165,6 @@ def parse_stringfile(stringfile_path):
                     z[-1].append(line_split[0])
                     data[-1].append([float(i) for i in line_split[1:]])
     return z, comments, data
-
-
-def parse_cluster(z, R):
-    """Creates dictionary of all solvent molecules in solvent cluster from a
-    cluster_data dictionary.
-    
-    Parameters
-    ----------
-    z : :obj:`numpy.ndarray`
-        A ``(n,)`` shape array of type :obj:`numpy.int32` containing atomic
-        numbers of atoms in the structures in order as they appear.
-    R : :obj:`numpy.ndarray`
-        A :obj:`numpy.ndarray` with shape of ``(n, 3)`` where ``n`` is the
-        number of atoms with three Cartesian components.
-    
-    Returns
-    -------
-    :obj:`dict`
-        :obj:`int` keys specifying the molecule number starting from 0 with 
-        nested :obj:`dict` as values which contain
-
-        ``'z'``
-            A ``(n,)`` shape array of type :obj:`numpy.int32` containing atomic
-            numbers of atoms in the structures in order as they appear.
-        
-        ``'R'``
-            A :obj:`numpy.ndarray` with shape of ``(n, 3)`` where ``n`` is the
-            number of atoms with three Cartesian components.
-    """
-    try:
-        assert R.ndim == 2
-    except AssertionError:
-        return ValueError(f'R is not a single structure with 2 dimensions.')
-
-    sys_info = solvents.system_info(z.tolist())
-
-    # Partitions solvent cluster into individual solvent molecules.
-    if sys_info['system'] == 'solvent':
-        cluster_molecules = {}
-        for i_molecule in range(0, sys_info['cluster_size']):
-            # Grabs index positions of atomic coordinates for the solvent molecule
-            atom_start = (i_molecule + 1) * sys_info['solvent_molec_size'] \
-                         - sys_info['solvent_molec_size']
-            atom_end = (i_molecule + 1) * sys_info['solvent_molec_size']
-            
-            # Creates molecule label and grabs atoms and atomic coordinates for
-            # the molecule.
-            molecule_atoms = z[atom_start:atom_end]
-            molecule_coords = R[atom_start:atom_end,:]
-            cluster_molecules[i_molecule] = {
-                'z': molecule_atoms,
-                'R': molecule_coords
-            }
-
-    return cluster_molecules
-
 
 def struct_dict(origin, struct_list):
     

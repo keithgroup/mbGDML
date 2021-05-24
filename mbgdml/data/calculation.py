@@ -24,7 +24,6 @@ import numpy as np
 from cclib.io import ccread
 from cclib.parser.utils import convertor
 from mbgdml.utils import convert_forces
-import mbgdml.solvents as solvents
 
 
 class PartitionOutput:
@@ -156,8 +155,6 @@ class PartitionOutput:
             self.G, grad_e_unit, grad_r_unit, self.e_unit, self.r_unit
         )
         self.F = np.negative(self.G)
-
-        self.system_info = solvents.system_info(self.z.tolist())
 
     
     def _get_gdml_data(self):
