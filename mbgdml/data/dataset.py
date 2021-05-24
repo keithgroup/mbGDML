@@ -640,8 +640,11 @@ class dataSet(mbGDMLData):
         :obj:`numpy.ndarray`
             Atomic forces of atoms in structure(s). All are NaN.
         """
+        sample_data_type = sample_data.type
         sample_data_z = sample_data.z
         sample_data_R = sample_data.R
+        if sample_data_type == 'd':
+            sample_data_Rset_info = sample_data.Rset_info
 
         # Getting all possible molecule combinations.
         entity_ids = sample_data.entity_ids
@@ -662,8 +665,16 @@ class dataSet(mbGDMLData):
             # Loops though every possible molecule combination.
             for comb in comb_list:
 
-                Rset_selection = [Rset_id, struct_i] + list(comb)
-                # Adds new sampling into our Rset info.
+                data_selection = [Rset_id, struct_i] + list(comb)
+                # Gets Rset_selection instead of data_selection
+                if sample_data_type == 'd':
+                    rset_struct_i = sample_data_Rset_info[struct_i][1]
+                    rset_entity_ids = sample_data_Rset_info[struct_i][2:][list(comb)]
+                    Rset_selection = [Rset_id, rset_struct_i] + list(rset_entity_ids)
+                elif sample_data_type == 's':
+                    Rset_selection = data_selection
+
+                # Checks if Rset_info is already present.
                 if Rset_info.shape[1] == 0:  # No previous Rset_info.
                     Rset_axis = 1
                 else:
@@ -675,7 +686,7 @@ class dataSet(mbGDMLData):
 
                 # Gets atomic indices from entity_ids in the Rset.
                 atom_ids = []
-                for entity_id in Rset_selection[2:]:
+                for entity_id in data_selection[2:]:
                     atom_ids.extend(
                         [i for i,x in enumerate(entity_ids) if x == entity_id]
                     )
@@ -686,7 +697,7 @@ class dataSet(mbGDMLData):
                 else:
                     if not np.all([z, sample_data_z[atom_ids]]):
                         print(f'z of data set: {z}')
-                        print(f'Rset_info of selection: {Rset_selection}')
+                        print(f'Rset_info of selection: {data_selection}')
                         print(f'z of selection: {sample_data_z[atom_ids]}')
                         raise ValueError(f'z of the selection is incompatible.')
                 
@@ -705,7 +716,6 @@ class dataSet(mbGDMLData):
                         continue
                 
                 # SUCCESSFUL SAMPLE
-
                 Rset_info = np.concatenate(
                     (Rset_info, np.array([Rset_selection])), axis=Rset_axis
                 )
