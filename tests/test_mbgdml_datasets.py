@@ -156,6 +156,26 @@ def criteria_sampling_all_2mers(dset, data):
     )
     return dset
 
+def centered_sampling_all_3mers(dset, data):
+    """Samples all dimers (3mers) from a structure or data set. All criteria is
+    ignored.
+    """
+    quantity = 'all'
+    size = 3
+    selected_rset_id = None  # Always None for structure sets.
+    r_criteria = None
+    z_slice = np.array([])
+    cutoff = []
+    center_structures = True
+    sampling_updates = False
+
+    dset.sample_structures(
+        data, quantity, size, selected_rset_id=selected_rset_id,
+        criteria=r_criteria, z_slice=z_slice, cutoff=cutoff,
+        center_structures=center_structures, sampling_updates=sampling_updates
+    )
+    return dset
+
 def dset_sampling_all_2mers_criteria(dset, data):
     """Samples five all dimers (2mers) from a structure or data set.
     Criteria is not ignored.
@@ -397,25 +417,31 @@ def test_rset_sampling_num_2mers_additional():
 
         assert np.allclose(r_dset, r_rset_centered)
 
-def test_dset_sampling_all_2mers():
+def test_dset_sampling_all_2mers_after_3mers():
     rset = trim_140h2o_rset()
 
     dset = data.dataSet()
     dset.name = '140h2o.sphere.gfn2.md.500k.prod1'
-    dset = centered_sampling_all_2mers(dset, rset)
+    dset = centered_sampling_all_3mers(dset, rset)
 
     dset_from_dset = data.dataSet()
     dset_from_dset = dset_sampling_all_2mers_criteria(dset_from_dset, dset)
-
-    print(dset_from_dset.__dict__.keys())
 
     assert np.array_equal(dset_from_dset.entity_ids, np.array([0, 0, 0, 1, 1, 1]))
     assert np.array_equal(
         dset_from_dset.comp_ids, np.array([['0', 'h2o'], ['1', 'h2o']])
     )
     assert dset_from_dset.Rset_md5 == {0: 'da254c95956709d1a00512f1ac7c0bbb'}
-    assert dset_from_dset.Rset_info.shape == (12, 4)
 
+    assert dset_from_dset.Rset_info.shape == (12, 4)
+    # Same as test_rset_sampling_all_2mers_criteria, but organized to match
+    # the 3mer then 2mer sampling.
+    Rset_info_accpetable_criteria = np.array([
+        [0,0,1,2], [0,0,0,3], [0,0,1,4], [0,0,2,4], [0,1,1,2], [0,1,0,3],
+        [0,1,1,4], [0,1,2,4], [0,2,1,2], [0,2,0,3], [0,2,1,4], [0,2,2,4]
+    ])
+    assert np.array_equal(dset_from_dset.Rset_info, Rset_info_accpetable_criteria)
+    
     assert dset_from_dset.R.shape == (12, 6, 3)
     assert dset_from_dset.E.shape == (12,)
     assert dset_from_dset.F.shape == (12, 6, 3)
