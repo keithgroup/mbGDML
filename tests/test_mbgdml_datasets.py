@@ -30,6 +30,7 @@ import numpy as np
 
 import mbgdml.data as data
 from mbgdml import criteria
+from mbgdml import utils
 
 # Must be run from mbGDML root directory.
 
@@ -249,78 +250,135 @@ def test_rset_sampling_all_2mers_criteria():
     
     assert np.array_equal(dset_criteria.Rset_info, Rset_info_accpetable_criteria)
 
-def test_dataset_from_partitioncalc():
-    ref_output_path = './tests/data/partition-calcs/out-4H2O-300K-1-ABC.out'
-    test_partition = data.PartitionOutput(
-        ref_output_path,
-        '4H2O',
-        'ABC',
-        300,
-        'hartree',
-        'bohr',
-        md_iter=1,
-        theory='mp2.def2tzvp'
-    )
-    test_dataset = data.dataSet()
-    test_dataset.name = '4H2O-ABC-300K-1-dataset'
-    assert test_dataset.name == '4H2O-ABC-300K-1-dataset'
-    test_dataset.from_partitioncalc(test_partition)
+def centered_rset_sampling_num_2mers_criteria(dset, data):
+    """Samples five all dimers (2mers) from a structure or data set.
+    Criteria is not ignored.
+    """
+    quantity = 5
+    size = 2
+    selected_rset_id = None  # Always None for structure sets.
+    r_criteria = criteria.cm_distance_sum
+    z_slice = np.array([])
+    cutoff = [6.0]
+    center_structures = True
+    sampling_updates = False
 
-    assert test_dataset.dataset['r_unit'] == 'Angstrom'
-    assert np.allclose(test_dataset.dataset['R'][0][4],
-                       np.array([-1.39912, -2.017925, -0.902479]))
-    assert test_dataset.dataset['e_unit'] == 'kcal/mol'
-    assert isclose(test_dataset.dataset['E'][0], -143672.8876798964)
-    assert isclose(test_dataset.dataset['E_max'], -143668.556633975)
-    assert isclose(test_dataset.dataset['E_mean'], -143671.3661650087)
-    assert isclose(test_dataset.dataset['E_min'], -143674.0760573396)
-    assert isclose(test_dataset.dataset['E_var'], 1.1866207743)
-    assert isclose(test_dataset.dataset['F_max'], 75.0698836347)
-    assert np.allclose(test_dataset.dataset['F'][30][0],
-                       np.array([6.81548275, -14.34210238, -63.49876045]))
-    assert isclose(
-        test_dataset.dataset['F_mean'], -2.1959649048e-08, abs_tol=0.0
+    dset.sample_structures(
+        data, quantity, size, selected_rset_id=selected_rset_id,
+        criteria=r_criteria, z_slice=z_slice, cutoff=cutoff,
+        center_structures=center_structures, sampling_updates=sampling_updates
     )
-    assert isclose(test_dataset.dataset['F_min'], -75.0499618465)
-    assert isclose(test_dataset.dataset['F_var'], 373.3360402970)
-    assert test_dataset.dataset['e_unit'] == 'kcal/mol'
-    assert test_dataset.dataset['name'] == '4H2O-ABC-300K-1-dataset'
-    assert test_dataset.dataset['theory'] == 'mp2.def2tzvp'
+    return dset
 
-"""
-def test_dataset_from_combined():
-    monomer_paths = [
-        './tests/data/datasets/A-4H2O-300K-1-dataset.npz',
-        './tests/data/datasets/B-4H2O-300K-1-dataset.npz',
-        './tests/data/datasets/C-4H2O-300K-1-dataset.npz',
-        './tests/data/datasets/D-4H2O-300K-1-dataset.npz'
-    ]
-    datasetA = data.dataSet(monomer_paths[0])
-    datasetB = data.dataSet(monomer_paths[1])
-    datasetC = data.dataSet(monomer_paths[2])
-    datasetD = data.dataSet(monomer_paths[3])
+def test_dset_default_attributes():
+    dset = data.dataSet()
+
+    assert isinstance(dset.Rset_md5, dict)
+    assert len(dset.Rset_md5) == 0
+    assert dset.Rset_info.shape == (1, 0)
+
+    assert dset.criteria == ''
+    assert dset.z_slice.shape == (0,)
+    assert dset.cutoff.shape == (0,)
+
+    assert dset.z.shape == (0,)
+    assert dset.R.shape == (1, 1, 0)
+    assert dset.E.shape == (0,)
+    assert dset.F.shape == (1, 1, 0)
+
+    assert dset.entity_ids.shape == (0,)
+    assert dset.comp_ids.shape == (1, 0)
+
+    try:
+        dset.md5
+    except AttributeError:
+        pass
+
+def test_rset_sampling_num_2mers_criteria():
+    rset = trim_140h2o_rset()
+
+    dset = data.dataSet()
+    dset.name = '140h2o.sphere.gfn2.md.500k.prod1'
+    dset = centered_rset_sampling_num_2mers_criteria(dset, rset)
     
-    combined_R = np.concatenate(
-        (datasetA.R, datasetB.R, datasetC.R, datasetD.R)
-    )
-    combined_E = np.concatenate(
-        (datasetA.E, datasetB.E, datasetC.E, datasetD.E)
-    )
-    combined_F = np.concatenate(
-        (datasetA.F, datasetB.F, datasetC.F, datasetD.F)
-    )
+    assert isinstance(dset.criteria, str)
+    assert dset.criteria in criteria.__dict__
+    assert dset.z_slice.shape == (0,)
+    assert dset.cutoff.shape == (1,)
+    assert np.array_equal(dset.cutoff, np.array([6.]))
 
-    combined_dataset = data.dataSet()
-    combined_dataset.from_combined(monomer_paths)
+    assert dset.r_unit == 'Angstrom'
+    assert np.array_equal(dset.z, np.array([8, 1, 1, 8, 1, 1]))
+    assert dset.R.shape == (5, 6, 3)
+    assert dset.E.shape == (5,)
+    assert dset.F.shape == (5, 6, 3)
 
-    assert combined_dataset.type == 'd'
-    assert np.allclose(combined_R, combined_dataset.R)
-    assert np.allclose(combined_E, combined_dataset.E)
-    assert np.allclose(combined_F, combined_dataset.F)
-    assert combined_dataset.name == 'A-4H2O-300K-1-dataset'
-    combined_dataset.name = '4h2o-monomers-dataset'
-    assert combined_dataset.name == '4h2o-monomers-dataset'
-"""
+    assert dset.Rset_md5 == {0: 'da254c95956709d1a00512f1ac7c0bbb'}
+    assert np.array_equal(dset.entity_ids, np.array([0, 0, 0, 1, 1, 1]))
+    assert np.array_equal(dset.comp_ids, np.array([['0', 'h2o'], ['1', 'h2o']]))
+
+    # Checks that Rset_info is correct.
+    for i in range(len(dset.R)):
+        r_dset = dset.R[i]
+
+        r_info = dset.Rset_info[i]
+        i_struct = r_info[1]
+        i_entity_ids = r_info[2:]
+        atom_idx = utils.get_R_slice(i_entity_ids, rset.entity_ids)
+        r_rset = rset.R[i_struct][atom_idx]
+        r_rset_centered = dset._center_structures(dset.z, r_rset)
+
+        assert np.allclose(r_dset, r_rset_centered)
+
+
+def test_rset_sampling_num_2mers_additional():
+    rset = trim_140h2o_rset()
+
+    dset = data.dataSet()
+    dset.name = '140h2o.sphere.gfn2.md.500k.prod1'
+    dset = centered_rset_sampling_num_2mers_criteria(dset, rset)
+
+    # Ensure energies and forces are not overwritten
+    i_test = 1
+    e_test = -47583.29857
+    dset.E[i_test] = e_test
+    f_test = np.array([
+        [4.4, 2.8, 6.0],
+        [-3.65, 34.0, 2.3],
+        [4.4, 2.8, 6.0],
+        [-3.65, 34.0, 2.3],
+        [4.4, 2.8, 6.0],
+        [-3.65, 34.0, 2.3],
+    ])
+    dset.F[i_test] = f_test
+
+    dset = centered_rset_sampling_num_2mers_criteria(dset, rset)
+
+    assert dset.Rset_md5 == {0: 'da254c95956709d1a00512f1ac7c0bbb'}
+    assert np.array_equal(dset.entity_ids, np.array([0, 0, 0, 1, 1, 1]))
+    assert np.array_equal(dset.comp_ids, np.array([['0', 'h2o'], ['1', 'h2o']]))
+
+    assert np.array_equal(dset.z, np.array([8, 1, 1, 8, 1, 1]))
+    assert dset.R.shape == (10, 6, 3)
+    assert dset.E.shape == (10,)
+    assert np.allclose(dset.E[i_test], e_test)
+    assert dset.F.shape == (10, 6, 3)
+    assert np.allclose(dset.F[i_test], f_test)
+
+    # Checks that Rset_info is correct.
+    for i in range(len(dset.R)):
+        r_dset = dset.R[i]
+
+        r_info = dset.Rset_info[i]
+        i_struct = r_info[1]
+        i_entity_ids = r_info[2:]
+        atom_idx = utils.get_R_slice(i_entity_ids, rset.entity_ids)
+        r_rset = rset.R[i_struct][atom_idx]
+        r_rset_centered = dset._center_structures(dset.z, r_rset)
+
+        assert np.allclose(r_dset, r_rset_centered)
+
+    print(dset.E)
 
 """
 def test_mbdataset():

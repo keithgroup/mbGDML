@@ -400,3 +400,25 @@ def e_f_contribution(dset, dsets_lower, operation):
     dset.E = E
     dset.F = F
     return dset
+
+def get_R_slice(entities, entity_ids):
+    """Retrives R slice for specific entities.
+
+    Parameters
+    ----------
+    entities : :obj:`numpy.ndarray`
+        Desired entities from R. For example, ``np.array([2, 5])``.
+    entity_ids : :obj:`numpy.ndarray`
+        The entity_ids for the R to be sliced.
+    
+    Returns
+    -------
+    :obj:`numpy.ndarray`
+        The indices of all atoms of all entities.
+    """
+    atom_idx = []
+    for entity_id in entities:
+        atom_idx.extend(
+            [i for i,x in enumerate(entity_ids) if x == entity_id]
+        )
+    return np.array(atom_idx)
