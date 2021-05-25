@@ -76,6 +76,8 @@ class mbGDMLData():
 
     @R.setter
     def R(self, var):
+        if var.ndim == 2:
+            var = np.array([var])
         self._R = var
 
     @property

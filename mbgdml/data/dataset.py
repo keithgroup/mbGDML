@@ -1010,7 +1010,6 @@ class dataSet(mbGDMLData):
         
         # sGDML only works with S32 type MD5 hashes, so during training the 
         # data set MD5 mush be the same type (as they do comparisons).
-        print(md5_properties)
         dataset['md5'] = np.array(
             utils.md5_data(dataset, md5_properties), dtype='S32'
         )
