@@ -155,12 +155,12 @@ class structureSet(mbGDMLData):
         r_unit : :obj:`str`
             Units of distance. Options are ``'Angstrom'`` or ``'bohr'`` (defined
             by cclib).
-        entity_ids : :obj:`list` [:obj:`int`]
+        entity_ids : :obj:`numpy.ndarray`
             List of indices starting from ``0`` that specify chemically distinct
             portions of the structure. For example, a water
             dimer would be ``[0, 0, 0, 1, 1, 1]``.
-        comp_ids : :obj:`list`
-            A nested list with an item for every unique ``entity_id``. Each item
+        comp_ids : :obj:`numpy.ndarray`
+            A 2D array with an item for every unique ``entity_id``. Each item
             is a list containing two items. First, the ``entity_id`` as a
             string. Second, a label for the specific chemical species/component.
             For example, two water and one methanol molecules could be
