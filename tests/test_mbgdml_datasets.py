@@ -35,6 +35,7 @@ from mbgdml import utils
 # Must be run from mbGDML root directory.
 
 rset_path_140h2o = './tests/data/structuresets/140h2o.sphere.gfn2.md.500k.prod1.npz'
+dset_dir = './tests/data/datasets'
 molecule_sizes = {
     'h2o': 3,
     'mecn': 6,
@@ -96,19 +97,12 @@ def trim_140h2o_rset():
 
     return rset
 
-def normal_sampling_all_2mers(dset, data):
-    """Samples all dimers (2mers) from a structure or data set. All criteria is
-    ignored.
+def dset_sample_structures(
+    dset, data, quantity, size, selected_rset_id, r_criteria,
+    z_slice, cutoff, center_structures, sampling_updates
+):
+    """Generic sampling function.
     """
-    quantity = 'all'
-    size = 2
-    selected_rset_id = None  # Always None for structure sets.
-    r_criteria = None
-    z_slice = np.array([])
-    cutoff = []
-    center_structures = False
-    sampling_updates = False
-
     dset.sample_structures(
         data, quantity, size, selected_rset_id=selected_rset_id,
         criteria=r_criteria, z_slice=z_slice, cutoff=cutoff,
@@ -116,85 +110,37 @@ def normal_sampling_all_2mers(dset, data):
     )
     return dset
 
-def centered_sampling_all_2mers(dset, data):
-    """Samples all dimers (2mers) from a structure or data set. All criteria is
-    ignored.
+def check_R_with_rset(dset, rset, centered):
+    """Uses structure information from Rset_info to check structure coordinates.
+
+    Parameters
+    ----------
+    dset : :obj:`mbgdml.data.dataset.dataSet`
+        The data set.
+    rset : :obj:`mbgdml.data.structureset.structureSet`
+        The structure set.
+    centered : :obj:`bool`
+        If the dset coordinates were centered with respect to the cluster's
+        center of mass.
     """
-    quantity = 'all'
-    size = 2
-    selected_rset_id = None  # Always None for structure sets.
-    r_criteria = None
-    z_slice = np.array([])
-    cutoff = []
-    center_structures = True
-    sampling_updates = False
+    z_dset = dset.z
+    R_dset = dset.R
+    Rset_info = dset.Rset_info
+    R_rset = rset.R
+    rset_entity_ids = rset.entity_ids
+    for i_r_dset in range(len(dset.R)):
+        r_dset = R_dset[i_r_dset]
 
-    dset.sample_structures(
-        data, quantity, size, selected_rset_id=selected_rset_id,
-        criteria=r_criteria, z_slice=z_slice, cutoff=cutoff,
-        center_structures=center_structures, sampling_updates=sampling_updates
-    )
-    return dset
+        r_rset_info = Rset_info[i_r_dset]
+        i_r_rset = r_rset_info[1]
+        r_rset_entity_ids = r_rset_info[2:]
+        r_slice_rset = utils.get_R_slice(r_rset_entity_ids, rset_entity_ids)
+        r_rset = R_rset[i_r_rset][r_slice_rset]
 
-def criteria_sampling_all_2mers(dset, data):
-    """Samples all dimers (2mers) from a structure or data set. All criteria is
-    ignored.
-    """
-    quantity = 'all'
-    size = 2
-    selected_rset_id = None  # Always None for structure sets.
-    r_criteria = criteria.cm_distance_sum
-    z_slice = np.array([])
-    cutoff = [6.0]
-    center_structures = True
-    sampling_updates = False
-
-    dset.sample_structures(
-        data, quantity, size, selected_rset_id=selected_rset_id,
-        criteria=r_criteria, z_slice=z_slice, cutoff=cutoff,
-        center_structures=center_structures, sampling_updates=sampling_updates
-    )
-    return dset
-
-def centered_sampling_all_3mers(dset, data):
-    """Samples all dimers (3mers) from a structure or data set. All criteria is
-    ignored.
-    """
-    quantity = 'all'
-    size = 3
-    selected_rset_id = None  # Always None for structure sets.
-    r_criteria = None
-    z_slice = np.array([])
-    cutoff = []
-    center_structures = True
-    sampling_updates = False
-
-    dset.sample_structures(
-        data, quantity, size, selected_rset_id=selected_rset_id,
-        criteria=r_criteria, z_slice=z_slice, cutoff=cutoff,
-        center_structures=center_structures, sampling_updates=sampling_updates
-    )
-    return dset
-
-def dset_sampling_all_2mers_criteria(dset, data):
-    """Samples five all dimers (2mers) from a structure or data set.
-    Criteria is not ignored.
-    """
-    quantity = 'all'
-    size = 2
-    selected_rset_id = 0  # Always None for structure sets.
-    r_criteria = criteria.cm_distance_sum
-    z_slice = np.array([])
-    cutoff = [6.0]
-    center_structures = True
-    sampling_updates = False
-
-    dset.sample_structures(
-        data, quantity, size, selected_rset_id=selected_rset_id,
-        criteria=r_criteria, z_slice=z_slice, cutoff=cutoff,
-        center_structures=center_structures, sampling_updates=sampling_updates
-    )
-    return dset
+        if centered == True:
+            r_rset = utils.center_structures(z_dset, r_rset)
+        
+        assert np.allclose(r_dset, r_rset, atol=5.1e-07, rtol=0)
 
 def test_rset_sampling_all_2mers_normal():
     """Sampling all dimers (2mers) from trimmed 140h2o structure set.
@@ -204,7 +150,10 @@ def test_rset_sampling_all_2mers_normal():
     ###   NORMAL SAMPLING   ###
     dset = data.dataSet()
     dset.name = '140h2o.sphere.gfn2.md.500k.prod1'
-    dset = normal_sampling_all_2mers(dset, rset)
+    dset = dset_sample_structures(
+        dset, rset, 'all', 2, None, None,
+        np.array([]), np.array([]), False, False
+    )
 
     # Checking properties.
     assert dset.Rset_md5 == {0: 'da254c95956709d1a00512f1ac7c0bbb'}
@@ -249,26 +198,39 @@ def test_rset_sampling_all_2mers_ignore_duplicate():
     rset = trim_140h2o_rset()
     dset = data.dataSet()
     dset.name = '140h2o.sphere.gfn2.md.500k.prod1'
-    dset = normal_sampling_all_2mers(dset, rset)
+    dset = dset_sample_structures(
+        dset, rset, 'all', 2, None, None,
+        np.array([]), np.array([]), False, False
+    )
 
-    dset_duplicate = normal_sampling_all_2mers(dset, rset)
+    dset_duplicate = dset_sample_structures(
+        dset, rset, 'all', 2, None, None,
+        np.array([]), np.array([]), False, False
+    )
     assert dset_duplicate.Rset_md5 == {0: 'da254c95956709d1a00512f1ac7c0bbb'}
     assert dset_duplicate.Rset_info.shape == (30, 4)
     assert np.all(dset.entity_ids == np.array([0, 0, 0, 1, 1, 1]))
     assert np.all(dset.comp_ids == np.array([['0', 'h2o'], ['1', 'h2o']]))
     assert dset_duplicate.R.shape == (30, 6, 3)
+    print('yes')
 
 def test_rset_sampling_all_2mers_centering():
     rset = trim_140h2o_rset()
 
     dset = data.dataSet()
     dset.name = '140h2o.sphere.gfn2.md.500k.prod1'
-    dset = normal_sampling_all_2mers(dset, rset)
-    centered_R = dset._center_structures(dset.z, dset.R)
+    dset = dset_sample_structures(
+        dset, rset, 'all', 2, None, None,
+        np.array([]), np.array([]), False, False
+    )
+    centered_R = utils.center_structures(dset.z, dset.R)
 
     dset_centered = data.dataSet()
     dset_centered.name = '140h2o.sphere.gfn2.md.500k.prod1-centered'
-    dset_centered = centered_sampling_all_2mers(dset_centered, rset)
+    dset_centered = dset_sample_structures(
+        dset_centered, rset, 'all', 2, None, None,
+        np.array([]), np.array([]), True, False
+    )
 
     assert np.allclose(centered_R, dset_centered.R)
 
@@ -277,11 +239,17 @@ def test_rset_sampling_all_2mers_criteria():
 
     dset_centered = data.dataSet()
     dset_centered.name = '140h2o.sphere.gfn2.md.500k.prod1-centered'
-    dset_centered = centered_sampling_all_2mers(dset_centered, rset)
+    dset_centered = dset_sample_structures(
+        dset_centered, rset, 'all', 2, None, None,
+        np.array([]), np.array([]), True, False
+    )
 
     dset_criteria = data.dataSet()
     dset_criteria.name = '140h2o.sphere.gfn2.md.500k.prod1-criteria'
-    dset_criteria = criteria_sampling_all_2mers(dset_criteria, rset)
+    dset_criteria = dset_sample_structures(
+        dset_criteria, rset, 'all', 2, None, criteria.cm_distance_sum,
+        np.array([]), np.array([6.0]), True, False
+    )
 
     Rset_info_accpetable_criteria = np.array([
         [0,0,0,3], [0,0,1,2], [0,0,1,4], [0,0,2,4], [0,1,0,3], [0,1,1,2],
@@ -289,26 +257,6 @@ def test_rset_sampling_all_2mers_criteria():
     ])
     
     assert np.array_equal(dset_criteria.Rset_info, Rset_info_accpetable_criteria)
-
-def centered_rset_sampling_num_2mers_criteria(dset, data):
-    """Samples five all dimers (2mers) from a structure or data set.
-    Criteria is not ignored.
-    """
-    quantity = 5
-    size = 2
-    selected_rset_id = None  # Always None for structure sets.
-    r_criteria = criteria.cm_distance_sum
-    z_slice = np.array([])
-    cutoff = [6.0]
-    center_structures = True
-    sampling_updates = False
-
-    dset.sample_structures(
-        data, quantity, size, selected_rset_id=selected_rset_id,
-        criteria=r_criteria, z_slice=z_slice, cutoff=cutoff,
-        center_structures=center_structures, sampling_updates=sampling_updates
-    )
-    return dset
 
 def test_dset_default_attributes():
     dset = data.dataSet()
@@ -339,7 +287,10 @@ def test_rset_sampling_num_2mers_criteria():
 
     dset = data.dataSet()
     dset.name = '140h2o.sphere.gfn2.md.500k.prod1'
-    dset = centered_rset_sampling_num_2mers_criteria(dset, rset)
+    dset = dset_sample_structures(
+        dset, rset, 5, 2, None, criteria.cm_distance_sum,
+        np.array([]), np.array([6.0]), True, False
+    )
     
     assert isinstance(dset.criteria, str)
     assert dset.criteria in criteria.__dict__
@@ -357,25 +308,17 @@ def test_rset_sampling_num_2mers_criteria():
     assert np.array_equal(dset.entity_ids, np.array([0, 0, 0, 1, 1, 1]))
     assert np.array_equal(dset.comp_ids, np.array([['0', 'h2o'], ['1', 'h2o']]))
 
-    # Checks that Rset_info is correct.
-    for i in range(len(dset.R)):
-        r_dset = dset.R[i]
-
-        r_info = dset.Rset_info[i]
-        i_struct = r_info[1]
-        i_entity_ids = r_info[2:]
-        atom_idx = utils.get_R_slice(i_entity_ids, rset.entity_ids)
-        r_rset = rset.R[i_struct][atom_idx]
-        r_rset_centered = dset._center_structures(dset.z, r_rset)
-
-        assert np.allclose(r_dset, r_rset_centered)
+    check_R_with_rset(dset, rset, True)
 
 def test_rset_sampling_num_2mers_additional():
     rset = trim_140h2o_rset()
 
     dset = data.dataSet()
     dset.name = '140h2o.sphere.gfn2.md.500k.prod1'
-    dset = centered_rset_sampling_num_2mers_criteria(dset, rset)
+    dset = dset_sample_structures(
+        dset, rset, 5, 2, None, criteria.cm_distance_sum,
+        np.array([]), np.array([6.0]), True, False
+    )
 
     # Ensure energies and forces are not overwritten
     i_test = 1
@@ -391,7 +334,10 @@ def test_rset_sampling_num_2mers_additional():
     ])
     dset.F[i_test] = f_test
 
-    dset = centered_rset_sampling_num_2mers_criteria(dset, rset)
+    dset = dset_sample_structures(
+        dset, rset, 5, 2, None, criteria.cm_distance_sum,
+        np.array([]), np.array([6.0]), True, False
+    )
 
     assert dset.Rset_md5 == {0: 'da254c95956709d1a00512f1ac7c0bbb'}
     assert np.array_equal(dset.entity_ids, np.array([0, 0, 0, 1, 1, 1]))
@@ -404,28 +350,23 @@ def test_rset_sampling_num_2mers_additional():
     assert dset.F.shape == (10, 6, 3)
     assert np.allclose(dset.F[i_test], f_test)
 
-    # Checks that Rset_info is correct.
-    for i in range(len(dset.R)):
-        r_dset = dset.R[i]
-
-        r_info = dset.Rset_info[i]
-        i_struct = r_info[1]
-        i_entity_ids = r_info[2:]
-        atom_idx = utils.get_R_slice(i_entity_ids, rset.entity_ids)
-        r_rset = rset.R[i_struct][atom_idx]
-        r_rset_centered = dset._center_structures(dset.z, r_rset)
-
-        assert np.allclose(r_dset, r_rset_centered)
+    check_R_with_rset(dset, rset, True)
 
 def test_dset_sampling_all_2mers_after_3mers():
     rset = trim_140h2o_rset()
 
     dset = data.dataSet()
     dset.name = '140h2o.sphere.gfn2.md.500k.prod1'
-    dset = centered_sampling_all_3mers(dset, rset)
+    dset = dset_sample_structures(
+        dset, rset, 'all', 3, None, None,
+        np.array([]), np.array([]), True, False
+    )
 
     dset_from_dset = data.dataSet()
-    dset_from_dset = dset_sampling_all_2mers_criteria(dset_from_dset, dset)
+    dset_from_dset = dset_sample_structures(
+        dset_from_dset, dset, 'all', 2, 0, criteria.cm_distance_sum,
+        np.array([]), np.array([6.0]), True, False
+    )
 
     assert np.array_equal(dset_from_dset.entity_ids, np.array([0, 0, 0, 1, 1, 1]))
     assert np.array_equal(
@@ -445,3 +386,56 @@ def test_dset_sampling_all_2mers_after_3mers():
     assert dset_from_dset.R.shape == (12, 6, 3)
     assert dset_from_dset.E.shape == (12,)
     assert dset_from_dset.F.shape == (12, 6, 3)
+
+    assert dset_from_dset.criteria == 'cm_distance_sum'
+    assert np.array_equal(dset_from_dset.cutoff, np.array([6.0]))
+
+def test_sample_dset_same_size():
+    """
+    """
+    dset_h2o_2body_path = f'{dset_dir}/2h2o/140h2o.sphere.gfn2.md.500k.prod1.3h2o.dset.2h2o-dset.mb.npz'
+
+    dset_h2o_2body = data.dataSet(dset_h2o_2body_path)
+    
+    # Trim dset_h2o_2body to 50 structures
+    remaining = 50
+    for key in ['Rset_info', 'E', 'R', 'F']:
+        setattr(dset_h2o_2body, key, getattr(dset_h2o_2body, key)[:remaining])
+
+    dset_h2o_2body_cm_6 = data.dataSet()
+    dset_h2o_2body_cm_6.name = '140h2o.sphere.gfn2.md.500k.prod1.3h2o.dset.2h2o-dset.mb-cm.6'
+    dset_h2o_2body_cm_6 = dset_sample_structures(
+        dset_h2o_2body_cm_6, dset_h2o_2body, 'all', 2, 0, criteria.cm_distance_sum,
+        np.array([]), np.array([6.0]), True, False
+    )
+
+    assert dset_h2o_2body_cm_6.theory == 'mp2.def2tzvp.frozencore'
+    assert dset_h2o_2body_cm_6.criteria == 'cm_distance_sum'
+    assert np.array_equal(dset_h2o_2body_cm_6.z_slice, np.array([]))
+    assert np.array_equal(dset_h2o_2body_cm_6.cutoff, np.array([6.0]))
+    assert np.array_equal(dset_h2o_2body_cm_6.entity_ids, np.array([0, 0, 0, 1, 1, 1]))
+    assert np.array_equal(
+        dset_h2o_2body_cm_6.comp_ids, np.array([['0', 'h2o'], ['1', 'h2o']])
+    )
+    assert dset_h2o_2body_cm_6.centered == True
+    assert dset_h2o_2body_cm_6.r_unit == 'Angstrom'
+    # 8726c482c19cdf7889cd1e62b9e9c8e1 is the MD5 has for the full 140h2o rset.
+    assert dset_h2o_2body_cm_6.Rset_md5 == {0: '8726c482c19cdf7889cd1e62b9e9c8e1'}
+
+    assert np.array_equal(dset_h2o_2body_cm_6.z, np.array([8, 1, 1, 8, 1, 1]))
+    rset = data.structureSet(rset_path_140h2o)
+    check_R_with_rset(dset_h2o_2body_cm_6, rset, True)
+
+    # Checking energies and forces.
+    dset_Rset_info = dset_h2o_2body_cm_6.Rset_info
+    dset_E = dset_h2o_2body_cm_6.E
+    dset_F = dset_h2o_2body_cm_6.F
+    dset_sample_Rset_info = dset_h2o_2body.Rset_info
+    dset_sample_E = dset_h2o_2body.E
+    dset_sample_F = dset_h2o_2body.F
+    for i_r in range(len(dset_h2o_2body_cm_6.R)):
+        i_r_dset_sample = np.where(
+            np.all(dset_sample_Rset_info == dset_Rset_info[i_r], axis=1)
+        )[0][0]
+        assert np.allclose(dset_E[i_r], dset_sample_E[i_r_dset_sample])
+        assert np.allclose(dset_F[i_r], dset_sample_F[i_r_dset_sample])

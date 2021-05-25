@@ -257,7 +257,6 @@ def convert_forces(
         )
     return forces_conv
 
-
 def atoms_by_element(atom_list):
     """Converts a list of atoms identified by their atomic number to their
     elemental symbol in the same order.
@@ -401,6 +400,50 @@ def e_f_contribution(dset, dsets_lower, operation):
     dset.F = F
     return dset
 
+def get_entity_ids(atoms_per_mol, num_mol):
+    """Prepares the list of entity ids for a system with only one species.
+
+    Note that all of the atoms in each molecule must occur in the same order and
+    be grouped together.
+
+    Parameters
+    ----------
+    atoms_per_mol : :obj:`int`
+        Number of atoms in the molecule.
+    num_mol : :obj:`int`
+        Number of molecules in the system.
+    
+    Returns
+    -------
+    :obj:`numpy.ndarray`
+        Entity ids for a structure.
+    """
+    entity_ids = []
+    for i in range(0, num_mol):
+        entity_ids.extend([i for _ in range(0, atoms_per_mol)])
+    return np.array(entity_ids)
+
+def get_comp_ids(solvent, entity_ids):
+    """Prepares the list of component ids for a system with only one species.
+
+    Parameters
+    ----------
+    atoms_per_mol : :obj:`int`
+        Number of atoms in the molecule.
+    num_mol : :obj:`int`
+        Number of molecules in the system.
+    
+    Returns
+    -------
+    :obj:`numpy.ndarray`
+        Component ids for a structure.
+    """
+    entity_ids_set = set(entity_ids)
+    comp_ids = []
+    for i in entity_ids_set:
+        comp_ids.append([i, solvent])
+    return np.array(comp_ids)
+
 def get_R_slice(entities, entity_ids):
     """Retrives R slice for specific entities.
 
@@ -422,3 +465,39 @@ def get_R_slice(entities, entity_ids):
             [i for i,x in enumerate(entity_ids) if x == entity_id]
         )
     return np.array(atom_idx)
+
+def center_structures(z, R):
+        """Centers each structure's center of mass to the origin.
+
+        Previously centered structures should not be affected by this technique.
+
+        Parameters
+        ----------
+        z : :obj:`numpy.ndarray`
+            Atomic numbers of the atoms in every structure.
+        R : :obj:`numpy.ndarray`
+            Cartesian atomic coordinates of data set structures.
+        
+        Returns
+        -------
+        :obj:`numpy.ndarray`
+            Centered Cartesian atomic coordinates.
+        """
+        # Masses of each atom in the same shape of R.
+        if R.ndim == 2:
+            R = np.array([R])
+        
+        masses = np.empty(R[0].shape)
+        
+        for i in range(len(masses)):
+            masses[i,:] = z_to_mass[z[i]]
+        
+        for i in range(len(R)):
+            r = R[i]
+            cm_r = np.average(r, axis=0, weights=masses)
+            R[i] = r - cm_r
+        
+        if R.shape[0] == 1:
+            return R[0]
+        else:
+            return R
