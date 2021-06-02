@@ -23,8 +23,6 @@
 
 """Tests for `mbgdml` package."""
 
-import os
-from math import isclose
 import pytest
 import numpy as np
 
@@ -364,7 +362,7 @@ def test_dset_sampling_all_2mers_after_3mers():
 
     dset_from_dset = data.dataSet()
     dset_from_dset = dset_sample_structures(
-        dset_from_dset, dset, 'all', 2, 0, criteria.cm_distance_sum,
+        dset_from_dset, dset, 'all', 2, None, criteria.cm_distance_sum,
         np.array([]), np.array([6.0]), True, False
     )
 
@@ -405,7 +403,7 @@ def test_sample_dset_same_size():
     dset_h2o_2body_cm_6 = data.dataSet()
     dset_h2o_2body_cm_6.name = '140h2o.sphere.gfn2.md.500k.prod1.3h2o.dset.2h2o-dset.mb-cm.6'
     dset_h2o_2body_cm_6 = dset_sample_structures(
-        dset_h2o_2body_cm_6, dset_h2o_2body, 'all', 2, 0, criteria.cm_distance_sum,
+        dset_h2o_2body_cm_6, dset_h2o_2body, 'all', 2, None, criteria.cm_distance_sum,
         np.array([]), np.array([6.0]), True, False
     )
 
@@ -439,3 +437,45 @@ def test_sample_dset_same_size():
         )[0][0]
         assert np.allclose(dset_E[i_r], dset_sample_E[i_r_dset_sample])
         assert np.allclose(dset_F[i_r], dset_sample_F[i_r_dset_sample])
+
+def test_sample_dset_1mers_multiple_rsets():
+    """
+    """
+    dset_4h2o_lit_path = f'{dset_dir}/4h2o/4h2o.temelso.etal-dset.npz'
+
+    dset_4h2o_lit_dset = data.dataSet(dset_4h2o_lit_path)
+    
+    # Sample all 1mers
+    dset_1mers = data.dataSet()
+    dset_1mers = dset_sample_structures(
+        dset_1mers, dset_4h2o_lit_dset, 'all', 1, None, None,
+        np.array([]), np.array([]), True, False
+    )
+
+    # Checking data set
+    Rset_info = np.array([
+        [0,0,0], [0,0,1], [0,0,2], [0,0,3], [1,0,0], [1,0,1], [1,0,2], [1,0,3],
+        [2,0,0], [2,0,1], [2,0,2], [2,0,3]
+    ])
+    assert np.array_equal(dset_1mers.Rset_info, Rset_info)
+    Rset_md5 = {0: '92dd31a90a3d2a443023d9d708010a4f', 1: '5593ef822ede64f6011ece82d6702ff9', 2: '33098027b401c38efcb5f05fa33c93ad'}
+    assert dset_1mers.Rset_md5 == Rset_md5
+    assert np.array_equal(dset_1mers.entity_ids, np.array([0, 0, 0]))
+    assert np.array_equal(dset_1mers.comp_ids, np.array([['0', 'h2o']]))
+    assert dset_1mers.centered == True
+    assert dset_1mers.r_unit == 'Angstrom'
+    assert np.array_equal(dset_1mers.z, np.array([8, 1, 1]))
+
+    assert dset_1mers.R.shape == (12, 3, 3)
+    r_3 = np.array([
+        [-0.02947763, -0.0325826, -0.05004315],
+        [ 0.93292237, 0.1104174, 0.10365685],
+        [-0.46497763, 0.4068174, 0.69075685]
+    ])
+    assert np.allclose(dset_1mers.R[3], r_3)
+    assert dset_1mers.E.shape == (12,)
+    for e in dset_1mers.E:
+        assert np.isnan(e)
+    assert dset_1mers.F.shape == (12, 3, 3)
+    for f in dset_1mers.F.flatten():
+        assert np.isnan(f)
