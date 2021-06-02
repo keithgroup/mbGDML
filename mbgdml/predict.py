@@ -149,6 +149,7 @@ class mbPredict():
             ``1``, ``2``, and ``5``. Also contains a ``'T'`` key representing
             the total n-body contribution for the whole system.
         """
+        r_dim = r.ndim
 
         # 'T' is for total
         E_contributions = {'T': 0.0}
@@ -188,8 +189,16 @@ class mbPredict():
                         # Do not include this contribution.
                         continue
             
-            # Predicts energies
-            e, f = gdml.predict(r[r_idx].flatten())
+            # Predicts energies and forces.
+            ## Required a quick fix to be able to handle both a single and
+            ## Multiple structures (fails for multiple).
+            if r_dim == 2:  # A single structure.
+                r_comp = r[r_idx]
+                e, f = gdml.predict(r_comp.flatten())
+            if r_dim == 3:  # Multiple structures.
+                # TODO
+                r_comp = r[r_idx]
+                e, f = gdml.predict(r_comp.flatten())
 
             # Adds contributions prediced from model.
             if store_each:
