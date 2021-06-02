@@ -65,7 +65,7 @@ class predictSet(mbGDMLData):
             self.load(arg)
     
 
-    def _calc_contributions(self, ignore_criteria=True):
+    def _calc_contributions(self, ignore_criteria=False):
         """
 
         As currently written this only works if you ignore all criteria.
@@ -113,6 +113,18 @@ class predictSet(mbGDMLData):
                                  axis=0
                             )
         return all_E, all_F
+    
+    def prepare(self):
+        """Prepares a predict set by calculating all structures in the loaded
+        data set with the loaded models.
+        """
+        all_E, all_F = self._calc_contributions()
+
+        for order in all_E:
+            setattr(self, f'_E_{order}', all_E[order])
+            setattr(self, f'_F_{order}', all_F[order])
+        self.sgdml_version = sgdml_version
+        self._predicted = True
 
     @property
     def predictset(self):
@@ -141,13 +153,7 @@ class predictSet(mbGDMLData):
                     'No data can be predicted or is not loaded.'
                 )
             else: 
-                all_E, all_F = self._calc_contributions()
-        
-                for order in all_E:
-                    setattr(self, f'_E_{order}', all_E[order])
-                    setattr(self, f'_F_{order}', all_F[order])
-                self.sgdml_version = sgdml_version
-                self._predicted = True
+                self.prepare()
 
         
         for E_key in [
@@ -184,7 +190,6 @@ class predictSet(mbGDMLData):
         """
         return self._E_true
 
-
     @property
     def F_true(self):
         """True forces from data set.
@@ -192,8 +197,7 @@ class predictSet(mbGDMLData):
         :type: :obj:`numpy.ndarray`
         """
         return self._F_true
-
-    
+ 
     def load(self, predictset_path):
         """Reads predict data set and loads data.
         
@@ -220,8 +224,7 @@ class predictSet(mbGDMLData):
             setattr(self, f'_{F_key}', predictset[f'{F_key}'])
 
         self._loaded = True
-    
-    
+      
     def _get_total_contributions(self, nbody_order):
         """N-body energy and atomic forces contributions of all structures.
 
@@ -245,16 +248,14 @@ class predictSet(mbGDMLData):
             If there is no predict set.
         """
         if not hasattr(self, 'R'):
-            raise AttributeError('Please load or create a predict set first.'
-            )
+            raise AttributeError('Please load or create a predict set first.')
         else:
-            E_cont = self.predictset[f'E_{nbody_order}'][()]['T']
-            F_cont = self.predictset[f'F_{nbody_order}'][()]['T']
+            E_cont = getattr(self, f'_E_{nbody_order}')['T']
+            F_cont = getattr(self, f'_F_{nbody_order}')['T']
             return E_cont, F_cont
 
     def nbody_predictions(self, nbody_orders):
-        """Energies and forces of all structures up to and including a specific
-        n-body order.
+        """Energies and forces of all structures .
 
         Predict sets have data that is broken down into many-body contributions.
         This function sums the many-body contributions up to the specified
