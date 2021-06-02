@@ -22,14 +22,13 @@
 
 import os
 import itertools
-from random import randrange, sample
+from random import randrange, sample, choice
 import numpy as np
 from cclib.parser.utils import convertor
 from mbgdml.data import mbGDMLData
 from mbgdml import __version__ as mbgdml_version
 from mbgdml.parse import parse_stringfile
 from mbgdml import utils
-from mbgdml.data import structureSet
 from mbgdml.predict import mbPredict
   
 
@@ -561,7 +560,7 @@ class dataSet(mbGDMLData):
         return entity_ids, comp_ids
     
     def _generate_structure_samples(
-        self, quantity, size, Rset_id, sample_num_R,
+        self, quantity, size, data_ids, structure_idxs,
         max_sample_entity_ids
     ):
         """
@@ -571,23 +570,33 @@ class dataSet(mbGDMLData):
         sample_type : :obj:`str`
             ``'num'`` or ``'all'`` depending on ``quantity``.
         size : :obj:`str`
+
+        data_ids : :obj:`numpy.ndarray`
+
+        structure_idxs : :obj:`numpy.ndarray`
+            All structure indices that we could sample from.
+        max_sample_entity_ids : :obj:`int`
+            The largest ``entity_id`` from the data or structure set we are
+            sampling from.
         """
         if isinstance(quantity, int) or str(quantity).isdigit():
             while True:
-                struct_num_selection = randrange(sample_num_R)
+                struct_num_selection = randrange(len(structure_idxs))
+                data_id = choice(data_ids)
                 comp_selection = sorted(sample(range(max_sample_entity_ids + 1), size))
-                Rset_selection = [Rset_id, struct_num_selection] + comp_selection
+                Rset_selection = [data_id, struct_num_selection] + comp_selection
                 yield Rset_selection
         elif quantity == 'all':
             comb_list = list(itertools.combinations(range(max_sample_entity_ids + 1), size))
-            for struct_i in range(sample_num_R):
+            for struct_i in structure_idxs:
                 for comb in comb_list:
-                    data_selection = [Rset_id, struct_i] + list(comb)
-                    yield data_selection
+                    for data_id in data_ids:
+                        data_selection = [data_id, struct_i] + list(comb)
+                        yield data_selection
     
     def _sample(
-        self, z, R, E, F, sample_data, quantity, Rset_id, Rset_info, size,
-        criteria=None, z_slice=[], cutoff=[], sampling_updates=False
+        self, z, R, E, F, sample_data, quantity, data_ids, Rset_id, Rset_info,
+        size, criteria=None, z_slice=[], cutoff=[], sampling_updates=False
     ):
         """Selects all Rset structures for data set.
 
@@ -614,8 +623,14 @@ class dataSet(mbGDMLData):
         quantity : :obj:`str`
             Number of structures to sample from the structure set. For example,
             ``'100'``, ``'452'``, or even ``'all'``.
+        data_ids : :obj:`numpy.ndarray`
+            Array of :obj:`int` of the structure set used to sampled data
+            from. For example, if you are sampling from a data set this would be
+            the ``Rset_id`` in that data set not the new ``Rset_id`` for this
+            current data set.
         Rset_id : :obj:`int`
-            The :obj:`int` that specifies the Rset (key in ``self.Rset_md5``).
+            The :obj:`int` that specifies the Rset (key in ``self.Rset_md5``) in
+            this current data set.
         Rset_info : :obj:`int`
             An array specifying where each structure in R originates from.
         size : :obj:`int`
@@ -649,18 +664,30 @@ class dataSet(mbGDMLData):
         sample_data_type = sample_data.type
         sample_data_z = sample_data.z
         sample_data_R = sample_data.R
+
+        sample_entity_ids = sample_data.entity_ids
+        max_sample_entity_ids = max(sample_entity_ids)
+
         if sample_data_type == 'd':
             sample_data_Rset_info = sample_data.Rset_info
             sample_data_E = sample_data.E
             sample_data_F = sample_data.F
 
-        sample_num_R = sample_data_R.shape[0]
-        sample_entity_ids = sample_data.entity_ids
-        max_sample_entity_ids = max(sample_entity_ids)
-
+            structure_idxs = np.array([], dtype=np.int64)
+            for data_id in data_ids:
+                structure_idxs = np.concatenate(
+                    (
+                        structure_idxs,
+                        np.where(sample_data_Rset_info[:,0] == data_id)[0]
+                    ),
+                    axis=0
+                )
+        elif sample_data_type == 's':
+            structure_idxs = np.arange(0, len(sample_data_R))
+        
         num_accepted_r = 0
         for data_selection in self._generate_structure_samples(
-            quantity, size, Rset_id, sample_num_R, max_sample_entity_ids
+            quantity, size, data_ids, structure_idxs, max_sample_entity_ids
         ):
             # Ends sampling for number quantities.
             # The generator does not stop.
@@ -671,15 +698,13 @@ class dataSet(mbGDMLData):
             # Sampling updates
             if sampling_updates:
                 if isinstance(quantity, int) or str(quantity).isdigit():
-                    if num_accepted_r%100 == 0:
+                    if num_accepted_r%500 == 0:
                         print(f'Successfully found {num_accepted_r} structures')
                 elif quantity == 'all':
                     if (num_accepted_r+1)%500 == 0:
                         print(
-                            f'Sampled clusters from {num_accepted_r+1} out of {sample_num_R} structures'
+                            f'Successfully sampled {num_accepted_r+1} clusters'
                         )
-                    if num_accepted_r+1 == sample_num_R:
-                        print(f'Sampled all possible structures')
             
             i_r_sample = data_selection[1]
             # Gets Rset_selection instead of data_selection
@@ -826,16 +851,7 @@ class dataSet(mbGDMLData):
             Defaults to ``False``.
         """
         data_type = data.type
-
-        # Gets Rset_id for this new sampling.
-        if data_type == 's':
-            Rset_id = self._get_Rset_id(data)
-            Rset_md5 = data.md5
-        elif data_type == 'd':
-            assert selected_rset_id is not None
-            Rset_id = self._get_Rset_id(data, selected_rset_id=selected_rset_id)
-            Rset_md5 = data.Rset_md5[selected_rset_id]
-
+        
         # Prepares sampling procedure.
         z = self.z
         R = self.R
@@ -847,12 +863,39 @@ class dataSet(mbGDMLData):
             n_R_initial = 0
         else:
             n_R_initial = R.shape[0]
+        
+        # Gets Rset_id for this new sampling.
+        if data_type == 's':
+            Rset_id = self._get_Rset_id(data)
+            data_ids = np.array([Rset_id])
+            Rset_md5 = data.md5
 
-        Rset_info, z, R, E, F = self._sample(
-            z, R, E, F, data, quantity, Rset_id, Rset_info, size,
-            criteria=criteria, z_slice=z_slice, cutoff=cutoff,
-            sampling_updates=sampling_updates
-        )
+            Rset_info, z, R, E, F = self._sample(
+                z, R, E, F, data, quantity, data_ids, Rset_id, Rset_info, size,
+                criteria=criteria, z_slice=z_slice, cutoff=cutoff,
+                sampling_updates=sampling_updates
+            )
+
+            self.Rset_md5 = {**self.Rset_md5, **{Rset_id: Rset_md5}}
+        elif data_type == 'd':
+            #assert selected_rset_id is not None
+            data_ids = np.array([i for i in data.Rset_md5.keys()])
+            if quantity == 'all':
+                for data_id in data_ids:
+                    Rset_id = self._get_Rset_id(data, selected_rset_id=data_id)
+                    Rset_md5 = data.Rset_md5[Rset_id]
+
+                    Rset_info, z, R, E, F = self._sample(
+                        z, R, E, F, data, quantity, np.array([data_id]), Rset_id,
+                        Rset_info, size, criteria=criteria, z_slice=z_slice,
+                        cutoff=cutoff, sampling_updates=sampling_updates
+                    )
+
+                    self.Rset_md5 = {**self.Rset_md5, **{Rset_id: Rset_md5}}
+            elif isinstance(quantity, int) or str(quantity).isdigit():
+                raise ValueError(
+                    f'This is not implemented for data set sampling'
+                )
         
         # Ensures there are no duplicate structures.
         if not Rset_info.shape == np.unique(Rset_info, axis=0).shape:
@@ -901,7 +944,6 @@ class dataSet(mbGDMLData):
             self._r_unit = data.r_unit
 
         # Stores all information only if sampling is successful.
-        self.Rset_md5 = {**self.Rset_md5, **{Rset_id: Rset_md5}}
         self.Rset_info = Rset_info
         self.z = z
         self.R = R
