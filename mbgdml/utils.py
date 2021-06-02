@@ -467,37 +467,37 @@ def get_R_slice(entities, entity_ids):
     return np.array(atom_idx)
 
 def center_structures(z, R):
-        """Centers each structure's center of mass to the origin.
+    """Centers each structure's center of mass to the origin.
 
-        Previously centered structures should not be affected by this technique.
+    Previously centered structures should not be affected by this technique.
 
-        Parameters
-        ----------
-        z : :obj:`numpy.ndarray`
-            Atomic numbers of the atoms in every structure.
-        R : :obj:`numpy.ndarray`
-            Cartesian atomic coordinates of data set structures.
-        
-        Returns
-        -------
-        :obj:`numpy.ndarray`
-            Centered Cartesian atomic coordinates.
-        """
-        # Masses of each atom in the same shape of R.
-        if R.ndim == 2:
-            R = np.array([R])
-        
-        masses = np.empty(R[0].shape)
-        
-        for i in range(len(masses)):
-            masses[i,:] = z_to_mass[z[i]]
-        
-        for i in range(len(R)):
-            r = R[i]
-            cm_r = np.average(r, axis=0, weights=masses)
-            R[i] = r - cm_r
-        
-        if R.shape[0] == 1:
-            return R[0]
-        else:
-            return R
+    Parameters
+    ----------
+    z : :obj:`numpy.ndarray`
+        Atomic numbers of the atoms in every structure.
+    R : :obj:`numpy.ndarray`
+        Cartesian atomic coordinates of data set structures.
+    
+    Returns
+    -------
+    :obj:`numpy.ndarray`
+        Centered Cartesian atomic coordinates.
+    """
+    # Masses of each atom in the same shape of R.
+    if R.ndim == 2:
+        R = np.array([R])
+    
+    masses = np.empty(R[0].shape)
+    
+    for i in range(len(masses)):
+        masses[i,:] = z_to_mass[z[i]]
+    
+    for i in range(len(R)):
+        r = R[i]
+        cm_r = np.average(r, axis=0, weights=masses)
+        R[i] = r - cm_r
+    
+    if R.shape[0] == 1:
+        return R[0]
+    else:
+        return R
