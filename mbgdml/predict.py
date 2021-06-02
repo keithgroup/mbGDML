@@ -190,15 +190,11 @@ class mbPredict():
                         continue
             
             # Predicts energies and forces.
-            ## Required a quick fix to be able to handle both a single and
-            ## Multiple structures (fails for multiple).
             if r_dim == 2:  # A single structure.
                 r_comp = r[r_idx]
                 e, f = gdml.predict(r_comp.flatten())
-            if r_dim == 3:  # Multiple structures.
-                # TODO
-                r_comp = r[r_idx]
-                e, f = gdml.predict(r_comp.flatten())
+            elif r_dim == 3:  # Multiple structures.
+                raise ValueError('Dimensions of R should be 2')
 
             # Adds contributions prediced from model.
             if store_each:
@@ -317,12 +313,21 @@ class mbPredict():
         :obj:`numpy.ndarray`
             Atomic forces of the system in the same shape as ``R``.
         """
-        e, f = self.decomposed_predict(
-            z, R, entity_ids, comp_ids, ignore_criteria=ignore_criteria,
-            store_each=False
-        )
-        
-        return e['T'], f['T']
+        # Ensures R array three dimensional for consistency.
+        if R.ndim == 2:
+            R = np.array([R])
+        e = np.zeros((len(R),))
+        f = np.zeros(R.shape)
+
+        for i in range(len(R)):
+            e_i, f_i = self.decomposed_predict(
+                z, R[i], entity_ids, comp_ids, ignore_criteria=ignore_criteria,
+                store_each=False
+            )
+            e[i] = e_i['T']
+            f[i] = f_i['T']
+
+        return e, f
 
 
     def remove_nbody(self, ref_dataset, ignore_criteria=False, store_each=False):
