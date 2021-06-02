@@ -23,34 +23,40 @@
 
 """Tests for `mbgdml` package."""
 
-import os
-from math import isclose
 import pytest
 import numpy as np
-
+from mbgdml.data.predictset import predictSet
 import mbgdml.data as data
+from mbgdml.predict import mbPredict
 
-# Must be run from mbGDML root directory.
+dset_dir = './tests/data/datasets'
+model_dir = './tests/data/models'
+molecule_sizes = {
+    'h2o': 3,
+    'mecn': 6,
+    'meoh': 6
+}
 
-"""
-def test_data_create_predictset():
-
-    dataset_path = './tests/data/datasets/4H2O-2mer-dataset.npz'
-    model_paths = [
-        './tests/data/models/4H2O-1mer-model-MP2.def2-TZVP-train300-sym2.npz',
-        './tests/data/models/4H2O-2body-model-MP2.def2-TZVP-train300-sym8.npz'
+def test_predictset_correct_contribution_predictions():
+    """
+    """
+    dset_6h2o_path = f'{dset_dir}/6h2o/6h2o.temelso.etal-dset.npz'
+    model_h2o_paths = [
+        f'{model_dir}/140h2o.sphere.gfn2.md.500k.prod1.3h2o.dset.1h2o-model-train500.npz',
+        f'{model_dir}/140h2o.sphere.gfn2.md.500k.prod1.3h2o.dset.2h2o.cm.6-model.mb-train500.npz',
+        f'{model_dir}/140h2o.sphere.gfn2.md.500k.prod1.3h2o-model.mb-train500.npz',
     ]
+    pset = data.predictSet()
+    pset.load_dataset(dset_6h2o_path)
+    pset.load_models(model_h2o_paths)
+    pset.prepare()
+    E_predictset, F_predictset = pset.nbody_predictions([1, 2, 3])
 
-    test_predictset = data.predictSet()
-    test_predictset.load_models(model_paths)
-    test_predictset.load_dataset(dataset_path)
-
-    # Reducing number of data to the first five structures
-    test_predictset.R = test_predictset.dataset['R'][0:5, :, :]
-    test_predictset.E = test_predictset.dataset['E'][0:5]
-    test_predictset.F = test_predictset.dataset['F'][0:5, :, :]
-
-    test_predictset.predictset
-
-    #TODO Add assert statements
-"""
+    dset_6h2o = data.dataSet(dset_6h2o_path)
+    predict = mbPredict(model_h2o_paths)
+    E_predict, F_predict = predict.predict(
+        dset_6h2o.z, dset_6h2o.R, dset_6h2o.entity_ids, dset_6h2o.comp_ids,
+        ignore_criteria=False
+    )
+    assert np.allclose(E_predictset, E_predict)
+    assert np.allclose(F_predictset, F_predict)
