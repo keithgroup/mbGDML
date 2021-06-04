@@ -246,41 +246,66 @@ class mbPredict():
         
         Returns
         -------
-        tuple
-            Dictionaries of many-body contributions of total energies
-            (float) and forces (np.ndarray) of the structure. Note that
-            forces has the same shape as R. Each key of the dictionary is
-            the order of the many-body model. Within this dictionary is a
-            total, 'T', and molecule combinations identified in the system
-            and their contributions.
-        """
-        # Gets system information from dataset.
-        # This assumes the system is only solvent.
-        if type(z) != list:
-            z = z.tolist()
+        :obj:`numpy.ndarray`
+            A 1D array where each element is an :obj:`dict` for each structure
+            that has the total energy and its breakdown by total n-body order
+            and then again broken down by entity combination. For example,
+            getting the energy contribution for the ``'0,1'`` combination 
+            of the first structure would be ``[0][2]['0,2']``. Getting the
+            total energy of all contributions for that structure would be
+            ``[0]['T']`` and for all 1-body contributions would be
+            ``[0][1]['T']``. Each element's dictionary could have the following
+            keys.
 
-        # 'T' is for total
-        E_contributions = {'T': 0.0}
-        F_contributions = {'T': np.zeros(R.shape)}
+            ``'T'``
+                Total energy of all n-body orders and contributions.
+            ``1``
+                All 1-body energy contributions. Usually there is no criteria
+                for 1-body models so all entities are typically included.
+                ``'T'``
+                    Total 1-body contributions for the structure.
+                ``'0'``
+                    The 1-body contribution for entity ``'0'``.
+                ...
+            ``2``
+                All 2-body energy contributions. Not all combination are
+                included.
+                ``'T'``
+                    Total 2-body contributions for the structure.
+                ``'0,1'``
+                    The 2-body contribution for the dimer containing the ``0``
+                    and ``1`` entities.
+                ...
+            ...
+        :obj:`numpy.ndarray`
+            Same as the energies array above but for atomic forces.
+        """
+        E = np.empty(R.shape[0], dtype='object')
+        F = np.empty(R.shape[0], dtype='object')
 
         # Adds contributions from all models.
-        for i in range(len(self.gdmls)):
-            gdml = self.gdmls[i]
-            model = self.models[i]
-            nbody_order = int(len(set(self.entity_ids[i])))
+        for i_r in range(len(R)):
+            e = {'T': 0.0}
+            f = {'T': np.zeros(R[i_r].shape)}
+            for j in range(len(self.gdmls)):
+                gdml = self.gdmls[j]
+                model = self.models[j]
+                nbody_order = int(len(set(self.entity_ids[j])))
 
-            E_contributions[nbody_order], F_contributions[nbody_order] = \
-                self._calculate(
-                    R, entity_ids, comp_ids, model, gdml,
-                    ignore_criteria=ignore_criteria, store_each=store_each
-                )
+                e[nbody_order], f[nbody_order] = \
+                    self._calculate(
+                        R[i_r], entity_ids, comp_ids, model, gdml,
+                        ignore_criteria=ignore_criteria, store_each=store_each
+                    )
 
-            # Adds contributions to total energy and forces.
-            E_contributions['T'] += E_contributions[nbody_order]['T']
-            F_contributions['T'] += F_contributions[nbody_order]['T']
+                # Adds contributions to total energy and forces.
+                e['T'] += e[nbody_order]['T']
+                f['T'] += f[nbody_order]['T']
+            
+            E[i_r] = e
+            F[i_r] = f
         
-        return E_contributions, F_contributions
-
+        return E, F
 
     def predict(self, z, R, entity_ids, comp_ids, ignore_criteria=False):
         """Predicts total energy and atomic forces using many-body GDML models.
@@ -313,22 +338,19 @@ class mbPredict():
         :obj:`numpy.ndarray`
             Atomic forces of the system in the same shape as ``R``.
         """
-        # Ensures R array three dimensional for consistency.
+        # Ensures R array three dimensional.
         if R.ndim == 2:
             R = np.array([R])
-        e = np.zeros((len(R),))
-        f = np.zeros(R.shape)
 
-        for i in range(len(R)):
-            e_i, f_i = self.decomposed_predict(
-                z, R[i], entity_ids, comp_ids, ignore_criteria=ignore_criteria,
-                store_each=False
-            )
-            e[i] = e_i['T']
-            f[i] = f_i['T']
+        E_decomp, F_decomp = self.decomposed_predict(
+            z, R, entity_ids, comp_ids, ignore_criteria=ignore_criteria,
+            store_each=False
+        )
 
-        return e, f
+        E = np.array([e['T'] for e in E_decomp])
+        F = np.array([f['T'] for f in F_decomp])
 
+        return E, F
 
     def remove_nbody(self, ref_dataset, ignore_criteria=False, store_each=False):
         """Removes mbGDML prediced energies and forces from a reference data

@@ -25,6 +25,7 @@
 
 import numpy as np
 from sgdml import __version__ as sgdml_version
+from mbgdml import __version__ as mbgdml_version
 from mbgdml.data import mbGDMLData
 from mbgdml.predict import mbPredict
 
@@ -62,68 +63,22 @@ class predictSet(mbGDMLData):
         self._loaded = False
         self._predicted = False
         for arg in args:
-            self.load(arg)
+            self.load(arg)  
     
-
-    def _calc_contributions(self, ignore_criteria=False):
+    def prepare(
+        self, z, R, entity_ids, comp_ids, ignore_criteria=False
+    ):
+        """Prepares a predict set by calculated the decomposed energy and
+        force contributions.
         """
 
-        As currently written this only works if you ignore all criteria.
-        """
-        all_E = {}
-        all_F = {}
-        for i in range(self.n_R):
-            print(f'Predicting structure {i+1} out of {self.n_R}')
-            e, f = self.mbgdml.decomposed_predict(
-                self.z, self.R[i], self.entity_ids, self.comp_ids,
-                ignore_criteria=ignore_criteria, store_each=True
-            )
-            for order in e:
-                if i == 0:
-                    all_E[order] = e[order]
-                    all_F[order] = f[order]    
-                    if order == 'T':
-                        all_E[order] = all_E[order]
-                        all_F[order] = np.array([all_F[order]])
-                    else:
-                        for combo in e[order]:
-                            all_E[order][combo] = all_E[order][combo]
-                            all_F[order][combo] = np.array(
-                                [all_F[order][combo]]
-                            )
-                else:
-                    if order == 'T':
-                        all_E[order] = np.concatenate(
-                            (all_E[order], e[order]),
-                            axis=0
-                        )
-                        all_F[order] = np.concatenate(
-                            (all_F[order], np.array([f[order]])),
-                            axis=0
-                        )
-                    else:
-                        for combo in e[order]:
-                            all_E[order][combo] = np.concatenate(
-                                (all_E[order][combo], e[order][combo]),
-                                axis=0
-                            )
-                            all_F[order][combo] = np.concatenate(
-                                (all_F[order][combo],
-                                 np.array([f[order][combo]])),
-                                 axis=0
-                            )
-        return all_E, all_F
-    
-    def prepare(self):
-        """Prepares a predict set by calculating all structures in the loaded
-        data set with the loaded models.
-        """
-        all_E, all_F = self._calc_contributions()
-
-        for order in all_E:
-            setattr(self, f'_E_{order}', all_E[order])
-            setattr(self, f'_F_{order}', all_F[order])
+        self.E_decomp, self.F_decomp = self.mbgdml.decomposed_predict(
+            z, R, entity_ids, comp_ids,
+            ignore_criteria=ignore_criteria, store_each=True
+        )
+        
         self.sgdml_version = sgdml_version
+        self.mbgdml_version = mbgdml_version
         self._predicted = True
 
     @property
@@ -134,7 +89,8 @@ class predictSet(mbGDMLData):
         """        
         predictset = {
             'type': np.array('p'),
-            #'code_version': self.sgdml_version,
+            'sgdml_version': np.array(self.sgdml_version),
+            'mbgdml_version': np.array(self.mbgdml_version),
             'name': np.array(self.name),
             'theory': np.array(self.theory),
             'z': self.z,
@@ -143,8 +99,12 @@ class predictSet(mbGDMLData):
             'E_true': self.E_true,
             'e_unit': np.array(self.e_unit),
             'F_true': self.F_true,
+            'E_decomp': self.E_decomp,
+            'F_decomp': self.F_decomp,
             'entity_ids': self.entity_ids,
-            'comp_ids': self.comp_ids
+            'comp_ids': self.comp_ids,
+            'models_order': self.models_order,
+            'models_md5': self.models_md5
         }
 
         if self._loaded == False and self._predicted == False:
@@ -153,19 +113,7 @@ class predictSet(mbGDMLData):
                     'No data can be predicted or is not loaded.'
                 )
             else: 
-                self.prepare()
-
-        
-        for E_key in [
-            i for i in self.__dict__.keys() \
-            if '_E_' in i and 'true' not in i and '_T' not in i
-        ]:
-            predictset[f'{E_key[1:]}'] = getattr(self, f'{E_key}')
-        for F_key in [
-            i for i in self.__dict__.keys() \
-            if '_F_' in i and 'true' not in i and '_T' not in i
-        ]:
-            predictset[f'{F_key[1:]}'] = getattr(self, f'{F_key}')
+                self.prepare(self.z, self.R, self.entity_ids, self.comp_ids)
         
         return predictset
     
@@ -209,19 +157,20 @@ class predictSet(mbGDMLData):
         predictset = dict(np.load(predictset_path, allow_pickle=True))
         self.name = str(predictset['name'][()])
         self.theory = str(predictset['theory'][()])
+        self.sgdml_version = str(predictset['sgdml_version'][()])
+        self.mbgdml_version = str(predictset['mbgdml_version'][()])
         self._z = predictset['z']
         self._R = predictset['R']
+        self.E_decomp = predictset['E_decomp']
+        self.F_decomp = predictset['F_decomp']
         self._r_unit = str(predictset['r_unit'][()])
         self._e_unit = str(predictset['e_unit'][()])
         self._E_true = predictset['E_true']
         self._F_true = predictset['F_true']
         self.entity_ids = predictset['entity_ids']
         self.comp_ids = predictset['comp_ids']
-
-        for E_key in [i for i in predictset.keys() if 'E_' in i and 'true' not in i]:
-            setattr(self, f'_{E_key}', predictset[f'{E_key}'])
-        for F_key in [i for i in predictset.keys() if 'F_' in i and 'true' not in i]:
-            setattr(self, f'_{F_key}', predictset[f'{F_key}'])
+        self.models_order = predictset['models_order']
+        self.models_md5 = predictset['models_md5']
 
         self._loaded = True
       
@@ -276,10 +225,11 @@ class predictSet(mbGDMLData):
         """
         E = np.zeros(self.E_true.shape)
         F = np.zeros(self.F_true.shape)
-        for nbody_index in nbody_orders:
-            E_cont, F_cont = self._get_total_contributions(nbody_index)
-            E = np.add(E, E_cont)
-            F = np.add(F, F_cont)
+        for nbody_order in nbody_orders:
+            E_nbody = [i[nbody_order]['T'] for i in self.E_decomp]
+            F_nbody = [i[nbody_order]['T'] for i in self.F_decomp]
+            E = np.add(E, E_nbody)
+            F = np.add(F, F_nbody)
         return E, F
 
     def load_dataset(self, dataset_path):
@@ -291,16 +241,17 @@ class predictSet(mbGDMLData):
             Path to data set.
         """
         self.dataset_path = dataset_path
-        self.dataset = dict(np.load(dataset_path, allow_pickle=True))
-        self.theory = str(self.dataset['theory'][()])
-        self._z = self.dataset['z']
-        self._R = self.dataset['R']
-        self._r_unit = str(self.dataset['r_unit'][()])
-        self._e_unit = str(self.dataset['e_unit'][()])
-        self._E_true = self.dataset['E']
-        self._F_true = self.dataset['F']
-        self.entity_ids = self.dataset['entity_ids']
-        self.comp_ids = self.dataset['comp_ids']
+        dataset = dict(np.load(dataset_path, allow_pickle=True))
+        self.dataset = dataset
+        self.theory = str(dataset['theory'][()])
+        self._z = dataset['z']
+        self._R = dataset['R']
+        self._r_unit = str(dataset['r_unit'][()])
+        self._e_unit = str(dataset['e_unit'][()])
+        self._E_true = dataset['E']
+        self._F_true = dataset['F']
+        self.entity_ids = dataset['entity_ids']
+        self.comp_ids = dataset['comp_ids']
     
     def load_models(self, model_paths):
         """Loads model(s) in preparation to create a predict set.
@@ -313,4 +264,17 @@ class predictSet(mbGDMLData):
         """
         self.model_paths = model_paths
         self.mbgdml = mbPredict(model_paths)
+
+        from mbgdml.data import mbModel
+        models_md5 = []
+        models_order = []
+        for model_path in model_paths:
+            model = mbModel(model_path)
+            models_order.append(len(set(model.entity_ids)))
+            try:
+                models_md5.append(model.md5)
+            except AttributeError:
+                pass
+        self.models_order = np.array(models_order)
+        self.models_md5 = np.array(models_md5)
 

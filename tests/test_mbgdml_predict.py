@@ -105,4 +105,4 @@ def test_predict_single_16mer():
     ])
 
     assert np.allclose(E_predict, E)
-    assert np.allclose(F_predict, F, rtol=1e-05, atol=1e-01)
+    assert np.allclose(F_predict, F, rtol=1e-05, atol=1e-03)

@@ -49,7 +49,7 @@ def test_predictset_correct_contribution_predictions():
     pset = data.predictSet()
     pset.load_dataset(dset_6h2o_path)
     pset.load_models(model_h2o_paths)
-    pset.prepare()
+    pset.prepare(pset.z, pset.R, pset.entity_ids, pset.comp_ids)
     E_predictset, F_predictset = pset.nbody_predictions([1, 2, 3])
 
     dset_6h2o = data.dataSet(dset_6h2o_path)
