@@ -560,8 +560,7 @@ class dataSet(mbGDMLData):
         return entity_ids, comp_ids
     
     def _generate_structure_samples(
-        self, quantity, size, data_ids, structure_idxs,
-        max_sample_entity_ids
+        self, quantity, size, data_ids, structure_idxs, max_sample_entity_ids
     ):
         """
 

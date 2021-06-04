@@ -26,7 +26,7 @@ import os
 import numpy as np
 from mbgdml.data import mbGDMLData
 from mbgdml.utils import md5_data
-from mbgdml import __version__
+from mbgdml import __version__ as mbgdml_version
 
 
 class mbModel(mbGDMLData):
@@ -40,8 +40,9 @@ class mbModel(mbGDMLData):
         GDML model for predicting energies and forces.
     """
     
-    def __init__(self):
-        pass
+    def __init__(self, *args):
+        if len(args) == 1:
+            self.load(args[0])
 
     @property
     def code_version(self):
@@ -65,8 +66,7 @@ class mbModel(mbGDMLData):
         :type: :obj:`bytes`
         """
         md5_properties_all = [
-            'md5_train', 'z', 'R_desc', 'R_d_desc_alpha', 'interact_cut_off',
-            'sig', 'alphas_F'
+            'md5_train', 'z', 'R_desc', 'R_d_desc_alpha', 'sig', 'alphas_F'
         ]
         md5_properties = []
         for key in md5_properties_all:
@@ -90,10 +90,21 @@ class mbModel(mbGDMLData):
         """
         self.path = model_path
         self.name = os.path.splitext(os.path.basename(model_path))[0]
-        self.model = dict(np.load(model_path, allow_pickle=True))
+        model = dict(np.load(model_path, allow_pickle=True))
 
-        if self.model['type'][()] != 'm':
+        if model['type'][()] != 'm':
             raise AttributeError('This npz is not a mbGDML model.')
+
+        self.z = model['z']
+        self.r_unit = str(model['r_unit'][()])
+        self.e_unit = str(model['e_unit'][()])
+        self.criteria = str(model['criteria'][()])
+        self.z_slice = model['z_slice'][()]
+        self.cutoff = model['cutoff'][()]
+        self.entity_ids = model['entity_ids']
+        self.comp_ids = model['comp_ids']
+
+        self.model = model
     
     def add_modifications(self, dset):
         """mbGDML-specific modifications of models.
@@ -108,7 +119,7 @@ class mbModel(mbGDMLData):
         dset_keys = ['entity_ids', 'comp_ids', 'criteria', 'z_slice', 'cutoff']
         for key in dset_keys:
             self.model[key] = dset[key]
-        self.model['mbgdml_version'] = np.array(__version__)
+        self.model['mbgdml_version'] = np.array(mbgdml_version)
         self.model['md5'] = np.array(self.md5, dtype='S32')
     
     def add_manybody_info(self, mb_order, mb_models_md5):
