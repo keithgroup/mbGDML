@@ -193,6 +193,7 @@ class mbPredict():
             if r_dim == 2:  # A single structure.
                 r_comp = r[r_idx]
                 e, f = gdml.predict(r_comp.flatten())
+                e = e[0]
             elif r_dim == 3:  # Multiple structures.
                 raise ValueError('Dimensions of R should be 2')
 
@@ -211,7 +212,7 @@ class mbPredict():
         return E_contributions, F_contributions
 
 
-    def decomposed_predict(
+    def predict_decomposed(
         self, z, R, entity_ids, comp_ids, ignore_criteria=False,
         store_each=True
     ):
@@ -342,7 +343,7 @@ class mbPredict():
         if R.ndim == 2:
             R = np.array([R])
 
-        E_decomp, F_decomp = self.decomposed_predict(
+        E_decomp, F_decomp = self.predict_decomposed(
             z, R, entity_ids, comp_ids, ignore_criteria=ignore_criteria,
             store_each=False
         )
