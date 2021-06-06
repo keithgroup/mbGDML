@@ -7,7 +7,7 @@ Tutorials
    :maxdepth: 2
 
    basics
-   partitioning
+   structuresets
    datasets
    training
    predictions
