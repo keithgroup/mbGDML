@@ -72,7 +72,7 @@ class predictSet(mbGDMLData):
         force contributions.
         """
 
-        self.E_decomp, self.F_decomp = self.mbgdml.decomposed_predict(
+        self.E_decomp, self.F_decomp = self.mbgdml.predict_decomposed(
             z, R, entity_ids, comp_ids,
             ignore_criteria=ignore_criteria, store_each=True
         )
@@ -173,35 +173,6 @@ class predictSet(mbGDMLData):
         self.models_md5 = predictset['models_md5']
 
         self._loaded = True
-      
-    def _get_total_contributions(self, nbody_order):
-        """N-body energy and atomic forces contributions of all structures.
-
-        Parameters
-        ----------
-        structure : :obj:`int`
-            The index of the desired structure.
-        nbody_order : :obj:`int`
-            Desired n-body order contributions.
-        
-        Returns
-        -------
-        :obj:`numpy.ndarray`
-            Energy n-order corrections of structures.
-        :obj:`numpy.ndarray`
-            Forces n-order corrections of structures.
-        
-        Raises
-        ------
-        AttributeError
-            If there is no predict set.
-        """
-        if not hasattr(self, 'R'):
-            raise AttributeError('Please load or create a predict set first.')
-        else:
-            E_cont = getattr(self, f'_E_{nbody_order}')['T']
-            F_cont = getattr(self, f'_F_{nbody_order}')['T']
-            return E_cont, F_cont
 
     def nbody_predictions(self, nbody_orders):
         """Energies and forces of all structures .
