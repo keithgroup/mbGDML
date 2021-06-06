@@ -5,7 +5,7 @@ Loading and saving
 ------------------
 
 Data sets are stored as NumPy ``.npz`` files. To load a data set, you can pass
-the path to the ``dataset.npz`` file or explicitly use the
+the path to a ``dataset.npz`` file or explicitly use the
 :func:`~mbgdml.data.dataset.dataSet.load` function.
 
 .. code-block:: python
