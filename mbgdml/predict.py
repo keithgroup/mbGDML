@@ -281,6 +281,10 @@ class mbPredict():
         :obj:`numpy.ndarray`
             Same as the energies array above but for atomic forces.
         """
+        # Ensures R has three dimensions.
+        if R.ndim == 2:
+            R = np.array([R])
+
         E = np.empty(R.shape[0], dtype='object')
         F = np.empty(R.shape[0], dtype='object')
 
@@ -300,8 +304,19 @@ class mbPredict():
                     )
 
                 # Adds contributions to total energy and forces.
-                e['T'] += e[nbody_order]['T']
-                f['T'] += f[nbody_order]['T']
+                if e[nbody_order]['T'] == 0.0:
+                    e[nbody_order]['T'] = np.nan
+                    f[nbody_order]['T'][:] = np.nan
+                else:
+                    e['T'] += e[nbody_order]['T']
+                    f['T'] += f[nbody_order]['T']
+            
+            # If the total energy after all model predictions is zero we assume
+            # that the structure falls outside all model criteria. This usually
+            # only occurs with only one model. We replace the zero with NaN to 
+            if e['T'] == 0.0:
+                e['T'] = np.nan
+                f['T'][:] = np.nan
             
             E[i_r] = e
             F[i_r] = f
@@ -339,10 +354,6 @@ class mbPredict():
         :obj:`numpy.ndarray`
             Atomic forces of the system in the same shape as ``R``.
         """
-        # Ensures R array three dimensional.
-        if R.ndim == 2:
-            R = np.array([R])
-
         E_decomp, F_decomp = self.predict_decomposed(
             z, R, entity_ids, comp_ids, ignore_criteria=ignore_criteria,
             store_each=False
