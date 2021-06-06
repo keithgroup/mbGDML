@@ -60,3 +60,25 @@ def test_predictset_correct_contribution_predictions():
     )
     assert np.allclose(E_predictset, E_predict)
     assert np.allclose(F_predictset, F_predict)
+
+def test_predictset_nan_for_failed_criteria():
+    """Checks that energies and forces are NaN for 
+    """
+    dset_16h2o_2h2o_path = f'{dset_dir}/2h2o/16h2o.yoo.etal.boat.b.2h2o-dset.mb.npz'
+    model_h2o_paths = [
+        f'{model_dir}/140h2o.sphere.gfn2.md.500k.prod1.3h2o.dset.2h2o.cm.6-model.mb-train500.npz',
+    ]
+    pset = data.predictSet()
+    pset.load_dataset(dset_16h2o_2h2o_path)
+    pset.load_models(model_h2o_paths)
+    pset.prepare(pset.z, pset.R, pset.entity_ids, pset.comp_ids)
+    E_predictset, F_predictset = pset.nbody_predictions([2])
+    r_isnan = [
+        15, 16, 21, 25, 26, 31, 33, 35, 36, 40, 43, 45, 48, 52, 65, 67, 71, 72,
+        77, 78, 82, 88, 89, 92, 93, 97, 102, 107, 115, 117
+    ]
+    for i in range(len(E_predictset)):
+        if i in r_isnan:
+            assert np.isnan(E_predictset[i])
+        else:
+            assert not np.isnan(E_predictset[i])
