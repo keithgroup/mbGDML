@@ -98,11 +98,15 @@ class mbModel(mbGDMLData):
         self.z = model['z']
         self.r_unit = str(model['r_unit'][()])
         self.e_unit = str(model['e_unit'][()])
-        self.criteria = str(model['criteria'][()])
-        self.z_slice = model['z_slice'][()]
-        self.cutoff = model['cutoff'][()]
-        self.entity_ids = model['entity_ids']
-        self.comp_ids = model['comp_ids']
+        
+        for key in ['criteria', 'z_slice', 'cutoff', 'entity_ids', 'comp_ids']:
+            if key in model.keys():
+                data = model[key]
+                if key in ['criteria', 'z_slice', 'cutoff']:
+                    data = data[()]
+                if key == 'criteria':
+                    data = str(data)
+                setattr(self, key, data)
 
         self.model = model
     
@@ -121,27 +125,3 @@ class mbModel(mbGDMLData):
             self.model[key] = dset[key]
         self.model['mbgdml_version'] = np.array(mbgdml_version)
         self.model['md5'] = np.array(self.md5, dtype='S32')
-    
-    def add_manybody_info(self, mb_order, mb_models_md5):
-        """Adds many-body (mb) information to GDML model.
-        
-        Parameters
-        ----------
-        mb_order : :obj:`int`
-            The max order of many-body predictions removed from the data set.
-        mb_models_md5 : :obj:`list` [:obj:`str`]
-            The MD5 hashes of the models used to remove n-body contributions
-            from data set.
-
-        Raises
-        ------
-        AttributeError
-            If accessing information when no model is loaded.
-        """
-
-        if not hasattr(self, 'model'):
-            raise AttributeError('There is no mbGDML model loaded.')
-
-        self.model['mb'] = mb_order
-        self.model['mb_models_md5'] = mb_models_md5
-        
