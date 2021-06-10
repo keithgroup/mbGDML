@@ -152,7 +152,7 @@ class mbGDMLTrain():
             True: compress kernel matrix along symmetric degrees of
             freedom,
             False: train using full kernel matrix.
-        idxs_train : :obj:`list`, optional
+        idxs_train : :obj:`numpy.ndarray`, optional
             The specific indices of structures to train the model on. If
             ``None`` will automatically sample the training data set.
 
@@ -200,6 +200,7 @@ class mbGDMLTrain():
         # This function is only called if we have specified idxs_train.
         # We just do a check that idxs_train is not None.
         assert idxs_train is not None
+        idxs_train = np.array(idxs_train)  # Insures it is an array.
 
         excl_idxs = (
             idxs_train if md5_train == md5_valid else np.array([], dtype=np.uint)
@@ -738,7 +739,7 @@ class mbGDMLTrain():
         Parameters
         ----------
         model_name : :obj:`str`
-            User-defined model name.
+            User-defined model name without the ``'.npz'`` file extension.
         num_train : :obj:`int`
             The number of training points to sample.
         num_validate : :obj:`int`
@@ -768,6 +769,9 @@ class mbGDMLTrain():
             Compresses the kernel matrix along symmetric degrees of freedom to
             try to reduce training time. Usually does not provide significant
             benefits. Defaults to ``False``.
+        idxs_train : :obj:`numpy.ndarray`
+            The specific indices of structures to train the model on. If
+            ``None`` will automatically sample the training data set.
         max_processes : :obj:`int`, optional
             The maximum number of cores to use for the training process. Will
             automatically calculate if not specified.
@@ -799,7 +803,7 @@ class mbGDMLTrain():
             max_processes=max_processes,
             use_torch=torch,
             idxs_train=idxs_train,
-            model_file=None,
+            model_file=model_name + '.npz',
             task_dir=None,
         )
         
