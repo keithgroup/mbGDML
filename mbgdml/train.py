@@ -727,7 +727,7 @@ class mbGDMLTrain():
         )
         print('         This is your model file: \'{}\''.format(model_file_name))
 
-    def mbGDMLTrain(
+    def train(
         self, model_name, num_train, num_validate, num_test, solver='analytic',
         sigmas=list(range(2, 110, 10)), save_dir='.', use_sym=True, use_E=True,
         use_E_cstr=True, use_cprsn=False, idxs_train=None,
