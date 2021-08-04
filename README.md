@@ -74,7 +74,7 @@ The following packages are required:
 All of these required packages can be installed with:
 
 ```text
-pip install ase 'cclib>=1.7' mako matplotlib natsort numpy sgdml umap-learn
+pip install ase 'cclib>=1.7' mako natsort numpy sgdml
 ```
 
 Then, clone and install the repository.
