@@ -215,3 +215,12 @@ class structureSet(mbGDMLData):
 
         structureset['md5'] = np.array(utils.md5_data(structureset, ['z', 'R']))
         return structureset
+    
+    def write_xyz(self, save_dir):
+        """Saves xyz file of all structures in data set.
+
+        Parameters
+        ----------
+        save_dir : :obj:`str`
+        """
+        utils.write_xyz(self.z, self.R, save_dir, self.name)
