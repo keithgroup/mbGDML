@@ -29,6 +29,8 @@ from sgdml.utils.desc import Desc
 from mbgdml import utils
 from mbgdml.data import mbModel
 
+import umap.umap_ as umap
+
 class structureEmbedding:
     """Uses the uniform manifold approximation and projection to embed R
     descriptors.
@@ -63,10 +65,6 @@ class structureEmbedding:
             If :obj:`int`, the seed is used by the random number generator. If
             :obj:`None`, a random number is generated and passed into UMAP.
         """
-        # UMAP takes a decent amount of time to load, so we only load it if we
-        # are going to use it.
-        import umap.umap_ as umap
-
         self.n_neighbors = n_neighbors
         self.min_dist = min_dist
         if random_state is None:
