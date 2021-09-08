@@ -53,15 +53,24 @@ class mbGDMLCalculator(Calculator):
 
     implemented_properties = ['energy', 'forces']
 
-    def __init__(self, elements, model_paths, e_unit_model='kcal/mol',
-                 r_unit_model='Angstrom', *args, **kwargs):
+    def __init__(
+        self, elements, model_paths, entity_ids, comp_ids,
+        e_unit_model='kcal/mol', r_unit_model='Angstrom', *args, **kwargs
+    ):
+        """
+
+        Parameters
+        ----------
+        """
 
         # TODO logging?
         self.atoms = None
         self.elements = elements
+        self.entity_ids = entity_ids
+        self.comp_ids = comp_ids
 
-        self.load_models(model_paths)
-        self.gdml_predict = mbPredict(self.gdmls)
+        #self.load_models(model_paths)
+        self.gdml_predict = mbPredict(model_paths)
 
         self.e_unit_model = e_unit_model
         self.r_unit_model = r_unit_model
@@ -76,26 +85,6 @@ class mbGDMLCalculator(Calculator):
         if not hasattr(self, 'name'):
             self.name = self.__class__.__name__.lower()
 
-    def load_models(self, model_paths):
-        """Loads models for GDML prediction.
-        
-        Parameters
-        ----------
-        model_paths : :obj:`list` [:obj:`str`]
-            Contains paths of all GDML models to be loaded. All of these models 
-            will be used during the MD run. 
-        """
-        gdmls = []
-        model_index = 0
-        while model_index < len(model_paths):
-            loaded_model = np.load(model_paths[model_index])
-            predict_model = GDMLPredict(loaded_model)
-            gdmls.append(predict_model)
-
-            model_index += 1
-        
-        self.gdmls = gdmls
-
     def calculate(self, atoms=None, *args, **kwargs):
         """Predicts energy and forces using many-body GDML models.
         """
@@ -105,7 +94,10 @@ class mbGDMLCalculator(Calculator):
         )
 
         r = np.array(atoms.get_positions())
-        e, f = self.gdml_predict.predict(self.elements, r)
+        e, f = self.gdml_predict.predict(
+            self.elements, r, self.entity_ids, self.comp_ids
+        )
+        e = e[0]
 
         # convert model units to ASE default units (eV and Ang)
         if self.e_unit_model != 'eV':
