@@ -26,11 +26,18 @@ import numpy as np
 from sgdml.predict import GDMLPredict
 from mbgdml import criteria
 
+try:
+    import torch
+except ImportError:
+    _has_torch = False
+else:
+    _has_torch = True
+
 class mbPredict():
     """Predict energies and forces of structures using GDML models.
     """
 
-    def __init__(self, models):
+    def __init__(self, models, use_torch=False):
         """Sets GDML models to be used for many-body predictions.
         
         Parameters
@@ -38,10 +45,10 @@ class mbPredict():
         models : :obj:`list` [:obj:`str`]
             Contains paths to either standard or many-body GDML models.
         """
-        self._load_models(models)
+        self._load_models(models, use_torch)
     
 
-    def _load_models(self, models):
+    def _load_models(self, models, use_torch):
         """Loads models and preprares GDMLPredict.
         
         Parameters
@@ -60,7 +67,7 @@ class mbPredict():
             loaded = np.load(model, allow_pickle=True)
             model = dict(loaded)
             self.models.append(model)
-            gdml = GDMLPredict(loaded)
+            gdml = GDMLPredict(loaded, use_torch=use_torch)
             self.gdmls.append(gdml)
 
             if model['criteria'] == '':
