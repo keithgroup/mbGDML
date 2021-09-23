@@ -595,7 +595,8 @@ class dataSet(mbGDMLData):
     
     def _sample(
         self, z, R, E, F, sample_data, quantity, data_ids, Rset_id, Rset_info,
-        size, criteria=None, z_slice=[], cutoff=[], sampling_updates=False
+        size, criteria=None, z_slice=[], cutoff=[], sampling_updates=False, 
+        copy_EF=True
     ):
         """Selects all Rset structures for data set.
 
@@ -769,14 +770,14 @@ class dataSet(mbGDMLData):
             ## If sampling from a data set, we assume if the size is the
             ## same then we will transfer over the data.
             ### Energies
-            if sample_data_type == 'd' and size == (max_sample_entity_ids+1):
+            if sample_data_type == 'd' and copy_EF and size == (max_sample_entity_ids+1):
                 e_selection = np.array([sample_data_E[i_r_sample]])
             else:
                 # Adds NaN for energies.
                 e_selection = np.empty((1,))
                 e_selection[:] = np.NaN
             ### Forces
-            if sample_data_type == 'd' and size == (max_sample_entity_ids+1):
+            if sample_data_type == 'd' and copy_EF and size == (max_sample_entity_ids+1):
                 f_selection = np.array([sample_data_F[i_r_sample]])
             else:
                 # Adds NaN for forces.
@@ -806,7 +807,8 @@ class dataSet(mbGDMLData):
     
     def sample_structures(
         self, data, quantity, size, selected_rset_id=None, always=[], criteria=None,
-        z_slice=[], cutoff=[], center_structures=False, sampling_updates=False
+        z_slice=[], cutoff=[], center_structures=False, sampling_updates=False, 
+        copy_EF=True
     ):
         """Samples all possible combinations from a data set.
 
@@ -848,6 +850,9 @@ class dataSet(mbGDMLData):
         sampling_updates : :obj:`bool`, optional
             Will print something for every 100 successfully sampled structures.
             Defaults to ``False``.
+        copy_EF=True : :obj:`bool`, optional
+            If sampling from a data set, copy over the energies and forces of
+            the sampled structures to the new data set. Defaults to ``True``.
         """
         data_type = data.type
         
@@ -872,7 +877,7 @@ class dataSet(mbGDMLData):
             Rset_info, z, R, E, F = self._sample(
                 z, R, E, F, data, quantity, data_ids, Rset_id, Rset_info, size,
                 criteria=criteria, z_slice=z_slice, cutoff=cutoff,
-                sampling_updates=sampling_updates
+                sampling_updates=sampling_updates, copy_EF=copy_EF
             )
 
             self.Rset_md5 = {**self.Rset_md5, **{Rset_id: Rset_md5}}
@@ -887,7 +892,8 @@ class dataSet(mbGDMLData):
                     Rset_info, z, R, E, F = self._sample(
                         z, R, E, F, data, quantity, np.array([data_id]), Rset_id,
                         Rset_info, size, criteria=criteria, z_slice=z_slice,
-                        cutoff=cutoff, sampling_updates=sampling_updates
+                        cutoff=cutoff, sampling_updates=sampling_updates, 
+                        copy_EF=copy_EF
                     )
 
                     self.Rset_md5 = {**self.Rset_md5, **{Rset_id: Rset_md5}}
