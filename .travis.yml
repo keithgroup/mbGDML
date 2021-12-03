@@ -2,9 +2,14 @@ language: python
 python:
 - 3.8
 install:
-- pip install natsort 'cclib>=1.7' numpy ase sgdml mako matplotlib umap-learn
+- pip install natsort cclib numpy ase mako matplotlib umap-learn
 - pip install pytest-cov codecov furo Sphinx coverage bump2version
 - pip install wheel watchdog tox twine
+- git clone https://github.com/aalexmmaldonado/sGDML
+- cd sGDML
+- git pull
+- git checkout logging
+- pip install .
 script:
 - pip install .
 - sphinx-apidoc --force -o docs/source/doc/ mbgdml ./tests/
