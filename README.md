@@ -2,11 +2,11 @@
 
 <h1 align="center">mbGDML</h1>
 
-<h4 align="center">Create, use, and analyze many-body gradient domain machine learning force fields.</h4>
+<h4 align="center">Create, use, and analyze many-body gradient-domain machine learning force fields.</h4>
 
 <p align="center">
-    <a href="https://travis-ci.com/keithgroup/mbGDML">
-        <img src="https://travis-ci.com/keithgroup/mbGDML.svg?branch=master" alt="Build Status ">
+    <a href="https://app.travis-ci.com/github/keithgroup/mbGDML">
+        <img src="https://app.travis-ci.com/keithgroup/mbGDML.svg?branch=main" alt="Build Status ">
     </a>
     <a href="https://codecov.io/gh/keithgroup/mbGDML">
         <img src="https://codecov.io/gh/keithgroup/mbGDML/branch/master/graph/badge.svg?token=P643JEUWZC" alt="Codecov">
@@ -29,10 +29,10 @@
 
 Atomistic insight is fundamental for computational predictive studies of chemical and physical processes.
 Machine learning force fields provide a route to high-level ab initio calculations at a fraction of the cost.
-[Symmetric gradient domain machine learning (sGDML)](http://quantum-machine.org/gdml/), a kernel-based method, directly learns the relationship between atomic coordinates and interatomic forces.
+[Gradient-domain machine learning (GDML)](http://quantum-machine.org/gdml/), a kernel-based method, directly learns the relationship between atomic coordinates and interatomic forces.
 However, training in the gradient domain sacrifices generalized transferability to other species or number of atoms.
 
-[Many-body GDML (mbGDML)](https://github.com/keithgroup/mbGDML), is a technique for sGDML transferability to *n*-sized systems by using many-body machine learning models.
+[Many-body GDML (mbGDML)](https://github.com/keithgroup/mbGDML), is a technique for GDML transferability to *n*-sized systems by using many-body machine learning models.
 Every aspect of the process from preparing ORCA calculations, data set creation, training, and use of mbGDML force fields is taken care of in this user-friendly Python package.
 
 **Disclaimer**: This package is still under active development and is not ready for production.
@@ -44,7 +44,7 @@ Creating mbGDML models:
 - Partition structures into monomers, dimers, trimers, etc.
 - Prepare and submit [ORCA](https://sites.google.com/site/orcainputlibrary/) energy and gradient calculations.
 - Conversion between data sets ([NumPy npz](https://numpy.org/doc/stable/reference/routines.io.html) files) and output files.
-- Train sGDML models.
+- Train GDML models.
 
 Using mbGDML models:
 
@@ -65,7 +65,7 @@ At the moment, the only way to install mbGDML is directly from the [GitHub repos
 The following packages are required:
 
 - ase
-- cclib (>=1.7)
+- cclib
 - mako
 - natsort
 - numpy
@@ -74,7 +74,7 @@ The following packages are required:
 All of these required packages can be installed with:
 
 ```text
-pip install ase 'cclib>=1.7' mako natsort numpy sgdml
+pip install ase cclib mako natsort numpy sgdml
 ```
 
 Then, clone and install the repository.
