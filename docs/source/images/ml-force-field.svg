@@ -1,0 +1,863 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   viewBox="0 0 1804.46 737.86"
+   version="1.1"
+   id="svg219"
+   sodipodi:docname="ml-force-field.svg"
+   inkscape:version="1.1.1 (1:1.1+202109281949+c3084ef5ed)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview221"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="true"
+     showgrid="false"
+     inkscape:zoom="1.727346"
+     inkscape:cx="1430.8077"
+     inkscape:cy="325.35462"
+     inkscape:window-width="1920"
+     inkscape:window-height="1043"
+     inkscape:window-x="0"
+     inkscape:window-y="900"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg219" />
+  <defs
+     id="defs28">
+    <style
+       id="style2">.cls-1{fill:#e6e6e6;}.cls-2{fill:#ed1c24;}.cls-3{fill:url(#linear-gradient);}.cls-4{fill:url(#linear-gradient-2);}.cls-5{fill:url(#linear-gradient-3);}.cls-6{fill:url(#linear-gradient-4);}.cls-7{fill:url(#linear-gradient-5);}.cls-8{font-size:72px;font-family:Calibri-Bold, Calibri;font-weight:700;}.cls-9{letter-spacing:-0.01em;}.cls-10{letter-spacing:-0.01em;}.cls-11{letter-spacing:-0.01em;}.cls-12{letter-spacing:-0.01em;}.cls-13{fill:#29abe2;}.cls-14{fill:url(#linear-gradient-6);}.cls-15{fill:url(#linear-gradient-7);}.cls-16{fill:url(#linear-gradient-8);}.cls-17{fill:url(#linear-gradient-9);}.cls-18{fill:url(#linear-gradient-10);}.cls-19{fill:#3f3f3f;}.cls-20{fill:#969696;}.cls-21,.cls-23{fill:#ddd;}.cls-21{opacity:0.68;}.cls-22{fill:none;stroke-width:4px;}.cls-22,.cls-23{stroke:#969696;stroke-miterlimit:10;}.cls-23{stroke-width:2px;}</style>
+    <linearGradient
+       id="linear-gradient"
+       x1="367.72"
+       y1="331.49"
+       x2="419.41"
+       y2="331.49"
+       gradientTransform="translate(-93.64 -73.32) scale(0.62 1.28)"
+       gradientUnits="userSpaceOnUse">
+      <stop
+         offset="0.08"
+         stop-color="#e6e6e6"
+         id="stop4" />
+      <stop
+         offset="0.16"
+         stop-color="#e6e0e0"
+         id="stop6" />
+      <stop
+         offset="0.28"
+         stop-color="#e7cecf"
+         id="stop8" />
+      <stop
+         offset="0.42"
+         stop-color="#e8b0b2"
+         id="stop10" />
+      <stop
+         offset="0.56"
+         stop-color="#e9878a"
+         id="stop12" />
+      <stop
+         offset="0.72"
+         stop-color="#eb5258"
+         id="stop14" />
+      <stop
+         offset="0.87"
+         stop-color="#ed1c24"
+         id="stop16" />
+    </linearGradient>
+    <linearGradient
+       id="linear-gradient-2"
+       x1="147.12"
+       y1="594.44"
+       x2="198.81"
+       y2="594.44"
+       gradientTransform="translate(300.82 -475.4) scale(0.58 1.28)"
+       xlink:href="#linear-gradient" />
+    <linearGradient
+       id="linear-gradient-3"
+       x1="454.11"
+       y1="953.55"
+       x2="505.8"
+       y2="953.55"
+       gradientTransform="translate(221.2 -683.24) scale(0.51 1.28)"
+       xlink:href="#linear-gradient" />
+    <linearGradient
+       id="linear-gradient-4"
+       x1="983.04"
+       y1="1067.87"
+       x2="1034.73"
+       y2="1067.87"
+       gradientTransform="translate(-405.13 -767.36) scale(0.62 1.28)"
+       xlink:href="#linear-gradient" />
+    <linearGradient
+       id="linear-gradient-5"
+       x1="837.34"
+       y1="854.94"
+       x2="889.03"
+       y2="854.94"
+       gradientTransform="translate(-113.32 -461.26) scale(0.28 1.28)"
+       xlink:href="#linear-gradient" />
+    <linearGradient
+       id="linear-gradient-6"
+       x1="649.8"
+       y1="1365.09"
+       x2="701.49"
+       y2="1365.09"
+       gradientTransform="matrix(0.62,0,0,1.28,-416.81217,-321.49871)"
+       xlink:href="#linear-gradient" />
+    <linearGradient
+       id="linear-gradient-7"
+       x1="2392.79"
+       y1="420.4"
+       x2="2444.49"
+       y2="420.4"
+       gradientTransform="matrix(0.58,0,0,1.28,244.63408,-695.76555)"
+       xlink:href="#linear-gradient" />
+    <linearGradient
+       id="linear-gradient-8"
+       x1="15.97"
+       y1="-74.42"
+       x2="67.66"
+       y2="-74.42"
+       gradientTransform="matrix(0.51,0,0,1.28,55.761699,-1664.8403)"
+       xlink:href="#linear-gradient" />
+    <linearGradient
+       id="linear-gradient-9"
+       x1="-1155.96"
+       y1="1183.1"
+       x2="-1104.27"
+       y2="1183.1"
+       gradientTransform="matrix(0.62,0,0,1.28,-816.03857,-1773.9339)"
+       xlink:href="#linear-gradient" />
+    <linearGradient
+       id="linear-gradient-10"
+       x1="3476.74"
+       y1="1716.98"
+       x2="3528.43"
+       y2="1716.98"
+       gradientTransform="matrix(0.28,0,0,1.28,-595.66955,-779.0451)"
+       xlink:href="#linear-gradient" />
+  </defs>
+  <g
+     id="water-cluster">
+    <circle
+       id="H"
+       class="cls-1"
+       cx="46.630001"
+       cy="85.610001"
+       r="33.580002" />
+    <circle
+       id="H-2"
+       data-name="H"
+       class="cls-1"
+       cx="429.73001"
+       cy="430.73999"
+       r="33.009998" />
+    <circle
+       id="O1"
+       class="cls-2"
+       cx="86.629997"
+       cy="115.93"
+       r="50.639999" />
+    <circle
+       id="O2"
+       class="cls-2"
+       cx="391.54001"
+       cy="121.37"
+       r="51.529999" />
+    <circle
+       id="O3"
+       class="cls-2"
+       cx="380.95999"
+       cy="419.54999"
+       r="48.459999" />
+    <circle
+       id="O4"
+       class="cls-2"
+       cx="86.629997"
+       cy="414.51001"
+       r="48.959999" />
+    <circle
+       id="H-3"
+       data-name="H"
+       class="cls-1"
+       cx="70.459999"
+       cy="224.37"
+       r="35.959999" />
+    <circle
+       id="H-4"
+       data-name="H"
+       class="cls-1"
+       cx="282.28"
+       cy="103.77"
+       r="36.900002" />
+    <circle
+       id="H-5"
+       data-name="H"
+       class="cls-1"
+       cx="37.98"
+       cy="492.54001"
+       r="37.98" />
+    <circle
+       id="H-6"
+       data-name="H"
+       class="cls-1"
+       cx="434.07999"
+       cy="57.09"
+       r="40.639999" />
+    <circle
+       id="H-7"
+       data-name="H"
+       class="cls-1"
+       cx="401.14001"
+       cy="317"
+       r="35.889999" />
+    <circle
+       id="H-8"
+       data-name="H"
+       class="cls-1"
+       cx="192.37"
+       cy="430.92001"
+       r="35.099998" />
+    <rect
+       id="OH_bond"
+       data-name="OH bond"
+       class="cls-3"
+       x="133.05"
+       y="338.69"
+       width="31.940001"
+       height="21.530001"
+       transform="rotate(-82.45,15.407327,304.48263)" />
+    <rect
+       id="OH_bond-2"
+       data-name="OH bond"
+       class="cls-4"
+       x="386.23001"
+       y="271.98001"
+       width="30.18"
+       height="21.530001"
+       transform="rotate(9.63,1383.6124,-227.25925)" />
+    <rect
+       id="OH_bond-3"
+       data-name="OH bond"
+       class="cls-5"
+       x="450.84"
+       y="522.15002"
+       width="26.190001"
+       height="21.530001"
+       transform="rotate(99.63,500.63704,416.9696)" />
+    <rect
+       id="OH_bond-4"
+       data-name="OH bond"
+       class="cls-6"
+       x="201.74001"
+       y="583.84998"
+       width="31.940001"
+       height="21.530001"
+       transform="rotate(-173.63,177.22532,510.83546)" />
+    <rect
+       id="OH_bond-5"
+       data-name="OH bond"
+       class="cls-7"
+       x="123.72"
+       y="618.37"
+       width="14.65"
+       height="21.530001"
+       transform="rotate(-55.75,-66.793964,610.96573)" />
+  </g>
+  <text
+     class="cls-8"
+     id="text52"
+     x="77.464943"
+     y="669.27002"
+     style="fill:#3f3f3f;fill-opacity:1"><tspan
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:Arial;-inkscape-font-specification:'Arial Bold';fill:#3f3f3f;fill-opacity:1"
+       id="tspan6983">Structure</tspan></text>
+  <text
+     class="cls-8"
+     id="text66"
+     x="1550.561"
+     y="626.33002"
+     style="fill:#3f3f3f;fill-opacity:1"><tspan
+       sodipodi:role="line"
+       id="tspan36711"
+       x="1550.561"
+       y="626.33002"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:Arial;-inkscape-font-specification:'Arial Bold';text-align:center;text-anchor:middle;fill:#3f3f3f;fill-opacity:1">Energy and</tspan><tspan
+       sodipodi:role="line"
+       id="tspan36713"
+       x="1550.561"
+       y="718.18433"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:Arial;-inkscape-font-specification:'Arial Bold';text-align:center;text-anchor:middle;fill:#3f3f3f;fill-opacity:1">Forces</tspan></text>
+  <text
+     class="cls-8"
+     id="text76"
+     rotate="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
+     x="901.98389"
+     y="624.69257"
+     style="fill:#3f3f3f;fill-opacity:1"><tspan
+       sodipodi:role="line"
+       id="tspan27564"
+       x="901.98389"
+       y="624.69257"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:Arial;-inkscape-font-specification:'Arial Bold';text-align:center;text-anchor:middle;fill:#3f3f3f;fill-opacity:1">Machine Learning</tspan><tspan
+       sodipodi:role="line"
+       id="tspan27566"
+       x="901.98389"
+       y="716.54688"
+       style="text-align:center;text-anchor:middle;fill:#3f3f3f;fill-opacity:1"><tspan
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:Arial;-inkscape-font-specification:'Arial Bold';text-align:center;text-anchor:middle;fill:#3f3f3f;fill-opacity:1"
+         rotate="0 0 0 0 0 0 0 0 0 0 0 0"
+         id="tspan27568">Force Field</tspan></tspan></text>
+  <polygon
+     class="cls-13"
+     points="1668.65,52.49 1716.11,70.84 1676.49,102.77 "
+     id="polygon79"
+     transform="translate(0,7.9950047)" />
+  <polygon
+     class="cls-13"
+     points="1752.37,374.45 1784.3,414.07 1734.02,421.92 "
+     id="polygon81"
+     transform="translate(0,7.9950047)" />
+  <polygon
+     class="cls-13"
+     points="1570.05,465.84 1519.31,462.07 1547.94,420.01 "
+     id="polygon83"
+     transform="translate(0,7.9950047)" />
+  <polygon
+     class="cls-13"
+     points="1431.81,477.34 1399.66,516.78 1381.58,469.21 "
+     id="polygon85"
+     transform="translate(0,7.9950047)" />
+  <polygon
+     class="cls-13"
+     points="1331.92,227.87 1374.13,199.45 1377.64,250.21 "
+     id="polygon87"
+     transform="translate(0,7.9950047)" />
+  <rect
+     class="cls-13"
+     x="-22.589472"
+     y="-1434.9583"
+     width="60.529999"
+     height="20.4"
+     transform="rotate(93)"
+     id="rect89" />
+  <polygon
+     class="cls-13"
+     points="1426.29,0 1449.39,45.34 1398.57,42.67 "
+     id="polygon91"
+     transform="translate(0,7.9950047)" />
+  <circle
+     id="H-9"
+     data-name="H"
+     class="cls-1"
+     cx="1376.36"
+     cy="94.065002"
+     r="33.580002" />
+  <rect
+     class="cls-13"
+     x="1221.0271"
+     y="548.59924"
+     width="36.290001"
+     height="20.4"
+     transform="rotate(-20.14)"
+     id="rect94" />
+  <circle
+     id="H-10"
+     data-name="H"
+     class="cls-1"
+     cx="1759.47"
+     cy="439.19501"
+     r="33.009998" />
+  <circle
+     id="O1-2"
+     data-name="O1"
+     class="cls-2"
+     cx="1416.37"
+     cy="124.375"
+     r="50.639999" />
+  <circle
+     id="O2-2"
+     data-name="O2"
+     class="cls-2"
+     cx="1721.28"
+     cy="129.815"
+     r="51.529999" />
+  <circle
+     id="O3-2"
+     data-name="O3"
+     class="cls-2"
+     cx="1710.7"
+     cy="428.005"
+     r="48.459999" />
+  <circle
+     id="O4-2"
+     data-name="O4"
+     class="cls-2"
+     cx="1416.37"
+     cy="422.965"
+     r="48.959999" />
+  <circle
+     id="H-11"
+     data-name="H"
+     class="cls-1"
+     cx="1400.2"
+     cy="232.82501"
+     r="35.959999" />
+  <circle
+     id="H-12"
+     data-name="H"
+     class="cls-1"
+     cx="1612.02"
+     cy="112.22501"
+     r="36.900002" />
+  <circle
+     id="H-13"
+     data-name="H"
+     class="cls-1"
+     cx="1367.71"
+     cy="500.995"
+     r="37.98" />
+  <circle
+     id="H-14"
+     data-name="H"
+     class="cls-1"
+     cx="1763.8199"
+     cy="65.545006"
+     r="40.639999" />
+  <circle
+     id="H-15"
+     data-name="H"
+     class="cls-1"
+     cx="1730.87"
+     cy="325.45499"
+     r="35.889999" />
+  <circle
+     id="H-16"
+     data-name="H"
+     class="cls-1"
+     cx="1522.11"
+     cy="439.375"
+     r="35.099998" />
+  <rect
+     id="OH_bond-6"
+     data-name="OH bond"
+     class="cls-14"
+     x="-15.832129"
+     y="1408.7913"
+     width="31.940001"
+     height="21.530001"
+     transform="rotate(-82.45)"
+     style="fill:url(#linear-gradient-6)" />
+  <rect
+     id="OH_bond-7"
+     data-name="OH bond"
+     class="cls-15"
+     x="1641.134"
+     y="-170.34555"
+     width="30.18"
+     height="21.530001"
+     transform="rotate(9.63)"
+     style="fill:url(#linear-gradient-7)" />
+  <rect
+     id="OH_bond-8"
+     data-name="OH bond"
+     class="cls-16"
+     x="63.431656"
+     y="-1770.5203"
+     width="26.190001"
+     height="21.530001"
+     transform="rotate(99.63)"
+     style="fill:url(#linear-gradient-8)" />
+  <rect
+     id="OH_bond-9"
+     data-name="OH bond"
+     class="cls-17"
+     x="-1530.7686"
+     y="-275.75388"
+     width="31.940001"
+     height="21.530001"
+     transform="rotate(-173.63)"
+     style="fill:url(#linear-gradient-9)" />
+  <rect
+     id="OH_bond-10"
+     data-name="OH bond"
+     class="cls-18"
+     x="389.30042"
+     y="1400.0349"
+     width="14.65"
+     height="21.530001"
+     transform="rotate(-55.75)"
+     style="fill:url(#linear-gradient-10)" />
+  <polygon
+     class="cls-13"
+     points="1297.33,110.93 1329.95,71.87 1347.47,119.65 "
+     id="polygon112"
+     transform="translate(0,7.9950047)" />
+  <rect
+     class="cls-13"
+     x="983.37067"
+     y="1061.4502"
+     width="39.369999"
+     height="20.4"
+     transform="rotate(-29.69)"
+     id="rect114" />
+  <polygon
+     class="cls-13"
+     points="1348.06,457.8 1373.74,413.87 1398.94,458.07 "
+     id="polygon116"
+     transform="translate(0,7.9950047)" />
+  <rect
+     class="cls-13"
+     x="-401.39676"
+     y="1714.7668"
+     width="39.369999"
+     height="20.4"
+     transform="rotate(-87.7)"
+     id="rect118" />
+  <polygon
+     class="cls-13"
+     points="1706.43,505.29 1682.78,460.24 1733.62,462.28 "
+     id="polygon120"
+     transform="translate(0,7.9950047)" />
+  <rect
+     class="cls-13"
+     x="1420.0925"
+     y="-1000.3317"
+     width="39.369999"
+     height="20.4"
+     transform="rotate(44.930753)"
+     id="rect122" />
+  <polygon
+     class="cls-13"
+     points="1698.06,347.64 1650.6,329.29 1690.22,297.36 "
+     id="polygon124"
+     transform="rotate(53.790753,1718.6538,323.56124)" />
+  <rect
+     class="cls-13"
+     x="-636.74969"
+     y="1486.0305"
+     width="25.41"
+     height="20.4"
+     transform="rotate(-108.13)"
+     id="rect126" />
+  <polygon
+     class="cls-13"
+     points="1633.84,173.35 1595.94,139.39 1644.3,123.55 "
+     id="polygon128"
+     transform="translate(0,7.9950047)" />
+  <rect
+     class="cls-13"
+     x="-634.93634"
+     y="1649.2639"
+     width="25.41"
+     height="20.4"
+     transform="rotate(-108.13)"
+     id="rect126-1"
+     style="fill:#29abe2" />
+  <polygon
+     class="cls-13"
+     points="1644.3,123.55 1633.84,173.35 1595.94,139.39 "
+     id="polygon128-3"
+     transform="translate(154.56493,-44.522264)"
+     style="fill:#29abe2" />
+  <rect
+     class="cls-19"
+     x="-636.08057"
+     y="-294.85538"
+     width="119.85"
+     height="40.389999"
+     transform="rotate(179.87)"
+     id="rect131" />
+  <polygon
+     class="cls-19"
+     points="634.81,323.6 634.58,222.84 721.96,273.02 "
+     id="polygon133"
+     transform="translate(-16,0.26500443)" />
+  <g
+     id="g49507"
+     transform="translate(0,0.26500443)">
+    <rect
+       class="cls-19"
+       x="-1232.3806"
+       y="-296.21039"
+       width="119.85"
+       height="40.389999"
+       transform="rotate(179.87)"
+       id="rect135" />
+    <polygon
+       class="cls-19"
+       points="1322.27,273.02 1235.12,323.6 1234.89,222.84 "
+       id="polygon137"
+       transform="translate(-12)" />
+  </g>
+  <g
+     id="Machine_Learning"
+     data-name="Machine Learning"
+     transform="translate(-16.300001,-0.49499306)">
+    <rect
+       class="cls-20"
+       x="783.12"
+       y="138.58"
+       width="270.82001"
+       height="270.82001"
+       rx="44.790001"
+       id="rect140" />
+    <rect
+       class="cls-20"
+       x="741.96002"
+       y="240.28"
+       width="51.16"
+       height="23.209999"
+       rx="11.6"
+       id="rect142" />
+    <rect
+       class="cls-20"
+       x="741.96002"
+       y="197.07001"
+       width="51.16"
+       height="23.209999"
+       rx="11.6"
+       id="rect144" />
+    <rect
+       class="cls-20"
+       x="741.96002"
+       y="327.19"
+       width="51.16"
+       height="23.209999"
+       rx="11.6"
+       id="rect146" />
+    <rect
+       class="cls-20"
+       x="741.96002"
+       y="283.98999"
+       width="51.16"
+       height="23.209999"
+       rx="11.6"
+       id="rect148" />
+    <rect
+       class="cls-20"
+       x="1043.9399"
+       y="240.28"
+       width="51.16"
+       height="23.209999"
+       rx="11.6"
+       id="rect150" />
+    <rect
+       class="cls-20"
+       x="1043.9399"
+       y="197.07001"
+       width="51.16"
+       height="23.209999"
+       rx="11.6"
+       id="rect152" />
+    <rect
+       class="cls-20"
+       x="1043.9399"
+       y="327.19"
+       width="51.16"
+       height="23.209999"
+       rx="11.6"
+       id="rect154" />
+    <rect
+       class="cls-20"
+       x="1043.9399"
+       y="283.98999"
+       width="51.16"
+       height="23.209999"
+       rx="11.6"
+       id="rect156" />
+    <rect
+       class="cls-20"
+       x="986.27002"
+       y="282.89999"
+       width="51.16"
+       height="23.209999"
+       rx="11.6"
+       transform="rotate(90,1061.875,173.015)"
+       id="rect158" />
+    <rect
+       class="cls-20"
+       x="1029.48"
+       y="282.89999"
+       width="51.16"
+       height="23.209999"
+       rx="11.6"
+       transform="rotate(90,1105.085,173.015)"
+       id="rect160" />
+    <rect
+       class="cls-20"
+       x="899.34998"
+       y="282.89999"
+       width="51.16"
+       height="23.209999"
+       rx="11.6"
+       transform="rotate(90,974.96,173.02)"
+       id="rect162" />
+    <rect
+       class="cls-20"
+       x="986.27002"
+       y="584.89001"
+       width="51.16"
+       height="23.209999"
+       rx="11.6"
+       transform="rotate(90,1061.88,475)"
+       id="rect164" />
+    <rect
+       class="cls-20"
+       x="1029.48"
+       y="584.89001"
+       width="51.16"
+       height="23.209999"
+       rx="11.6"
+       transform="rotate(90,1105.09,475)"
+       id="rect166" />
+    <rect
+       class="cls-20"
+       x="899.34998"
+       y="584.89001"
+       width="51.16"
+       height="23.209999"
+       rx="11.6"
+       transform="rotate(90,974.96,475)"
+       id="rect168" />
+    <rect
+       class="cls-20"
+       x="942.56"
+       y="282.89999"
+       width="51.16"
+       height="23.209999"
+       rx="11.6"
+       transform="rotate(90,1018.17,173.02)"
+       id="rect170" />
+    <rect
+       class="cls-20"
+       x="942.56"
+       y="584.89001"
+       width="51.16"
+       height="23.209999"
+       rx="11.6"
+       transform="rotate(90,1018.17,475)"
+       id="rect172" />
+    <path
+       class="cls-21"
+       d="m 985.27,352 a 18.9,18.9 0 0 0 -10.06,-5.27 c -8.2,-1.39 -14.3,3.43 -15.26,4.22 a 30.44,30.44 0 0 0 -9,3.43 32.68,32.68 0 0 0 -13.42,15.62 30.38,30.38 0 0 0 -13.45,13.77 28.41,28.41 0 0 0 -2.37,8.06 25.76,25.76 0 0 0 -9,22.74 26.82,26.82 0 0 0 -5.8,27.16 30.64,30.64 0 0 0 -3.7,20.27 28.75,28.75 0 0 0 3.73,9.75 45.44,45.44 0 0 0 8.44,34.81 33.2,33.2 0 0 0 33.49,26.11 24.72,24.72 0 0 0 36.4,5.8 z"
+       transform="translate(-71.47,-171.51)"
+       id="path174" />
+    <polyline
+       class="cls-22"
+       points="858.81 200.09 878.46 200.09 888.72 210.34 888.72 245.39"
+       id="polyline176" />
+    <polyline
+       class="cls-22"
+       points="914.14 283.99 892.29 283.99 892.29 266.75"
+       id="polyline178" />
+    <polyline
+       class="cls-22"
+       points="914.14 350.4 882.42 350.4 864.99 332.97 864.99 312.38"
+       id="polyline180" />
+    <line
+       class="cls-22"
+       x1="914.14001"
+       y1="310"
+       x2="889.39001"
+       y2="310"
+       id="line182" />
+    <polyline
+       class="cls-22"
+       points="831.7 294.22 855.25 294.22 869.52 279.96 869.52 258.05"
+       id="polyline184" />
+    <circle
+       class="cls-23"
+       cx="869.52002"
+       cy="258.04999"
+       r="4.6799998"
+       id="circle186" />
+    <circle
+       class="cls-23"
+       cx="892.28998"
+       cy="266.75"
+       r="4.6799998"
+       id="circle188" />
+    <circle
+       class="cls-23"
+       cx="888.71002"
+       cy="245.39"
+       r="4.6799998"
+       id="circle190" />
+    <circle
+       class="cls-23"
+       cx="889.39001"
+       cy="310"
+       r="4.6799998"
+       id="circle192" />
+    <circle
+       class="cls-23"
+       cx="864.98999"
+       cy="312.38"
+       r="4.6799998"
+       id="circle194" />
+    <path
+       class="cls-21"
+       d="m 995,352 a 18.79,18.79 0 0 1 10.06,-5.28 c 8.2,-1.39 14.29,3.43 15.25,4.22 a 30.44,30.44 0 0 1 9,3.43 32.66,32.66 0 0 1 13.43,15.63 30.49,30.49 0 0 1 13.46,13.77 28.5,28.5 0 0 1 2.37,8.06 26.2,26.2 0 0 1 7.78,11.4 25.76,25.76 0 0 1 1.18,11.34 26.81,26.81 0 0 1 5.81,27.17 30.66,30.66 0 0 1 3.72,20.31 28.68,28.68 0 0 1 -3.72,9.75 45.48,45.48 0 0 1 -8.44,34.82 33.22,33.22 0 0 1 -33.5,26.11 24.71,24.71 0 0 1 -36.39,5.8 z"
+       transform="translate(-71.47,-171.51)"
+       id="path196" />
+    <polyline
+       class="cls-22"
+       points="923.88 213.94 938.18 213.94 948.96 203.16 948.96 188.02"
+       id="polyline198" />
+    <polyline
+       class="cls-22"
+       points="1001.03 244.12 973.58 244.12 973.58 224.02 951.03 224.02"
+       id="polyline200" />
+    <polyline
+       class="cls-22"
+       points="1004.84 300.24 995.34 300.24 966.33 271.23 952.42 271.23"
+       id="polyline202" />
+    <line
+       class="cls-22"
+       x1="923.88"
+       y1="245.39"
+       x2="941.34003"
+       y2="245.39"
+       id="line204" />
+    <polyline
+       class="cls-22"
+       points="966.34 361.4 966.34 341.32 947.16 322.14 947.16 297.61"
+       id="polyline206" />
+    <circle
+       class="cls-23"
+       cx="947.15997"
+       cy="297.60999"
+       r="4.6799998"
+       id="circle208" />
+    <circle
+       class="cls-23"
+       cx="952.41998"
+       cy="271.42999"
+       r="4.6799998"
+       id="circle210" />
+    <circle
+       class="cls-23"
+       cx="941.34003"
+       cy="245.39"
+       r="4.6799998"
+       id="circle212" />
+    <circle
+       class="cls-23"
+       cx="951.03003"
+       cy="224.02"
+       r="4.6799998"
+       id="circle214" />
+    <circle
+       class="cls-23"
+       cx="948.96002"
+       cy="188.02"
+       r="4.6799998"
+       id="circle216" />
+  </g>
+</svg>
