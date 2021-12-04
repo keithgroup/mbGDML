@@ -49,12 +49,11 @@ To circumvent this limitation, we developed a many-body approach where GDML lear
    :width: 350px
    :align: center
 
-
-
 .. toctree::
    :hidden:
 
-   install
-   tutorials/tutorials
+   Install <install>
+   Data and Models <data-and-models/data-formats>
+   Tutorials <tutorials/tutorials>
    API <doc/modules>
    contributing
