@@ -1,12 +1,11 @@
+=========
 Data sets
 =========
 
 Loading and saving
 ------------------
 
-Data sets are stored as NumPy ``.npz`` files. To load a data set, you can pass
-the path to a ``dataset.npz`` file or explicitly use the
-:func:`~mbgdml.data.dataset.dataSet.load` function.
+Data sets are stored as NumPy ``.npz`` files. To load a data set, you can pass the path to a ``dataset.npz`` file or explicitly use the :func:`~mbgdml.data.dataset.dataSet.load` function.
 
 .. code-block:: python
 
@@ -37,13 +36,11 @@ Input formats
 XYZ files
 ^^^^^^^^^
 
-The most straightforward way to create a data set is from a set of xyz data
-files. sGDML models require, at the bare minimum, Cartesian coordinates and 
-atomic forces. Including energies is not required, but highly recommended.
-
-Suppose there is an xyz file ``4h2o.traj`` that contains the molecular dynamics
-(MD) trajectory of a water tetramer (4mer) in Angstroms and electronic energies
-of each structure as a comment in Hartrees (Eh).
+The most straightforward way to create a data set is from a set of xyz data files.
+GDML models require, at the bare minimum,
+Cartesian coordinates and atomic forces.
+Including energies is not required, but highly recommended.
+Suppose there is an xyz file ``4h2o.traj`` that contains the molecular dynamics (MD) trajectory of a water tetramer (4mer) in Angstroms and electronic energies of each structure as a comment in Hartrees (Eh).
 
 .. code-block::
 
@@ -78,8 +75,7 @@ of each structure as a comment in Hartrees (Eh).
     ...
 
 This would provide both Cartesian coordinates and energies for our data set.
-We can this use the :func:`~mbgdml.data.dataset.dataSet.read_xyz`
-function to 
+We can this use the :func:`~mbgdml.data.dataset.dataSet.read_xyz` function to 
 
 .. code-block:: python
 
@@ -134,8 +130,7 @@ which can be done like so.
 
     my_dataset.read_xyz('./4h2o.forces', 'forces')
 
-For ease of use, these two files can be combined into an extended xyz format
-where the forces are listed after the Cartesian coordinates like so.
+For ease of use, these two files can be combined into an extended xyz format where the forces are listed after the Cartesian coordinates like so.
 
 .. code-block::
 
@@ -183,19 +178,15 @@ Then you can load all the data at once.
 Output files
 ^^^^^^^^^^^^
 
-A common routine is to partition structures from larger ones (e.g., dimers from
-a single tetramer). This means that the energy and forces of all the new 
-partitions need to be recalculated. Since many computational chemistry packages
-allow multiple calculations in a single job, mbGDML provides a simple way to
-create a data set directly from the output file.
+A common routine is to partition structures from larger ones (e.g., dimers from a single tetramer).
+This means that the energy and forces of all the new partitions need to be recalculated.
+Since many computational chemistry packages allow multiple calculations in a single job, mbGDML provides a simple way to create a data set directly from the output file.
 
 .. tip::
     To parse data from computational chemistry output files see
     :doc:`partitioning`.
 
-Here is an example with the following `ORCA 4.2.0 output file
-<https://raw.githubusercontent.com/keithgroup/mbGDML/master/tests/data/
-partition-calcs/out-4H2O-300K-1-ABC.out>`_ for a water trimer from a tetramer.
+Here is an example with the following `ORCA 4.2.0 output file <https://raw.githubusercontent.com/keithgroup/mbGDML/master/tests/data/partition-calcs/out-4H2O-300K-1-ABC.out>`_ for a water trimer from a tetramer.
 
 .. code-block:: python
 
@@ -218,8 +209,7 @@ partition-calcs/out-4H2O-300K-1-ABC.out>`_ for a water trimer from a tetramer.
 Unit conversion
 ---------------
 
-mbGDML provides a simple way to convert Cartesian coordinates, energies, or 
-forces to a variety of units.
+mbGDML provides a simple way to convert Cartesian coordinates, energies, or forces to a variety of units.
 
 .. automethod:: mbgdml.data.dataset.dataSet.convertR
 
@@ -227,9 +217,8 @@ forces to a variety of units.
 
 .. automethod:: mbgdml.data.dataset.dataSet.convertF
 
-So, say we wanted to convert the energies and forces of ``my_dataset`` to 
-kcal/mol and kcal/mol/A. The coordinates are already in Angstroms, so we just
-need to convert the energies and forces.
+So, say we wanted to convert the energies and forces of ``my_dataset`` to kcal/mol and kcal/mol/A.
+The coordinates are already in Angstroms, so we just need to convert the energies and forces.
 
 .. code-block:: python
     
@@ -238,15 +227,13 @@ need to convert the energies and forces.
 
 .. warning::
 
-    ``convertF`` does not change any unit specifications (i.e., ``r_unit`` and 
-    ``e_unit``), but **needs** to match both coordinate and energy units.
+    ``convertF`` does not change any unit specifications (i.e., ``r_unit`` and ``e_unit``), but **needs** to match both coordinate and energy units.
 
 
 Combining data sets
 -------------------
 
-There are many times where you would want to combine one data set with another;
-for example, multiple MD simulations or partitions.
+There are many times where you would want to combine one data set with another; for example, multiple MD simulations or partitions.
 
 .. note::
 
@@ -259,11 +246,9 @@ for example, multiple MD simulations or partitions.
 Many-body data sets
 -------------------
 
-Training n-body GDML model requires a data set with all lower-order
-contributions removed. For example, to prepare a 2-body data set we have to 
-remove all 1-body contributions from our dimer (2mer) data set. This is
-accomplished by first :doc:`training a sGDML model<training>` on monomers
-(1mers) then preparing the 2-body data set like so.
+Training n-body GDML model requires a data set with all lower-order contributions removed.
+For example, to prepare a 2-body data set we have to remove all 1-body contributions from our dimer (2mer) data set.
+This is accomplished by first :doc:`training a sGDML model<training>` on monomers (1mers) then preparing the 2-body data set like so.
 
 .. code-block:: python
 
@@ -280,9 +265,8 @@ accomplished by first :doc:`training a sGDML model<training>` on monomers
 
 .. warning::
 
-    Each mbGDML model is dependent on the ones used to prepare the many-body 
-    data set. For example, a 3-body GDML model can only be used with the 1-body
-    and 2-body models used to create the many-body data set.
+    Each mbGDML model is dependent on the ones used to prepare the many-body data set.
+    For example, a 3-body GDML model can only be used with the 1-body and 2-body models used to create the many-body data set.
 
 Available data
 ----
