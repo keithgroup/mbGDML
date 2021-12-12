@@ -50,11 +50,20 @@ class structureSet(mbGDMLData):
     
     @property
     def entity_ids(self):
-        """An array specifying which atoms belong to what entities
-        (e.g., molecules). Similar to PDBx/mmCIF ``_atom_site.label_entity_ids``
+        """Array specifying which atoms belong to which entities.
+        
+        An entity represents a related set of atoms such as a single molecule,
+        several molecules, or a functional group. For mbGDML, an entity usually
+        corresponds to a model trained to predict energies and forces of those
+        atoms. Each ``entity_id`` is an :obj:`int` starting from ``0``.
+        
+        It is conceptually similar to PDBx/mmCIF ``_atom_site.label_entity_ids``
         data item.
 
-        For example, a water and methanol molecule could be
+        Examples
+        --------
+        A single water molecule would be ``[0, 0, 0]``. A water (three atoms)
+        and methanol (six atoms) molecule in the same structure would be 
         ``[0, 0, 0, 1, 1, 1, 1, 1, 1]``.
 
         :type: :obj:`numpy.ndarray`
@@ -71,12 +80,18 @@ class structureSet(mbGDMLData):
     @property
     def comp_ids(self):
         """A 2D array relating ``entity_ids`` to a chemical component/species
-        id or label (``comp_id``). The first column is the unique ``entity_id``
-        and the second is a unique ``comp_id`` for that chemical species.
-        Each ``comp_id`` is reused for the same chemical species.
+        id or label (``comp_id``).
+        
+        The first column is the unique ``entity_id`` and the second is a unique
+        ``comp_id`` for that specific chemical species. Each ``comp_id`` is then
+        reused for entities of the same chemical species.
 
-        For example, two water and one methanol molecules could be
-        ``[['0', 'h2o'], ['1', 'h2o'], ['2', 'meoh']]``.
+        Examples
+        --------
+        Suppose we have a structure containing a water and methanol molecule.
+        We can use the labels of ``h2o`` and ``meoh`` (which could be
+        anything): ``[['0', 'h2o'], ['1', 'meoh']]``. Note that the
+        ``entity_id`` is a :obj:`str`.
 
         :type: :obj:`numpy.ndarray`
         """
@@ -93,7 +108,13 @@ class structureSet(mbGDMLData):
     def md5(self):
         """Unique MD5 hash of structure set.
 
-        :type: :obj:`bytes`
+        Notes
+        -----
+        :obj:`mbgdml.data.basedata.mbGDMLData.z` and
+        :obj:`mbgdml.data.basedata.mbGDMLData.R` are used to generate the MD5
+        hash.
+
+        :type: :obj:`str`
         """
         return utils.md5_data(self.structureset, ['z', 'R'])
     
@@ -141,7 +162,7 @@ class structureSet(mbGDMLData):
             self._update(dict(structureset_npz))
 
     def from_xyz(self, file_path, r_unit, entity_ids, comp_ids):
-        """Reads data from xyz files and sets z and R data.
+        """Reads data from xyz files and sets ``z`` and ``R`` properties.
 
         If using the extended XYZ format will assume coordinates are the first
         three data columns (after atom symbols).
