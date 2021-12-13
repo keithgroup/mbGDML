@@ -50,7 +50,7 @@ class structureSet(mbGDMLData):
     
     @property
     def entity_ids(self):
-        """Array specifying which atoms belong to which entities.
+        """1D array specifying which atoms belong to which entities.
         
         An entity represents a related set of atoms such as a single molecule,
         several molecules, or a functional group. For mbGDML, an entity usually
@@ -79,7 +79,7 @@ class structureSet(mbGDMLData):
     
     @property
     def comp_ids(self):
-        """A 2D array relating ``entity_ids`` to a chemical component/species
+        """2D array relating ``entity_ids`` to a chemical component/species
         id or label (``comp_id``).
         
         The first column is the unique ``entity_id`` and the second is a unique
