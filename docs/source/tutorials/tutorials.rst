@@ -7,8 +7,6 @@ Tutorials
    :maxdepth: 2
 
    basics
-   structuresets
-   datasets
    training
    predictions
 

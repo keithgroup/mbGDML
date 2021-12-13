@@ -1,9 +1,12 @@
+.. _structure-sets:
+
 ==============
 Structure sets
 ==============
 
 A structure set (commonly abbreviated as ``rset`` or ``Rset``) represents the starting point of mbGDML.
 They are used to store structures from the same process or procedure; for example, a molecular dynamics trajectory or a single generated conformers.
+No data regarding energies or forces are stored in the structure set.
 A single or multiple ``rset`` may then be used to curate :ref:`data sets<data-sets>` for mbGDML training.
 
 
@@ -34,6 +37,9 @@ MD5 hash
 ^^^^^^^^
 
 .. autoattribute:: mbgdml.data.structureset.structureSet.md5
+
+.. note::
+   MD5 hashes are recomputed whenever the attribute is called.
 
 Entity IDs
 ^^^^^^^^^^
