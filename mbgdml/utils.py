@@ -133,6 +133,24 @@ def get_files(path, expression, recursive=True):
                 files.append(path + f)
     return files
 
+def get_filename(path):
+    """The name of the file without the extension from a path.
+
+    If there are periods in the file name with no file extension, will always
+    remove the last one.
+
+    Parameters
+    ----------
+    path : :obj:`str`
+        Path to file.
+
+    Returns
+    -------
+    :obj:`str`
+        The file name without an extension.
+    """
+    return os.path.splitext(os.path.basename(path))[0]
+
 def natsort_list(unsorted_list):
     """Basic function that organizes a list based on human (or natural) sorting
     methodology.

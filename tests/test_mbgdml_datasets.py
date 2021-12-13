@@ -479,3 +479,14 @@ def test_sample_dset_1mers_multiple_rsets():
     assert dset_1mers.F.shape == (12, 3, 3)
     for f in dset_1mers.F.flatten():
         assert np.isnan(f)
+
+def test_adding_pes_data_with_qcjson():
+    dset = data.dataSet(f'{dset_dir}/6h2o/6h2o.temelso.etal-dset-no.data.npz')
+    dset_ref = data.dataSet(f'{dset_dir}/6h2o/6h2o.temelso.etal-dset.npz')
+
+    dset.add_pes_data(
+        './tests/data/engrads/h2o/6h2o/6h2o.temelso.etal',
+        'MP2/def2-TZVP', 'kcal/mol', 'hartree', allow_remaining_nan=False
+    )
+    assert np.array_equal(dset_ref.E, dset.E)
+    assert np.array_equal(dset_ref.F, dset.F)

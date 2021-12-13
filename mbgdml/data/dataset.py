@@ -21,6 +21,7 @@
 # SOFTWARE.
 
 import os
+import json
 import itertools
 from random import randrange, sample, choice
 import numpy as np
@@ -984,6 +985,146 @@ class dataSet(mbGDMLData):
         self.R = R
         self.E = E
         self.F = F
+    
+    def add_pes_data(
+        self, calc_dir, theory_label, e_unit_dset, e_unit_calc, dtype='qcjson',
+        allow_remaining_nan=True, center_calc_R=False, r_match_atol=5.1e-07,
+        r_match_rtol=0.0
+    ):
+        """Add potential energy surface (PES) data (i.e., energies and/or
+        forces) to the data set (:attr:`E` and :attr:`F`).
+
+        Assumes that the r_unit of the calculation is the same as the data set.
+
+        Parameters
+        ----------
+        calc_dir : :obj:`str`
+            Path to a directory containing potential energy surface data to add
+            to this data set.
+        theory_label : :obj:`str`
+            Defines the level of theory and crucial aspects of calculations.
+            For example, ``'RI-MP2/def2-TZVP'``, ``'GFN2-xTB'``, or
+            ``'CCSD(T)/CBS'``.
+        e_unit_dset : :obj:`str`
+            The current (or desired) energy units of the data set. Will update
+            :attr:`e_unit` to this value.
+        e_unit_calc : :obj:`str`
+            The energy unit of the data. Will be converted to ``e_unit_dset`` if
+            necessary.
+        dtype : :obj:`str`, optional
+            Specifies the PES data format and implicitly sets the file extension
+            search string. Options are ``'qcjson'``. Defaults to ``'qcjson'``.
+        allow_remaining_nan : :obj:`bool`, optional
+            If :attr:`E` and :attr`F` should, or could, have ``np.nan`` as one
+            or more elements. Pretty much only serves as a sanity check.
+            Defaults to ``True``.
+        center_calc_R : :obj:`bool`, optional
+            Center the cartessian coordinates of the parsed data from the
+            calculations in order to match correctly with :attr:`R`.
+        r_match_atol : :obj:`float`, optional
+            Absolute tolerance for matching the coordinates of a calculation to
+            a structure in the data set. Defaults to ``6.8e-07``.
+        r_match_rtol : :obj:`float`, optional
+            Relative tolerance for matching the coordinates of a calculation to
+            a structure in the data set. Defaults to ``0.0``.
+        """
+
+        if dtype == 'qcjson':
+            search_string = 'json'
+        else:
+            raise ValueError(f'{dtype} is not a valid selection.')
+        
+        # Gets all engrad output quantum chemistry json files.
+        # For more information: https://github.com/keithgroup/qcjson
+        engrad_calc_paths = utils.get_files(calc_dir, '.'+search_string)
+        if len(engrad_calc_paths) == 0:
+            raise AssertionError(
+                f'No calculation files ending with {search_string} were found.'
+            )
+        
+        # Organizing engrad calculations so earlier structures are loaded first.
+        # This does multiple things. Reduces runtime as fewer iterations need to 
+        # be made. Also, some data sets may involve trajectories that start from
+        # the same structure, so multiple structures might be the same.
+        engrad_calc_paths = utils.natsort_list(engrad_calc_paths)
+
+        missing_engrad_indices = np.argwhere(np.isnan(self.E))[:,0].tolist()
+        if len(missing_engrad_indices) == 0:
+            raise AssertionError(
+                f'There are no energies or forces missing in the data set.'
+            )
+        
+        z_dset = self.z
+        # Loops thorugh engrad calculations and adds energies and forces for each
+        # structure.
+        for engrad_calc_path in engrad_calc_paths:
+            engrad_name = utils.get_filename(engrad_calc_path)
+            
+
+            # Gets energies and gradients from qcjson.
+            with open(engrad_calc_path) as f:
+                engrad_data = json.load(f)
+
+            # Loops through all structures that are missing engrads.
+            for engrad_i in range(len(engrad_data)):
+                _dset_i_to_remove = []
+                can_remove = False
+
+                if isinstance(engrad_data, list):
+                    data = engrad_data[engrad_i]
+                else:
+                    data = engrad_data
+
+                engrad_i_r = np.array(
+                    data['molecule']['geometry']
+                )
+                if center_calc_R:
+                    engrad_i_r = utils.center_structures(z_dset, engrad_i_r)
+
+                for dset_i in missing_engrad_indices:
+                    dset_i_r = self.R[dset_i]
+
+                    # If the atomic coordinates match we assume this is the
+                    # originating engrad structure.
+                    # ORCA output files will only include six significant figures
+                    # for Cartesian coordinates. Sometimes the data sets have more
+                    # significant figures and the default tolerances for allclose were too
+                    # high, so I had to lower them a little.
+                    # Because we used natsort for the engrad calculations they
+                    # should be in order, but we check anyway.
+                    if np.allclose(engrad_i_r, dset_i_r, atol=r_match_atol, rtol=r_match_rtol):
+                        # Get, convert, and add energies and forces to data set.
+                        energy = data['properties']['return_energy']
+                        energy = convertor(energy, e_unit_calc, e_unit_dset)
+                        self.E[dset_i] = energy
+
+                        forces = np.negative(
+                            np.array(data['return_result'])
+                        )
+                        forces = utils.convert_forces(
+                            forces, e_unit_calc, 'Angstrom', e_unit_dset, 'Angstrom'
+                        )
+                        self.F[dset_i] = forces
+
+                        # Found the correct structure, so we terminate looking for
+                        # the dset structure match.
+                        can_remove = True
+                        break
+                    
+                # Removes all NaN indices from missing_engrad_indices that have
+                # already been matched.
+                if can_remove:
+                    missing_engrad_indices.remove(dset_i)
+        
+        still_missing = len(np.argwhere(np.isnan(self.E))[:,0].tolist())
+        if still_missing > 0 and not allow_remaining_nan:
+            raise AssertionError(
+                f'There are still nan values leftover when allow_remaining_nan is False.'
+            )
+        
+        # Finalizes data set and saves.
+        self.e_unit = e_unit_dset
+        self.theory = theory_label
         
     def forces_from_xyz(self, file_path):
         """Reads forces from xyz files.
