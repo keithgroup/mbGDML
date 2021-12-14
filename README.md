@@ -1,5 +1,3 @@
-
-
 <h1 align="center">mbGDML</h1>
 
 <h4 align="center">Create, use, and analyze many-body gradient-domain machine learning force fields.</h4>
@@ -9,12 +7,12 @@
         <img src="https://app.travis-ci.com/keithgroup/mbGDML.svg?branch=main" alt="Build Status ">
     </a>
     <a href="https://codecov.io/gh/keithgroup/mbGDML">
-        <img src="https://codecov.io/gh/keithgroup/mbGDML/branch/master/graph/badge.svg?token=P643JEUWZC" alt="Codecov">
+        <img src="https://codecov.io/gh/keithgroup/mbGDML/branch/main/graph/badge.svg?token=P643JEUWZC" alt="Codecov">
     </a>
     <a href="https://lgtm.com/projects/g/keithgroup/mbGDML/context:python">
         <img src="https://img.shields.io/lgtm/grade/python/g/keithgroup/mbGDML.svg?logo=lgtm&logoWidth=18" alt="Language grade: Python">
     </a>
-    <a href="https://github.com/keithgroup/mbGDML/blob/master/LICENSE" target="_blank">
+    <a href="https://github.com/keithgroup/mbGDML/blob/main/LICENSE" target="_blank">
         <img src="https://img.shields.io/github/license/keithgroup/mbGDML" alt="License">
     </a>
 </p>
@@ -22,18 +20,19 @@
 <p align="center">
     <a href="#about">About</a> •
     <a href="#features">Features</a>  •
-    <a href="#installation">Installation</a>
+    <a href="#installation">Installation</a>  •
+    <a href="#license">License</a>
 </p>
 
 # About
 
 Atomistic insight is fundamental for computational predictive studies of chemical and physical processes.
-Machine learning force fields provide a route to high-level ab initio calculations at a fraction of the cost.
-[Gradient-domain machine learning (GDML)](http://quantum-machine.org/gdml/), a kernel-based method, directly learns the relationship between atomic coordinates and interatomic forces.
-However, training in the gradient domain sacrifices generalized transferability to other species or number of atoms.
+Machine learning potentials (or force fields) can reproduce high-level ab initio calculations without the substantial costs.
+[Gradient-domain machine learning (GDML)](http://quantum-machine.org/gdml/), a kernel-based method, directly learns the relationship between atomic coordinates and interatomic forces with only hundreds of data points.
+However, it uses the inverse internuclear distance descriptor which sacrifices generalized transferability to other species or number of atoms.
 
-[Many-body GDML (mbGDML)](https://github.com/keithgroup/mbGDML), is a technique for GDML transferability to *n*-sized systems by using many-body machine learning models.
-Every aspect of the process from preparing ORCA calculations, data set creation, training, and use of mbGDML force fields is taken care of in this user-friendly Python package.
+[Many-body GDML (mbGDML)](https://github.com/keithgroup/mbGDML), is a route for GDML size-transferable potentials by using GDML to learn *n*-body interactions for use in a many-body expansion approach.
+Every aspect of the process from preparing energy+gradient calculations, creating data sets, training GDML models, and making predictions is taken care of in this user-friendly Python package.
 
 **Disclaimer**: This package is still under active development and is not ready for production.
 
@@ -42,42 +41,24 @@ Every aspect of the process from preparing ORCA calculations, data set creation,
 Creating mbGDML models:
 
 - Partition structures into monomers, dimers, trimers, etc.
-- Prepare and submit [ORCA](https://sites.google.com/site/orcainputlibrary/) energy and gradient calculations.
-- Conversion between data sets ([NumPy npz](https://numpy.org/doc/stable/reference/routines.io.html) files) and output files.
-- Train GDML models.
+- Prepare energy and gradient calculations for data sets with [ORCA](https://sites.google.com/site/orcainputlibrary/home).
+- Structure and data set breadcrumb trails using MD5 hashes.
+- Simple GDML training interface using CPUs or GPUs.
 
 Using mbGDML models:
 
-- Energy and force prediction of structures with mbGDML models.
-- Interface with the [atomic simulation environment (ASE)](https://wiki.fysik.dtu.dk/ase/).
+- Energy and force predictions.
+- Calculator interface with the [Atomic Simulation Environment (ASE)](https://wiki.fysik.dtu.dk/ase/).
 
 Analyzing mbGDML models:
 
-- Store mbGDML predictions into predict data sets.
-- Analyze n-body contributions and create heat maps.
+- Avoid recalculating energies and forces by storing predictions into predict sets (npz files).
+- Visually examine structural similarity and prediction accuracy using dimensionality reduction with [UMAP](https://umap-learn.readthedocs.io/en/latest/).
+- Analyze *n*-body contributions and predictions with heat maps.
 
 # Installation
 
 At the moment, the only way to install mbGDML is directly from the [GitHub repository](https://github.com/keithgroup/mbGDML).
-
-## Requirements
-
-The following packages are required:
-
-- ase
-- cclib
-- mako
-- natsort
-- numpy
-- sgdml
-
-All of these required packages can be installed with:
-
-```text
-pip install ase cclib mako natsort numpy sgdml
-```
-
-Then, clone and install the repository.
 
 ```text
 git clone https://github.com/keithgroup/mbGDML
@@ -86,12 +67,12 @@ pip install .
 ```
 
 An analysis submodule is available that requires extra dependencies.
-
-- umap-learn
-- matplotlib
-
 To automatically include these dependencies you can use the "Package Extras" feature of pip like so.
 
 ```text
 pip install .[analysis]
 ```
+
+# License
+
+Distributed under the MIT License. See `LICENSE` for more information.
