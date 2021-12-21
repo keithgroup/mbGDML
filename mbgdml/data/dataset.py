@@ -39,7 +39,7 @@ class dataSet(mbGDMLData):
     Parameters
     ----------
     dataset_path : :obj:`str`, optional
-        Path to a saved :obj:`numpy.NpzFile`.
+        Path to a `npz` file.
 
     Attributes
     ----------
@@ -837,31 +837,34 @@ class dataSet(mbGDMLData):
         return (Rset_info, z, R, E, F)
     
     def sample_structures(
-        self, data, quantity, size, selected_rset_id=None, always=[], criteria=None,
+        self, data, quantity, size, consistent_entities=[], criteria=None,
         z_slice=[], cutoff=[], center_structures=False, sampling_updates=False, 
-        copy_EF=True
-    ):
-        """Samples all possible combinations from a data set.
+        copy_EF=True):
+        """Randomly samples a ``quantity`` of geometries of a specific
+        ``size`` from data or structure sets.
 
-        Adds NaN to energies and forces.
+        When sampling from :class:`~mbgdml.data.structureset.structureSet`,
+        :obj:`numpy.nan` is added to :attr:`E` and :attr:`F` for each structure.
+        PES data is added if available with ``copy_EF = True`` when sampling
+        from :class:`~mbgdml.data.dataset.dataSet` and the requested ``size``
+        is the same as the :class:`~mbgdml.data.dataset.dataSet`.
+
+        Currently, you have to set ``quantity = 'all'`` when sampling from
+        :class:`~mbgdml.data.dataset.dataSet`.
 
         Parameters
         ----------
         data : :obj:`mbgdml.data`
             A loaded structure or data set object to sample from.
-        quantity : :obj:`str`
-            Number of structures to sample from the structure set. For example,
-            ``'100'``, ``'452'``, or even ``'all'``.
-        size : :obj:`str`
-            Desired number of molecules in each selection.
-        selected_rset_id : obj:`int`, optional
-            Currently sampling can only be done for one rset_id at a time. This
-            specifies which rset structures in the data set to sample from and
-            is required.
-        always : :obj:`list` [:obj:`int`], optional
+        quantity : :obj:`str` or :obj:`int`
+            Number of structures to sample from the data. For example,
+            ``'100'``, ``452``, or ``'all'``.
+        size : :obj:`int`
+            Desired number of entities in each selected geometry.
+        consistent_entities : :obj:`list` [:obj:`int`], optional
             Molecule indices that will be in every selection. Not implemented
             yet.
-        criteria : :obj:`mbgdml.sample.sampleCritera`, optional
+        criteria : :obj:`mbgdml.criteria`, optional
             Structure criteria during the sampling procedure. Defaults to
             ``None`` if no criteria should be used.
         z_slice : :obj:`numpy.ndarray`, optional
@@ -881,7 +884,7 @@ class dataSet(mbGDMLData):
         sampling_updates : :obj:`bool`, optional
             Will print something for every 100 successfully sampled structures.
             Defaults to ``False``.
-        copy_EF=True : :obj:`bool`, optional
+        copy_EF : :obj:`bool`, optional
             If sampling from a data set, copy over the energies and forces of
             the sampled structures to the new data set. Defaults to ``True``.
         """
@@ -913,7 +916,6 @@ class dataSet(mbGDMLData):
 
             self.Rset_md5 = {**self.Rset_md5, **{Rset_id: Rset_md5}}
         elif data_type == 'd':
-            #assert selected_rset_id is not None
             data_ids = np.array([i for i in data.Rset_md5.keys()])
             if quantity == 'all':
                 for data_id in data_ids:
@@ -994,7 +996,12 @@ class dataSet(mbGDMLData):
         """Add potential energy surface (PES) data (i.e., energies and/or
         forces) to the data set (:attr:`E` and :attr:`F`).
 
-        Assumes that the r_unit of the calculation is the same as the data set.
+        Assumes that ``r_unit`` of the calculation is the same as the data set.
+        `QCJSON <https://github.com/keithgroup/qcjson>`_ files are currently
+        the only way to import energy and gradient data.
+
+        Energies and forces are added by matching Cartesian coordinates of the
+        calculation to a structure in the data set within some tolerance.
 
         Parameters
         ----------
@@ -1016,8 +1023,8 @@ class dataSet(mbGDMLData):
             search string. Options are ``'qcjson'``. Defaults to ``'qcjson'``.
         allow_remaining_nan : :obj:`bool`, optional
             If :attr:`E` and :attr`F` should, or could, have ``np.nan`` as one
-            or more elements. Pretty much only serves as a sanity check.
-            Defaults to ``True``.
+            or more elements after adding all possible data. Pretty much only
+            serves as a sanity check. Defaults to ``True``.
         center_calc_R : :obj:`bool`, optional
             Center the cartessian coordinates of the parsed data from the
             calculations in order to match correctly with :attr:`R`.
@@ -1269,7 +1276,7 @@ class dataSet(mbGDMLData):
             data where mbGDML predictions will be subtracted from.
         model_paths : :obj:`list` [:obj:`str`]
             Paths to saved many-body GDML models in the form of
-            :obj:`numpy.NpzFile`.
+            `npz`.
         """
         predict = mbPredict(model_paths)
         dataset = predict.remove_nbody(ref_dset.dataset)
