@@ -123,14 +123,28 @@ The required ``data`` dictionary for ``save`` is provided as the ``dataset`` att
 Creation
 --------
 
-TODO
+Data sets are created in two stages: structural sampling and calculating energy and forces.
+
+Structure sampling
+^^^^^^^^^^^^^^^^^^
+
+Curating a data set starts by sampling geometries from :ref:`structure sets<structure-sets>` or even data sets.
+
+.. automethod:: mbgdml.data.dataset.dataSet.sample_structures
+
+Energies and forces
+^^^^^^^^^^^^^^^^^^^
+
+Currently, external calculations of energies and forces are required (i.e., ORCA calculations on the same geometries).
+See :ref:`quantum chemistry calculations<qc-calcs>` for more information on generating these data.
+The only way to add PES data is by loading calculation data from `qcjson <https://github.com/keithgroup/qcjson>`_ files using the following function.
 
 .. automethod:: mbgdml.data.dataset.dataSet.add_pes_data
 
 Unit conversion
 ---------------
 
-mbGDML provides a simple way to convert Cartesian coordinates, energies, or forces to a variety of units.
+We provide a simple way to convert Cartesian coordinates, energies, or forces to a variety of units.
 
 .. automethod:: mbgdml.data.dataset.dataSet.convertR
 
@@ -138,7 +152,7 @@ mbGDML provides a simple way to convert Cartesian coordinates, energies, or forc
 
 .. automethod:: mbgdml.data.dataset.dataSet.convertF
 
-So, say we wanted to convert the energies and forces of ``my_dataset`` to kcal/mol and kcal/mol/A.
+So, say we wanted to convert ``dset`` energies and forces from hartree and hartree/A to kcal/mol and kcal/(mol A).
 The coordinates are already in Angstroms, so we just need to convert the energies and forces.
 
 .. code-block:: python
@@ -149,8 +163,6 @@ The coordinates are already in Angstroms, so we just need to convert the energie
 .. warning::
 
     ``convertF`` does not change any unit specifications (i.e., ``r_unit`` and ``e_unit``), but **needs** to match both coordinate and energy units.
-
-
 
 
 .. _mb-data-sets:

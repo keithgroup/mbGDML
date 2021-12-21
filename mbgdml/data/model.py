@@ -36,7 +36,7 @@ class mbModel(mbGDMLData):
     ----------
     model_path : :obj:`str`
         Path to the npz file.
-    model : :obj:`numpy.npzfile`
+    model : `npz`
         GDML model for predicting energies and forces.
     """
     

@@ -34,7 +34,7 @@ class structureSet(mbGDMLData):
     Parameters
     ----------
     structureset_path : :obj:`str`, optional
-        Path to a saved :obj:`numpy.NpzFile`.
+        Path to a saved `npz`.
 
     Attributes
     ----------
