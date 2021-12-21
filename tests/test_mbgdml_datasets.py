@@ -96,13 +96,13 @@ def trim_140h2o_rset():
     return rset
 
 def dset_sample_structures(
-    dset, data, quantity, size, selected_rset_id, r_criteria,
+    dset, data, quantity, size, r_criteria,
     z_slice, cutoff, center_structures, sampling_updates
 ):
     """Generic sampling function.
     """
     dset.sample_structures(
-        data, quantity, size, selected_rset_id=selected_rset_id,
+        data, quantity, size,
         criteria=r_criteria, z_slice=z_slice, cutoff=cutoff,
         center_structures=center_structures, sampling_updates=sampling_updates
     )
@@ -149,7 +149,7 @@ def test_rset_sampling_all_2mers_normal():
     dset = data.dataSet()
     dset.name = '140h2o.sphere.gfn2.md.500k.prod1'
     dset = dset_sample_structures(
-        dset, rset, 'all', 2, None, None,
+        dset, rset, 'all', 2, None,
         np.array([]), np.array([]), False, False
     )
 
@@ -197,12 +197,12 @@ def test_rset_sampling_all_2mers_ignore_duplicate():
     dset = data.dataSet()
     dset.name = '140h2o.sphere.gfn2.md.500k.prod1'
     dset = dset_sample_structures(
-        dset, rset, 'all', 2, None, None,
+        dset, rset, 'all', 2, None,
         np.array([]), np.array([]), False, False
     )
 
     dset_duplicate = dset_sample_structures(
-        dset, rset, 'all', 2, None, None,
+        dset, rset, 'all', 2, None,
         np.array([]), np.array([]), False, False
     )
     assert dset_duplicate.Rset_md5 == {0: 'da254c95956709d1a00512f1ac7c0bbb'}
@@ -218,7 +218,7 @@ def test_rset_sampling_all_2mers_centering():
     dset = data.dataSet()
     dset.name = '140h2o.sphere.gfn2.md.500k.prod1'
     dset = dset_sample_structures(
-        dset, rset, 'all', 2, None, None,
+        dset, rset, 'all', 2, None,
         np.array([]), np.array([]), False, False
     )
     centered_R = utils.center_structures(dset.z, dset.R)
@@ -226,7 +226,7 @@ def test_rset_sampling_all_2mers_centering():
     dset_centered = data.dataSet()
     dset_centered.name = '140h2o.sphere.gfn2.md.500k.prod1-centered'
     dset_centered = dset_sample_structures(
-        dset_centered, rset, 'all', 2, None, None,
+        dset_centered, rset, 'all', 2, None,
         np.array([]), np.array([]), True, False
     )
 
@@ -238,14 +238,14 @@ def test_rset_sampling_all_2mers_criteria():
     dset_centered = data.dataSet()
     dset_centered.name = '140h2o.sphere.gfn2.md.500k.prod1-centered'
     dset_centered = dset_sample_structures(
-        dset_centered, rset, 'all', 2, None, None,
+        dset_centered, rset, 'all', 2, None,
         np.array([]), np.array([]), True, False
     )
 
     dset_criteria = data.dataSet()
     dset_criteria.name = '140h2o.sphere.gfn2.md.500k.prod1-criteria'
     dset_criteria = dset_sample_structures(
-        dset_criteria, rset, 'all', 2, None, criteria.cm_distance_sum,
+        dset_criteria, rset, 'all', 2, criteria.cm_distance_sum,
         np.array([]), np.array([6.0]), True, False
     )
 
@@ -286,7 +286,7 @@ def test_rset_sampling_num_2mers_criteria():
     dset = data.dataSet()
     dset.name = '140h2o.sphere.gfn2.md.500k.prod1'
     dset = dset_sample_structures(
-        dset, rset, 5, 2, None, criteria.cm_distance_sum,
+        dset, rset, 5, 2, criteria.cm_distance_sum,
         np.array([]), np.array([6.0]), True, False
     )
     
@@ -314,7 +314,7 @@ def test_rset_sampling_num_2mers_additional():
     dset = data.dataSet()
     dset.name = '140h2o.sphere.gfn2.md.500k.prod1'
     dset = dset_sample_structures(
-        dset, rset, 5, 2, None, criteria.cm_distance_sum,
+        dset, rset, 5, 2, criteria.cm_distance_sum,
         np.array([]), np.array([6.0]), True, False
     )
 
@@ -333,7 +333,7 @@ def test_rset_sampling_num_2mers_additional():
     dset.F[i_test] = f_test
 
     dset = dset_sample_structures(
-        dset, rset, 5, 2, None, criteria.cm_distance_sum,
+        dset, rset, 5, 2, criteria.cm_distance_sum,
         np.array([]), np.array([6.0]), True, False
     )
 
@@ -356,13 +356,13 @@ def test_dset_sampling_all_2mers_after_3mers():
     dset = data.dataSet()
     dset.name = '140h2o.sphere.gfn2.md.500k.prod1'
     dset = dset_sample_structures(
-        dset, rset, 'all', 3, None, None,
+        dset, rset, 'all', 3, None,
         np.array([]), np.array([]), True, False
     )
 
     dset_from_dset = data.dataSet()
     dset_from_dset = dset_sample_structures(
-        dset_from_dset, dset, 'all', 2, None, criteria.cm_distance_sum,
+        dset_from_dset, dset, 'all', 2, criteria.cm_distance_sum,
         np.array([]), np.array([6.0]), True, False
     )
 
@@ -403,7 +403,7 @@ def test_sample_dset_same_size():
     dset_h2o_2body_cm_6 = data.dataSet()
     dset_h2o_2body_cm_6.name = '140h2o.sphere.gfn2.md.500k.prod1.3h2o.dset.2h2o-dset.mb-cm.6'
     dset_h2o_2body_cm_6 = dset_sample_structures(
-        dset_h2o_2body_cm_6, dset_h2o_2body, 'all', 2, None, criteria.cm_distance_sum,
+        dset_h2o_2body_cm_6, dset_h2o_2body, 'all', 2, criteria.cm_distance_sum,
         np.array([]), np.array([6.0]), True, False
     )
 
@@ -448,7 +448,7 @@ def test_sample_dset_1mers_multiple_rsets():
     # Sample all 1mers
     dset_1mers = data.dataSet()
     dset_1mers = dset_sample_structures(
-        dset_1mers, dset_4h2o_lit_dset, 'all', 1, None, None,
+        dset_1mers, dset_4h2o_lit_dset, 'all', 1, None,
         np.array([]), np.array([]), True, False
     )
 
