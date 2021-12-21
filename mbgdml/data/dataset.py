@@ -40,18 +40,6 @@ class dataSet(mbGDMLData):
     ----------
     dataset_path : :obj:`str`, optional
         Path to a `npz` file.
-
-    Attributes
-    ----------
-    name : :obj:`str`
-        Name of the data set. Defaults to ``'dataset'``.
-    mb : :obj:`int`
-        The order of n-body corrections this data set is intended for. For
-        example, a tetramer solvent cluster with one-, two-, and three-body
-        contributions removed will have a ``mb`` order of 4.
-    mb_models_md5 : :obj:`numpy.ndarray`
-        The MD5 hash of the model used to remove n-body contributions from
-        data set.
     """
 
     def __init__(self, *args):
@@ -59,6 +47,21 @@ class dataSet(mbGDMLData):
         self.name = 'dataset'
         if len(args) == 1:
             self.load(args[0])
+    
+    @property
+    def name(self):
+        """Human-redable label for the data set.
+
+        :type: :obj:`str`
+        """
+        if hasattr(self, '_name'):
+            return self._name
+        else:
+            return None
+    
+    @name.setter
+    def name(self, var):
+        self._name = str(var)
 
     @property
     def Rset_md5(self):
@@ -366,6 +369,54 @@ class dataSet(mbGDMLData):
     @comp_ids.setter
     def comp_ids(self, var):
         self._comp_ids = np.array(var)
+    
+    @property
+    def mb(self):
+        """Many-body expansion order of this data set. This is ``None`` if the
+        data set does not contain many-body energies and forces.
+
+        :type: :obj:`int`
+        """
+        if hasattr(self, '_mb'):
+            return self._mb
+        else:
+            return None
+    
+    @mb.setter
+    def mb(self, var):
+        self._mb = int(var)
+    
+    @property
+    def mb_dsets_md5(self):
+        """All MD5 hash of data sets used to remove n-body contributions from
+        data sets.
+
+        :type: :obj:`numpy.ndarray`
+        """
+        if hasattr(self, '_mb_dsets_md5'):
+            return self._mb_dsets_md5
+        else:
+            return None
+    
+    @mb_dsets_md5.setter
+    def mb_dsets_md5(self, var):
+        self._mb_dsets_md5 = var.astype(str)
+    
+    @property
+    def mb_models_md5(self):
+        """All MD5 hash of models used to remove n-body contributions from
+        models.
+
+        :type: :obj:`numpy.ndarray`
+        """
+        if hasattr(self, '_mb_models_md5'):
+            return self._mb_models_md5
+        else:
+            return None
+    
+    @mb_models_md5.setter
+    def mb_models_md5(self, var):
+        self._mb_models_md5 = var.astype(str)
 
     def convertE(self, E_units):
         """Convert energies and updates :attr:`e_unit`.
@@ -1316,6 +1367,6 @@ class dataSet(mbGDMLData):
         for dset_lower in dsets_lower:
             if hasattr(dset_lower, 'md5'):
                 mb_dsets_md5.append(dset_lower.md5)
-        ref_dset.mb_dsets_md5 = mb_dsets_md5
+        ref_dset.mb_dsets_md5 = np.array(mb_dsets_md5)
         
         self._update(ref_dset.dataset)

@@ -18,6 +18,8 @@ Contents
 
 Data sets contain the following information.
 
+.. autoattribute:: mbgdml.data.dataset.dataSet.name
+
 .. note::
     Some data and information pertaining to :ref:`many-body data sets<mb-data-sets>` are discussed later.
 
@@ -167,7 +169,13 @@ The coordinates are already in Angstroms, so we just need to convert the energie
 
 .. _mb-data-sets:
 
-Many-body data sets
--------------------
+Many-body
+---------
 
 TODO
+
+.. autoattribute:: mbgdml.data.dataset.dataSet.mb
+
+.. autoattribute:: mbgdml.data.dataset.dataSet.mb_dsets_md5
+
+.. autoattribute:: mbgdml.data.dataset.dataSet.mb_models_md5
