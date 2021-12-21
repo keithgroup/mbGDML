@@ -82,7 +82,7 @@ class predictSet(mbGDMLData):
         self._predicted = True
 
     @property
-    def predictset(self):
+    def asdict(self):
         """Contains all data as :obj:`numpy.ndarray` objects.
 
         :type: :obj:`dict`

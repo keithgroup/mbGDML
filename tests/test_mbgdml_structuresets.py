@@ -44,7 +44,7 @@ def example_10h2o(structureset):
         'md5', 'z', 'comp_ids'
     ]
     keys.sort()
-    rset_keys = list(structureset.structureset.keys())
+    rset_keys = list(structureset.asdict.keys())
     rset_keys.sort()
     assert rset_keys == keys
 

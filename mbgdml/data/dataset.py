@@ -309,7 +309,7 @@ class dataSet(mbGDMLData):
         :type: :obj:`str`
         """
         try:
-            return self.dataset['md5'][()].decode()
+            return self.asdict['md5'][()].decode()
         except:
             print('Not enough information in dset for MD5')
             raise
@@ -1214,7 +1214,7 @@ class dataSet(mbGDMLData):
             raise ValueError(f'There was an issue parsing F from {file_path}.')
 
     @property
-    def dataset(self):
+    def asdict(self):
         """Contains all data as :obj:`numpy.ndarray` objects.
 
         :type: :obj:`dict`
@@ -1330,7 +1330,7 @@ class dataSet(mbGDMLData):
             `npz`.
         """
         predict = mbPredict(model_paths)
-        dataset = predict.remove_nbody(ref_dset.dataset)
+        dataset = predict.remove_nbody(ref_dset.asdict)
         self._update(dataset)
     
     def create_mb_from_dsets(self, ref_dset, dset_lower_paths):
@@ -1369,4 +1369,4 @@ class dataSet(mbGDMLData):
                 mb_dsets_md5.append(dset_lower.md5)
         ref_dset.mb_dsets_md5 = np.array(mb_dsets_md5)
         
-        self._update(ref_dset.dataset)
+        self._update(ref_dset.asdict)
