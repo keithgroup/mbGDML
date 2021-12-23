@@ -1081,7 +1081,7 @@ class dataSet(mbGDMLData):
             calculations in order to match correctly with :attr:`R`.
         r_match_atol : :obj:`float`, optional
             Absolute tolerance for matching the coordinates of a calculation to
-            a structure in the data set. Defaults to ``6.8e-07``.
+            a structure in the data set. Defaults to ``5.1e-07``.
         r_match_rtol : :obj:`float`, optional
             Relative tolerance for matching the coordinates of a calculation to
             a structure in the data set. Defaults to ``0.0``.
@@ -1336,9 +1336,9 @@ class dataSet(mbGDMLData):
     def create_mb_from_dsets(self, ref_dset, dset_lower_paths):
         """Creates a many-body data set from lower-order data sets.
 
-        If ``ref_dset`` has n > 1 molecules, ``lower_dset_paths`` is a list
-        (of size n-1) data set paths with all possible lower-order contributions
-        removed. For example, if n is 3, paths to a monomer data set with
+        If ``ref_dset`` has *n* > 1 molecules, ``lower_dset_paths`` is a list
+        (of size *n*-1) data set paths with all possible lower-order contributions
+        removed. For example, if *n* is 3, paths to a monomer data set with
         original energies and forces along with a dimer data set with monomer
         contributions removed are required.
 
