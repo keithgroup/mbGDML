@@ -55,6 +55,7 @@ To circumvent this limitation, we developed a many-body approach where GDML lear
    Install <install>
    Data and Models <data-and-models/data-formats>
    QC Calculations <qc-calcs>
+   Training <training>
    Tutorials <tutorials/tutorials>
    API <doc/modules>
    contributing

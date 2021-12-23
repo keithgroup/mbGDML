@@ -1,0 +1,6 @@
+.. _training:
+
+Training
+========
+
+TODO
