@@ -162,7 +162,7 @@ class structureSet(mbGDMLData):
             self._update(dict(structureset_npz))
 
     def from_xyz(self, file_path, r_unit, entity_ids, comp_ids):
-        """Reads data from xyz files and sets ``z`` and ``R`` properties.
+        """Reads data from xyz files and sets attributes.
 
         If using the extended XYZ format will assume coordinates are the first
         three data columns (after atom symbols).
@@ -210,6 +210,42 @@ class structureSet(mbGDMLData):
         else:
             raise ValueError(f'There was an issue parsing R from {file_path}.')
         
+        self.r_unit = r_unit
+        self.entity_ids = np.array(entity_ids)
+        self.comp_ids = np.array(comp_ids)
+    
+    def from_npz(self, file_path, z_label, R_label, r_unit,
+        entity_ids, comp_ids):
+        """Reads data from npz file and sets attributes.
+
+        Parameters
+        ----------
+        file_path : :obj:`str`
+            Path to npz file.
+        z_label : :obj:`str`
+            Npz label that contains the z data as an array.
+        R_label : obj:`str`
+            Npz label that contains the R data as an array.
+        r_unit : :obj:`str`
+            Units of distance. Options are ``'Angstrom'`` or ``'bohr'`` (defined
+            by cclib).
+        entity_ids : :obj:`numpy.ndarray`
+            List of indices starting from ``0`` that specify chemically distinct
+            portions of the structure. For example, a water
+            dimer would be ``[0, 0, 0, 1, 1, 1]``.
+        comp_ids : :obj:`numpy.ndarray`
+            A 2D array with an item for every unique ``entity_id``. Each item
+            is a list containing two items. First, the ``entity_id`` as a
+            string. Second, a label for the specific chemical species/component.
+            For example, two water and one methanol molecules could be
+            ``[['0', 'h2o'], ['1', 'h2o'], ['2', 'meoh']]``.
+
+        """
+        self.name = os.path.splitext(os.path.basename(file_path))[0]
+        npz_data = dict(np.load(file_path))
+        
+        self.z = npz_data[z_label]
+        self.R = npz_data[R_label]
         self.r_unit = r_unit
         self.entity_ids = np.array(entity_ids)
         self.comp_ids = np.array(comp_ids)

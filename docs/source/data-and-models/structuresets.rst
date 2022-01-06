@@ -41,11 +41,15 @@ Saving a data set is just as easy.
 Creation
 --------
 
-Structure sets require :ref:`Cartesian Coordinates` (and their units), :ref:`Entity IDs`, and :ref:`Component IDs` to create.
-The easiest way is by using :func:`~mbgdml.data.structureset.structureSet.from_xyz`.
+Structure sets require :ref:`atomic numbers<Atomic numbers>`, :ref:`Cartesian coordinates` (and :attr:`~mbgdml.data.structureset.structureSet.r_unit`), :ref:`Entity IDs`, and :ref:`Component IDs` to create.
+The easiest way is to assign the data to the corresponding attributes.
+
+Files commonly used in computational chemistry already have all these data.
+We provide a few ways to directly parse these data directly from the file instead of manually adding them to the structure set.
 
 .. automethod:: mbgdml.data.structureset.structureSet.from_xyz
 
+.. automethod:: mbgdml.data.structureset.structureSet.from_npz
 
 Creating entity and component IDs for single-component structures we provide two structures to help initialize these data.
 
@@ -67,7 +71,7 @@ Atomic numbers
 
 .. autoattribute:: mbgdml.data.structureset.structureSet.n_z
 
-Cartesian Coordinates
+Cartesian coordinates
 ^^^^^^^^^^^^^^^^^^^^^
 
 .. autoattribute:: mbgdml.data.structureset.structureSet.R
