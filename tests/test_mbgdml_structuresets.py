@@ -116,6 +116,78 @@ def example_10h2o(structureset):
     # MD5 hash
     assert structureset.md5 == 'cd0cfdc29ebc52eb40d2a028124cfd18'
 
+def example_6h2o_md(structureset):
+    """
+
+    Parameters
+    ----------
+    structureset : :obj:`mbgdml.data.structureSet`
+    """
+    # Information in structure set.
+    keys = [
+        'type', 'mbgdml_version', 'name', 'R', 'r_unit', 'entity_ids',
+        'md5', 'z', 'comp_ids'
+    ]
+    keys.sort()
+    rset_keys = list(structureset.asdict.keys())
+    rset_keys.sort()
+    assert rset_keys == keys
+
+    
+    # Data type
+    assert structureset.type == 's'
+    
+    # Name
+    assert structureset.name == '6h2o.temelso.etal.pr.md.gfn2.300k.step10000-ase.md-orca.mp2.def2tzvp.300k'
+    
+    # Atomic numbers are parsed correctly.
+    z = np.array([
+        8, 1, 1, 8, 1, 1, 8, 1, 1, 8, 1, 1, 8, 1, 1, 8, 1, 1
+    ])
+    assert np.array_equal(structureset.z, z)
+    
+    # Has entity_ids.
+    entity_ids = np.array([
+        0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5
+    ])
+    assert np.array_equal(structureset.entity_ids, entity_ids)
+
+    # Has comp_ids
+    comp_ids = np.array([
+        ['0', 'h2o'], ['1', 'h2o'], ['2', 'h2o'], ['3', 'h2o'], ['4', 'h2o'],
+        ['5', 'h2o']
+    ])
+    assert np.array_equal(structureset.comp_ids, comp_ids)
+    
+    # Cartesian coordinates
+    assert structureset.R.shape == (301, 18, 3)
+    assert structureset.r_unit == 'Angstrom'
+
+    R_32 = np.array(
+      [[0.2027597,-4.00281929,-0.90995974],
+        [-0.16286238,-3.14967717,-0.67903394],
+        [0.48625758,-4.48705124,-0.09796301],
+        [-1.95833273,-0.74515469,-1.21757579],
+        [-1.99166926,-0.43717089,-2.1486605,],
+        [-2.12546867,0.05197179,-0.64383929],
+        [-2.14044116,1.60742354,0.38325509],
+        [-1.37023851,2.04184207,0.61056076],
+        [-2.85820184,2.17750563,0.63762777],
+        [2.80819533,0.63151693,1.62568434],
+        [2.19506056,-0.15937379,1.50464908],
+        [3.2118317,0.39423199,2.43503994],
+        [0.79762923,-0.51292892,-0.20285553],
+        [-0.14485871,-0.38287672,-0.56317643],
+        [1.35827021,-0.6160705,-1.00482268],
+        [0.38018651,2.56275112,0.53046884],
+        [1.18552353,3.09643848,0.63682096],
+        [0.81705268,1.68340128,0.54155129]]
+    )
+    assert np.allclose(R_32, structureset.R[32])
+    
+    # MD5 hash
+    assert structureset.md5 == 'dd6d875868a04e3c3a5deb71e280371c'
+
 def test_structureset_from_traj():
     traj_path = './tests/data/md/10h2o.abc0.iter1.gfn2-xtb.md-gfn2.300k-1.traj'
 
@@ -150,3 +222,30 @@ def test_structureset_load():
     test_structureset = structureSet(structureset_path)
 
     example_10h2o(test_structureset)
+
+def test_structureset_from_npz():
+    npz_path = '/home/alex/repos/mbGDML/tests/data/md/6h2o.temelso.etal.pr.md.gfn2.300k.step10000-ase.md-orca.mp2.def2tzvp.300k.npz'
+
+    # Getting entity_ids.
+    h2o_size = 3
+    cluster_size = 6
+    entity_ids = []
+    for i in range(0, cluster_size):
+        entity_ids.extend([i for _ in range(0, h2o_size)])
+
+    # Getting comp_ids
+    solvent = 'h2o'
+    comp_ids = []
+    for i in range(0, cluster_size):
+        comp_ids.append([str(i), solvent])
+
+    # Creating structure set.
+    test_structureset = structureSet()
+    test_structureset.from_npz(npz_path, 'z', 'R', 'Angstrom', entity_ids, comp_ids)
+
+    # Naming of the structure set.
+    assert test_structureset.name == '6h2o.temelso.etal.pr.md.gfn2.300k.step10000-ase.md-orca.mp2.def2tzvp.300k'
+    test_structureset.name = '6h2o.temelso.etal.pr.md.gfn2.300k.step10000-ase.md-orca.mp2.def2tzvp.300k'
+
+    example_6h2o_md(test_structureset)
+    
