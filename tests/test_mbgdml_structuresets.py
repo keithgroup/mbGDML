@@ -224,7 +224,7 @@ def test_structureset_load():
     example_10h2o(test_structureset)
 
 def test_structureset_from_npz():
-    npz_path = '/home/alex/repos/mbGDML/tests/data/md/6h2o.temelso.etal.pr.md.gfn2.300k.step10000-ase.md-orca.mp2.def2tzvp.300k.npz'
+    npz_path = './tests/data/md/6h2o.temelso.etal.pr.md.gfn2.300k.step10000-ase.md-orca.mp2.def2tzvp.300k.npz'
 
     # Getting entity_ids.
     h2o_size = 3
