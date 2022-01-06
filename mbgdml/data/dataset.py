@@ -1267,11 +1267,11 @@ class dataSet(mbGDMLData):
             pass
 
         # mbGDML information.
-        if hasattr(self, 'mb'):
+        if hasattr(self, 'mb') and self.mb != None:
             dataset['mb'] = np.array(self.mb)
-        if hasattr(self, 'mb_models_md5'):
+        if hasattr(self, 'mb_models_md5') and self.mb_models_md5 != None:
             dataset['mb_models_md5'] = np.array(self.mb_models_md5, dtype='S32')
-        if hasattr(self, 'mb_dsets_md5'):
+        if hasattr(self, 'mb_dsets_md5') and self.mb_dsets_md5 != None:
             dataset['mb_dsets_md5'] = np.array(self.mb_dsets_md5, dtype='S32')
 
         try:
