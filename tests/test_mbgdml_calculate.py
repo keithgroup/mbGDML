@@ -31,11 +31,11 @@ import numpy as np
 import mbgdml.data as data
 import mbgdml.parse as parse
 import mbgdml.utils as utils
-import mbgdml.calculate as calculate
+import mbgdml.qc as qc
 
 # Must be run from mbGDML root directory.
     
-def test_calculate_ORCA():
+def test_qc_ORCA():
     z_test = np.array([8, 1, 1])
     R_test = np.array(
         [[-0.48381516,  1.17384211, -1.4413092 ],
@@ -47,7 +47,7 @@ def test_calculate_ORCA():
                            "H  -0.902485520   0.330713060  -1.244799050\n"
                            "H  -1.211985850   1.834098530  -1.418744500\n")
     
-    engrad = calculate.ORCA(
+    engrad = qc.ORCA(
         '4h2o.abc0.2.step2',
         '4h2o.abc0.2.step2-orca.engrad-mp2.def2tzvp.tightscf.frozencore',
         '4h2o.abc0.2.step2-orca.engrad-mp2.def2tzvp.tightscf.frozencore'
@@ -58,7 +58,7 @@ def test_calculate_ORCA():
         6,
         0,
         12,
-        calculate.pitt_crc_orca_submit,
+        qc.pitt_crc_orca_submit,
         write=False,
     )
     
@@ -132,7 +132,7 @@ def test_calculate_ORCA():
         "*\n"
     )
 
-def test_calculate_engrad_calculation():
+def test_qc_engrad_calculation():
     coord_path = './tests/data/md/4h2o.abc0-orca.md-mp2.def2tzvp.300k-1.traj'
     z_all, _, R_list = parse.parse_stringfile(coord_path)
     try:
@@ -142,7 +142,7 @@ def test_calculate_engrad_calculation():
     z = np.array(utils.atoms_by_number(z_all[0]))
     R = np.array(R_list)
 
-    submit_file, input_file = calculate.engrad_calculation(
+    submit_file, input_file = qc.engrad_calculation(
         'ORCA',
         z,
         R,
@@ -161,7 +161,7 @@ def test_calculate_engrad_calculation():
         calc_dir='.',
         options='TightSCF FrozenCore',
         control_blocks='%scf\n    ConvForced true\nend\n%maxcore 8000\n',
-        submit_script=calculate.pitt_crc_orca_submit,
+        submit_script=qc.pitt_crc_orca_submit,
         write=False,
         submit=False
     )
