@@ -19,7 +19,7 @@ sys.path.insert(0, os.path.abspath('../'))
 # -- Project information -----------------------------------------------------
 
 project = 'mbGDML'
-copyright = '2020-2021, Alex M. Maldonado'
+copyright = '2020-2022, Alex M. Maldonado'
 author = 'Alex M. Maldonado'
 
 
