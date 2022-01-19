@@ -16,5 +16,6 @@ The following packages are supported:
 
 - `ORCA <https://orcaforum.kofo.mpg.de/app.php/portal>`__.
 
+With arrays of atomic numbers (``z``) and Cartesian coordinates (``R``), :func:`qc.slurm_engrad_calculation` generates all necessary files to run energy+gradient calculations.
 
-.. automethod:: mbgdml.qc.slurm_calculation
+.. automethod:: mbgdml.qc.slurm_engrad_calculation

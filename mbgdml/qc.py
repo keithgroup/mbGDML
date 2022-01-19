@@ -276,7 +276,7 @@ class ORCA:
            and 'mp2' in self.theory.lower():
             self.calc_type = 'NumFreq'
 
-def slurm_calculation(
+def slurm_engrad_calculation(
     package,
     z,
     R,
@@ -299,65 +299,68 @@ def slurm_calculation(
     write=True,
     submit=False
 ):
-    """Partition ORCA 4 EnGrad calculation for trajectory.
-    
-    Can be submitted using ``sbatch`` or just have the input files prepared.
-    Default submission script is set for University of Pittsburgh's Center for
-    Research Computing cluster.
+    """Generates a quantum chemistry Slurm job for multiple energy+gradient
+    calculations of different configurations of the same system.
     
     Parameters
     ----------
     package : :obj:`str`
-        Specifies the quantum chemistry program to be used. ``'ORCA'`` is
+        Specifies the quantum chemistry program. ``'ORCA'`` is
         currently the only package directly supported.
     z : :obj:`numpy.ndarray`
-        A ``(n,)`` or ``(m, n)`` shape array of type :obj:`numpy.int32`
-        containing atomic numbers of atoms in the structures in order as they
+        A ``(n,)`` or ``(m, n)`` shape array of type :obj:`numpy.int`
+        containing atomic numbers of atoms in the order as they
         appear for every ``m`` structure.
     R : :obj:`numpy.ndarray`
         A :obj:`numpy.ndarray` with shape of ``(n, 3)`` or ``(m, n, 3)`` where
-        ``m`` is the number of structures and ``n`` is the number of atoms with
-        three Cartesian components.
+        ``m`` is the number of structures and ``n`` is the number of atoms.
     job_name : :obj:`str`
-            Name of the job for SLURM input file.
+        A unique name for the Slurm job.
     input_name : :obj:`str`
-        File name for the input file.
+        Desired file name of the input file.
     output_name : :obj:`str`
-        File name for the output file.
+        Desired name of the output file specified by Slurm.
     theory : :obj:`str`, optional
-        Keword that specifies the level of theory (e.g., MP2, BP86, B3LYP, 
-        etc.) used for calculations. Defaults to 'MP2' for ORCA 4.2.0.
+        Keword that specifies the level of theory used for energy+gradient
+        calculations (specific to the ``package``). For example, ``'MP2'``,
+        ``'BP86'``, ``'B3LYP'``, ``'CCSD'``, etc. Defaults to ``'MP2'``.
     basis_set : :obj:`str`, optional
-        Keyword that specifies the basis set (e.g., def2-SVP, def2-TZVP, etc.). 
-        Defaults to 'def2-TZVP'.
+        Keyword that specifies the desired basis set (specific to the
+        ``package``). For example, ``'def2-SVP''`, ``'def2-TZVP'``,
+        ``'cc-pVQZ'``, etc. Defaults to ``'def2-TZVP'``.
     charge : :obj:`int`, optional
         System charge. Defaults to ``0``.
     multiplicity : :obj:`int`, optional
         System multiplicity. Defaults to ``1``.
-    cluster : :obj:`str`
-        Name of cluster for calculations. For example, ``'smp'``.
-    nodes : :obj:`int`
-        Number of requested nodes.
-    cores : :obj:`int`
-        Number of processing cores for the calculation.
-    days : :obj:`int`
-        Requested run time days.
-    hours : :obj:`int`
-        Requested run time hours.
+    cluster : :obj:`str`, optional
+        Name of the Slurm computing cluster for calculations.
+        Defaults to ``'smp'``.
+    nodes : :obj:`int`, optional
+        Number of requested nodes. Defaults to ``1``.
+    cores : :obj:`int`, optional
+        Number of processing cores for the calculation. Defaults to ``12``.
+    days : :obj:`int`, optional
+        Requested run time days. Defaults to ``0``.
+    hours : :obj:`int`, optional
+        Requested run time hours. Defaults to ``24``.
     calc_dir : :obj:`str`, optional
         Path to write calculation. Defaults to current directory (``'.'``).
     options : :obj:`str`, optional
-        All options specifically for the EnGrad calculation (e.g., SCF 
-        convergence criteria, algorithms, etc.).
+        All option keywords for the energy+gradient calculation (e.g., SCF 
+        convergence criteria, algorithms, etc.) specific for the package.
+        For example, ``'TightSCF FrozenCore'`` for ORCA 4.2.0. Defaults to `''`.
     control_blocks : :obj:`str`, optional
-        All options that control the calculation.
+        Options that will be directly added to the input file (stuff that does
+        not have a keyword). For example, ``'%maxcore 8000'``.
+        Defaults to ``''``.
     submit_script : :obj:`str`, optional
-        The SLURM submission script content. Defaults to
-        ``pitt_crc_orca_submit``.
+        The Slurm submission script content excluding . Defaults to
+        ``pitt_crc_orca_420_submit``.
     write : :obj:`bool`, optional
-        Whether or not to write the file. Defaults to ``True``.
+        Whether or not to write the calculation files. Defaults to ``True``.
     submit : :obj:`bool`, optional
-        Controls whether the calculation is submitted. Defaults to ``False``.
+        Controls whether the calculation is submitted using the ``sbatch``
+        command. Defaults to ``False``.
     
     Returns
     -------
@@ -383,11 +386,12 @@ def slurm_calculation(
             output_name
         )
         templates = CalcTemplate('orca')
+        engrad_keyword = 'EnGrad'
 
-    # Writes initial files
+    # Initializes input and Slurm files.
     input_file_string = ''
     if submit_script == '':
-        submit_script = pitt_crc_orca_submit
+        submit_script = pitt_crc_orca_420_submit
     slurm_file_name, slurm_file = engrad.submit(
         cluster,
         nodes,
@@ -398,19 +402,21 @@ def slurm_calculation(
         write=write,
         write_dir=calc_dir
     )
+
+    # Loops through each structure in R (i.e., step) and appends the input.
+    if z.shape[0] == 1:
+        step_z = z[0]
     for step_index in range(0, R.shape[0]):
-        if z.shape[0] == 1:
-            step_z = z[0]
-        else:
+        if z.shape[0] != 1:
             step_z = z[step_index]
+
         step_R = R[step_index]
         if step_index != 0:
-            engrad.template_input = templates.add_job \
-                                        + templates.input
+            engrad.template_input = templates.add_job + templates.input
 
         step_R_string = utils.string_coords(step_z, step_R)
         _, calc_string = engrad.input(
-            'EnGrad',
+            engrad_keyword,
             step_R_string,
             theory,
             basis_set,
@@ -441,7 +447,7 @@ def slurm_calculation(
 
     return slurm_file, input_file_string
 
-pitt_crc_orca_submit = (
+pitt_crc_orca_420_submit = (
     "cd $SBATCH_O_WORKDIR\n"
     "module purge\n"
     "module load openmpi/3.1.4\n"
