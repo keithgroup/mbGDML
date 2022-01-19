@@ -276,7 +276,7 @@ class ORCA:
            and 'mp2' in self.theory.lower():
             self.calc_type = 'NumFreq'
 
-def engrad_calculation(
+def slurm_calculation(
     package,
     z,
     R,
