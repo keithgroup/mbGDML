@@ -132,7 +132,7 @@ def test_qc_ORCA():
         "*\n"
     )
 
-def test_qc_engrad_calculation():
+def test_qc_slurm_calculation():
     coord_path = './tests/data/md/4h2o.abc0-orca.md-mp2.def2tzvp.300k-1.traj'
     z_all, _, R_list = parse.parse_stringfile(coord_path)
     try:
@@ -142,7 +142,7 @@ def test_qc_engrad_calculation():
     z = np.array(utils.atoms_by_number(z_all[0]))
     R = np.array(R_list)
 
-    submit_file, input_file = qc.engrad_calculation(
+    submit_file, input_file = qc.slurm_calculation(
         'ORCA',
         z,
         R,
