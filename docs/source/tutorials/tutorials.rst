@@ -1,4 +1,4 @@
-.. _tutorials:
+.. _tuts:
 
 Tutorials
 =========
@@ -7,6 +7,5 @@ Tutorials
    :maxdepth: 2
 
    basics
-   training
    predictions
 

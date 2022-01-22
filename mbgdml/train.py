@@ -78,8 +78,8 @@ class mbGDMLTrain():
         Parameters
         ----------
         dataset_path : :obj:`str`
-            Path to NumPy npz file representing a GDML dataset of a single 
-            cluster size (e.g., two water molecules).
+            Path to a npz GDML dataset of a single cluster size (e.g., two
+            water molecules).
         """
         self.dataset_path = dataset_path
         self.dataset_name = os.path.splitext(os.path.basename(dataset_path))[0]
@@ -138,20 +138,20 @@ class mbGDMLTrain():
         lam : :obj:`float`, optional
             Hyper-parameter lambda (regularization strength).
         use_sym : :obj:`bool`, optional
-            True: include symmetries (sGDML), False: GDML.
+            ``True``: include symmetries (sGDML), ``False``: GDML.
         use_E : :obj:`bool`, optional
-            True: reconstruct force field with corresponding potential energy surface,
-            False: ignore energy during training, even if energy labels are available
-                    in the dataset. The trained model will still be able to predict
-                    energies up to an unknown integration constant. Note, that the
-                    energy predictions accuracy will be untested.
+            ``True``: reconstruct force field with corresponding potential
+            energy surface.
+            ``False``: ignore energy during training, even if energy labels are
+            available in the dataset. The trained model will still be able to
+            predict energies up to an unknown integration constant. Note, that
+            the energy predictions accuracy will be untested.
         use_E_cstr : :obj:`bool`, optional
-            True: include energy constraints in the kernel,
-            False: default sGDML.
+            ``True``: include energy constraints in the kernel,
+            ``False``: default sGDML.
         use_cprsn : :obj:`bool`, optional
-            True: compress kernel matrix along symmetric degrees of
-            freedom,
-            False: train using full kernel matrix.
+            ``True``: compress kernel matrix along symmetric degrees of freedom,
+            ``False``: train using full kernel matrix.
         idxs_train : :obj:`numpy.ndarray`, optional
             The specific indices of structures to train the model on. If
             ``None`` will automatically sample the training data set.
@@ -355,6 +355,34 @@ class mbGDMLTrain():
 
         Parameters
         ----------
+        dataset : :obj:`tuple`
+            The path to the data set and the ``npz`` data set object.
+        n_train : :obj:`int`
+            Number of training points for the model.
+        n_valid : :obj:`int`
+            Number of validation points to test each trial model.
+        sigs : :obj:`list` [:obj:`int`]
+            A list of sigma hyperparameters to train trial models on. Should
+            be ordered from smallest (at minimum ``2``) to largest.
+        use_E : :obj:`bool`
+            Whether or not to reconstruct the potential energy surface
+            (``True``) with or (``False``) without energy labels. Almost always
+            should be ``True``.
+        use_E_cstr : :obj:`bool`
+            Whether or not to include energies as a part of the model training.
+            Meaning ``True`` will add another column of alphas that will be
+            trained to the energies. This is not necessary, but is found
+            to be useful in higher order n-body models. Defaults to ``True``.
+        use_cprsn : :obj:`bool`
+            Compresses the kernel matrix along symmetric degrees of freedom to
+            try to reduce training time. Usually does not provide significant
+            benefits. Defaults to ``False``.
+        overwrite : :obj:`bool`
+            Whether or not to overwrite an already existing model and its
+            training.
+        max_processes : :obj:`int`
+            The maximum number of cores to use for the training process. Will
+            automatically calculate if not specified.
         """
 
         has_valid_dataset = not (valid_dataset is None or valid_dataset == dataset)
@@ -734,7 +762,7 @@ class mbGDMLTrain():
         use_E_cstr=True, use_cprsn=False, idxs_train=None,
         max_processes=None, overwrite=False, torch=False,
     ):
-        """Trains a GDML model through the command line interface.
+        """Trains and saves a GDML model.
         
         Parameters
         ----------
@@ -746,10 +774,14 @@ class mbGDMLTrain():
             The number of validation points to sample, without replacement.
         num_test : :obj:`int`
             The number of test points to test the validated GDML model.
+        solver : :obj:`str`, optional
+            The sGDML solver to use. Currently the only option is
+            ``'analytic'``.
         sigmas : :obj:`list`, optional
-            Kernel length scales (sigmas) to train and validate GDML models.
-            Note, more length scales usually mean longer training times.
-            Two is the minimum value. Defaults to ``list(range(2, 110, 10))``.
+            Kernel length scales (i.e., hyperparameters) to train and validate
+            GDML models. Note, more length scales usually mean longer training
+            times. Two is the minimum value. Defaults to
+            ``list(range(2, 110, 10))``.
         save_dir : :obj:`str`, optional
             Path to train and save the mbGDML model. Defaults to current
             directory (``'.'``).
@@ -763,8 +795,8 @@ class mbGDMLTrain():
         use_E_cstr : :obj:`bool`, optional
             Whether or not to include energies as a part of the model training.
             Meaning ``True`` will add another column of alphas that will be
-            trained to the energies. This is not necessary, but is found
-            to be useful in higher order n-body models. Defaults to ``True``.
+            trained to the energies. This is not necessary, but is sometimes
+            useful for higher order *n*-body models. Defaults to ``True``.
         use_cprsn : :obj:`bool`, optional
             Compresses the kernel matrix along symmetric degrees of freedom to
             try to reduce training time. Usually does not provide significant
