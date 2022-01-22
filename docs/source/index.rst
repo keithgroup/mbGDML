@@ -39,7 +39,7 @@ GDML accomplishes this by learning the fundamental relationship between a geomet
    :width: 350px
    :align: center
 
-   Chmiela, S.; et al. *Sci. Adv.* **2017**, 3 (5), e1603015. DOI: `10.1126/sciadv.1603015 <https://doi.org/10.1126/sciadv.1603015>`_
+   Chmiela, S.; et al. *Sci. Adv.* **2017** *3* (5), e1603015. DOI: `10.1126/sciadv.1603015 <https://doi.org/10.1126/sciadv.1603015>`_
 
 However, GDML is not inherently size or species transferable.
 Meaning changing the number or types of atoms is not allowed after a GDML model is trained---making simulations on arbitrarily sized systems like solvents futile.
