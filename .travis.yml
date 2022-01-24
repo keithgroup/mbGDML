@@ -1,6 +1,6 @@
 language: python
 python:
-- 3.8
+- 3.9
 install:
 - pip install natsort cclib numpy ase mako matplotlib umap-learn
 - pip install pytest-cov codecov furo Sphinx coverage bump2version
