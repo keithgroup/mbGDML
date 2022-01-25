@@ -34,7 +34,14 @@ else:
     _has_torch = True
 
 class mbPredict():
-    """Predict energies and forces of structures using GDML models.
+    """Predict energies and forces of structures using many-body GDML models.
+
+    Parameters
+    ----------
+    models : :obj:`list` [:obj:`str`]
+        Contains paths to either standard or many-body GDML models.
+    use_torch : :obj:`bool`, optional
+        Use PyTorch to make predictions.
     """
 
     def __init__(self, models, use_torch=False):
@@ -44,6 +51,8 @@ class mbPredict():
         ----------
         models : :obj:`list` [:obj:`str`]
             Contains paths to either standard or many-body GDML models.
+        use_torch : :obj:`bool`, optional
+            Use PyTorch to make predictions.
         """
         self._load_models(models, use_torch)
     
@@ -232,9 +241,8 @@ class mbPredict():
             A ``(n,)`` shape array of type :obj:`numpy.int32` containing atomic
             numbers of atoms in the structures in order as they appear.
         R : :obj:`numpy.ndarray`
-            A :obj:`numpy.ndarray` with shape of ``(m, n, 3)`` where ``m`` is
-            the number of structures and ``n`` is the number of atoms with three 
-            Cartesian components.
+            Cartesian coordinates of all atoms of the structure specified in 
+            the same order as ``z``. The array can be two or three dimensional.
         entity_ids : :obj:`numpy.ndarray`
             An array specifying which atoms belong to what entities
             (e.g., molecules).
@@ -255,14 +263,15 @@ class mbPredict():
         Returns
         -------
         :obj:`numpy.ndarray`
-            A 1D array where each element is an :obj:`dict` for each structure
-            that has the total energy and its breakdown by total n-body order
-            and then again broken down by entity combination. For example,
-            getting the energy contribution for the ``'0,1'`` combination 
-            of the first structure would be ``[0][2]['0,2']``. Getting the
+            A 1D array where each element is a :obj:`dict` for each structure.
+            Each :obj:`dict` contains the total energy and its breakdown by
+            total n-body order, and by entity combination. For example,
+            if interested in the contribution of entities ``0`` and ``1``
+            (``2``-body contribution) of the 5th structure, we would access
+            this information with ``[4][2]['0,1']``. Getting the
             total energy of all contributions for that structure would be
-            ``[0]['T']`` and for all 1-body contributions would be
-            ``[0][1]['T']``. Each element's dictionary could have the following
+            ``[4]['T']`` and for all 1-body contributions would be
+            ``[4][1]['T']``. Each element's dictionary could have the following
             keys.
 
             ``'T'``
@@ -270,21 +279,23 @@ class mbPredict():
             ``1``
                 All 1-body energy contributions. Usually there is no criteria
                 for 1-body models so all entities are typically included.
+
                 ``'T'``
                     Total 1-body contributions for the structure.
+                
                 ``'0'``
                     The 1-body contribution for entity ``'0'``.
-                ...
+
             ``2``
                 All 2-body energy contributions. Not all combination are
                 included.
+
                 ``'T'``
                     Total 2-body contributions for the structure.
+
                 ``'0,1'``
                     The 2-body contribution for the dimer containing the ``0``
                     and ``1`` entities.
-                ...
-            ...
         :obj:`numpy.ndarray`
             Same as the energies array above but for atomic forces.
         """
@@ -339,8 +350,7 @@ class mbPredict():
             Atomic numbers of all atoms in the system.
         R : :obj:`numpy.ndarray`
             Cartesian coordinates of all atoms of the structure specified in 
-            the same order as ``z``. The array should have shape ``(n, 3)``
-            where ``n`` is the number of atoms.
+            the same order as ``z``. The array can be two or three dimensional.
         entity_ids : :obj:`numpy.ndarray`
             An array specifying which atoms belong to what entities
             (e.g., molecules).
