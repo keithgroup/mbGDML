@@ -1,3 +1,4 @@
+.. _contributing:
 .. highlight:: shell
 
 ============
@@ -10,10 +11,10 @@ Every little bit helps, and credit will always be given.
 You can contribute in many ways:
 
 Types of Contributions
-----------------------
+======================
 
 Report Bugs
-~~~~~~~~~~~
+-----------
 
 Report bugs at https://github.com/keithgroup/mbGDML/issues.
 
@@ -24,24 +25,24 @@ If you are reporting a bug, please include:
 * Detailed steps to reproduce the bug.
 
 Fix Bugs
-~~~~~~~~
+--------
 
 Look through the GitHub issues for bugs.
 Anything tagged with "bug" and "help wanted" is open to whoever wants to implement it.
 
 Implement Features
-~~~~~~~~~~~~~~~~~~
+------------------
 
 Look through the GitHub issues for features.
 Anything tagged with "enhancement" and "help wanted" is open to whoever wants to implement it.
 
 Write Documentation
-~~~~~~~~~~~~~~~~~~~
+-------------------
 
 mbgdml could always use more documentation, whether as part of the official mbgdml docs, in docstrings, or even on the web in blog posts, articles, and such.
 
 Submit Feedback
-~~~~~~~~~~~~~~~
+---------------
 
 The best way to send feedback is to file an issue at https://github.com/keithgroup/mbGDML/issues.
 
@@ -52,11 +53,11 @@ If you are proposing a feature:
 * Remember that this is a volunteer-driven project, and that contributions are welcome :)
 
 Get Started!
-------------
+============
 
-Ready to contribute? Here's how to set up `mbgdml` for local development.
+Ready to contribute? Here's how to set up ``mbgdml`` for local development.
 
-1. Fork the `mbgdml` repo on GitHub.
+1. Fork the ``mbgdml`` repo on GitHub.
 2. Clone your fork locally::
 
     $ git clone git@github.com:your_name_here/mbgdml.git
@@ -72,8 +73,7 @@ Ready to contribute? Here's how to set up `mbgdml` for local development.
 
    Now you can make your changes locally.
 
-5. When you're done making changes, check that your changes pass the
-   tests.
+5. When you're done making changes, check that your changes pass the tests.::
 
     $ pytest
 
@@ -86,18 +86,18 @@ Ready to contribute? Here's how to set up `mbgdml` for local development.
 7. Submit a pull request through the GitHub website.
 
 Pull Request Guidelines
------------------------
+=======================
 
 Before you submit a pull request, check that it meets these guidelines:
 
 1. The pull request should include tests.
 2. If the pull request adds functionality, the docs should be updated.
-   Put your new functionality into a function with a docstring, and add the feature to the list in README.rst.
+   Put your new functionality into a function with a docstring, and add the feature to the list in ``CHANGELOG.md``.
 3. The pull request should work for Python 3.9.
    Check app.travis-ci.com/github/keithgroup/mbGDML/pull_requests and make sure that the tests pass for all supported Python versions.
 
 Deploying
----------
+=========
 
 A reminder for the maintainers on how to deploy.
 Make sure all your changes are committed (including an entry in HISTORY.rst).

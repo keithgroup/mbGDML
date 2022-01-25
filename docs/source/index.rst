@@ -18,14 +18,14 @@ mbGDML
 
 Many-body gradient-domain machine learning (mbGDML) is a Python package that creates, uses, and analyzes a kernel machine learning potential based on the many-body expansion.
 
-**Disclaimer:** This package is still under active development and is not ready for production.
+**Disclaimer:** This package is still under active development and not ready for production.
 
-Why?
-====
+Motivation
+==========
 
-Often a trade-off game is played between accuracy confidence and computational cost with molecular simulations.
+There is often a trade-off between predictive confidence and computational cost with molecular simulations.
 Machine learning (ML) force fields attempt to offer a compromise somewhere between quantum chemistry and classical force fields.
-However, the trade-off game we play with ML force fields is between transferability (i.e., applicability of a trained model to a different system) and the amount of training data.
+However, with ML force fields, we often have balance high transferability (i.e., applicability of a trained model to a different system) and the amount of training data.
 
 .. image:: images/ml-force-field.svg
    :width: 400px
@@ -49,13 +49,26 @@ To circumvent this limitation, we developed a many-body approach where GDML lear
    :width: 350px
    :align: center
 
+Installation
+============
+
+At the moment, the only way to install mbGDML is directly from the `GitHub repository <https://github.com/keithgroup/mbGDML>`_.
+
+.. code-block:: bash
+
+    git clone https://github.com/keithgroup/mbGDML
+    cd mbGDML
+    pip install .
+
 .. toctree::
    :hidden:
 
-   Install <install>
    Data and Models <data-and-models/data-formats>
+   Configurational Sampling <config-sampling>
    QC Calculations <qc-calcs>
    Training <training>
+   Predictions <predictions>
+   Simulations <simulations>
    Tutorials <tutorials/tutorials>
    API <doc/modules>
-   contributing
+   Contributing <contributing>
