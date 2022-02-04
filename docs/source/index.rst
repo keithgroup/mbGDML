@@ -64,11 +64,9 @@ At the moment, the only way to install mbGDML is directly from the `GitHub repos
    :hidden:
 
    Data and Models <data-and-models/data-formats>
-   Configurational Sampling <config-sampling>
    QC Calculations <qc-calcs>
    Training <training>
    Predictions <predictions>
-   Simulations <simulations>
    Tutorials <tutorials/tutorials>
    API <doc/modules>
    Contributing <contributing>
