@@ -129,7 +129,46 @@ We mostly reuse the previous output file and command with two changes.
   The output file of the previous simulation will have a line that says something like ``spherical wallpotential with radius   11.5624559 Å``.
   We just have to convert this to Bohr, which is about ``21.84987498332`` and specify it like so: ``sphere: 21.84987498332, all``.
 
-With the production simulation coordinates in hand we can being preparing a structure set.
+With the :download:`production simulation trajectory<../files/tut-water/140h2o.pm.gfn2.md.500k.eq0-xtb.md.prod1-gfn2.500k.wallpot.xyz>` in hand we can being preparing a structure set.
 
 Creating a structure set
 ========================
+
+Sometimes data sets contain information from a variety of sources and we, as practitioners of reproducible research, need to keep a breadcrumb trail of our data.
+:ref:`Structure sets<structure-sets>` allow us to create a collection of structures derived from the same source (e.g., a MD simulation, global optimization, or article) along with a unique :attr:`~mbgdml.data.structureset.structureSet.md5` identifier.
+Fragment/molecule specification is also defined in this stage that lets mbGDML correctly identify which model to use for each fragment.
+All we need to start is a single XYZ file (our GFN2-xTB trajectory will serve this purpose).
+
+Besides the XYZ file, only three other pieces of information are required: :attr:`~mbgdml.data.structureset.structureSet.r_unit`, :attr:`~mbgdml.data.structureset.structureSet.entity_ids`, :attr:`~mbgdml.data.structureset.structureSet.comp_ids`.
+For small systems you can manually generate the :attr:`~mbgdml.data.structureset.structureSet.entity_ids` and :attr:`~mbgdml.data.structureset.structureSet.comp_ids` manually.
+Two water molecules would just be ``[0, 0, 0, 1, 1, 1]`` and ``[['0', 'h2o'], ['1', 'h2o']``, respectively.
+
+.. note::
+    Any label can be used for the component id.
+    For simplicity we will just use ``h2o``.
+
+Larger systems become more tedious to manually prepare.
+We can use :func:`mbgdml.utils.get_entity_ids` and :func:`mbgdml.utils.get_comp_ids` to automatically generate :attr:`~mbgdml.data.structureset.structureSet.entity_ids` and :attr:`~mbgdml.data.structureset.structureSet.comp_ids` for systems containing only one species (e.g., all water molecules).
+The following code will generate a :ref:`structure set<structure-sets>` just like :download:`this one<../files/tut-water/140h2o.pm.gfn2.md.500k.prod1.npz>`.
+
+.. code-block:: python
+
+    from mbgdml.data import structureSet
+    from mbgdml.utils import get_entity_ids, get_comp_ids
+
+    # Path to xyz file we will turn into a structure set.
+    xyz_path = './140h2o.pm.gfn2.md.500k.eq0-xtb.md.prod1-gfn2.500k.wallpot.xyz'
+
+    name = '140h2o.pm.gfn2.md.500k.prod1'
+    r_unit = 'Angstrom'  # Coordinate units.
+    comp_id = 'h2o'  # Component ID.
+    atoms_per_entity = 3  # Number of atoms in each entity.
+    num_entities = 140  # Number of entities in each XYZ structure.
+
+    entity_ids = get_entity_ids(atoms_per_entity, num_entities)
+    comp_ids = get_comp_ids(comp_id, entity_ids)
+
+    rset = structureSet()
+    rset.from_xyz(xyz_path, r_unit, entity_ids, comp_ids)  # Adds data to structure set.
+    rset.name = name  # Assigns name to the structure set.
+    rset.save(rset.name, rset.asdict)  # Will save in current directory.
