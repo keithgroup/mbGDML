@@ -1,6 +1,6 @@
 <h1 align="center">mbGDML</h1>
 
-<h4 align="center">Create, use, and analyze many-body gradient-domain machine learning force fields.</h4>
+<h4 align="center">Create, use, and analyze many-body gradient-domain machine learning potentials.</h4>
 
 <p align="center">
     <a href="https://app.travis-ci.com/github/keithgroup/mbGDML">
