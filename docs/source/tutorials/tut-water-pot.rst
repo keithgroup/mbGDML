@@ -131,8 +131,8 @@ We mostly reuse the previous output file and command with two changes.
 
 With the :download:`production simulation trajectory<../files/tut-water/140h2o.pm.gfn2.md.500k.eq0-xtb.md.prod1-gfn2.500k.wallpot.xyz>` in hand we can being preparing a structure set.
 
-Creating a structure set
-========================
+Creating structure sets
+=======================
 
 Sometimes data sets contain information from a variety of sources and we, as practitioners of reproducible research, need to keep a breadcrumb trail of our data.
 :ref:`Structure sets<structure-sets>` allow us to create a collection of structures derived from the same source (e.g., a MD simulation, global optimization, or article) along with a unique :attr:`~mbgdml.data.structureset.structureSet.md5` identifier.
@@ -172,3 +172,211 @@ The following code will generate a :ref:`structure set<structure-sets>` just lik
     rset.from_xyz(xyz_path, r_unit, entity_ids, comp_ids)  # Adds data to structure set.
     rset.name = name  # Assigns name to the structure set.
     rset.save(rset.name, rset.asdict)  # Will save in current directory.
+
+Curating data sets
+==================
+
+Now we can start building a :ref:`data set<data-sets>` of *n*-body structures containing energies and forces.
+This generally comes in two stages: sampling structures from :ref:`structure set<structure-sets>` or other :ref:`data set<data-sets>` then computing energies and forces using some quantum chemical method.
+
+Sampling structures
+-------------------
+
+TODO: Add information.
+
+:download:`data set without energies and forces<../files/tut-water/140h2o.pm.gfn2.md.500k.prod1.3h2o-dset-cm10.noef.npz>`
+
+.. code-block:: python
+
+    import os
+    import numpy as np
+    from mbgdml.data import structureSet
+    from mbgdml.data import dataSet
+    from mbgdml.criteria import cm_distance_sum
+
+    rset_path = './140h2o.pm.gfn2.md.500k.prod1.npz'
+    dset_name = '140h2o.pm.gfn2.md.500k.prod1.3h2o-dset-cm10.noef'
+    save_dir = '.'
+
+    # How many monomers to include in each sampled structure?
+    size = 3
+    # How many structures to sample?
+    # A number (e.g., `5000`) or `'all'`.
+    quantity = 5000
+    # Only accept structures that pass some criteria.
+    r_criteria = cm_distance_sum  # None for 1mer, cm_distance_sum for others.
+    z_slice = np.array([])  # Specifies which atoms to use for a criteria.
+    cutoff = np.array([10.0])  # Angstroms; [] for 1mer, [##] for others.
+    # Will translate the center of mass of the sampled cluster to the origin.
+    center_structures = True
+    # Will print sampling updates.
+    sampling_updates = True
+
+    # Ensures we execute from script directory (for relative paths).
+    os.chdir(os.path.dirname(os.path.realpath(__file__)))
+
+    if save_dir[-1] != '/':
+        save_dir += '/'
+
+    # Preparing data set.
+    dset = dataSet()
+    dset.name = dset_name
+
+    # Sampling from structure set.
+    rset = structureSet(rset_path)
+    dset.sample_structures(
+        rset, quantity, size, criteria=r_criteria, z_slice=z_slice,
+        cutoff=cutoff, center_structures=center_structures,
+        sampling_updates=sampling_updates
+    )
+
+    dset.save(dset.name, dset.asdict, save_dir)
+        
+
+Computing energies and forces
+-----------------------------
+
+TODO: Add information.
+
+.. code-block:: python
+
+    import os
+    import numpy as np
+    from mbgdml.data import dataSet
+    from mbgdml.qc import slurm_engrad_calculation
+
+    # Script setup.
+    dset_path = '140h2o.pm.gfn2.md.500k.prod1.3h2o-dset-cm10.noef.npz'  # The data set to make engrad jobs from.
+    structure_label = '140h2o.pm.gfn2.md.500k.prod1.3h2o.cm10'  # Structure label for the engrad calculations.
+    calc_name = f'{structure_label}-orca.engrad-mp2.def2tzvp'  # Job name.
+    max_calcs = 100  # Maximum number of consecutive calculations to put in one job.
+
+    # Ensures we execute from script directory (for relative paths).
+    os.chdir(os.path.dirname(os.path.realpath(__file__)))
+
+    save_dir = f'./{structure_label}-calcs'
+    if save_dir[-1] != '/':
+        save_dir += '/'
+    os.makedirs(save_dir, exist_ok=True)
+
+    def prepare_calc(calc_name, z, R, save_dir):
+        slurm_engrad_calculation(
+            'orca',
+            z,
+            R,
+            calc_name,
+            calc_name,
+            calc_name,
+            theory='MP2',
+            basis_set='def2-TZVP',
+            charge=0,
+            multiplicity=1,
+            cluster='smp',
+            nodes=1,
+            cores=24,
+            days=3,
+            hours=00,
+            calc_dir=save_dir,
+            options='TightSCF FrozenCore',
+            control_blocks=(
+                '%maxcore 8000\n\n'
+                '%scf\n    ConvForced true\nend'
+            ),
+            write=True,
+            submit=False
+        )
+
+    dset = dataSet(dset_path)
+    missing_engrad_indices = np.argwhere(np.isnan(dset.E))[:,0]
+
+    # Splits up calculations to a maximum number of engrads per job.
+    if len(missing_engrad_indices) > max_calcs:
+        start = 0
+        end = max_calcs
+        while start < len(missing_engrad_indices):
+            if end > len(missing_engrad_indices):
+                end = len(missing_engrad_indices)
+            calc_name_iter = f'{calc_name}-{start}.to.{end-1}'
+            save_dir_calc = f'{save_dir}/{calc_name_iter}'
+
+            if save_dir_calc[-1] != '/':
+                save_dir_calc += '/'
+            
+            os.makedirs(save_dir_calc, exist_ok=True)
+
+            prepare_calc(calc_name_iter, dset.z, dset.R[start:end], save_dir_calc)
+
+            start += max_calcs
+            end += max_calcs
+    else:
+        prepare_calc(calc_name, dset.z, dset.R[missing_engrad_indices], save_dir)
+
+A bunch of ORCA 4.2.0 jobs will be generated from the above script.
+Each job will contain up to 100 energy+gradient calculations with the specified parameters.
+The first two calculations are shown below.
+
+.. code-block:: text
+
+    # 140h2o.pm.gfn2.md.500k.prod1.3h2o.cm10-orca.engrad-mp2.def2tzvp-0.to.99
+    ! MP2 def2-TZVP EnGrad TightSCF FrozenCore
+
+    %pal
+        nprocs 24
+    end
+
+    %maxcore 8000
+
+    %scf
+        ConvForced true
+    end
+
+    *xyz 0 1
+    O   0.577096335  -2.910013209  -1.469728926
+    H   0.719154865  -2.645061494  -2.428305146
+    H   1.514695271  -3.029077780  -1.202822563
+    O  -0.046882667   0.333722805  -0.023751790
+    H   0.547109024   0.746187830  -0.616407617
+    H  -0.118653895   0.901757409   0.740811852
+    O  -0.648361732   2.498671995   1.470652220
+    H   0.177319851   3.012341517   1.445782624
+    H  -0.964075000   2.246011633   2.423333479
+    *
+
+
+    $new_job
+
+    # 140h2o.pm.gfn2.md.500k.prod1.3h2o.cm10-orca.engrad-mp2.def2tzvp-0.to.99
+    ! MP2 def2-TZVP EnGrad TightSCF FrozenCore
+
+    %pal
+        nprocs 24
+    end
+
+    %maxcore 8000
+
+    %scf
+        ConvForced true
+    end
+
+    *xyz 0 1
+    O   2.186900029   1.103131746   0.440180559
+    H   3.132328705   1.052402431   0.150975525
+    H   1.713400705   2.019828029   0.343004762
+    O  -2.135618996  -1.688550022   0.713837639
+    H  -2.773132665  -0.989875555   0.770465470
+    H  -1.826474091  -1.487707395  -0.182951687
+    O  -0.064924338   0.527011920  -1.137617882
+    H  -0.007597048   0.789579633  -0.215653695
+    H  -0.021943960  -0.457051162  -1.126188389
+    *
+
+
+
+Adding energies and forces to data set
+--------------------------------------
+
+TODO: Add qcjson information.
+
+:func:`~mbgdml.data.dataset.dataSet.add_pes_data`
+
+:download:`data set with energies and forces<../files/tut-water/140h2o.pm.gfn2.md.500k.prod1.3h2o-dset-cm10.npz>`
