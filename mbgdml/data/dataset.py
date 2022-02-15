@@ -767,20 +767,25 @@ class dataSet(mbGDMLData):
         elif sample_data_type == 's':
             structure_idxs = np.arange(0, len(sample_data_R))
         
+        num_generated_r = 0
         num_accepted_r = 0
+        prev_num_accepted = 0
         for data_selection in self._generate_structure_samples(
             quantity, size, data_ids, structure_idxs, max_sample_entity_ids
         ):
+            num_generated_r += 1
             # Ends sampling for number quantities.
             # The generator does not stop.
             if isinstance(quantity, int) or str(quantity).isdigit():
-                if num_accepted_r == quantity:
+                if num_accepted_r == int(quantity):
                     break
             
             # Sampling updates
             if sampling_updates:
                 if isinstance(quantity, int) or str(quantity).isdigit():
-                    if num_accepted_r%500 == 0:
+                    if num_accepted_r%500 == 0 \
+                       and num_accepted_r != prev_num_accepted:
+                        prev_num_accepted = num_accepted_r
                         print(f'Successfully found {num_accepted_r} structures')
                 elif quantity == 'all':
                     if (num_accepted_r+1)%500 == 0:
@@ -958,6 +963,7 @@ class dataSet(mbGDMLData):
             Rset_id = self._get_Rset_id(data)
             data_ids = np.array([Rset_id])
             Rset_md5 = data.md5
+            copy_EF = False
 
             Rset_info, z, R, E, F = self._sample(
                 z, R, E, F, data, quantity, data_ids, Rset_id, Rset_info, size,
