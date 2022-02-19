@@ -83,11 +83,11 @@ A spherical confining potential is used to prevent dissociation during the run.
         restart  = false
         time     =  10.0  # in ps (1000 fs = 1 ps; 1 fs = 0.001 ps)
         step     =   1.0  # in fs
-        dump     =  10.0  # in fs
+        dump     =  50.0  # in fs
         temp     = 500.0  # in K
         nvt      = true
         velo     = false
-        hmass    =   0  # Use the standard hydrogen mass.
+        hmass    =   1
         shake    =   0
         sccacc   =   1.0
     $end
@@ -128,6 +128,10 @@ We mostly reuse the previous output file and command with two changes.
   Thus, manually specifying the radius, in Bohr, is recommended.
   The output file of the previous simulation will have a line that says something like ``spherical wallpotential with radius   11.5624559 Å``.
   We just have to convert this to Bohr, which is about ``21.84987498332`` and specify it like so: ``sphere: 21.84987498332, all``.
+  
+  .. note::
+      One could also have specified a radius corresponding to the initial `packmol <http://leandro.iqm.unicamp.br/m3g/packmol/home.shtml>`_ shape instead of letting `xtb <https://xtb-docs.readthedocs.io/en/latest/contents.html>`_ automatically determine it.
+      The density of system usually significantly changes when the ``auto`` option is used.
 
 With the :download:`production simulation trajectory<../files/tut-water/140h2o.pm.gfn2.md.500k.eq0-xtb.md.prod1-gfn2.500k.wallpot.xyz>` in hand we can being preparing a structure set.
 
@@ -182,16 +186,67 @@ This generally comes in two stages: sampling structures from :ref:`structure set
 Sampling structures
 -------------------
 
-TODO: Add information.
+A structurally diverse data set is paramount for globally accurate (i.e., useful) GDML models.
+We sample structures from any valid :ref:`structure set<structure-sets>` multiple times as the structures are just appended to the end of the arrays.
 
-:download:`data set without energies and forces<../files/tut-water/140h2o.pm.gfn2.md.500k.prod1.3h2o-dset-cm10.noef.npz>`
+Remember that the final :ref:`data sets<data-sets>` will need to contain *n*-body energies and forces.
+Meaning once we will need properties for each clusters' lower order (< *n*) fragments.
+For example, a dimer's two-body energy is defined as the total energy minus the energies of the individual monomers.
+What we are getting at is that many-body :ref:`data sets<data-sets>` require more calculations than just its own structures.
+
+In order to minimize the number of calculations required we can build the lower order :ref:`data sets<data-sets>` (e.g., 1- and 2-body in this case) only from the highest-order :ref:`data set<data-sets>` (e.g., 3-body).
+Thus, we only directly sample from the MD :ref:`structure set<structure-sets>` once to make the 3-body :ref:`data set<data-sets>`.
+1- and 2-body :ref:`data sets<data-sets>` are then sampled from the 3-body set instead.
+
+.. note::
+    This procedure does bias the 1- and 2-body data sets to only contain structures from the sampled 3-body data set.
+    Nothing precludes additional 1- and 2-body sampling on top of the required structures.
+    We do not do any additional sampling just to keep the number of calculations small.
+
+Distance-based cutoffs
+~~~~~~~~~~~~~~~~~~~~~~
+
+Many-body expansions suffer from the curse of dimensionality.
+The number of *n*-body clusters explodes when the overall size of the system increases.
+Luckily, the size of the *n*-body contribution generally decreases when the distance between the individual molecules increases.
+If we employ some distance-based cutoff we can avoid computations on structures with negligible contributions.
+
+One common distance-based cutoff is what we call the "center of mass distance sum".
+Essentially we take the sum of each monomer's center of mass to the center of mass of the entire cluster.
+Example distances for a water trimer are shown below.
+
+.. image:: ../images/distance-screening-3h2o.svg
+   :width: 300px
+   :align: center
+
+We provide a simple function :func:`mbgdml.criteria.cm_distance_sum` can compute this metric.
+Different criteria can be used or added, but so far each one requires four parameters:
+
+* ``z``: atomic numbers of the structure;
+* ``R``: Cartesian coordinates;
+* ``z_slice``: relevant atom indices for the criteria;
+* ``entity_ids``: entity IDs for every atom in the structure.
+
+.. note::
+    Not every criteria will always use ``z_slice`` or ``entity_ids``.
+    We just always require them to standardize their use in scripts.
+    If a criteria does not use a parameter then just pass a "None" equivalent.
+    For example, :func:`mbgdml.criteria.cm_distance_sum` does not use ``z_slice`` directly in the criteria evaluation so we just pass ``np.array([])`` to the function.
+
+To determine cutoffs we typically calculate all *n*-body interactions for a large structure.
+We then plot the predicted *n*-body energy when using different cutoffs and determine when it reasonably converges.
+For water we will use 6 and 10 Angstroms for the 2- and 3- body models.
+
+Sampling from structure sets
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The following Python script will sample 5,000 trimer structures from our production MD simulation and result in a :download:`data set without energies and forces<../files/tut-water/140h2o.pm.gfn2.md.500k.prod1.3h2o-dset-cm10.noef.npz>`.
 
 .. code-block:: python
 
     import os
     import numpy as np
-    from mbgdml.data import structureSet
-    from mbgdml.data import dataSet
+    from mbgdml.data import structureSet, dataSet
     from mbgdml.criteria import cm_distance_sum
 
     rset_path = './140h2o.pm.gfn2.md.500k.prod1.npz'
@@ -231,7 +286,60 @@ TODO: Add information.
     )
 
     dset.save(dset.name, dset.asdict, save_dir)
-        
+
+Sampling from data sets
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Once we have our trimer data set in hand we can sample all 1- and 2-body structures available.
+The script is very similar with only a few modifications.
+
+.. code-block:: python
+
+    import os
+    import numpy as np
+    from mbgdml.data import dataSet
+    from mbgdml.criteria import cm_distance_sum
+
+    dset_path_for_sampling = './140h2o.pm.gfn2.md.500k.prod1.3h2o-dset-cm10.noef.npz'
+    dset_name = '140h2o.pm.gfn2.md.500k.prod1.3h2o.cm10.dset.2h2o-dset-noef'
+    save_dir = '.'
+
+    # How many monomers to include in each sampled structure?
+    size = 2
+    # How many structures to sample?
+    # A number (e.g., `5000`) or `'all'`.
+    quantity = 'all'
+    # Only accept structures that pass some criteria.
+    r_criteria = None  # None for 1mer or dset sampling, cm_distance_sum for others.
+    z_slice = np.array([])  # Specifies which atoms to use for a criteria.
+    cutoff = np.array([])  # Angstroms; [] for 1mer, [##] for others.
+    # Will translate the center of mass of the sampled cluster to the origin.
+    center_structures = True
+    # Will print sampling updates.
+    sampling_updates = True
+
+    # Ensures we execute from script directory (for relative paths).
+    os.chdir(os.path.dirname(os.path.realpath(__file__)))
+
+    if save_dir[-1] != '/':
+        save_dir += '/'
+
+    # Preparing data set.
+    dset = dataSet()
+    dset.name = dset_name
+
+    # Sampling from data set.
+    dset_for_sampling = dataSet(dset_path_for_sampling)
+    dset.sample_structures(
+        dset_for_sampling, quantity, size, criteria=r_criteria, z_slice=z_slice,
+        cutoff=cutoff, center_structures=center_structures,
+        sampling_updates=sampling_updates
+    )
+
+    dset.save(dset.name, dset.asdict, save_dir)
+
+The above script directly results in :download:`this dimer data set<../files/tut-water/140h2o.pm.gfn2.md.500k.prod1.3h2o.cm10.dset.2h2o-dset-noef.npz>`.
+By changing ``dset_name`` and ``size = 2`` to ``1`` we get :download:`this monomer data set<../files/tut-water/140h2o.pm.gfn2.md.500k.prod1.3h2o.cm10.dset.1h2o-dset-noef.npz>`.
 
 Computing energies and forces
 -----------------------------
@@ -372,11 +480,33 @@ The first two calculations are shown below.
 
 
 
-Adding energies and forces to data set
---------------------------------------
+Adding energies and forces
+--------------------------
 
 TODO: Add qcjson information.
 
 :func:`~mbgdml.data.dataset.dataSet.add_pes_data`
 
 :download:`data set with energies and forces<../files/tut-water/140h2o.pm.gfn2.md.500k.prod1.3h2o-dset-cm10.npz>`
+
+Many-body data sets
+-------------------
+
+TODO
+
+:func:`~mbgdml.data.dataset.dataSet.create_mb_from_dsets`
+
+Training GDML models
+====================
+
+TODO
+
+:func:`~mbgdml.train.mbGDMLTrain.train`
+
+Making predictions
+==================
+
+TODO
+
+:func:`~mbgdml.predict.mbPredict.predict`
+
