@@ -290,7 +290,7 @@ The following Python script will sample 5,000 trimer structures from our product
 Sampling from data sets
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-Once we have our trimer data set in hand we can sample all 1- and 2-body structures available.
+Once we have our trimer :ref:`data set<data-sets>` in hand we can sample all 1- and 2-body structures available.
 The script is very similar with only a few modifications.
 
 .. code-block:: python
@@ -344,7 +344,10 @@ By changing ``dset_name`` and ``size = 2`` to ``1`` we get :download:`this monom
 Computing energies and forces
 -----------------------------
 
-TODO: Add information.
+GDML requires, at minimum, the gradients of every structure sampled in the :ref:`data set<data-sets>`.
+Energies are useful to parameterize the integration constant or even include it in the kernel.
+These properties can be computed with any desired program and then added to data set.
+In the script below we generate ORCA v4.2.0 job that contain up to 100 energy+gradient calculations.
 
 .. code-block:: python
 
@@ -419,8 +422,6 @@ TODO: Add information.
     else:
         prepare_calc(calc_name, dset.z, dset.R[missing_engrad_indices], save_dir)
 
-A bunch of ORCA 4.2.0 jobs will be generated from the above script.
-Each job will contain up to 100 energy+gradient calculations with the specified parameters.
 The first two calculations are shown below.
 
 .. code-block:: text
