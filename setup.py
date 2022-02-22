@@ -26,7 +26,7 @@ setup(
         'Natural Language :: English',
         'Programming Language :: Python :: 3'
     ],
-    description="Many-body implementation of symmetric  domain machine learning force fields",
+    description="Many-body implementation of gradient-domain machine learning potentials",
     install_requires=requirements,
     extras_require={'analysis': ['matplotlib', 'umap-learn']},
     license="MIT license",
