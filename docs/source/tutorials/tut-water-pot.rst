@@ -240,7 +240,7 @@ For water we will use 6 and 10 Angstroms for the 2- and 3- body models.
 Sampling from structure sets
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The following Python script will sample 5,000 trimer structures from our production MD simulation and result in a :download:`data set without energies and forces<../files/tut-water/140h2o.pm.gfn2.md.500k.prod1.3h2o-dset-cm10.noef.npz>`.
+The following Python script will sample 5,000 trimer structures from our production MD simulation and result in a :download:`data set without energies and forces<../files/tut-water/dsets/3h2o/140h2o.pm.gfn2.md.500k.prod1.3h2o-dset-cm10.noef.npz>`.
 
 .. code-block:: python
 
@@ -338,8 +338,8 @@ The script is very similar with only a few modifications.
 
     dset.save(dset.name, dset.asdict, save_dir)
 
-The above script directly results in :download:`this dimer data set<../files/tut-water/140h2o.pm.gfn2.md.500k.prod1.3h2o.cm10.dset.2h2o-dset-noef.npz>`.
-By changing ``dset_name`` and ``size = 2`` to ``1`` we get :download:`this monomer data set<../files/tut-water/140h2o.pm.gfn2.md.500k.prod1.3h2o.cm10.dset.1h2o-dset-noef.npz>`.
+The above script directly results in :download:`this dimer data set<../files/tut-water/dsets/2h2o/140h2o.pm.gfn2.md.500k.prod1.3h2o.cm10.dset.2h2o-dset-noef.npz>`.
+By changing ``dset_name`` and ``size = 2`` to ``1`` we get :download:`this monomer data set<../files/tut-water/dsets/1h2o/140h2o.pm.gfn2.md.500k.prod1.3h2o.cm10.dset.1h2o-dset-noef.npz>`.
 
 Computing energies and forces
 -----------------------------
@@ -488,7 +488,7 @@ TODO: Add qcjson information.
 
 :func:`~mbgdml.data.dataset.dataSet.add_pes_data`
 
-:download:`data set with energies and forces<../files/tut-water/140h2o.pm.gfn2.md.500k.prod1.3h2o-dset-cm10.npz>`
+:download:`data set with energies and forces<../files/tut-water/dsets/3h2o/140h2o.pm.gfn2.md.500k.prod1.3h2o-dset-cm10.mp2.def2tzvp.npz>`
 
 Many-body data sets
 -------------------
