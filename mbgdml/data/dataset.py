@@ -396,7 +396,7 @@ class dataSet(mbGDMLData):
         if hasattr(self, '_mb_dsets_md5'):
             return self._mb_dsets_md5
         else:
-            return None
+            return np.array([])
     
     @mb_dsets_md5.setter
     def mb_dsets_md5(self, var):
@@ -412,7 +412,7 @@ class dataSet(mbGDMLData):
         if hasattr(self, '_mb_models_md5'):
             return self._mb_models_md5
         else:
-            return None
+            return np.array([])
     
     @mb_models_md5.setter
     def mb_models_md5(self, var):
@@ -1275,9 +1275,9 @@ class dataSet(mbGDMLData):
         # mbGDML information.
         if hasattr(self, 'mb') and self.mb != None:
             dataset['mb'] = np.array(self.mb)
-        if hasattr(self, 'mb_models_md5') and self.mb_models_md5 != None:
+        if len(self.mb_models_md5) > 0:
             dataset['mb_models_md5'] = np.array(self.mb_models_md5, dtype='S32')
-        if hasattr(self, 'mb_dsets_md5') and self.mb_dsets_md5 != None:
+        if len(self.mb_dsets_md5) > 0:
             dataset['mb_dsets_md5'] = np.array(self.mb_dsets_md5, dtype='S32')
 
         try:
