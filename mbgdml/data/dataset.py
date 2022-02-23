@@ -991,6 +991,11 @@ class dataSet(mbGDMLData):
                 raise ValueError(
                     f'This is not implemented for data set sampling'
                 )
+            
+            if len(data.mb_dsets_md5) > 0:
+                self.mb_dsets_md5 = data.mb_dsets_md5
+            if len(data.mb_models_md5) > 0:
+                self.mb_models_md5 = data.mb_models_md5
         
         # Ensures there are no duplicate structures.
         if not Rset_info.shape == np.unique(Rset_info, axis=0).shape:
