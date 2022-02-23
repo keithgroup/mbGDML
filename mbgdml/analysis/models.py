@@ -22,10 +22,8 @@
 
 """Analyses for mbGDML models."""
 
-import logging
 import numpy as np
 import matplotlib.pyplot as plt
-from mbgdml.utils import norm_path
 from mbgdml.utils import atoms_by_element
 
 class forceComparison:

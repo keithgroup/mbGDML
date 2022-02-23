@@ -103,7 +103,8 @@ class mbGDMLTrain():
         n_inducing_pts_init=25,
         interact_cut_off=None,
         callback=None,
-        idxs_train=None
+        idxs_train=None,
+        use_frag_perms=False
     ):
         """
         Create a data structure of custom type `task`.
@@ -155,6 +156,9 @@ class mbGDMLTrain():
         idxs_train : :obj:`numpy.ndarray`, optional
             The specific indices of structures to train the model on. If
             ``None`` will automatically sample the training data set.
+        use_frag_perms : :obj:`float`, optional
+            Find and use fragment permutations (experimental; not tested).
+            Defaults to ``False``.
 
         Returns
         -------
@@ -178,8 +182,6 @@ class mbGDMLTrain():
             )
 
         use_E_cstr = use_E and use_E_cstr
-
-        n_atoms = train_dataset['R'].shape[1]
 
         if callback is not None:
             callback = partial(callback, disp_str='Hashing dataset(s)')
@@ -251,16 +253,16 @@ class mbGDMLTrain():
         if use_E:
             task['E_train'] = train_dataset['E'][idxs_train]
 
-        lat_and_inv = None
-        if 'lattice' in train_dataset:
-            task['lattice'] = train_dataset['lattice']
-
-            try:
-                lat_and_inv = (task['lattice'], np.linalg.inv(task['lattice']))
-            except np.linalg.LinAlgError:
-                raise ValueError(  # TODO: Document me
-                    'Provided dataset contains invalid lattice vectors (not invertible). Note: Only rank 3 lattice vector matrices are supported.'
-                )
+        # lat_and_inv = None
+        # if 'lattice' in train_dataset:
+        #     task['lattice'] = train_dataset['lattice']
+        # 
+        #     try:
+        #         lat_and_inv = (task['lattice'], np.linalg.inv(task['lattice']))
+        #     except np.linalg.LinAlgError:
+        #         raise ValueError(  # TODO: Document me
+        #             'Provided dataset contains invalid lattice vectors (not invertible). Note: Only rank 3 lattice vector matrices are supported.'
+        #         )
 
         if 'r_unit' in train_dataset and 'e_unit' in train_dataset:
             task['r_unit'] = train_dataset['r_unit']
@@ -291,11 +293,7 @@ class mbGDMLTrain():
                 max_processes=self._max_processes,
             )
 
-            # NEW
-
-            USE_FRAG_PERMS = False
-
-            if USE_FRAG_PERMS:
+            if use_frag_perms:
                 frag_perms = perm.find_frag_perms(
                     R_train_sync_mat,
                     train_dataset['z'],
@@ -550,7 +548,7 @@ class mbGDMLTrain():
                         callback=sgdml_ui.callback,
                         idxs_train=idxs_train
                     )
-            except:
+            except BaseException:
                 print()
                 log.critical(traceback.format_exc())
                 sys.exit()
@@ -903,7 +901,7 @@ def _check_update():
         response = urlopen(url, timeout=1)
         can_update, must_update, latest_version = response.read().decode().split(',')
         response.close()
-    except:
+    except BaseException:
         pass
 
     return can_update == '1', latest_version

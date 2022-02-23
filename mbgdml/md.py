@@ -23,14 +23,7 @@
 import numpy as np
 from cclib.parser.utils import convertor
 from ase.calculators.calculator import Calculator as ASECalculator
-from ase.io import read
-from ase.optimize import QuasiNewton
-from ase.md.velocitydistribution import (MaxwellBoltzmannDistribution, Stationary, ZeroRotation)
-from ase.md.verlet import VelocityVerlet
-from ase import units
-from mbgdml import utils
 from mbgdml.predict import mbPredict
-from mbgdml.data import mbGDMLData
 
 
 class mbGDML_ASE_Calculator(ASECalculator):

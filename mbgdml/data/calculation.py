@@ -181,7 +181,7 @@ class PartitionOutput:
                 self.E = self.cclib_data.scfenergies
             else:
                 raise AttributeError('No energies were found.')
-        except:
+        except BaseException:
             raise AttributeError(
                 f'Some attributes (atomnos, atomcoords, grads) were'
                 f'not found in {self.output_name}'
