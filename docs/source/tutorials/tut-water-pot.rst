@@ -497,6 +497,34 @@ TODO
 
 :func:`~mbgdml.data.dataset.dataSet.create_mb_from_dsets`
 
+.. code-block:: python
+
+    import os
+    import numpy as np
+    from mbgdml.data import dataSet
+    from mbgdml.data import dataSet
+
+    ref_dset_path = './dsets/2h2o/140h2o.pm.gfn2.md.500k.prod1.3h2o.cm10.dset.2h2o-dset-mp2.def2tzvp.npz'
+    lower_dset_paths = [
+        './dsets/1h2o/140h2o.pm.gfn2.md.500k.prod1.3h2o.cm10.dset.1h2o-dset-mp2.def2tzvp.npz',
+    ]
+
+    dset_mb_name = '140h2o.pm.gfn2.md.500k.prod1.3h2o.cm10.dset.2h2o-dset.mb-mp2.def2tzvp'
+
+    # Ensures we execute from script directory (for relative paths).
+    os.chdir(os.path.dirname(os.path.realpath(__file__)))
+    save_dir = os.path.dirname(ref_dset_path) + '/'
+
+    ref_dset = dataSet(ref_dset_path)
+
+    mb_dataset = dataSet()
+    mb_dataset.create_mb_from_dsets(ref_dset, lower_dset_paths)
+    mb_dataset.name = dset_mb_name
+
+    mb_dataset.save(mb_dataset.name, mb_dataset.asdict, save_dir)
+
+
+
 Training GDML models
 ====================
 
