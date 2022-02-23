@@ -25,10 +25,7 @@
 import itertools
 import numpy as np
 from sgdml.utils.desc import Desc
-
 from mbgdml import utils
-from mbgdml.data import mbModel
-
 import umap.umap_ as umap
 
 class structureEmbedding:
@@ -448,7 +445,7 @@ class mbExpansion:
                     )[0][0]
 
                     e_r_lower = dset_lower.E[i_r_lower]
-                    f_r_lower = dset_lower.F[i_r_lower]
+                    # f_r_lower = dset_lower.F[i_r_lower]
 
                     # Removing energy contributions.
                     if operation == 'add':

@@ -20,7 +20,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import os
 import json
 import itertools
 from random import randrange, sample, choice
@@ -310,7 +309,7 @@ class dataSet(mbGDMLData):
         """
         try:
             return self.asdict['md5'][()].decode()
-        except:
+        except BaseException:
             print('Not enough information in dset for MD5')
             raise
     
@@ -1127,8 +1126,6 @@ class dataSet(mbGDMLData):
         # Loops thorugh engrad calculations and adds energies and forces for each
         # structure.
         for engrad_calc_path in engrad_calc_paths:
-            engrad_name = utils.get_filename(engrad_calc_path)
-            
 
             # Gets energies and gradients from qcjson.
             with open(engrad_calc_path) as f:
@@ -1136,7 +1133,6 @@ class dataSet(mbGDMLData):
 
             # Loops through all structures that are missing engrads.
             for engrad_i in range(len(engrad_data)):
-                _dset_i_to_remove = []
                 can_remove = False
 
                 if isinstance(engrad_data, list):
@@ -1251,7 +1247,7 @@ class dataSet(mbGDMLData):
         # Theory.
         try:
             dataset['theory'] = np.array(self.theory)
-        except:
+        except BaseException:
             pass
 
         # Energies.
@@ -1263,7 +1259,7 @@ class dataSet(mbGDMLData):
             dataset['E_mean'] = np.array(self.E_mean)
             dataset['E_var'] = np.array(self.E_var)
             md5_properties.append('E')
-        except:
+        except BaseException:
             pass
         
         # Forces.
@@ -1274,7 +1270,7 @@ class dataSet(mbGDMLData):
             dataset['F_mean'] = np.array(self.F_mean)
             dataset['F_var'] = np.array(self.F_var)
             md5_properties.append('F')
-        except:
+        except BaseException:
             pass
 
         # mbGDML information.
@@ -1289,7 +1285,7 @@ class dataSet(mbGDMLData):
             dataset['criteria'] = np.array(self.criteria)
             dataset['z_slice'] = np.array(self.z_slice)
             dataset['cutoff'] = np.array(self.cutoff)
-        except:
+        except BaseException:
             pass
         
         if hasattr(self, 'centered'):

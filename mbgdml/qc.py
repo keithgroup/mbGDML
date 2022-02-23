@@ -24,17 +24,7 @@ import os
 import subprocess
 import numpy as np
 from mako.template import Template
-from sgdml.predict import GDMLPredict
-from cclib.parser.utils import convertor
-from ase.calculators.calculator import Calculator
-from ase.io import read
-from ase.optimize import QuasiNewton
-from ase.md.velocitydistribution import (MaxwellBoltzmannDistribution, Stationary, ZeroRotation)
-from ase.md.verlet import VelocityVerlet
-from ase import units
 from mbgdml import utils
-from mbgdml.predict import mbPredict
-from mbgdml.data import mbGDMLData
 
 class CalcTemplate:
     """Contains all quantum chemistry templates for mako.

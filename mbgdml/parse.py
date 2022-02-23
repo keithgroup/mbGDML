@@ -31,7 +31,7 @@ def parse_coords(fileName):
         atoms = data.atomnos
         coords = data.atomcoords
 
-    except:
+    except BaseException:
         print('Something happened while parsing xyz coordinates.')
     
     return {'atoms': atoms, 'coords': coords}
@@ -81,7 +81,7 @@ def parse_engrad(out_file):
             raise KeyError('cclib energies were not found.')
         parsed_data = {'z': atoms, 'R': coords, 'E': energies, 'G': grads}
         return parsed_data
-    except:
+    except BaseException:
         print('Something happened while parsing output file.')
         raise 
 

@@ -412,7 +412,7 @@ class mbPredict():
                 z_predict = z
             else:
                 z_predict = z[config]
-            e, f = self.predict(
+            e, f = self.predict_decomposed(
                 z_predict, R[config], nbody_dataset['entity_ids'],
                 nbody_dataset['comp_ids'], ignore_criteria=ignore_criteria,
                 store_each=store_each
