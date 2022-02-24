@@ -484,18 +484,29 @@ The first two calculations are shown below.
 Adding energies and forces
 --------------------------
 
-TODO: Add qcjson information.
+After all energy+gradient calculations are complete we need to add the data to each data set.
+We decided to take the approach of converting ORCA log files into JSON files (using a custom `qcjson package <https://github.com/keithgroup/qcjson>`_).
+The :func:`~mbgdml.data.dataset.dataSet.add_pes_data` method is used to add energies and forces to the data set.
+Nothing precludes other custom methods as long as :attr:`~mbgdml.data.dataset.dataSet.E` and :attr:`~mbgdml.data.dataset.dataSet.F` data are added to the data set.
+In the end we should be left with three data sets containing water monomers, dimers, and trimers along with MP2/def2-TZVP energies and forces:
 
-:func:`~mbgdml.data.dataset.dataSet.add_pes_data`
-
-:download:`data set with energies and forces<../files/tut-water/dsets/3h2o/140h2o.pm.gfn2.md.500k.prod1.3h2o-dset-cm10.mp2.def2tzvp.npz>`
+* :download:`1h2o (monomer) data set<../files/tut-water/dsets/1h2o/140h2o.pm.gfn2.md.500k.prod1.3h2o.cm10.dset.1h2o-dset-mp2.def2tzvp.npz>`,
+* :download:`2h2o (dimer) data set<../files/tut-water/dsets/2h2o/140h2o.pm.gfn2.md.500k.prod1.3h2o.cm10.dset.2h2o-dset-mp2.def2tzvp.npz>`,
+* :download:`3h2o (trimer) data set<../files/tut-water/dsets/3h2o/140h2o.pm.gfn2.md.500k.prod1.3h2o-dset-cm10.mp2.def2tzvp.npz>`.
 
 Many-body data sets
 -------------------
 
-TODO
+Energies and forces from the previous section are often called "supersystem" or "total" data meaning the calculation was on the entire cluster (e.g., dimer and trimer).
+Instead, we need the *n*-body energies, of each dimer and trimer by subtracting lower order contributions.
+For example, the 2-body energy, :math:`\Delta E_{ij}^{(2)}`, of a dimer containing molecules (i.e., fragments) :math:`i` and :math:`j` is given by:
 
-:func:`~mbgdml.data.dataset.dataSet.create_mb_from_dsets`
+.. math::
+    \Delta E_{ij}^{(2)} = E_{ij}^{(2)} - E_{i}^{(1)} - E_{j}^{(1)};
+
+where :math:`E_{ij}^{(2)}` is the total energy of the system (from :download:`the 2h2o data set<../files/tut-water/dsets/2h2o/140h2o.pm.gfn2.md.500k.prod1.3h2o.cm10.dset.2h2o-dset-mp2.def2tzvp.npz>`), and :math:`E_{i}^{(1)}` and :math:`E_{j}^{(1)}` are the energies of the monomers (from :download:`the 1h2o data set<../files/tut-water/dsets/1h2o/140h2o.pm.gfn2.md.500k.prod1.3h2o.cm10.dset.1h2o-dset-mp2.def2tzvp.npz>`).
+Since we kept a breadcrumb trail of where each structure (and fragment) originated from we can use :func:`~mbgdml.data.dataset.dataSet.create_mb_from_dsets` to automatically find and remove lower order contributions.
+The following script demonstrates how to create a 2-body data set from our dimer data set.
 
 .. code-block:: python
 
@@ -523,19 +534,122 @@ TODO
 
     mb_dataset.save(mb_dataset.name, mb_dataset.asdict, save_dir)
 
+To create the 3-body data set you just need to include the 2-body data set path in ``lower_dset_paths``.
+The monomer data set does not need any modifications, so we end up with two additional data sets:
 
+* :download:`2-body data set<../files/tut-water/dsets/2h2o/140h2o.pm.gfn2.md.500k.prod1.3h2o.cm10.dset.2h2o-dset.mb-mp2.def2tzvp.npz>`,
+* :download:`3-body data set<../files/tut-water/dsets/3h2o/140h2o.pm.gfn2.md.500k.prod1.3h2o-dset.mb-cm10.mp2.def2tzvp.npz>`.
+
+Remember that we are applying distance-based cutoffs to our *n*-body models.
+The 3-body cutoff was explicitly included when we sampled structures from our MD simulation.
+We still need to apply our cutoff to the 2-body data set by sampling all structures from that pass our criteria and creating a new :download:`2-body data set<../files/tut-water/dsets/2h2o/140h2o.pm.gfn2.md.500k.prod1.3h2o.cm10.dset.2h2o-dset.mb-mp2.def2tzvp.cm6.npz>`.
 
 Training GDML models
 ====================
 
-TODO
+After we have the many-body data sets we can being training GDML models.
+The following script is a general framework for training on many-body GDML data sets on ``500`` structures.
+We use the :class:`~mbgdml.train.mbGDMLTrain` class which is adapted from the `sGDML <https://github.com/stefanch/sGDML>`_ package.
 
-:func:`~mbgdml.train.mbGDMLTrain.train`
+Please refer to the :ref:`training <Training>` page for more information.
+
+.. code-block:: python
+
+    import os
+    import numpy as np
+    from mbgdml.data import dataSet
+    from mbgdml.train import mbGDMLTrain
+
+    dset_path = './dsets/2h2o/140h2o.pm.gfn2.md.500k.prod1.3h2o.cm10.dset.2h2o-dset.mb-mp2.def2tzvp.cm6.npz'
+    model_save_dir = './models'
+
+    # Ensures we execute from script directory (for relative paths).
+    os.chdir(os.path.dirname(os.path.realpath(__file__)))
+
+    dset = dataSet(dset_path)
+    total_number = dset.n_R  # Number to total structures in data set.
+    num_train = 500  # Number of data points to train on.
+    num_validate = 2000  # Number of data points to compare candidate models with.
+    num_test = total_number - num_train - num_validate  # Number of data points to test final model with.
+    if num_test > 3000:
+        num_test = 3000
+    sigmas = list(range(200, 400, 20))  # Sigmas to train models on.
+    use_E_cstr = False  # Adds energy constraints to the kernel. `False` usually provides better performance. `True` can help converge training in rare cases.
+    overwrite = True  # Whether the script will overwrite a model.
+    torch = False  # Whether to use torch to accelerate training.
+    model_name = f'140h2o.pm.gfn2.md.500k.prod1.3h2o.cm10.dset.2h2o.mp2.def2tzvp-model.mb-train{num_train}'
+
+    # None for automatically selected or specify an array.
+    idxs_train = None
+
+    if idxs_train is not None:
+        assert num_train == len(idxs_train)
+
+    train = mbGDMLTrain()
+    train.load_dataset(dset_path)
+    train.train(
+        model_name, num_train, num_validate, num_test, solver='analytic',
+        sigmas=sigmas, save_dir=model_save_dir, use_sym=True, use_E=True,
+        use_E_cstr=use_E_cstr, use_cprsn=False, idxs_train=idxs_train,
+        max_processes=None, overwrite=overwrite, torch=torch,
+    )
+
+By tailoring the above script for each data set we obtain the following models.
+These now can be used to make predictions of arbitrarily sized systems.
+
+* :download:`1-body model<../files/tut-water/models/140h2o.pm.gfn2.md.500k.prod1.3h2o.cm10.dset.1h2o.mp2.def2tzvp-model-train500.npz>` (:download:`log file<../files/tut-water/models/140h2o.pm.gfn2.md.500k.prod1.3h2o.cm10.dset.1h2o.mp2.def2tzvp-model-train500.log>`),
+* :download:`2-body model<../files/tut-water/models/140h2o.pm.gfn2.md.500k.prod1.3h2o.cm10.dset.2h2o.cm6.mp2.def2tzvp-model.mb-train500.npz>` (:download:`log file<../files/tut-water/models/140h2o.pm.gfn2.md.500k.prod1.3h2o.cm10.dset.2h2o.cm6.mp2.def2tzvp-model.mb-train500.log>`),
+* :download:`3-body model<../files/tut-water/models/140h2o.pm.gfn2.md.500k.prod1.3h2o.cm10.mp2.def2tzvp-model.mb-train500.npz>` (:download:`log file<../files/tut-water/models/140h2o.pm.gfn2.md.500k.prod1.3h2o.cm10.mp2.def2tzvp-model.mb-train500.log>`).
 
 Making predictions
 ==================
 
-TODO
+Once trained, many-body GDML can begin making predictions on arbitrarily sized clusters.
+It is common to predict energies and forces of curated data sets, but at minimum we just need Cartesian coordinates (along with component and entity IDs).
+For example, the script below makes predictions of :download:`clusters containing six water molecules <../files/tut-water/dsets/6h2o/6h2o.temelso.etal-dset-mp2.def2tzvp.npz>` from `Temelso et al. <https://doi.org/10.1021/jp2069489>`_ using :func:`~mbgdml.predict.mbPredict.predict`.
 
-:func:`~mbgdml.predict.mbPredict.predict`
+.. code-block:: python
 
+    import os
+    import numpy as np
+    from mbgdml.data import dataSet
+    from mbgdml.predict import mbPredict
+    from mbgdml.utils import get_comp_ids, get_entity_ids
+
+    dset_path = './dsets/6h2o/6h2o.temelso.etal-dset-mp2.def2tzvp.npz'
+    model_paths = [
+        './models/140h2o.pm.gfn2.md.500k.prod1.3h2o.cm10.dset.1h2o.mp2.def2tzvp-model-train500.npz',
+        './models/140h2o.pm.gfn2.md.500k.prod1.3h2o.cm10.dset.2h2o.cm6.mp2.def2tzvp-model.mb-train500.npz',
+        './models/140h2o.pm.gfn2.md.500k.prod1.3h2o.cm10.mp2.def2tzvp-model.mb-train500.npz',
+    ]
+
+    atoms_per_mol = 3
+    ignore_criteria = False
+    use_torch = False
+
+    # Ensures we execute from script directory (for relative paths).
+    os.chdir(os.path.dirname(os.path.realpath(__file__)))
+
+    dset = dataSet(dset_path)
+    z = dset.z
+    R = dset.R
+    E_true = dset.E
+    F_true = dset.F
+    num_entities = int(len(set(dset.entity_ids)))
+    entity_ids = get_entity_ids(atoms_per_mol, num_entities)
+    comp_ids = get_comp_ids('h2o', entity_ids)
+
+    predict = mbPredict(model_paths, use_torch=use_torch)
+
+    E_pred, F_pred = predict.predict(
+        z, R, entity_ids, comp_ids,
+        ignore_criteria=ignore_criteria
+    )
+    E_error = E_pred - E_true
+
+    E_mae = np.mean(np.abs(E_pred - E_true))  # 2.86 kcal/mol
+    F_mae = np.mean(np.abs(F_pred - F_true))  # 1.19 kcal/(mol A)
+
+The result is a many-body GDML potential that is, on average, within 2.9 kcal/mol of the full MP2/def2-TZVP while only requiring seconds on a standard laptop.
+For comparison, when explicitly evaluating the many-body expansion (i.e., theoretical accuracy of mbGDML without fortuitous error cancellation) is 1.3 kcal/mol.
+`Iteratively training <https://doi.org/10.1063/5.0035530>`_ on 1000 structures for our models results in energy mean absolute errors of 1.8 kcal/mol.
