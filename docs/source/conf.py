@@ -49,9 +49,9 @@ master_doc = 'index'
 
 # Add mappings
 intersphinx_mapping = {
-    'urllib3': ('https://urllib3.readthedocs.org/en/latest', None),
+    'urllib3': ('https://urllib3.readthedocs.io/en/latest/objects.inv', None),
     'python': ('https://docs.python.org/3', None),
-    'numpy': ('https://docs.scipy.org/doc/numpy/', None)
+    'numpy': ('https://numpy.org/doc/stable/objects.inv', None)
 }
 
 # -- Options for HTML output -------------------------------------------------
