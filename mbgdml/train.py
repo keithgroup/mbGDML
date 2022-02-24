@@ -83,7 +83,7 @@ class mbGDMLTrain():
         """
         self.dataset_path = dataset_path
         self.dataset_name = os.path.splitext(os.path.basename(dataset_path))[0]
-        self.dataset = dataSet(dataset_path).dataset
+        self.dataset = dataSet(dataset_path).asdict
     
     def _sgdml_create_task(
         self,
@@ -812,8 +812,7 @@ class mbGDMLTrain():
         """
         if save_dir[-1] != '/':
             save_dir += '/'
-        if save_dir != './':
-            os.chdir(save_dir)
+        os.chdir(save_dir)
 
         # sGDML training routine.
         self._sgdml_all(
@@ -852,7 +851,7 @@ class mbGDMLTrain():
             new_model.model['mb_models_md5'] = self.dataset['mb_models_md5']
 
         # Saving model.
-        new_model.save(model_name, new_model.model, save_dir)
+        new_model.save(model_name, new_model.model, '.')
 
 def _print_task_properties(
     use_sym, use_cprsn, use_E, use_E_cstr, title_str='Task properties'
