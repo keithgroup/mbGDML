@@ -4,6 +4,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### Fixed
+
+- Correct dataSet Rset_info documentation.
+
 ## [0.0.1] - 2022-02-24
 
 - Initial release!
