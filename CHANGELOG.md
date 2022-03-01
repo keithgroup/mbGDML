@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Fixed
 
+- Only deploy documentation on keithgroup repo.
 - Correct dataSet Rset_info documentation.
 
 ## [0.0.1] - 2022-02-24
