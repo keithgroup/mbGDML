@@ -92,16 +92,20 @@ class dataSet(mbGDMLData):
     def Rset_info(self):
         """An array specifying where each structure in R originates from.
 
-        A ``(n_R, 1 + n_z)`` array containing the Rset ID from ``Rset_md5`` in
-        the first column and then the atom indices of the structure with respect
-        to the full structure in the structure set, where ``n_R`` is the number
-        of structures in R and ``n_z`` the number of atoms in each structure in
-        this data set.
+        A ``(n_R, 1 + n_entity)`` array where each row contains the Rset ID
+        from ``Rset_md5`` (e.g., 0, 1, 2, etc.) then the structure index and
+        entity_ids from the original full structure in the structure set.
 
         If there has been no previous sampling, an array of shape (1, 0)
         is returned.
 
         :type: :obj:`numpy.ndarray`
+
+        Examples
+        --------
+        >>> dset.Rset_info  # [Rset_md5_id, r_index, entity_1, entity_2, entity_3]
+        array([[0, 985, 46, 59, 106],
+               [0, 174, 51, 81, 128]])
         """
         if hasattr(self, '_Rset_info'):
             return self._Rset_info
