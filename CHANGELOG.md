@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Fixed
 
+- Address Sphinx documentation warnings and errors.
 - Only deploy documentation on keithgroup repo.
 - Correct dataSet Rset_info documentation.
 

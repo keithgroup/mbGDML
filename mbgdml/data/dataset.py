@@ -422,7 +422,7 @@ class dataSet(mbGDMLData):
         self._mb_models_md5 = var.astype(str)
 
     def convertE(self, E_units):
-        """Convert energies and updates :attr:`e_unit`.
+        """Convert energies and updates ``e_unit``.
 
         Parameters
         ----------
@@ -434,7 +434,7 @@ class dataSet(mbGDMLData):
         self.e_unit = E_units
     
     def convertR(self, R_units):
-        """Convert coordinates and updates :attr:`r_unit`.
+        """Convert coordinates and updates ``r_unit``.
 
         Parameters
         ----------
@@ -448,7 +448,7 @@ class dataSet(mbGDMLData):
     def convertF(self, force_e_units, force_r_units, e_units, r_units):
         """Convert forces.
 
-        Does not change :attr:`e_unit` or :attr:`r_unit`.
+        Does not change ``e_unit`` or ``r_unit``.
 
         Parameters
         ----------
@@ -903,7 +903,7 @@ class dataSet(mbGDMLData):
         ``size`` from data or structure sets.
 
         When sampling from :class:`~mbgdml.data.structureset.structureSet`,
-        :obj:`numpy.nan` is added to :attr:`E` and :attr:`F` for each structure.
+        :obj:`numpy.nan` is added to ``E`` and ``F`` for each structure.
         PES data is added if available with ``copy_EF = True`` when sampling
         from :class:`~mbgdml.data.dataset.dataSet` and the requested ``size``
         is the same as the :class:`~mbgdml.data.dataset.dataSet`.
@@ -1059,9 +1059,10 @@ class dataSet(mbGDMLData):
         r_match_rtol=0.0
     ):
         """Add potential energy surface (PES) data (i.e., energies and/or
-        forces) to the data set (:attr:`E` and :attr:`F`).
+        forces) to the data set (``E`` and ``F``).
 
-        Assumes that ``r_unit`` of the calculation is the same as the data set.
+        Assumes that ``mbgdml.data.basedata.mbGDMLData.r_unit`` of the
+        calculation is the same as the data set.
         `QCJSON <https://github.com/keithgroup/qcjson>`_ files are currently
         the only way to import energy and gradient data.
 
@@ -1079,7 +1080,7 @@ class dataSet(mbGDMLData):
             ``'CCSD(T)/CBS'``.
         e_unit_dset : :obj:`str`
             The current (or desired) energy units of the data set. Will update
-            :attr:`e_unit` to this value.
+            ``e_unit`` to this value.
         e_unit_calc : :obj:`str`
             The energy unit of the data. Will be converted to ``e_unit_dset`` if
             necessary.
@@ -1087,12 +1088,12 @@ class dataSet(mbGDMLData):
             Specifies the PES data format and implicitly sets the file extension
             search string. Options are ``'qcjson'``. Defaults to ``'qcjson'``.
         allow_remaining_nan : :obj:`bool`, optional
-            If :attr:`E` and :attr`F` should, or could, have ``np.nan`` as one
+            If ``E`` and ``F`` should, or could, have ``np.nan`` as one
             or more elements after adding all possible data. Pretty much only
             serves as a sanity check. Defaults to ``True``.
         center_calc_R : :obj:`bool`, optional
             Center the cartessian coordinates of the parsed data from the
-            calculations in order to match correctly with :attr:`R`.
+            calculations in order to match correctly with ``R``.
         r_match_atol : :obj:`float`, optional
             Absolute tolerance for matching the coordinates of a calculation to
             a structure in the data set. Defaults to ``5.1e-07``.

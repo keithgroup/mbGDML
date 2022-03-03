@@ -6,7 +6,7 @@ mbGDML
    :target: https://app.travis-ci.com/keithgroup/mbGDML
    :alt: Travis-CI build status
 
-.. image:: https://codecov.io/gh/keithgroup/mbGDML/branch/master/graph/badge.svg
+.. image:: https://codecov.io/gh/keithgroup/mbGDML/branch/main/graph/badge.svg
    :target: https://codecov.io/gh/keithgroup/mbGDML
    :alt: Codecov test coverage
 
@@ -14,7 +14,7 @@ mbGDML
    :target: https://lgtm.com/projects/g/keithgroup/mbGDML/context:python
 
 .. image:: https://img.shields.io/github/license/keithgroup/mbGDML
-   :target: https://github.com/keithgroup/mbGDML/blob/master/LICENSE
+   :target: https://github.com/keithgroup/mbGDML/blob/main/LICENSE
 
 Many-body gradient-domain machine learning (mbGDML) is a Python package that creates, uses, and analyzes a kernel machine learning potential based on the many-body expansion.
 

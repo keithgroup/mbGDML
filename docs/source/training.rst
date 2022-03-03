@@ -1,5 +1,3 @@
-.. _training:
-
 ========
 Training
 ========
@@ -59,7 +57,9 @@ This is done with the :class:`mbgdml.train.mbGDMLTrain` class.
 After initializing a ``mbGDMLTrain`` object, you then load the desired data set using the following function.
 
 .. automethod:: mbgdml.train.mbGDMLTrain.load_dataset
+    :noindex:
 
 Then you can begin training your ML model using the following function.
 
 .. automethod:: mbgdml.train.mbGDMLTrain.train
+    :noindex:

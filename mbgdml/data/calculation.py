@@ -106,7 +106,7 @@ class PartitionOutput:
         The name of the quantum chemistry output file (no extension).
     partition_size : :obj:`int`
         The number of solvent molecules in the partition.
-    cclib_data : :obj:`cclib.parser.data.ccData``
+    cclib_data : `cclib.parser.data.ccData``
         Contains all data parsed from output file.
     z : :obj:`numpy.ndarray`
         A (n,) array containing n atomic numbers.
