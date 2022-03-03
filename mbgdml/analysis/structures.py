@@ -36,7 +36,7 @@ class structureEmbedding:
 
     Attributes
     ----------
-    reducer : :obj:`umap.umap`
+    reducer : `umap.umap`
         A UMAP object used to compute embedding.
     embedding : :obj:`numpy.ndarray`
         A 2D array with rows being each structure (in the order they are

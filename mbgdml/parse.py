@@ -40,7 +40,7 @@ def parse_engrad(out_file):
     """Parses GDML-relevant data (coordinates, energies, and gradients)
     from partition output file.
 
-    Uses :mod:`cclib` to parse data from computational chemistry calculations
+    Uses ``cclib`` to parse data from computational chemistry calculations
     involving multiple calculations of structures containing same atoms in 
     different configurations.
     

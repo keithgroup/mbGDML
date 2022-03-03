@@ -19,7 +19,7 @@ sys.path.insert(0, os.path.abspath('../'))
 # -- Project information -----------------------------------------------------
 
 project = 'mbGDML'
-copyright = '2020-2022, Alex M. Maldonado'
+copyright = '2020-2022 Alex M. Maldonado'
 author = 'Alex M. Maldonado'
 
 
@@ -49,9 +49,12 @@ master_doc = 'index'
 
 # Add mappings
 intersphinx_mapping = {
-    'urllib3': ('https://urllib3.readthedocs.io/en/latest/objects.inv', None),
+    'urllib3': ('https://urllib3.readthedocs.io/en/latest/', None),
     'python': ('https://docs.python.org/3', None),
-    'numpy': ('https://numpy.org/doc/stable/objects.inv', None)
+    'numpy': ('https://numpy.org/doc/stable/', None),
+    'matplotlib': ('https://matplotlib.org/stable/', None),
+    'cclib': ('https://cclib.github.io/', None),
+    'ase': ('https://wiki.fysik.dtu.dk/ase/', None)
 }
 
 # -- Options for HTML output -------------------------------------------------

@@ -128,8 +128,8 @@ class ORCA:
             calculation is called with ``'FREQ'``.
         coords : :obj:`str`
             XYZ atomic coordinates as a string. A water molecule for example,
-            ``'O          0.00000        0.00000        0.11779\nH         
-            0.00000        0.75545       -0.47116\nH          0.00000      
+            ``'O          0.00000        0.00000        0.11779\\nH         
+            0.00000        0.75545       -0.47116\\nH          0.00000      
             -0.75545       -0.47116'``.
         theory : :obj:`str`
             The level of theory for the calculations. For example, ``'B3LYP'``
@@ -148,7 +148,7 @@ class ORCA:
             criteria, etc. For example, ``'CPCM(water) Grid4 TightSCF'``.
         control_blocks : :obj:`str`, optional
             All options that control the calculation. For example
-            ``'%scf\n    ConvForced true\nend\n%maxcore 8000\n'``.
+            ``'%scf\\n    ConvForced true\\nend\\n%maxcore 8000\\n'``.
         write : :obj:`bool`, optional
             Whether or not to write the file. Defaults to ``True``.
         write_dir : :obj:`str`, optional
@@ -298,7 +298,7 @@ def slurm_engrad_calculation(
         Specifies the quantum chemistry program. ``'ORCA'`` is
         currently the only package directly supported.
     z : :obj:`numpy.ndarray`
-        A ``(n,)`` or ``(m, n)`` shape array of type :obj:`numpy.int`
+        A ``(n,)`` or ``(m, n)`` shape array of type :obj:`numpy.int32`
         containing atomic numbers of atoms in the order as they
         appear for every ``m`` structure.
     R : :obj:`numpy.ndarray`

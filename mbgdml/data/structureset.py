@@ -119,7 +119,7 @@ class structureSet(mbGDMLData):
         return utils.md5_data(self.asdict, ['z', 'R'])
     
     def convertR(self, R_units):
-        """Convert coordinates and updates :attr:`r_unit`.
+        """Convert coordinates and updates ``r_unit``.
 
         Parameters
         ----------
