@@ -92,15 +92,16 @@ def norm_path(path):
 
 def get_files(path, expression, recursive=True):
     """Returns paths to all files in a given directory that matches a provided
-    expression in the file name. Commonly used to find all files of a certain
-    type, e.g. output or xyz files.
+    expression in the file name.
+    
+    Commonly used to find all files of a certain type, e.g. output or xyz files.
     
     Parameters
     ----------
     path : :obj:`str`
         Specifies the directory to search.
     expression : :obj:`str`
-        Expression to be tested against all file names in 'path'.
+        Expression to be tested against all file names in ``path``.
     recursive :obj:`bool`, optional
         Recursively find all files in all subdirectories.
     
@@ -174,6 +175,7 @@ def string_coords(z, R):
     writing to an input file.
     
     Parameters
+    ----------
     atoms : :obj:`numpy.ndarray`
         A (n,) numpy array containing all ``n`` elements labled by their atomic 
         number.

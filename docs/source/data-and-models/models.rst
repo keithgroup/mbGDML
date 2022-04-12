@@ -1,5 +1,3 @@
-.. _models:
-
 ======
 Models
 ======
@@ -8,6 +6,7 @@ Models contain information for mbGDML to make energy and force predictions.
 Not much functionality is centered around manipulating models, so only basic information is provided.
 
 
+.. _load-save-model:
 
 Loading and saving
 ------------------
@@ -26,8 +25,9 @@ To load a data set, you can pass the path to a ``dataset.npz`` file or explicitl
 
 
 .. automethod:: mbgdml.data.model.mbModel.load
+    :noindex:
 
-Saving a model can be done using the :func:`mbgdml.data.model.mbModel.save` function.
+Saving a model can be done using the :func:`mbgdml.data.basedata.mbGDMLData.save` function.
 The required ``model`` dictionary for ``save`` is provided as the ``model`` attribute which creates a dictionary of all data to save in the ``npz`` file.
 
 .. code-block:: python
@@ -35,6 +35,7 @@ The required ``model`` dictionary for ``save`` is provided as the ``model`` attr
     model.save('model', model.model, './path/to')
 
 .. automethod:: mbgdml.data.model.mbModel.save
+    :noindex:
 
 
 
@@ -47,16 +48,20 @@ Atomic numbers
 ^^^^^^^^^^^^^^
 
 .. autoattribute:: mbgdml.data.model.mbModel.z
+    :noindex:
 
 .. autoattribute:: mbgdml.data.model.mbModel.n_z
+    :noindex:
 
 MD5 hash
 ^^^^^^^^
 
 .. autoattribute:: mbgdml.data.model.mbModel.md5
+    :noindex:
 
 
 Version control
 ^^^^^^^^^^^^^^^
 
 .. autoattribute:: mbgdml.data.model.mbModel.code_version
+    :noindex:

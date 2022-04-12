@@ -143,7 +143,7 @@ Sometimes data sets contain information from a variety of sources and we, as pra
 Fragment/molecule specification is also defined in this stage that lets mbGDML correctly identify which model to use for each fragment.
 All we need to start is a single XYZ file (our GFN2-xTB trajectory will serve this purpose).
 
-Besides the XYZ file, only three other pieces of information are required: :attr:`~mbgdml.data.structureset.structureSet.r_unit`, :attr:`~mbgdml.data.structureset.structureSet.entity_ids`, :attr:`~mbgdml.data.structureset.structureSet.comp_ids`.
+Besides the XYZ file, only three other pieces of information are required: :attr:`~mbgdml.data.basedata.mbGDMLData.r_unit`, :attr:`~mbgdml.data.structureset.structureSet.entity_ids`, :attr:`~mbgdml.data.structureset.structureSet.comp_ids`.
 For small systems you can manually generate the :attr:`~mbgdml.data.structureset.structureSet.entity_ids` and :attr:`~mbgdml.data.structureset.structureSet.comp_ids` manually.
 Two water molecules would just be ``[0, 0, 0, 1, 1, 1]`` and ``[['0', 'h2o'], ['1', 'h2o']``, respectively.
 
@@ -597,9 +597,9 @@ Please refer to the :ref:`training <Training>` page for more information.
 By tailoring the above script for each data set we obtain the following models.
 These now can be used to make predictions of arbitrarily sized systems.
 
-* :download:`1-body model<../files/tut-water/models/140h2o.pm.gfn2.md.500k.prod1.3h2o.cm10.dset.1h2o.mp2.def2tzvp-model-train500.npz>` (:download:`log file<../files/tut-water/models/140h2o.pm.gfn2.md.500k.prod1.3h2o.cm10.dset.1h2o.mp2.def2tzvp-model-train500.log>`),
-* :download:`2-body model<../files/tut-water/models/140h2o.pm.gfn2.md.500k.prod1.3h2o.cm10.dset.2h2o.cm6.mp2.def2tzvp-model.mb-train500.npz>` (:download:`log file<../files/tut-water/models/140h2o.pm.gfn2.md.500k.prod1.3h2o.cm10.dset.2h2o.cm6.mp2.def2tzvp-model.mb-train500.log>`),
-* :download:`3-body model<../files/tut-water/models/140h2o.pm.gfn2.md.500k.prod1.3h2o.cm10.mp2.def2tzvp-model.mb-train500.npz>` (:download:`log file<../files/tut-water/models/140h2o.pm.gfn2.md.500k.prod1.3h2o.cm10.mp2.def2tzvp-model.mb-train500.log>`).
+* :download:`1-body model<../files/tut-water/models/140h2o.pm.gfn2.md.500k.prod1.3h2o.cm10.dset.1h2o.mp2.def2tzvp-model-train500.npz>`,
+* :download:`2-body model<../files/tut-water/models/140h2o.pm.gfn2.md.500k.prod1.3h2o.cm10.dset.2h2o.cm6.mp2.def2tzvp-model.mb-train500.npz>`,
+* :download:`3-body model<../files/tut-water/models/140h2o.pm.gfn2.md.500k.prod1.3h2o.cm10.mp2.def2tzvp-model.mb-train500.npz>`.
 
 Making predictions
 ==================

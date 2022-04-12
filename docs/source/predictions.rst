@@ -6,6 +6,7 @@ Now it is time to put mbGDML models to work!
 The class :class:`~mbgdml.predict.mbPredict` is used to calculate predictions of all loaded *n*-body GDML models.
 
 .. autoclass:: mbgdml.predict.mbPredict
+    :noindex:
 
 Once we have loaded our models we can compute predictions of systems involving any number of entities or species using :meth:`mbgdml.predict.mbPredict.predict`.
 
@@ -14,6 +15,7 @@ Once we have loaded our models we can compute predictions of systems involving a
     If you have a system containing an entity not compatible with any model, its contributions are not included and no error is thrown.
 
 .. automethod:: mbgdml.predict.mbPredict.predict
+    :noindex:
 
 :meth:`~mbgdml.predict.mbPredict.predict` is a driver of :meth:`~mbgdml.predict.mbPredict.predict_decomposed` which actually computes and keeps track of all predictions.
 
@@ -21,6 +23,7 @@ Once we have loaded our models we can compute predictions of systems involving a
     Use :meth:`~mbgdml.predict.mbPredict.predict` if you are interested only in the total energy and forces predictions.
 
 .. automethod:: mbgdml.predict.mbPredict.predict_decomposed
+    :noindex:
 
 Examples
 ========
