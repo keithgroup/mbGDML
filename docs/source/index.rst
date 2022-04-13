@@ -25,15 +25,15 @@ Motivation
 
 There is often a trade-off between predictive confidence and computational cost with molecular simulations.
 Machine learning (ML) force fields attempt to offer a compromise somewhere between quantum chemistry and classical force fields.
-However, with ML force fields, we often have balance high transferability (i.e., applicability of a trained model to a different system) and the amount of training data.
+However, with ML force fields we often have balance high transferability (i.e., applicability of a trained model to a different system) and the amount of training data.
 
 .. image:: images/ml-force-field.svg
    :width: 400px
    :align: center
 
-Using high-levels of quantum chemistry (e.g., coupled cluster or configuration interaction) dramatically limits the amount of calculations one can reasonably perform.
+Using high levels of quantum chemistry (e.g., coupled cluster) dramatically limits the amount of calculations one can reasonably perform.
 `Gradient domain machine learning (GDML) <http://quantum-machine.org/gdml/>`_ is one example of a ML force field designed to be data efficient---only requiring hundreds of training data points.
-GDML accomplishes this by learning the fundamental relationship between a geometry and its atomic forces (i.e., gradient).
+GDML accomplishes this by learning the fundamental relationship between a geometry and its atomic forces instead of its energy.
 
 .. figure:: images/gdml-concept.png
    :width: 350px
@@ -42,7 +42,7 @@ GDML accomplishes this by learning the fundamental relationship between a geomet
    Chmiela, S.; et al. *Sci. Adv.* **2017** *3* (5), e1603015. DOI: `10.1126/sciadv.1603015 <https://doi.org/10.1126/sciadv.1603015>`_
 
 However, GDML is not inherently size or species transferable.
-Meaning changing the number or types of atoms is not allowed after a GDML model is trained---making simulations on arbitrarily sized systems like solvents futile.
+This means changing the number or types of atoms is not allowed after a GDML model is trained---making simulations on arbitrarily sized systems, like solvents, futile.
 To circumvent this limitation, we developed a many-body approach where GDML learns *n*-body interactions to have an efficiently trained, transferable ML potential.
 
 .. image:: images/explicit-water-methanol-mbe-allorders.svg
