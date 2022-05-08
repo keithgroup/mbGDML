@@ -85,9 +85,7 @@ def trim_140h2o_rset():
 
     # Trims and checks comp_ids
     rset.comp_ids = rset.comp_ids[:n_entities]
-    comp_ids = np.array([
-        ['0', 'h2o'], ['1', 'h2o'], ['2', 'h2o'], ['3', 'h2o'], ['4', 'h2o']
-    ])
+    comp_ids = np.array(['h2o', 'h2o', 'h2o', 'h2o', 'h2o'])
     assert np.all(rset.comp_ids == comp_ids)
 
     # Confirms changes with MD5.
@@ -165,7 +163,7 @@ def test_rset_sampling_all_2mers_normal():
     )
     assert dset.Rset_info.shape == np.unique(dset.Rset_info, axis=0).shape
     assert np.all(dset.entity_ids == np.array([0, 0, 0, 1, 1, 1]))
-    assert np.all(dset.comp_ids == np.array([['0', 'h2o'], ['1', 'h2o']]))
+    assert np.all(dset.comp_ids == np.array(['h2o', 'h2o']))
     assert np.all(dset.z == np.array([8, 1, 1, 8, 1, 1]))
 
     # Checking R.
@@ -208,7 +206,7 @@ def test_rset_sampling_all_2mers_ignore_duplicate():
     assert dset_duplicate.Rset_md5 == {0: 'da254c95956709d1a00512f1ac7c0bbb'}
     assert dset_duplicate.Rset_info.shape == (30, 4)
     assert np.all(dset.entity_ids == np.array([0, 0, 0, 1, 1, 1]))
-    assert np.all(dset.comp_ids == np.array([['0', 'h2o'], ['1', 'h2o']]))
+    assert np.all(dset.comp_ids == np.array(['h2o', 'h2o']))
     assert dset_duplicate.R.shape == (30, 6, 3)
     print('yes')
 
@@ -273,7 +271,7 @@ def test_dset_default_attributes():
     assert dset.F.shape == (1, 1, 0)
 
     assert dset.entity_ids.shape == (0,)
-    assert dset.comp_ids.shape == (1, 0)
+    assert dset.comp_ids.shape == (0,)
 
     try:
         dset.md5
@@ -304,7 +302,7 @@ def test_rset_sampling_num_2mers_criteria():
 
     assert dset.Rset_md5 == {0: 'da254c95956709d1a00512f1ac7c0bbb'}
     assert np.array_equal(dset.entity_ids, np.array([0, 0, 0, 1, 1, 1]))
-    assert np.array_equal(dset.comp_ids, np.array([['0', 'h2o'], ['1', 'h2o']]))
+    assert np.array_equal(dset.comp_ids, np.array(['h2o', 'h2o']))
 
     check_R_with_rset(dset, rset, True)
 
@@ -339,7 +337,7 @@ def test_rset_sampling_num_2mers_additional():
 
     assert dset.Rset_md5 == {0: 'da254c95956709d1a00512f1ac7c0bbb'}
     assert np.array_equal(dset.entity_ids, np.array([0, 0, 0, 1, 1, 1]))
-    assert np.array_equal(dset.comp_ids, np.array([['0', 'h2o'], ['1', 'h2o']]))
+    assert np.array_equal(dset.comp_ids, np.array(['h2o', 'h2o']))
 
     assert np.array_equal(dset.z, np.array([8, 1, 1, 8, 1, 1]))
     assert dset.R.shape == (10, 6, 3)
@@ -368,7 +366,7 @@ def test_dset_sampling_all_2mers_after_3mers():
 
     assert np.array_equal(dset_from_dset.entity_ids, np.array([0, 0, 0, 1, 1, 1]))
     assert np.array_equal(
-        dset_from_dset.comp_ids, np.array([['0', 'h2o'], ['1', 'h2o']])
+        dset_from_dset.comp_ids, np.array(['h2o', 'h2o'])
     )
     assert dset_from_dset.Rset_md5 == {0: 'da254c95956709d1a00512f1ac7c0bbb'}
 
@@ -413,7 +411,7 @@ def test_sample_dset_same_size():
     assert np.array_equal(dset_h2o_2body_cm_6.cutoff, np.array([6.0]))
     assert np.array_equal(dset_h2o_2body_cm_6.entity_ids, np.array([0, 0, 0, 1, 1, 1]))
     assert np.array_equal(
-        dset_h2o_2body_cm_6.comp_ids, np.array([['0', 'h2o'], ['1', 'h2o']])
+        dset_h2o_2body_cm_6.comp_ids, np.array(['h2o', 'h2o'])
     )
     assert dset_h2o_2body_cm_6.centered == True
     assert dset_h2o_2body_cm_6.r_unit == 'Angstrom'
@@ -461,7 +459,7 @@ def test_sample_dset_1mers_multiple_rsets():
     Rset_md5 = {0: '92dd31a90a3d2a443023d9d708010a4f', 1: '5593ef822ede64f6011ece82d6702ff9', 2: '33098027b401c38efcb5f05fa33c93ad'}
     assert dset_1mers.Rset_md5 == Rset_md5
     assert np.array_equal(dset_1mers.entity_ids, np.array([0, 0, 0]))
-    assert np.array_equal(dset_1mers.comp_ids, np.array([['0', 'h2o']]))
+    assert np.array_equal(dset_1mers.comp_ids, np.array(['h2o']))
     assert dset_1mers.centered == True
     assert dset_1mers.r_unit == 'Angstrom'
     assert np.array_equal(dset_1mers.z, np.array([8, 1, 1]))

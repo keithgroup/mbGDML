@@ -348,18 +348,18 @@ class dataSet(mbGDMLData):
     
     @property
     def comp_ids(self):
-        """2D array relating ``entity_ids`` to a chemical component/species
-        id or label (``comp_id``).
-        
-        The first column is the unique ``entity_id`` and the second is a unique
-        ``comp_id`` for that specific chemical species. Each ``comp_id`` is then
-        reused for entities of the same chemical species.
+        """A 1D array relating ``entity_id`` to a fragment label for chemical
+        components or species. Labels could be ``WAT`` or ``h2o`` for water,
+        ``MeOH`` for methanol, ``bz`` for benzene, etc. There are no
+        standardized labels for species. The index of the label is the
+        respective ``entity_id``. For example, a water and methanol molecule
+        could be ``['h2o', 'meoh']``.
 
         Examples
         --------
         Suppose we have a structure containing a water and methanol molecule.
         We can use the labels of ``h2o`` and ``meoh`` (which could be
-        anything): ``[['0', 'h2o'], ['1', 'meoh']]``. Note that the
+        anything): ``['h2o', 'meoh']``. Note that the
         ``entity_id`` is a :obj:`str`.
 
         :type: :obj:`numpy.ndarray`
@@ -367,7 +367,7 @@ class dataSet(mbGDMLData):
         if hasattr(self, '_comp_ids'):
             return self._comp_ids
         else:
-            return np.array([[]])
+            return np.array([])
     
     @comp_ids.setter
     def comp_ids(self, var):
@@ -593,11 +593,12 @@ class dataSet(mbGDMLData):
         entity_ids : :obj:`numpy.ndarray`
             Already sampled entity_ids of the data set. Could be an empty array.
         comp_ids : :obj:`numpy.ndarray`
-            Already sampled comp_ids of the data set. Could be an empty array.
+            Already sampled ``comp_ids`` of the data set. Could be an empty
+            array.
         data_entity_ids :obj:`numpy.ndarray`
             entity_ids of a data or structure set being sampled.
         data_comp_ids :obj:`numpy.ndarray`
-            comp_ids of a data or structure set being sampled.
+            ``comp_ids`` of a data or structure set being sampled.
         sampled_entity_ids_split : :obj:`list` [:obj:`numpy.ndarray`]
             The unique data entity_ids of each new entity for this data set.
             For example, all the data entity_ids (from a structure set) that
@@ -610,7 +611,7 @@ class dataSet(mbGDMLData):
         :obj:`numpy.ndarray`
             The correct comp_ids of this data set.
         """
-        if len(entity_ids) == 0 and comp_ids.shape == (1, 0):
+        if len(entity_ids) == 0 and len(comp_ids) == 0:
             # If there is no previous sampling.
             # Just need to check that the new entities are self compatible.
             entity_ids = []  # Start a new entity id list.
@@ -625,10 +626,7 @@ class dataSet(mbGDMLData):
                 # Adds the entity_ids of this entity
                 entity_ids.extend([entity_id for _ in range(ref_entity_size)])
                 # Adds comp_id
-                comp_id = data_comp_ids[entity_id][1]
-                comp_ids.append(
-                    [str(entity_id), comp_id]
-                )
+                comp_ids.append(data_comp_ids[entity_id])
                 
                 # We should not have to check the entities because we already
                 # check z.

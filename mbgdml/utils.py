@@ -420,8 +420,10 @@ def e_f_contribution(dset, dsets_lower, operation):
     dset.F = F
     return dset
 
-def get_entity_ids(atoms_per_mol, num_mol):
-    """Prepares the list of entity ids for a system with only one species.
+def get_entity_ids(
+    atoms_per_mol, num_mol, starting_idx=0, add_to=None
+):
+    """Generates entity ids for a single species.
 
     Note that all of the atoms in each molecule must occur in the same order and
     be grouped together.
@@ -431,7 +433,11 @@ def get_entity_ids(atoms_per_mol, num_mol):
     atoms_per_mol : :obj:`int`
         Number of atoms in the molecule.
     num_mol : :obj:`int`
-        Number of molecules in the system.
+        Number of molecules of this type in the system.
+    starting_idx : :obj:`int`
+        Number to start entity_id labels.
+    add_to : :obj:`list`
+        Entity ids to append new ids to.
     
     Returns
     -------
@@ -439,30 +445,45 @@ def get_entity_ids(atoms_per_mol, num_mol):
         Entity ids for a structure.
     """
     entity_ids = []
-    for i in range(0, num_mol):
+    for i in range(starting_idx, num_mol+starting_idx):
         entity_ids.extend([i for _ in range(0, atoms_per_mol)])
-    return np.array(entity_ids)
+    
+    if add_to is not None:
+        if isinstance(add_to, np.ndarray):
+            add_to = add_to.tolist()
+        return np.array(add_to + entity_ids)
+    else:
+        return np.array(entity_ids)
 
-def get_comp_ids(solvent, entity_ids):
+def get_comp_ids(label, num_mol, entity_ids, add_to=None):
     """Prepares the list of component ids for a system with only one species.
 
     Parameters
     ----------
-    atoms_per_mol : :obj:`int`
-        Number of atoms in the molecule.
+    label : :obj:`int`
+        Species label.
     num_mol : :obj:`int`
-        Number of molecules in the system.
-    
+        Number of molecules of this type in the system.
+    entity_ids : :obj:`int`
+        A uniquely identifying integer specifying what atoms belong to
+        which entities. Entities can be a related set of atoms, molecules,
+        or functional group. For example, a water and methanol molecule
+        could be ``[0, 0, 0, 1, 1, 1, 1, 1, 1]``.
+    add_to : :obj:`list`
+        Component ids to append new ids to.
+
     Returns
     -------
     :obj:`numpy.ndarray`
         Component ids for a structure.
     """
-    entity_ids_set = set(entity_ids)
-    comp_ids = []
-    for i in entity_ids_set:
-        comp_ids.append([i, solvent])
-    return np.array(comp_ids)
+    comp_ids = [label for _ in range(0, num_mol)]
+    if add_to is not None:
+        if isinstance(add_to, np.ndarray):
+            add_to = add_to.tolist()
+        return np.array(add_to + comp_ids)
+    else:
+        return np.array(comp_ids)
 
 def get_R_slice(entities, entity_ids):
     """Retrives R slice for specific entities.
@@ -472,7 +493,10 @@ def get_R_slice(entities, entity_ids):
     entities : :obj:`numpy.ndarray`
         Desired entities from R. For example, ``np.array([2, 5])``.
     entity_ids : :obj:`numpy.ndarray`
-        The entity_ids for the R to be sliced.
+        A uniquely identifying integer specifying what atoms belong to
+        which entities. Entities can be a related set of atoms, molecules,
+        or functional group. For example, a water and methanol molecule
+        could be ``[0, 0, 0, 1, 1, 1, 1, 1, 1]``.
     
     Returns
     -------

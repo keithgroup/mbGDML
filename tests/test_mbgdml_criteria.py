@@ -59,11 +59,7 @@ def test_get_z_slice():
 
     # H2O, MECN, and MEOH
     entity_ids = np.array([0, 0, 0, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2])
-    comp_ids = np.array([
-        ['0', 'h2o'],
-        ['1', 'mecn'],
-        ['2', 'meoh']
-    ])
+    comp_ids = np.array(['h2o', 'mecn', 'meoh'])
     z_slice = criteria.get_z_slice(
         entity_ids, comp_ids, criteria_molecule_index
     )

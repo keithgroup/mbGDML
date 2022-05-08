@@ -47,14 +47,17 @@ class predictSet(mbGDMLData):
     theory : :obj:`str`
         Specifies the level of theory used for GDML training.
     entity_ids : :obj:`numpy.ndarray`
-        An array specifying which atoms belong to what entities
-        (e.g., molecules). Similar to PDBx/mmCIF ``_atom_site.label_entity_ids``
-        data item.
+        A uniquely identifying integer specifying what atoms belong to
+        which entities. Entities can be a related set of atoms, molecules,
+        or functional group. For example, a water and methanol molecule
+        could be ``[0, 0, 0, 1, 1, 1, 1, 1, 1]``.
     comp_ids : :obj:`numpy.ndarray`
-        A 2D array relating ``entity_ids`` to a chemical component/species
-        id or label (``comp_id``). The first column is the unique ``entity_id``
-        and the second is a unique ``comp_id`` for that chemical species.
-        Each ``comp_id`` is reused for the same chemical species.
+        Relates ``entity_id`` to a fragment label for chemical components
+        or species. Labels could be ``WAT`` or ``h2o`` for water, ``MeOH``
+        for methanol, ``bz`` for benzene, etc. There are no standardized
+        labels for species. The index of the label is the respective
+        ``entity_id``. For example, a water and methanol molecule could
+        be ``['h2o', 'meoh']``.
     """
 
     def __init__(self, *args):

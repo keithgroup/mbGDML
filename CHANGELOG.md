@@ -4,6 +4,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- ``comp_ids`` is now a 1D array where the index of the label is the ``entity_id``.
+
 ### Fixed
 
 - Grammar and typos in documentation.

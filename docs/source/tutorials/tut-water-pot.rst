@@ -145,7 +145,7 @@ All we need to start is a single XYZ file (our GFN2-xTB trajectory will serve th
 
 Besides the XYZ file, only three other pieces of information are required: :attr:`~mbgdml.data.basedata.mbGDMLData.r_unit`, :attr:`~mbgdml.data.structureset.structureSet.entity_ids`, :attr:`~mbgdml.data.structureset.structureSet.comp_ids`.
 For small systems you can manually generate the :attr:`~mbgdml.data.structureset.structureSet.entity_ids` and :attr:`~mbgdml.data.structureset.structureSet.comp_ids` manually.
-Two water molecules would just be ``[0, 0, 0, 1, 1, 1]`` and ``[['0', 'h2o'], ['1', 'h2o']``, respectively.
+Two water molecules would just be ``[0, 0, 0, 1, 1, 1]`` and ``['h2o', 'h2o']``, respectively.
 
 .. note::
     Any label can be used for the component id.
@@ -170,7 +170,7 @@ The following code will generate a :ref:`structure set<structure-sets>` just lik
     num_entities = 140  # Number of entities in each XYZ structure.
 
     entity_ids = get_entity_ids(atoms_per_entity, num_entities)
-    comp_ids = get_comp_ids(comp_id, entity_ids)
+    comp_ids = get_comp_ids(comp_id, num_entities, entity_ids)
 
     rset = structureSet()
     rset.from_xyz(xyz_path, r_unit, entity_ids, comp_ids)  # Adds data to structure set.
@@ -637,7 +637,7 @@ For example, the script below makes predictions of :download:`clusters containin
     F_true = dset.F
     num_entities = int(len(set(dset.entity_ids)))
     entity_ids = get_entity_ids(atoms_per_mol, num_entities)
-    comp_ids = get_comp_ids('h2o', entity_ids)
+    comp_ids = get_comp_ids('h2o', num_entities, entity_ids)
 
     predict = mbPredict(model_paths, use_torch=use_torch)
 
