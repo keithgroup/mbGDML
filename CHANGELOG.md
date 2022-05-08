@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Changed
 
+- Improved the ``write_xyz`` and ``string_coords`` functions.
 - ``comp_ids`` is now a 1D array where the index of the label is the ``entity_id``.
 
 ### Fixed

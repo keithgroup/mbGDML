@@ -170,68 +170,74 @@ def natsort_list(unsorted_list):
 
     return sorted_list
 
-def string_coords(z, R):
-    """Puts atomic coordinates into a Python string. Typically used for 
-    writing to an input file.
-    
+def string_xyz_arrays(z, R, *args, precision=10):
+    """Create string of array data in XYZ format for a single structure.
+
     Parameters
     ----------
-    atoms : :obj:`numpy.ndarray`
-        A (n,) numpy array containing all ``n`` elements labled by their atomic 
-        number.
-    coords : :obj:`numpy.array`
-        Contains atomic positions in a (n, 3) numpy array where the x, y, and z 
-        Cartesian coordinates in Angstroms are given for the n atoms.
+    z : :obj:`numpy.ndarray`, int, ndim=1
+        Atomic numbers of all atoms in the system.
+    R : :obj:`numpy.ndarray`, float, ndim=2
+        Cartesian coordinates of all atoms in the same order as ``Z``.
+    args
+        Other :obj:`numpy.ndarray` (ndim>=1) to add where it's assumed the
+        zero axis is with respect to ``R``. For example, if we have atomic
+        forces the array shape would be ``(n, 3)`` where ``n`` is the number of
+        atoms in the structure.
+    precision : :obj:`int`, optional
+        Number of decimal points for printing array data. Defaults to ``13``.
     
     Returns
     -------
     :obj:`str`
-        XYZ atomic coordinates as a string.
+        The XYZ string for a single structure. This does not include the number
+        of atoms 
     """
-    atom_coords_string = ''
-    atom_index = 0
-    while atom_index < len(z):
-        atom_element = str(z_to_element[z[atom_index]])
-        coords_string = np.array2string(
-            R[atom_index],
-            suppress_small=True, separator='   ',
-            formatter={'float_kind':'{:0.9f}'.format}
-        )[1:-1] + '\n'
-        atom_coords_string += (atom_element + '   ' \
-                               + coords_string).replace(' -', '-')
-        atom_index += 1
+    struct_string = ''
+    for i in range(len(z)):
+        atom_string = str(z_to_element[z[i]])
+        for arr in (R, *args):
+            if arr is not None:
+                atom_string += '    '
+                atom_string += np.array2string(
+                    arr[i], suppress_small=True, separator='    ',
+                    formatter={'float_kind': lambda x: f'%.{precision}f' % x}
+                )[1:-1]
+        atom_string = atom_string.replace(' -', '-')
+        atom_string += '\n'
+        struct_string += atom_string
+    return struct_string
+
+def write_xyz(
+    xyz_path, z, R, comments=None, data_precision=10
+):
+    """Write standard XYZ file.
     
-    return atom_coords_string
-
-def write_xyz(z, R, save_dir, file_name):
-    """Write XYZ file given atomic numbers and Cartesian coordinates.
-
     Parameters
     ----------
-    z : :obj:`numpy.ndarray`
-        A ``(n,)`` shape array of type :obj:`numpy.int32` containing atomic
-        numbers of atoms in the structures in order as they appear.
+    xyz_path : :obj:`str`
+        Path to XYZ file to write.
+    Z : :obj:`numpy.ndarray`
+        Atomic numbers of all atoms in the system.
     R : :obj:`numpy.ndarray`
-        A :obj:`numpy.ndarray` with shape of ``(m, n, 3)`` where ``m`` is the
-        number of structures and ``n`` is the number of atoms with three 
-        Cartesian components.
-    save_dir : :obj:`str`
-        Path to directory to save XYZ file.
-    file_name : :obj:`str`
-        Name to save the file.
+        Cartesian coordinates of all structures in the same order as ``Z``.
+    comments : :obj:`list`, optional
+        Comment lines for each XYZ structure.
+    data_precision : :obj:`int`, optional
+        Number of decimal points for printing array data. Default is ``13``.
     """
-    if R.ndim == 2:
-        R = np.array([R])
-    
-    if save_dir[-1] != '/':
-        save_dir += '/'
-    
-    num_atoms = len(z)
-    with open(f'{save_dir}{file_name}.xyz', 'w') as f:
-        for structure in R:
-            f.writelines(
-                [f'{num_atoms}\n', '\n', string_coords(z, structure)]
-            )
+    n_atoms = len(z)
+    with open(xyz_path, 'w') as f:
+        for i in range(len(R)):
+            f.write(f'{n_atoms}\n')
+            if comments is not None:
+                comment = comments[i]
+                if comment[-2:] != '\n':
+                    comment += '\n'
+            else:
+                comment = '\n'
+            f.write(comment)
+            f.write(string_xyz_arrays(z, R[i], precision=data_precision))
 
 def convert_forces(
     forces, e_units_calc, r_units_calc, e_units, r_units

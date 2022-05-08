@@ -22,6 +22,7 @@
 
 import json
 import itertools
+import os
 from random import randrange, sample, choice
 import numpy as np
 from cclib.parser.utils import convertor
@@ -1322,7 +1323,8 @@ class dataSet(mbGDMLData):
         ----------
         save_dir : :obj:`str`
         """
-        utils.write_xyz(self.z, self.R, save_dir, self.name)
+        xyz_path = os.path.join(save_dir, self.name)
+        utils.write_xyz(xyz_path, self.z, self.R)
     
     def create_mb_from_models(self, ref_dset, model_paths):
         """Creates a many-body data set using mbGDML predictions.
