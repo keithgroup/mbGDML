@@ -106,3 +106,6 @@ ENV/
 docs/source/_build
 docs/html
 docs/source/doc
+
+# psi4 timer
+timer.dat

@@ -1,8 +1,7 @@
 """Top-level package for mbgdml."""
 
-__author__ = """Alex M. Maldonado"""
-__email__ = 'aalexmmaldonado@gmail.com'
-__version__ = '0.0.1'
+from . import _version
+__version__ = _version.get_versions()['version']
 
 from mbgdml import data
 from mbgdml import parse
