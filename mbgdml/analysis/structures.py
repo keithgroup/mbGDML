@@ -424,7 +424,7 @@ class mbExpansion:
         # Loop through every lower order n-body data set.
         for dset_lower in dsets:
             # Lower order information.
-            mol_info_lower = dset_lower.Rset_info[:,2:]
+            mol_info_lower = dset_lower.r_prov_specs[:,2:]
             n_mol_lower = len(mol_info_lower[0])
 
             # Loop through every structure.
@@ -480,7 +480,7 @@ class mbExpansion:
         # Local variables to work with.
         E = dset.E
         F = dset.F
-        mol_info = dset.Rset_info[:, 2:]  # Molecule numbers for each structure.
+        mol_info = dset.r_prov_specs[:, 2:]  # Molecule numbers for each structure.
 
         # Loop through every lower order n-body data set.
         E, F = self._contribution(E, F, mol_info, nbody_dsets, 'remove')
@@ -510,7 +510,7 @@ class mbExpansion:
         # Contributions to the parent structure.
         E = np.zeros(1,)
         F = np.zeros(dset.F.shape)
-        mol_info = dset.Rset_info[:, 2:]
+        mol_info = dset.r_prov_specs[:, 2:]
 
         for i in range(len(E)):
             e, f = self._contribution(E, F, mol_info, [dset], 'add')

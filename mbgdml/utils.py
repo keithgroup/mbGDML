@@ -378,7 +378,7 @@ def e_f_contribution(dset, dsets_lower, operation):
             # We have to match the molecule information for each reference dset
             # structure to the molecules in this lower dset to remove the right
             # information.
-            r_info = dset.Rset_info[i]  # Rset info of this structure.
+            r_info = dset.r_prov_specs[i]  # r_prov_specs of this structure.
             mol_combs = list(  # Molecule combinations to be removed from structure.
                 itertools.combinations(
                     r_info[2:], len(set(dset_lower.entity_ids))  # Number of molecules in lower dset
@@ -392,7 +392,7 @@ def e_f_contribution(dset, dsets_lower, operation):
                 
                 # Index of the molecule combination in the lower data set.
                 i_r_lower = np.where(
-                    np.all(dset_lower.Rset_info == r_info_lower_comb, axis=1)
+                    np.all(dset_lower.r_prov_specs == r_info_lower_comb, axis=1)
                 )[0][0]
 
                 e_r_lower = dset_lower.E[i_r_lower]

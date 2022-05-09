@@ -107,7 +107,7 @@ def dset_sample_structures(
     return dset
 
 def check_R_with_rset(dset, rset, centered):
-    """Uses structure information from Rset_info to check structure coordinates.
+    """Uses structure information from r_prov_specs to check structure coordinates.
 
     Parameters
     ----------
@@ -121,15 +121,15 @@ def check_R_with_rset(dset, rset, centered):
     """
     z_dset = dset.z
     R_dset = dset.R
-    Rset_info = dset.Rset_info
+    r_prov_specs = dset.r_prov_specs
     R_rset = rset.R
     rset_entity_ids = rset.entity_ids
     for i_r_dset in range(len(dset.R)):
         r_dset = R_dset[i_r_dset]
 
-        r_rset_info = Rset_info[i_r_dset]
-        i_r_rset = r_rset_info[1]
-        r_rset_entity_ids = r_rset_info[2:]
+        r_prov_spec = r_prov_specs[i_r_dset]
+        i_r_rset = r_prov_spec[1]
+        r_rset_entity_ids = r_prov_spec[2:]
         r_slice_rset = utils.get_R_slice(r_rset_entity_ids, rset_entity_ids)
         r_rset = R_rset[i_r_rset][r_slice_rset]
 
@@ -152,25 +152,25 @@ def test_rset_sampling_all_2mers_normal():
     )
 
     # Checking properties.
-    assert dset.Rset_md5 == {0: 'da254c95956709d1a00512f1ac7c0bbb'}
-    assert dset.Rset_info.shape == (30, 4)
-    assert np.all(dset.Rset_info[:, :1] == np.zeros((30,)))
+    assert dset.r_prov_ids == {0: 'da254c95956709d1a00512f1ac7c0bbb'}
+    assert dset.r_prov_specs.shape == (30, 4)
+    assert np.all(dset.r_prov_specs[:, :1] == np.zeros((30,)))
     assert np.all(
-        dset.Rset_info[:, 1] == np.array(
+        dset.r_prov_specs[:, 1] == np.array(
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
              1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
              2, 2, 2, 2, 2, 2, 2, 2, 2, 2])
     )
-    assert dset.Rset_info.shape == np.unique(dset.Rset_info, axis=0).shape
+    assert dset.r_prov_specs.shape == np.unique(dset.r_prov_specs, axis=0).shape
     assert np.all(dset.entity_ids == np.array([0, 0, 0, 1, 1, 1]))
     assert np.all(dset.comp_ids == np.array(['h2o', 'h2o']))
     assert np.all(dset.z == np.array([8, 1, 1, 8, 1, 1]))
 
     # Checking R.
     assert dset.R.shape == (30, 6, 3)
-    rset_info_r_check = np.array([0, 1, 1, 4])
+    r_prov_specs_r_check = np.array([0, 1, 1, 4])
     r_index = np.where(
-        np.all(dset.Rset_info == rset_info_r_check, axis=1)
+        np.all(dset.r_prov_specs == r_prov_specs_r_check, axis=1)
     )[0][0]
     r_check = np.array([
         [-4.27804369, -3.56574992,  0.81519167],
@@ -203,8 +203,8 @@ def test_rset_sampling_all_2mers_ignore_duplicate():
         dset, rset, 'all', 2, None,
         np.array([]), np.array([]), False, False
     )
-    assert dset_duplicate.Rset_md5 == {0: 'da254c95956709d1a00512f1ac7c0bbb'}
-    assert dset_duplicate.Rset_info.shape == (30, 4)
+    assert dset_duplicate.r_prov_ids == {0: 'da254c95956709d1a00512f1ac7c0bbb'}
+    assert dset_duplicate.r_prov_specs.shape == (30, 4)
     assert np.all(dset.entity_ids == np.array([0, 0, 0, 1, 1, 1]))
     assert np.all(dset.comp_ids == np.array(['h2o', 'h2o']))
     assert dset_duplicate.R.shape == (30, 6, 3)
@@ -247,19 +247,19 @@ def test_rset_sampling_all_2mers_criteria():
         np.array([]), np.array([6.0]), True, False
     )
 
-    Rset_info_accpetable_criteria = np.array([
+    r_prov_specs_accpetable_criteria = np.array([
         [0,0,0,3], [0,0,1,2], [0,0,1,4], [0,0,2,4], [0,1,0,3], [0,1,1,2],
         [0,1,1,4], [0,1,2,4], [0,2,0,3], [0,2,1,2], [0,2,1,4], [0,2,2,4]
     ])
     
-    assert np.array_equal(dset_criteria.Rset_info, Rset_info_accpetable_criteria)
+    assert np.array_equal(dset_criteria.r_prov_specs, r_prov_specs_accpetable_criteria)
 
 def test_dset_default_attributes():
     dset = data.dataSet()
 
-    assert isinstance(dset.Rset_md5, dict)
-    assert len(dset.Rset_md5) == 0
-    assert dset.Rset_info.shape == (1, 0)
+    assert isinstance(dset.r_prov_ids, dict)
+    assert len(dset.r_prov_ids) == 0
+    assert dset.r_prov_specs.shape == (1, 0)
 
     assert dset.criteria == ''
     assert dset.z_slice.shape == (0,)
@@ -300,7 +300,7 @@ def test_rset_sampling_num_2mers_criteria():
     assert dset.E.shape == (5,)
     assert dset.F.shape == (5, 6, 3)
 
-    assert dset.Rset_md5 == {0: 'da254c95956709d1a00512f1ac7c0bbb'}
+    assert dset.r_prov_ids == {0: 'da254c95956709d1a00512f1ac7c0bbb'}
     assert np.array_equal(dset.entity_ids, np.array([0, 0, 0, 1, 1, 1]))
     assert np.array_equal(dset.comp_ids, np.array(['h2o', 'h2o']))
 
@@ -335,7 +335,7 @@ def test_rset_sampling_num_2mers_additional():
         np.array([]), np.array([6.0]), True, False
     )
 
-    assert dset.Rset_md5 == {0: 'da254c95956709d1a00512f1ac7c0bbb'}
+    assert dset.r_prov_ids == {0: 'da254c95956709d1a00512f1ac7c0bbb'}
     assert np.array_equal(dset.entity_ids, np.array([0, 0, 0, 1, 1, 1]))
     assert np.array_equal(dset.comp_ids, np.array(['h2o', 'h2o']))
 
@@ -368,16 +368,16 @@ def test_dset_sampling_all_2mers_after_3mers():
     assert np.array_equal(
         dset_from_dset.comp_ids, np.array(['h2o', 'h2o'])
     )
-    assert dset_from_dset.Rset_md5 == {0: 'da254c95956709d1a00512f1ac7c0bbb'}
+    assert dset_from_dset.r_prov_ids == {0: 'da254c95956709d1a00512f1ac7c0bbb'}
 
-    assert dset_from_dset.Rset_info.shape == (12, 4)
+    assert dset_from_dset.r_prov_specs.shape == (12, 4)
     # Same as test_rset_sampling_all_2mers_criteria, but organized to match
     # the 3mer then 2mer sampling.
-    Rset_info_accpetable_criteria = np.array([
+    r_prov_specs_accpetable_criteria = np.array([
         [0,0,1,2], [0,0,0,3], [0,0,1,4], [0,0,2,4], [0,1,1,2], [0,1,0,3],
         [0,1,1,4], [0,1,2,4], [0,2,1,2], [0,2,0,3], [0,2,1,4], [0,2,2,4]
     ])
-    assert np.array_equal(dset_from_dset.Rset_info, Rset_info_accpetable_criteria)
+    assert np.array_equal(dset_from_dset.r_prov_specs, r_prov_specs_accpetable_criteria)
     
     assert dset_from_dset.R.shape == (12, 6, 3)
     assert dset_from_dset.E.shape == (12,)
@@ -395,7 +395,7 @@ def test_sample_dset_same_size():
     
     # Trim dset_h2o_2body to 50 structures
     remaining = 50
-    for key in ['Rset_info', 'E', 'R', 'F']:
+    for key in ['r_prov_specs', 'E', 'R', 'F']:
         setattr(dset_h2o_2body, key, getattr(dset_h2o_2body, key)[:remaining])
 
     dset_h2o_2body_cm_6 = data.dataSet()
@@ -416,22 +416,22 @@ def test_sample_dset_same_size():
     assert dset_h2o_2body_cm_6.centered == True
     assert dset_h2o_2body_cm_6.r_unit == 'Angstrom'
     # 8726c482c19cdf7889cd1e62b9e9c8e1 is the MD5 has for the full 140h2o rset.
-    assert dset_h2o_2body_cm_6.Rset_md5 == {0: '8726c482c19cdf7889cd1e62b9e9c8e1'}
+    assert dset_h2o_2body_cm_6.r_prov_ids == {0: '8726c482c19cdf7889cd1e62b9e9c8e1'}
 
     assert np.array_equal(dset_h2o_2body_cm_6.z, np.array([8, 1, 1, 8, 1, 1]))
     rset = data.structureSet(rset_path_140h2o)
     check_R_with_rset(dset_h2o_2body_cm_6, rset, True)
 
     # Checking energies and forces.
-    dset_Rset_info = dset_h2o_2body_cm_6.Rset_info
+    dset_r_prov_specs = dset_h2o_2body_cm_6.r_prov_specs
     dset_E = dset_h2o_2body_cm_6.E
     dset_F = dset_h2o_2body_cm_6.F
-    dset_sample_Rset_info = dset_h2o_2body.Rset_info
+    dset_sample_r_prov_specs = dset_h2o_2body.r_prov_specs
     dset_sample_E = dset_h2o_2body.E
     dset_sample_F = dset_h2o_2body.F
     for i_r in range(len(dset_h2o_2body_cm_6.R)):
         i_r_dset_sample = np.where(
-            np.all(dset_sample_Rset_info == dset_Rset_info[i_r], axis=1)
+            np.all(dset_sample_r_prov_specs == dset_r_prov_specs[i_r], axis=1)
         )[0][0]
         assert np.allclose(dset_E[i_r], dset_sample_E[i_r_dset_sample])
         assert np.allclose(dset_F[i_r], dset_sample_F[i_r_dset_sample])
@@ -451,13 +451,13 @@ def test_sample_dset_1mers_multiple_rsets():
     )
 
     # Checking data set
-    Rset_info = np.array([
+    r_prov_specs = np.array([
         [0,0,0], [0,0,1], [0,0,2], [0,0,3], [1,0,0], [1,0,1], [1,0,2], [1,0,3],
         [2,0,0], [2,0,1], [2,0,2], [2,0,3]
     ])
-    assert np.array_equal(dset_1mers.Rset_info, Rset_info)
-    Rset_md5 = {0: '92dd31a90a3d2a443023d9d708010a4f', 1: '5593ef822ede64f6011ece82d6702ff9', 2: '33098027b401c38efcb5f05fa33c93ad'}
-    assert dset_1mers.Rset_md5 == Rset_md5
+    assert np.array_equal(dset_1mers.r_prov_specs, r_prov_specs)
+    r_prov_ids = {0: '92dd31a90a3d2a443023d9d708010a4f', 1: '5593ef822ede64f6011ece82d6702ff9', 2: '33098027b401c38efcb5f05fa33c93ad'}
+    assert dset_1mers.r_prov_ids == r_prov_ids
     assert np.array_equal(dset_1mers.entity_ids, np.array([0, 0, 0]))
     assert np.array_equal(dset_1mers.comp_ids, np.array(['h2o']))
     assert dset_1mers.centered == True
