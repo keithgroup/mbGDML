@@ -104,6 +104,7 @@ class mbGDMLTrain():
         interact_cut_off=None,
         callback=None,
         idxs_train=None,
+        idxs_valid=None,
         use_frag_perms=False
     ):
         """
@@ -204,23 +205,27 @@ class mbGDMLTrain():
         assert idxs_train is not None
         idxs_train = np.array(idxs_train)  # Insures it is an array.
 
-        excl_idxs = (
-            idxs_train if md5_train == md5_valid else np.array([], dtype=np.uint)
-        )
-
-        if 'E' in valid_dataset:
-            idxs_valid = gdml_train.draw_strat_sample(
-                valid_dataset['E'], n_valid, excl_idxs=excl_idxs,
-            )
+        # Allow specifying of validation indices.
+        if idxs_valid is not None:
+            idxs_valid = np.array(idxs_valid)
         else:
-            idxs_valid_cands = np.setdiff1d(
-                np.arange(valid_dataset['F'].shape[0]), excl_idxs,
-                assume_unique=True
+            excl_idxs = (
+                idxs_train if md5_train == md5_valid else np.array([], dtype=np.uint)
             )
-            idxs_valid = np.random.choice(
-                idxs_valid_cands, n_valid, replace=False
-            )
-            # TODO: m0 handling, zero handling
+
+            if 'E' in valid_dataset:
+                idxs_valid = gdml_train.draw_strat_sample(
+                    valid_dataset['E'], n_valid, excl_idxs=excl_idxs,
+                )
+            else:
+                idxs_valid_cands = np.setdiff1d(
+                    np.arange(valid_dataset['F'].shape[0]), excl_idxs,
+                    assume_unique=True
+                )
+                idxs_valid = np.random.choice(
+                    idxs_valid_cands, n_valid, replace=False
+                )
+                # TODO: m0 handling, zero handling
 
         if callback is not None:
             callback(DONE)
@@ -346,7 +351,8 @@ class mbGDMLTrain():
         n_inducing_pts_init=None,
         interact_cut_off=None,
         command=None,
-        idxs_train=None  # Added to specify which structures to train on
+        idxs_train=None,  # Added to specify which structures to train on
+        idxs_valid=None  # Added to specify which structures to use for validation.
     ):
         """A slightly modified ``sgdml create`` function for additional
         functionality.
@@ -529,6 +535,7 @@ class mbGDMLTrain():
                         interact_cut_off=interact_cut_off,
                         callback=sgdml_ui.callback,
                     )  # template task
+                # Our modified procedure to allow more control over training.
                 else:
                     tmpl_task = self._sgdml_create_task(
                         gdml_train,  # This is different from sGDML.
@@ -546,7 +553,8 @@ class mbGDMLTrain():
                         n_inducing_pts_init=n_inducing_pts_init,
                         interact_cut_off=interact_cut_off,
                         callback=sgdml_ui.callback,
-                        idxs_train=idxs_train
+                        idxs_train=idxs_train,
+                        idxs_valid=idxs_valid
                     )
             except BaseException:
                 print()
@@ -591,6 +599,7 @@ class mbGDMLTrain():
         max_processes=None,
         use_torch=False,
         idxs_train=None,
+        idxs_valid=None,
         model_file=None,
         task_dir=None,
     ):
@@ -715,7 +724,8 @@ class mbGDMLTrain():
             n_inducing_pts_init=n_inducing_pts_init,
             interact_cut_off=interact_cut_off,
             command='all',
-            idxs_train=idxs_train  # Added to specify which structures to train on
+            idxs_train=idxs_train,  # Added to specify which structures to train on
+            idxs_valid=idxs_valid  # Added to specify validation structures.
         )
 
         sgdml_ui.print_step_title('STEP 2', 'Training and validation')
@@ -755,9 +765,9 @@ class mbGDMLTrain():
         print('         This is your model file: \'{}\''.format(model_file_name))
 
     def train(
-        self, model_name, num_train, num_validate, num_test, solver='analytic',
-        sigmas=list(range(2, 110, 10)), save_dir='.', use_sym=True, use_E=True,
-        use_E_cstr=True, use_cprsn=False, idxs_train=None,
+        self, model_name, n_train, n_validate, n_test, solver='analytic',
+        sigmas=tuple(range(2, 110, 10)), save_dir='.', use_sym=True, use_E=True,
+        use_E_cstr=True, use_cprsn=False, idxs_train=None, idxs_valid=None,
         max_processes=None, overwrite=False, torch=False,
     ):
         """Trains and saves a GDML model.
@@ -766,11 +776,11 @@ class mbGDMLTrain():
         ----------
         model_name : :obj:`str`
             User-defined model name without the ``'.npz'`` file extension.
-        num_train : :obj:`int`
+        n_train : :obj:`int`
             The number of training points to sample.
-        num_validate : :obj:`int`
+        n_validate : :obj:`int`
             The number of validation points to sample, without replacement.
-        num_test : :obj:`int`
+        n_test : :obj:`int`
             The number of test points to test the validated GDML model.
         solver : :obj:`str`, optional
             The sGDML solver to use. Currently the only option is
@@ -802,6 +812,9 @@ class mbGDMLTrain():
         idxs_train : :obj:`numpy.ndarray`
             The specific indices of structures to train the model on. If
             ``None`` will automatically sample the training data set.
+        idxs_valid : :obj:`numpy.ndarray`
+            The specific indices of structures to validate models on.
+            If ``None``, structures will be automatically determined.
         max_processes : :obj:`int`, optional
             The maximum number of cores to use for the training process. Will
             automatically calculate if not specified.
@@ -810,6 +823,11 @@ class mbGDMLTrain():
         torch : :obj:`bool`, optional
             Use PyTorch to enable GPU acceleration.
         """
+        if idxs_train is not None:
+            assert n_train == len(idxs_train)
+        if idxs_valid is not None:
+            assert n_validate == len(idxs_valid)
+            
         if save_dir[-1] != '/':
             save_dir += '/'
         os.chdir(save_dir)
@@ -817,9 +835,9 @@ class mbGDMLTrain():
         # sGDML training routine.
         self._sgdml_all(
             (self.dataset_path, self.dataset),
-            num_train,
-            num_validate,
-            num_test,
+            n_train,
+            n_validate,
+            n_test,
             sigmas,
             solver=solver,
             valid_dataset=None,
@@ -832,6 +850,7 @@ class mbGDMLTrain():
             max_processes=max_processes,
             use_torch=torch,
             idxs_train=idxs_train,
+            idxs_valid=idxs_valid,
             model_file=model_name + '.npz',
             task_dir=None,
         )
