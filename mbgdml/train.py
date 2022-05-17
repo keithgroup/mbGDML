@@ -825,8 +825,10 @@ class mbGDMLTrain():
         """
         if idxs_train is not None:
             assert n_train == len(idxs_train)
+            assert len(set(idxs_train)) == len(idxs_train)
         if idxs_valid is not None:
             assert n_validate == len(idxs_valid)
+            assert len(set(idxs_valid)) == len(idxs_valid)
             
         if save_dir[-1] != '/':
             save_dir += '/'
