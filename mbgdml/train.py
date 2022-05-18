@@ -1061,7 +1061,7 @@ class mbGDMLTrain():
                 self.job_json, cls=JSONIndentEncoder, indent=4
             )
 
-            with open(model_name + '.json', 'w') as f:
+            with open('log.json', 'w') as f:
                 f.write(json_string)
 
         # Adding many-body information if present in dataset.
