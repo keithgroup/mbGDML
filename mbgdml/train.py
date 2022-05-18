@@ -55,6 +55,7 @@ MAX_PRINT_WIDTH = 100
 LOG_LEVELNAME_WIDTH = 7
 DONE = 1
 NOT_DONE = 0
+PACKAGE_NAME = 'sgdml'
 
 class mbGDMLTrain():
     """
