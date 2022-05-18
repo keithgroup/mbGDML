@@ -258,17 +258,6 @@ class mbGDMLTrain():
         if use_E:
             task['E_train'] = train_dataset['E'][idxs_train]
 
-        # lat_and_inv = None
-        # if 'lattice' in train_dataset:
-        #     task['lattice'] = train_dataset['lattice']
-        # 
-        #     try:
-        #         lat_and_inv = (task['lattice'], np.linalg.inv(task['lattice']))
-        #     except np.linalg.LinAlgError:
-        #         raise ValueError(  # TODO: Document me
-        #             'Provided dataset contains invalid lattice vectors (not invertible). Note: Only rank 3 lattice vector matrices are supported.'
-        #         )
-
         if 'r_unit' in train_dataset and 'e_unit' in train_dataset:
             task['r_unit'] = train_dataset['r_unit']
             task['e_unit'] = train_dataset['e_unit']
@@ -286,10 +275,6 @@ class mbGDMLTrain():
                     )
                 )
 
-            # TOOD: PBCs disabled when matching (for now).
-            # task['perms'] = perm.find_perms(
-            #    R_train_sync_mat, train_dataset['z'], lat_and_inv=lat_and_inv, max_processes=self._max_processes,
-            # )
             task['perms'] = perm.find_perms(
                 R_train_sync_mat,
                 train_dataset['z'],
@@ -581,6 +566,168 @@ class mbGDMLTrain():
 
         return task_dir
     
+    def _sgdml_select(
+        self, model_dir, overwrite, max_processes, model_file=None,
+        command=None, **kwargs
+    ):  # noqa: C901
+
+        func_called_directly = (
+            command == 'select'
+        )  # has this function been called from command line or from 'all'?
+        if func_called_directly:
+            sgdml_ui.print_step_title('MODEL SELECTION')
+
+        any_model_not_validated = False
+        any_model_is_tested = False
+
+        model_dir, model_file_names = model_dir
+        if len(model_file_names) > 1:
+
+            use_E = True
+
+            rows = []
+            data_names = ['sig', 'MAE', 'RMSE', 'MAE', 'RMSE']
+            for i, model_file_name in enumerate(model_file_names):
+                model_path = os.path.join(model_dir, model_file_name)
+                _, model = sgdml_io.is_file_type(model_path, 'model')
+
+                use_E = model['use_E']
+
+                if i == 0:
+                    idxs_train = set(model['idxs_train'])
+                    md5_train = model['md5_train']
+                    idxs_valid = set(model['idxs_valid'])
+                    md5_valid = model['md5_valid']
+                else:
+                    if (
+                        md5_train != model['md5_train']
+                        or md5_valid != model['md5_valid']
+                        or idxs_train != set(model['idxs_train'])
+                        or idxs_valid != set(model['idxs_valid'])
+                    ):
+                        raise AssistantError(
+                            '{} contains models trained or validated on different datasets.'.format(
+                                model_dir
+                            )
+                        )
+
+                e_err = {'mae': 0.0, 'rmse': 0.0}
+                if model['use_E']:
+                    e_err = model['e_err'].item()
+                f_err = model['f_err'].item()
+
+                is_model_validated = not (np.isnan(f_err['mae']) or np.isnan(f_err['rmse']))
+                if not is_model_validated:
+                    any_model_not_validated = True
+
+                is_model_tested = model['n_test'] > 0
+                if is_model_tested:
+                    any_model_is_tested = True
+
+                rows.append(
+                    [model['sig'], e_err['mae'], e_err['rmse'], f_err['mae'], f_err['rmse']]
+                )
+
+                ###   mbGDML CHANGED   ###
+                self.job_json['validation']['sigmas'].append(int(model['sig'][()]))
+                self.job_json['validation']['energy_mae'].append(e_err['mae'])
+                self.job_json['validation']['energy_rmse'].append(e_err['rmse'])
+                self.job_json['validation']['forces_mae'].append(f_err['mae'])
+                self.job_json['validation']['forces_rmse'].append(f_err['rmse'])
+                ###   sGDML RESUMED   ###
+
+                model.close()
+
+            if any_model_not_validated:
+                log.error(
+                    'One or more models in the given directory have not been validated yet.\n'
+                    + 'This is required before selecting the best performer.'
+                )
+                print()
+                sys.exit()
+
+            if any_model_is_tested:
+                log.error(
+                    'One or more models in the given directory have already been tested. This means that their recorded expected errors are test errors, not validation errors. However, one should never perform model selection based on the test error!\n'
+                    + 'Please run the validation command (again) with the overwrite option \'-o\', then this selection command.'
+                )
+                return
+
+            f_rmse_col = [row[4] for row in rows]
+            best_idx = f_rmse_col.index(min(f_rmse_col))  # idx of row with lowest f_rmse
+            best_sig = rows[best_idx][0]
+
+            rows = sorted(rows, key=lambda col: col[0])  # sort according to sigma
+            print(sgdml_ui.white_bold_str('Cross-validation errors'))
+            print(' ' * 7 + 'Energy' + ' ' * 6 + 'Forces')
+            print((' {:>3} ' + '{:>5} ' * 4).format(*data_names))
+            print(' ' + '-' * 27)
+            format_str = ' {:>3} ' + '{:5.2f} ' * 4
+            format_str_no_E = ' {:>3}     -     - ' + '{:5.2f} ' * 2
+            for row in rows:
+                if use_E:
+                    row_str = format_str.format(*row)
+                else:
+                    row_str = format_str_no_E.format(*[row[0], row[3], row[4]])
+
+                if row[0] != best_sig:
+                    row_str = sgdml_ui.gray_str(row_str)
+                print(row_str)
+            print()
+
+            sig_col = [row[0] for row in rows]
+            if best_sig == min(sig_col) or best_sig == max(sig_col):
+                log.warning(
+                    'The optimal sigma lies on the boundary of the search grid.\n'
+                    + 'Model performance might improve if the search grid is extended in direction sigma {} {:d}.'.format(
+                        '<' if best_idx == 0 else '>', best_sig
+                    )
+                )
+                ###   mbGDML CHANGED   ###
+                self.job_json['model']['sigma_on_boundary'] = True
+            else:
+                self.job_json['model']['sigma_on_boundary'] = False
+                ###   sGDML RESUMED   ###
+
+        else:  # only one model available
+            log.warning(
+                'Skipping model selection step as there is only one model to select.'
+            )
+
+            best_idx = 0
+
+        best_model_path = os.path.join(model_dir, model_file_names[best_idx])
+
+        if model_file is None:
+
+            # generate model file name based on model properties
+            best_model = np.load(best_model_path, allow_pickle=True)
+            model_file = sgdml_io.model_file_name(best_model, is_extended=True)
+            best_model.close()
+
+        model_exists = os.path.isfile(model_file)
+        if model_exists and overwrite:
+            log.info('Overwriting existing model file.')
+
+        if not model_exists or overwrite:
+            if func_called_directly:
+                log.done('Writing model file \'{}\''.format(model_file))
+
+            shutil.copy(best_model_path, model_file)
+            shutil.rmtree(model_dir, ignore_errors=True)
+        else:
+            log.warning(
+                'Model \'{}\' already exists.\n'.format(model_file)
+                + 'Run \'{} select -o {}\' to overwrite.'.format(
+                    PACKAGE_NAME, os.path.relpath(model_dir)
+                )
+            )
+
+        if func_called_directly:
+            _print_next_step('select', model_files=[model_file])
+
+        return model_file
+    
     def _sgdml_all(
         self,
         dataset,
@@ -739,9 +886,14 @@ class mbGDMLTrain():
         )
 
         sgdml_ui.print_step_title('STEP 3', 'Hyper-parameter selection')
-        model_file_name = sgdml_select(
-            model_dir_arg, overwrite, max_processes, model_file
-        )
+        if self.write_json:
+            model_file_name = self._sgdml_select(
+                model_dir_arg, overwrite, max_processes, model_file
+            )
+        else:
+            model_file_name = sgdml_select(
+                model_dir_arg, overwrite, max_processes, model_file
+            )
 
         sgdml_ui.print_step_title('STEP 4', 'Testing')
         model_dir_arg = sgdml_io.is_dir_with_file_type(model_file_name, 'model', or_file=True)
@@ -768,7 +920,7 @@ class mbGDMLTrain():
         self, model_name, n_train, n_validate, n_test, solver='analytic',
         sigmas=tuple(range(2, 110, 10)), save_dir='.', use_sym=True, use_E=True,
         use_E_cstr=True, use_cprsn=False, idxs_train=None, idxs_valid=None,
-        max_processes=None, overwrite=False, torch=False,
+        max_processes=None, overwrite=False, torch=False, write_json=False
     ):
         """Trains and saves a GDML model.
         
@@ -822,7 +974,28 @@ class mbGDMLTrain():
             Overwrite existing files. Defaults to ``False``.
         torch : :obj:`bool`, optional
             Use PyTorch to enable GPU acceleration.
+        write_json : :obj:`bool`, optional
+            Write a JSON file containing information about the training job.
         """
+        if write_json:
+            import json
+            self.write_json = True
+            self.job_json = {
+                'model': {},
+                'testing': {},
+                'training': {'idxs': []},
+                'validation': {
+                    'sigmas': [],
+                    'energy_mae': [],
+                    'energy_rmse': [],
+                    'forces_mae': [],
+                    'forces_rmse': [],
+                    'idxs': [],
+                },
+            }
+        else:
+            self.write_json = False
+        
         if idxs_train is not None:
             assert n_train == len(idxs_train)
             assert len(set(idxs_train)) == len(idxs_train)
@@ -860,10 +1033,36 @@ class mbGDMLTrain():
         ## mbGDML modifications.
         # Adding additional mbGDML info to the model.
         new_model = mbModel()
+        if model_name[-4:] == '.npz':
+            model_name = model_name[:-4]
         new_model.load(model_name + '.npz')
         
         # Adding mbGDML-specific modifications to model.
         new_model.add_modifications(self.dataset)
+
+        # Including final JSON stuff and writing.
+        if self.write_json:
+            self.job_json['training']['idxs'] = new_model.model['idxs_train'].tolist()
+            self.job_json['validation']['idxs'] = new_model.model['idxs_valid'].tolist()
+            e_err = new_model.model['e_err'][()]
+            f_err = new_model.model['f_err'][()]
+            self.job_json['testing']['n_test'] = int(new_model.model['n_test'][()])
+            self.job_json['testing']['energy_mae'] = e_err['mae']
+            self.job_json['testing']['energy_rmse'] = e_err['rmse']
+            self.job_json['testing']['forces_mae'] = f_err['mae']
+            self.job_json['testing']['forces_rmse'] = f_err['rmse']
+
+            self.job_json['model']['sigma'] = int(new_model.model['sig'][()])
+            self.job_json['model']['n_symm'] = len(new_model.model['perms'])
+
+            from cclib.io.cjsonwriter import JSONIndentEncoder
+            
+            json_string = json.dumps(
+                self.job_json, cls=JSONIndentEncoder, indent=4
+            )
+
+            with open(model_name + '.json', 'w') as f:
+                f.write(json_string)
 
         # Adding many-body information if present in dataset.
         if 'mb' in self.dataset.keys():
