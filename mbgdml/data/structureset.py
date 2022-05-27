@@ -79,26 +79,25 @@ class structureSet(mbGDMLData):
     
     @property
     def comp_ids(self):
-        """2D array relating ``entity_ids`` to a chemical component/species
-        id or label (``comp_id``).
-        
-        The first column is the unique ``entity_id`` and the second is a unique
-        ``comp_id`` for that specific chemical species. Each ``comp_id`` is then
-        reused for entities of the same chemical species.
+        """1D array relating ``entity_id`` to a fragment label for chemical
+        components or species. Labels could be ``WAT`` or ``h2o`` for water,
+        ``MeOH`` for methanol, ``bz`` for benzene, etc. There are no
+        standardized labels for species. The index of the label is the
+        respective ``entity_id``. For example, a water and methanol molecule
+        could be ``['h2o', 'meoh']``.
 
         Examples
         --------
         Suppose we have a structure containing a water and methanol molecule.
         We can use the labels of ``h2o`` and ``meoh`` (which could be
-        anything): ``[['0', 'h2o'], ['1', 'meoh']]``. Note that the
-        ``entity_id`` is a :obj:`str`.
+        anything): ``['h2o', 'meoh']``.
 
         :type: :obj:`numpy.ndarray`
         """
         if hasattr(self, '_comp_ids'):
             return self._comp_ids
         else:
-            return np.array([[]])
+            return np.array([])
     
     @comp_ids.setter
     def comp_ids(self, var):
@@ -177,15 +176,17 @@ class structureSet(mbGDMLData):
             Units of distance. Options are ``'Angstrom'`` or ``'bohr'`` (defined
             by cclib).
         entity_ids : :obj:`numpy.ndarray`
-            List of indices starting from ``0`` that specify chemically distinct
-            portions of the structure. For example, a water
-            dimer would be ``[0, 0, 0, 1, 1, 1]``.
+            A uniquely identifying integer specifying what atoms belong to
+            which entities. Entities can be a related set of atoms, molecules,
+            or functional group. For example, a water and methanol molecule
+            could be ``[0, 0, 0, 1, 1, 1, 1, 1, 1]``.
         comp_ids : :obj:`numpy.ndarray`
-            A 2D array with an item for every unique ``entity_id``. Each item
-            is a list containing two items. First, the ``entity_id`` as a
-            string. Second, a label for the specific chemical species/component.
-            For example, two water and one methanol molecules could be
-            ``[['0', 'h2o'], ['1', 'h2o'], ['2', 'meoh']]``.
+            Relates ``entity_id`` to a fragment label for chemical components
+            or species. Labels could be ``WAT`` or ``h2o`` for water, ``MeOH``
+            for methanol, ``bz`` for benzene, etc. There are no standardized
+            labels for species. The index of the label is the respective
+            ``entity_id``. For example, a water and methanol molecule could
+            be ``['h2o', 'meoh']``.
 
         """
         self.name = os.path.splitext(os.path.basename(file_path))[0]
@@ -230,15 +231,17 @@ class structureSet(mbGDMLData):
             Units of distance. Options are ``'Angstrom'`` or ``'bohr'`` (defined
             by cclib).
         entity_ids : :obj:`numpy.ndarray`
-            List of indices starting from ``0`` that specify chemically distinct
-            portions of the structure. For example, a water
-            dimer would be ``[0, 0, 0, 1, 1, 1]``.
+            A uniquely identifying integer specifying what atoms belong to
+            which entities. Entities can be a related set of atoms, molecules,
+            or functional group. For example, a water and methanol molecule
+            could be ``[0, 0, 0, 1, 1, 1, 1, 1, 1]``.
         comp_ids : :obj:`numpy.ndarray`
-            A 2D array with an item for every unique ``entity_id``. Each item
-            is a list containing two items. First, the ``entity_id`` as a
-            string. Second, a label for the specific chemical species/component.
-            For example, two water and one methanol molecules could be
-            ``[['0', 'h2o'], ['1', 'h2o'], ['2', 'meoh']]``.
+            Relates ``entity_id`` to a fragment label for chemical components
+            or species. Labels could be ``WAT`` or ``h2o`` for water, ``MeOH``
+            for methanol, ``bz`` for benzene, etc. There are no standardized
+            labels for species. The index of the label is the respective
+            ``entity_id``. For example, a water and methanol molecule could
+            be ``['h2o', 'meoh']``.
 
         """
         self.name = os.path.splitext(os.path.basename(file_path))[0]
@@ -280,4 +283,5 @@ class structureSet(mbGDMLData):
         ----------
         save_dir : :obj:`str`
         """
-        utils.write_xyz(self.z, self.R, save_dir, self.name)
+        xyz_path = os.path.join(save_dir, self.name)
+        utils.write_xyz(xyz_path, self.z, self.R)

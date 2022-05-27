@@ -173,10 +173,10 @@ MD5 hash
 Structure set identification
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. autoattribute:: mbgdml.data.dataset.dataSet.Rset_md5
+.. autoattribute:: mbgdml.data.dataset.dataSet.r_prov_ids
     :noindex:
 
-.. autoattribute:: mbgdml.data.dataset.dataSet.Rset_info
+.. autoattribute:: mbgdml.data.dataset.dataSet.r_prov_specs
     :noindex:
 
 Structure sampling

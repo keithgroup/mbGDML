@@ -65,14 +65,7 @@ Examples
           [ 0.99038198,  0.52476615,  1.64897853]]]
     )
     entity_ids = np.array([0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5])
-    comp_ids = np.array(
-        [['0', 'h2o'],
-         ['1', 'h2o'],
-         ['2', 'h2o'],
-         ['3', 'h2o'],
-         ['4', 'h2o'],
-         ['5', 'h2o']]
-    )
+    comp_ids = np.array(['h2o', 'h2o', 'h2o', 'h2o', 'h2o', 'h2o'])
     
     # Predict total energies and forces.
     E, F = mbgdml.predict(z, R, entity_ids, comp_ids)

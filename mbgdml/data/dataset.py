@@ -22,6 +22,7 @@
 
 import json
 import itertools
+import os
 from random import randrange, sample, choice
 import numpy as np
 from cclib.parser.utils import convertor
@@ -63,7 +64,7 @@ class dataSet(mbGDMLData):
         self._name = str(var)
 
     @property
-    def Rset_md5(self):
+    def r_prov_ids(self):
         """Specifies structure sets IDs/labels and corresponding MD5 hashes.
 
         Keys are the Rset IDs (:obj:`int`) and values are MD5 hashes
@@ -74,26 +75,26 @@ class dataSet(mbGDMLData):
 
         Examples
         --------
-        >>> dset.Rset_md5
+        >>> dset.r_prov_ids
         {0: '2339670ad87a606cb11a72191dfd9f58'}
 
         :type: :obj:`dict`
         """
-        if hasattr(self, '_Rset_md5'):
-            return self._Rset_md5
+        if hasattr(self, '_r_prov_ids'):
+            return self._r_prov_ids
         else:
             return {}
     
-    @Rset_md5.setter
-    def Rset_md5(self, var):
-        self._Rset_md5 = var
+    @r_prov_ids.setter
+    def r_prov_ids(self, var):
+        self._r_prov_ids = var
     
     @property
-    def Rset_info(self):
-        """An array specifying where each structure in R originates from.
+    def r_prov_specs(self):
+        """An array specifying where each structure in ``R`` originates from.
 
         A ``(n_R, 1 + n_entity)`` array where each row contains the Rset ID
-        from ``Rset_md5`` (e.g., 0, 1, 2, etc.) then the structure index and
+        from ``r_prov_ids`` (e.g., 0, 1, 2, etc.) then the structure index and
         entity_ids from the original full structure in the structure set.
 
         If there has been no previous sampling, an array of shape (1, 0)
@@ -103,18 +104,18 @@ class dataSet(mbGDMLData):
 
         Examples
         --------
-        >>> dset.Rset_info  # [Rset_md5_id, r_index, entity_1, entity_2, entity_3]
+        >>> dset.r_prov_specs  # [r_prov_id, r_index, entity_1, entity_2, entity_3]
         array([[0, 985, 46, 59, 106],
                [0, 174, 51, 81, 128]])
         """
-        if hasattr(self, '_Rset_info'):
-            return self._Rset_info
+        if hasattr(self, '_r_prov_specs'):
+            return self._r_prov_specs
         else:
             return np.array([[]], dtype='int_')
     
-    @Rset_info.setter
-    def Rset_info(self, var):
-        self._Rset_info = var
+    @r_prov_specs.setter
+    def r_prov_specs(self, var):
+        self._r_prov_specs = var
     
     @property
     def criteria(self):
@@ -348,18 +349,18 @@ class dataSet(mbGDMLData):
     
     @property
     def comp_ids(self):
-        """2D array relating ``entity_ids`` to a chemical component/species
-        id or label (``comp_id``).
-        
-        The first column is the unique ``entity_id`` and the second is a unique
-        ``comp_id`` for that specific chemical species. Each ``comp_id`` is then
-        reused for entities of the same chemical species.
+        """A 1D array relating ``entity_id`` to a fragment label for chemical
+        components or species. Labels could be ``WAT`` or ``h2o`` for water,
+        ``MeOH`` for methanol, ``bz`` for benzene, etc. There are no
+        standardized labels for species. The index of the label is the
+        respective ``entity_id``. For example, a water and methanol molecule
+        could be ``['h2o', 'meoh']``.
 
         Examples
         --------
         Suppose we have a structure containing a water and methanol molecule.
         We can use the labels of ``h2o`` and ``meoh`` (which could be
-        anything): ``[['0', 'h2o'], ['1', 'meoh']]``. Note that the
+        anything): ``['h2o', 'meoh']``. Note that the
         ``entity_id`` is a :obj:`str`.
 
         :type: :obj:`numpy.ndarray`
@@ -367,7 +368,7 @@ class dataSet(mbGDMLData):
         if hasattr(self, '_comp_ids'):
             return self._comp_ids
         else:
-            return np.array([[]])
+            return np.array([])
     
     @comp_ids.setter
     def comp_ids(self, var):
@@ -514,8 +515,8 @@ class dataSet(mbGDMLData):
             self.mb_dsets_md5 = dataset['mb_dsets_md5']
 
         try:
-            self.Rset_info = dataset['Rset_info'][()]
-            self.Rset_md5 = dataset['Rset_md5'][()]
+            self.r_prov_specs = dataset['r_prov_specs'][()]
+            self.r_prov_ids = dataset['r_prov_ids'][()]
             self.entity_ids = dataset['entity_ids']
             self.comp_ids = dataset['comp_ids']
         except KeyError:
@@ -539,8 +540,8 @@ class dataSet(mbGDMLData):
         else:
             self._update(dict(dataset_npz))
 
-    def _get_Rset_id(
-        self, data, selected_rset_id=None
+    def _get_r_prov_id(
+        self, data, selected_r_prov_id=None
     ):
         """Determines the numerical Rset ID for this data set.
 
@@ -549,8 +550,8 @@ class dataSet(mbGDMLData):
         Rset : :obj:`mbgdml.data`
             A loaded :obj:`mbgdml.data.structureSet` or
             :obj:`mbgdml.data.dataSet` object.
-        selected_rset_id : obj:`int`, optional
-            Currently dset sampling can only be done for one rset_id at a time.
+        selected_r_prov_id : obj:`int`, optional
+            Currently dset sampling can only be done for one r_prov_id at a time.
             This specifies which rset structures in the data set to sample from.
             Defaults to ``None``.
         
@@ -560,27 +561,27 @@ class dataSet(mbGDMLData):
             Numerical ID for the Rset.
         """
         # Attempts to match any previous sampling to this structure set.
-        # If not, adds this structure set to the Rset_md5 information.
-        Rset_id = None
-        if self.Rset_md5 != {}:
+        # If not, adds this structure set to the r_prov_ids information.
+        r_prov_id = None
+        if self.r_prov_ids != {}:
             if data.type == 's':
                 md5 = data.md5
             elif data.type == 'd':
-                md5 = data.Rset_md5[selected_rset_id]
+                md5 = data.r_prov_ids[selected_r_prov_id]
             new_k = 0  # New key should be one more than the last key.
-            for k,v in self.Rset_md5.items():
+            for k,v in self.r_prov_ids.items():
                 if v == md5:
-                    Rset_id = k
+                    r_prov_id = k
                     break
                 new_k += 1
             
             # If no matches.
-            if Rset_id is None:
-                Rset_id = new_k
+            if r_prov_id is None:
+                r_prov_id = new_k
         else:
-            Rset_id = 0
+            r_prov_id = 0
 
-        return Rset_id
+        return r_prov_id
     
     def _check_entity_comp_ids(
         self, entity_ids, comp_ids, data_entity_ids, data_comp_ids,
@@ -593,11 +594,12 @@ class dataSet(mbGDMLData):
         entity_ids : :obj:`numpy.ndarray`
             Already sampled entity_ids of the data set. Could be an empty array.
         comp_ids : :obj:`numpy.ndarray`
-            Already sampled comp_ids of the data set. Could be an empty array.
+            Already sampled ``comp_ids`` of the data set. Could be an empty
+            array.
         data_entity_ids :obj:`numpy.ndarray`
             entity_ids of a data or structure set being sampled.
         data_comp_ids :obj:`numpy.ndarray`
-            comp_ids of a data or structure set being sampled.
+            ``comp_ids`` of a data or structure set being sampled.
         sampled_entity_ids_split : :obj:`list` [:obj:`numpy.ndarray`]
             The unique data entity_ids of each new entity for this data set.
             For example, all the data entity_ids (from a structure set) that
@@ -610,7 +612,7 @@ class dataSet(mbGDMLData):
         :obj:`numpy.ndarray`
             The correct comp_ids of this data set.
         """
-        if len(entity_ids) == 0 and comp_ids.shape == (1, 0):
+        if len(entity_ids) == 0 and len(comp_ids) == 0:
             # If there is no previous sampling.
             # Just need to check that the new entities are self compatible.
             entity_ids = []  # Start a new entity id list.
@@ -625,10 +627,7 @@ class dataSet(mbGDMLData):
                 # Adds the entity_ids of this entity
                 entity_ids.extend([entity_id for _ in range(ref_entity_size)])
                 # Adds comp_id
-                comp_id = data_comp_ids[entity_id][1]
-                comp_ids.append(
-                    [str(entity_id), comp_id]
-                )
+                comp_ids.append(data_comp_ids[entity_id])
                 
                 # We should not have to check the entities because we already
                 # check z.
@@ -679,9 +678,9 @@ class dataSet(mbGDMLData):
                         yield data_selection
     
     def _sample(
-        self, z, R, E, F, sample_data, quantity, data_ids, Rset_id, Rset_info,
-        size, criteria=None, z_slice=[], cutoff=[], sampling_updates=False, 
-        copy_EF=True
+        self, z, R, E, F, sample_data, quantity, data_ids, r_prov_id,
+        r_prov_specs, size, criteria=None, z_slice=[], cutoff=[],
+        sampling_updates=False, copy_EF=True
     ):
         """Selects all Rset structures for data set.
 
@@ -713,10 +712,10 @@ class dataSet(mbGDMLData):
             from. For example, if you are sampling from a data set this would be
             the ``Rset_id`` in that data set not the new ``Rset_id`` for this
             current data set.
-        Rset_id : :obj:`int`
-            The :obj:`int` that specifies the Rset (key in ``self.Rset_md5``) in
+        r_prov_id : :obj:`int`
+            The :obj:`int` that specifies the Rset (key in ``self.r_prov_ids``) in
             this current data set.
-        Rset_info : :obj:`int`
+        r_prov_specs : :obj:`numpy.ndarray`
             An array specifying where each structure in R originates from.
         size : :obj:`int`
             Desired number of molecules in each selection.
@@ -754,7 +753,7 @@ class dataSet(mbGDMLData):
         max_sample_entity_ids = max(sample_entity_ids)
 
         if sample_data_type == 'd':
-            sample_data_Rset_info = sample_data.Rset_info
+            sample_data_r_prov_specs = sample_data.r_prov_specs
             sample_data_E = sample_data.E
             sample_data_F = sample_data.F
 
@@ -763,7 +762,7 @@ class dataSet(mbGDMLData):
                 structure_idxs = np.concatenate(
                     (
                         structure_idxs,
-                        np.where(sample_data_Rset_info[:,0] == data_id)[0]
+                        np.where(sample_data_r_prov_specs[:,0] == data_id)[0]
                     ),
                     axis=0
                 )
@@ -799,19 +798,19 @@ class dataSet(mbGDMLData):
             i_r_sample = data_selection[1]
             # Gets Rset_selection instead of data_selection
             if sample_data_type == 'd':
-                i_r_rset = sample_data_Rset_info[i_r_sample][1]
-                i_r_rset_entity_ids = sample_data_Rset_info[i_r_sample][2:][data_selection[2:]]
-                Rset_selection = [Rset_id, i_r_rset] + list(i_r_rset_entity_ids)
+                i_r_rset = sample_data_r_prov_specs[i_r_sample][1]
+                i_r_rset_entity_ids = sample_data_r_prov_specs[i_r_sample][2:][data_selection[2:]]
+                Rset_selection = [r_prov_id, i_r_rset] + list(i_r_rset_entity_ids)
             elif sample_data_type == 's':
                 Rset_selection = data_selection
 
-            # Checks if Rset_info is already present.
-            if Rset_info.shape[1] == 0:  # No previous Rset_info.
+            # Checks if r_prov_spec is already present.
+            if r_prov_specs.shape[1] == 0:  # No previous r_prov_specs.
                 Rset_axis = 1
             else:
                 Rset_axis = 0
                 # Checks to see if combination is already in data set.
-                if (Rset_info[...]==Rset_selection).all(1).any():
+                if (r_prov_specs[...]==Rset_selection).all(1).any():
                     # Does not add the combination.
                     continue
 
@@ -828,7 +827,7 @@ class dataSet(mbGDMLData):
             else:
                 if not np.all([z, sample_data_z[atom_idx]]):
                     print(f'z of data set: {z}')
-                    print(f'Rset_info of selection: {Rset_selection}')
+                    print(f'r_prov_spec of selection: {Rset_selection}')
                     print(f'z of selection: {sample_data_z[atom_idx]}')
                     raise ValueError(f'z of the selection is incompatible.')
             
@@ -847,8 +846,8 @@ class dataSet(mbGDMLData):
                     continue
             
             ###   SUCCESSFUL SAMPLE   ###
-            Rset_info = np.concatenate(
-                (Rset_info, np.array([Rset_selection])), axis=Rset_axis
+            r_prov_specs = np.concatenate(
+                (r_prov_specs, np.array([Rset_selection])), axis=Rset_axis
             )
             
             if R.shape[2] == 0:  # No previous R.
@@ -893,12 +892,13 @@ class dataSet(mbGDMLData):
             self.theory = sample_data.theory
             self.e_unit = sample_data.e_unit
         
-        return (Rset_info, z, R, E, F)
+        return (r_prov_specs, z, R, E, F)
     
     def sample_structures(
         self, data, quantity, size, consistent_entities=[], criteria=None,
         z_slice=[], cutoff=[], center_structures=False, sampling_updates=False, 
-        copy_EF=True):
+        copy_EF=True
+    ):
         """Randomly samples a ``quantity`` of geometries of a specific
         ``size`` from data or structure sets.
 
@@ -954,42 +954,42 @@ class dataSet(mbGDMLData):
         R = self.R
         E = self.E
         F = self.F
-        Rset_info = self.Rset_info
+        r_prov_specs = self.r_prov_specs
 
         if R.shape[2] == 0:
             n_R_initial = 0
         else:
             n_R_initial = R.shape[0]
         
-        # Gets Rset_id for this new sampling.
+        # Gets r_prov_id for this new sampling.
         if data_type == 's':
-            Rset_id = self._get_Rset_id(data)
-            data_ids = np.array([Rset_id])
-            Rset_md5 = data.md5
+            r_prov_id = self._get_r_prov_id(data)
+            data_ids = np.array([r_prov_id])
+            r_prov_md5 = data.md5
             copy_EF = False
 
-            Rset_info, z, R, E, F = self._sample(
-                z, R, E, F, data, quantity, data_ids, Rset_id, Rset_info, size,
-                criteria=criteria, z_slice=z_slice, cutoff=cutoff,
+            r_prov_specs, z, R, E, F = self._sample(
+                z, R, E, F, data, quantity, data_ids, r_prov_id, r_prov_specs,
+                size, criteria=criteria, z_slice=z_slice, cutoff=cutoff,
                 sampling_updates=sampling_updates, copy_EF=copy_EF
             )
 
-            self.Rset_md5 = {**self.Rset_md5, **{Rset_id: Rset_md5}}
+            self.r_prov_ids = {**self.r_prov_ids, **{r_prov_id: r_prov_md5}}
         elif data_type == 'd':
-            data_ids = np.array([i for i in data.Rset_md5.keys()])
+            data_ids = np.array([i for i in data.r_prov_ids.keys()])
             if quantity == 'all':
                 for data_id in data_ids:
-                    Rset_id = self._get_Rset_id(data, selected_rset_id=data_id)
-                    Rset_md5 = data.Rset_md5[Rset_id]
+                    r_prov_id = self._get_r_prov_id(data, selected_r_prov_id=data_id)
+                    r_prov_md5 = data.r_prov_ids[r_prov_id]
 
-                    Rset_info, z, R, E, F = self._sample(
-                        z, R, E, F, data, quantity, np.array([data_id]), Rset_id,
-                        Rset_info, size, criteria=criteria, z_slice=z_slice,
+                    r_prov_specs, z, R, E, F = self._sample(
+                        z, R, E, F, data, quantity, np.array([data_id]), r_prov_id,
+                        r_prov_specs, size, criteria=criteria, z_slice=z_slice,
                         cutoff=cutoff, sampling_updates=sampling_updates, 
                         copy_EF=copy_EF
                     )
 
-                    self.Rset_md5 = {**self.Rset_md5, **{Rset_id: Rset_md5}}
+                    self.r_prov_ids = {**self.r_prov_ids, **{r_prov_id: r_prov_md5}}
             elif isinstance(quantity, int) or str(quantity).isdigit():
                 raise ValueError(
                     f'This is not implemented for data set sampling'
@@ -1001,7 +1001,7 @@ class dataSet(mbGDMLData):
                 self.mb_models_md5 = data.mb_models_md5
         
         # Ensures there are no duplicate structures.
-        if not Rset_info.shape == np.unique(Rset_info, axis=0).shape:
+        if not r_prov_specs.shape == np.unique(r_prov_specs, axis=0).shape:
             raise ValueError(
                 'There are duplicate structures in the data set'
             )
@@ -1014,11 +1014,11 @@ class dataSet(mbGDMLData):
             self.cutoff = cutoff
         
         # Checks entity and comp ids.
-        Rset_info_idx_new = np.array(range(n_R_initial, len(Rset_info)))
-        if len(Rset_info_idx_new) > 0:
+        r_prov_specs_idx_new = np.array(range(n_R_initial, len(r_prov_specs)))
+        if len(r_prov_specs_idx_new) > 0:
             Rset_entity_ids_sampled_split = np.split(  # A list of column arrays from entity_ids
-                Rset_info[Rset_info_idx_new][:, 2:],
-                Rset_info.shape[1] - 2,  # Rset_id and structure number not included.
+                r_prov_specs[r_prov_specs_idx_new][:, 2:],
+                r_prov_specs.shape[1] - 2,  # r_prov_specs and structure number not included.
                 axis=1
             )
             Rset_entity_ids_sampled_split = [
@@ -1047,7 +1047,7 @@ class dataSet(mbGDMLData):
             self._r_unit = data.r_unit
 
         # Stores all information only if sampling is successful.
-        self.Rset_info = Rset_info
+        self.r_prov_specs = r_prov_specs
         self.z = z
         self.R = R
         self.E = E
@@ -1236,8 +1236,8 @@ class dataSet(mbGDMLData):
             'type': np.array('d'),
             'mbgdml_version': np.array(mbgdml_version),
             'name': np.array(self.name),
-            'Rset_md5': np.array(self.Rset_md5),
-            'Rset_info': np.array(self.Rset_info),
+            'r_prov_ids': np.array(self.r_prov_ids),
+            'r_prov_specs': np.array(self.r_prov_specs),
             'z': np.array(self.z),
             'R': np.array(self.R),
             'r_unit': np.array(self.r_unit),
@@ -1308,11 +1308,11 @@ class dataSet(mbGDMLData):
         """
         num_config = self.R.shape[0]
         for config in range(num_config):
-            rset_info = self.Rset_info[config]
+            r_prov_spec = self.r_prov_specs[config]
             print(f'-----Configuration {config}-----')
-            print(f'Rset_id: {int(rset_info[0])}     '
-                  f'Structure index: {int(rset_info[1])}')
-            print(f'Molecule indices: {rset_info[2:]}')
+            print(f'r_prov_id: {int(r_prov_spec[0])}     '
+                  f'Structure index: {int(r_prov_spec[1])}')
+            print(f'Molecule indices: {r_prov_spec[2:]}')
             print(f'Coordinates:\n{self.R[config]}')
             print(f'Energy: {self.E[config]}')
             print(f'Forces:\n{self.F[config]}\n')
@@ -1324,7 +1324,8 @@ class dataSet(mbGDMLData):
         ----------
         save_dir : :obj:`str`
         """
-        utils.write_xyz(self.z, self.R, save_dir, self.name)
+        xyz_path = os.path.join(save_dir, self.name)
+        utils.write_xyz(xyz_path, self.z, self.R)
     
     def create_mb_from_models(self, ref_dset, model_paths):
         """Creates a many-body data set using mbGDML predictions.
