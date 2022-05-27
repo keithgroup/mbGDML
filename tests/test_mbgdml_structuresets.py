@@ -69,10 +69,9 @@ def example_10h2o(structureset):
     assert np.array_equal(structureset.entity_ids, entity_ids)
 
     # Has comp_ids
-    comp_ids = np.array([
-        ['0', 'h2o'], ['1', 'h2o'], ['2', 'h2o'], ['3', 'h2o'], ['4', 'h2o'],
-        ['5', 'h2o'], ['6', 'h2o'], ['7', 'h2o'], ['8', 'h2o'], ['9', 'h2o']
-    ])
+    comp_ids = np.array(
+        ['h2o', 'h2o', 'h2o', 'h2o', 'h2o', 'h2o', 'h2o', 'h2o', 'h2o', 'h2o']
+    )
     assert np.array_equal(structureset.comp_ids, comp_ids)
     
     # Cartesian coordinates
@@ -153,10 +152,7 @@ def example_6h2o_md(structureset):
     assert np.array_equal(structureset.entity_ids, entity_ids)
 
     # Has comp_ids
-    comp_ids = np.array([
-        ['0', 'h2o'], ['1', 'h2o'], ['2', 'h2o'], ['3', 'h2o'], ['4', 'h2o'],
-        ['5', 'h2o']
-    ])
+    comp_ids = np.array(['h2o', 'h2o', 'h2o', 'h2o', 'h2o', 'h2o'])
     assert np.array_equal(structureset.comp_ids, comp_ids)
     
     # Cartesian coordinates
@@ -202,7 +198,7 @@ def test_structureset_from_traj():
     solvent = 'h2o'
     comp_ids = []
     for i in range(0, cluster_size):
-        comp_ids.append([str(i), solvent])
+        comp_ids.append(solvent)
 
     # Creating structure set.
     test_structureset = structureSet()
@@ -237,7 +233,7 @@ def test_structureset_from_npz():
     solvent = 'h2o'
     comp_ids = []
     for i in range(0, cluster_size):
-        comp_ids.append([str(i), solvent])
+        comp_ids.append(solvent)
 
     # Creating structure set.
     test_structureset = structureSet()

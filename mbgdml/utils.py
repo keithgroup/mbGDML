@@ -170,68 +170,74 @@ def natsort_list(unsorted_list):
 
     return sorted_list
 
-def string_coords(z, R):
-    """Puts atomic coordinates into a Python string. Typically used for 
-    writing to an input file.
-    
+def string_xyz_arrays(z, R, *args, precision=10):
+    """Create string of array data in XYZ format for a single structure.
+
     Parameters
     ----------
-    atoms : :obj:`numpy.ndarray`
-        A (n,) numpy array containing all ``n`` elements labled by their atomic 
-        number.
-    coords : :obj:`numpy.array`
-        Contains atomic positions in a (n, 3) numpy array where the x, y, and z 
-        Cartesian coordinates in Angstroms are given for the n atoms.
+    z : :obj:`numpy.ndarray`, int, ndim=1
+        Atomic numbers of all atoms in the system.
+    R : :obj:`numpy.ndarray`, float, ndim=2
+        Cartesian coordinates of all atoms in the same order as ``Z``.
+    args
+        Other :obj:`numpy.ndarray` (ndim>=1) to add where it's assumed the
+        zero axis is with respect to ``R``. For example, if we have atomic
+        forces the array shape would be ``(n, 3)`` where ``n`` is the number of
+        atoms in the structure.
+    precision : :obj:`int`, optional
+        Number of decimal points for printing array data. Defaults to ``13``.
     
     Returns
     -------
     :obj:`str`
-        XYZ atomic coordinates as a string.
+        The XYZ string for a single structure. This does not include the number
+        of atoms 
     """
-    atom_coords_string = ''
-    atom_index = 0
-    while atom_index < len(z):
-        atom_element = str(z_to_element[z[atom_index]])
-        coords_string = np.array2string(
-            R[atom_index],
-            suppress_small=True, separator='   ',
-            formatter={'float_kind':'{:0.9f}'.format}
-        )[1:-1] + '\n'
-        atom_coords_string += (atom_element + '   ' \
-                               + coords_string).replace(' -', '-')
-        atom_index += 1
+    struct_string = ''
+    for i in range(len(z)):
+        atom_string = str(z_to_element[z[i]])
+        for arr in (R, *args):
+            if arr is not None:
+                atom_string += '    '
+                atom_string += np.array2string(
+                    arr[i], suppress_small=True, separator='    ',
+                    formatter={'float_kind': lambda x: f'%.{precision}f' % x}
+                )[1:-1]
+        atom_string = atom_string.replace(' -', '-')
+        atom_string += '\n'
+        struct_string += atom_string
+    return struct_string
+
+def write_xyz(
+    xyz_path, z, R, comments=None, data_precision=10
+):
+    """Write standard XYZ file.
     
-    return atom_coords_string
-
-def write_xyz(z, R, save_dir, file_name):
-    """Write XYZ file given atomic numbers and Cartesian coordinates.
-
     Parameters
     ----------
-    z : :obj:`numpy.ndarray`
-        A ``(n,)`` shape array of type :obj:`numpy.int32` containing atomic
-        numbers of atoms in the structures in order as they appear.
+    xyz_path : :obj:`str`
+        Path to XYZ file to write.
+    Z : :obj:`numpy.ndarray`
+        Atomic numbers of all atoms in the system.
     R : :obj:`numpy.ndarray`
-        A :obj:`numpy.ndarray` with shape of ``(m, n, 3)`` where ``m`` is the
-        number of structures and ``n`` is the number of atoms with three 
-        Cartesian components.
-    save_dir : :obj:`str`
-        Path to directory to save XYZ file.
-    file_name : :obj:`str`
-        Name to save the file.
+        Cartesian coordinates of all structures in the same order as ``Z``.
+    comments : :obj:`list`, optional
+        Comment lines for each XYZ structure.
+    data_precision : :obj:`int`, optional
+        Number of decimal points for printing array data. Default is ``13``.
     """
-    if R.ndim == 2:
-        R = np.array([R])
-    
-    if save_dir[-1] != '/':
-        save_dir += '/'
-    
-    num_atoms = len(z)
-    with open(f'{save_dir}{file_name}.xyz', 'w') as f:
-        for structure in R:
-            f.writelines(
-                [f'{num_atoms}\n', '\n', string_coords(z, structure)]
-            )
+    n_atoms = len(z)
+    with open(xyz_path, 'w') as f:
+        for i in range(len(R)):
+            f.write(f'{n_atoms}\n')
+            if comments is not None:
+                comment = comments[i]
+                if comment[-2:] != '\n':
+                    comment += '\n'
+            else:
+                comment = '\n'
+            f.write(comment)
+            f.write(string_xyz_arrays(z, R[i], precision=data_precision))
 
 def convert_forces(
     forces, e_units_calc, r_units_calc, e_units, r_units
@@ -372,7 +378,7 @@ def e_f_contribution(dset, dsets_lower, operation):
             # We have to match the molecule information for each reference dset
             # structure to the molecules in this lower dset to remove the right
             # information.
-            r_info = dset.Rset_info[i]  # Rset info of this structure.
+            r_info = dset.r_prov_specs[i]  # r_prov_specs of this structure.
             mol_combs = list(  # Molecule combinations to be removed from structure.
                 itertools.combinations(
                     r_info[2:], len(set(dset_lower.entity_ids))  # Number of molecules in lower dset
@@ -386,7 +392,7 @@ def e_f_contribution(dset, dsets_lower, operation):
                 
                 # Index of the molecule combination in the lower data set.
                 i_r_lower = np.where(
-                    np.all(dset_lower.Rset_info == r_info_lower_comb, axis=1)
+                    np.all(dset_lower.r_prov_specs == r_info_lower_comb, axis=1)
                 )[0][0]
 
                 e_r_lower = dset_lower.E[i_r_lower]
@@ -420,8 +426,10 @@ def e_f_contribution(dset, dsets_lower, operation):
     dset.F = F
     return dset
 
-def get_entity_ids(atoms_per_mol, num_mol):
-    """Prepares the list of entity ids for a system with only one species.
+def get_entity_ids(
+    atoms_per_mol, num_mol, starting_idx=0, add_to=None
+):
+    """Generates entity ids for a single species.
 
     Note that all of the atoms in each molecule must occur in the same order and
     be grouped together.
@@ -431,7 +439,11 @@ def get_entity_ids(atoms_per_mol, num_mol):
     atoms_per_mol : :obj:`int`
         Number of atoms in the molecule.
     num_mol : :obj:`int`
-        Number of molecules in the system.
+        Number of molecules of this type in the system.
+    starting_idx : :obj:`int`
+        Number to start entity_id labels.
+    add_to : :obj:`list`
+        Entity ids to append new ids to.
     
     Returns
     -------
@@ -439,30 +451,45 @@ def get_entity_ids(atoms_per_mol, num_mol):
         Entity ids for a structure.
     """
     entity_ids = []
-    for i in range(0, num_mol):
+    for i in range(starting_idx, num_mol+starting_idx):
         entity_ids.extend([i for _ in range(0, atoms_per_mol)])
-    return np.array(entity_ids)
+    
+    if add_to is not None:
+        if isinstance(add_to, np.ndarray):
+            add_to = add_to.tolist()
+        return np.array(add_to + entity_ids)
+    else:
+        return np.array(entity_ids)
 
-def get_comp_ids(solvent, entity_ids):
+def get_comp_ids(label, num_mol, entity_ids, add_to=None):
     """Prepares the list of component ids for a system with only one species.
 
     Parameters
     ----------
-    atoms_per_mol : :obj:`int`
-        Number of atoms in the molecule.
+    label : :obj:`int`
+        Species label.
     num_mol : :obj:`int`
-        Number of molecules in the system.
-    
+        Number of molecules of this type in the system.
+    entity_ids : :obj:`int`
+        A uniquely identifying integer specifying what atoms belong to
+        which entities. Entities can be a related set of atoms, molecules,
+        or functional group. For example, a water and methanol molecule
+        could be ``[0, 0, 0, 1, 1, 1, 1, 1, 1]``.
+    add_to : :obj:`list`
+        Component ids to append new ids to.
+
     Returns
     -------
     :obj:`numpy.ndarray`
         Component ids for a structure.
     """
-    entity_ids_set = set(entity_ids)
-    comp_ids = []
-    for i in entity_ids_set:
-        comp_ids.append([i, solvent])
-    return np.array(comp_ids)
+    comp_ids = [label for _ in range(0, num_mol)]
+    if add_to is not None:
+        if isinstance(add_to, np.ndarray):
+            add_to = add_to.tolist()
+        return np.array(add_to + comp_ids)
+    else:
+        return np.array(comp_ids)
 
 def get_R_slice(entities, entity_ids):
     """Retrives R slice for specific entities.
@@ -472,7 +499,10 @@ def get_R_slice(entities, entity_ids):
     entities : :obj:`numpy.ndarray`
         Desired entities from R. For example, ``np.array([2, 5])``.
     entity_ids : :obj:`numpy.ndarray`
-        The entity_ids for the R to be sliced.
+        A uniquely identifying integer specifying what atoms belong to
+        which entities. Entities can be a related set of atoms, molecules,
+        or functional group. For example, a water and methanol molecule
+        could be ``[0, 0, 0, 1, 1, 1, 1, 1, 1]``.
     
     Returns
     -------

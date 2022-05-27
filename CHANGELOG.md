@@ -4,6 +4,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### Added
+
+- Write JSON file after training with useful information.
+- Specify validation structures when training.
+
+### Changed
+
+- Moved sGDML modified training routines to `_train.py`.
+- Changed ``Rset_md5`` to ``r_prov_ids`` and ``Rset_info`` to ``r_prov_specs``.
+- Improved the ``write_xyz`` and ``string_coords`` functions.
+- ``comp_ids`` is now a 1D array where the index of the label is the ``entity_id``.
+
 ### Fixed
 
 - Grammar and typos in documentation.

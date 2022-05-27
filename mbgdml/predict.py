@@ -129,14 +129,17 @@ class mbPredict():
             the same order as z. The array should have shape (n, 3) where n is 
             the number of atoms. This is a single structure.
         entity_ids : :obj:`numpy.ndarray`
-            An array specifying which atoms belong to what entities
-            (e.g., molecules) for ``r``.
+            A uniquely identifying integer specifying what atoms belong to
+            which entities. Entities can be a related set of atoms, molecules,
+            or functional group. For example, a water and methanol molecule
+            could be ``[0, 0, 0, 1, 1, 1, 1, 1, 1]``.
         comp_ids : :obj:`numpy.ndarray`
-            A 2D array relating ``entity_ids`` to a chemical component/species
-            id or label (``comp_id``) for ``r``. The first column is the unique
-            ``entity_id`` and the second is a unique ``comp_id`` for that
-            chemical species. Each ``comp_id`` is reused for the same chemical
-            species.
+            Relates ``entity_id`` to a fragment label for chemical components
+            or species. Labels could be ``WAT`` or ``h2o`` for water, ``MeOH``
+            for methanol, ``bz`` for benzene, etc. There are no standardized
+            labels for species. The index of the label is the respective
+            ``entity_id``. For example, a water and methanol molecule could
+            be ``['h2o', 'meoh']``.
         model : :obj:`dict`
             The dictionary of the loaded npz file. Stored in ``self.models``.
         gdml : :obj:`sgdml.predict.GDMLPredict`
@@ -176,7 +179,7 @@ class mbPredict():
         # is a list of all entities in ``r`` that match the model entity.
         r_entity_ids_per_model_entity = []
         for model_comp_id in model['comp_ids']:
-            matching_entity_ids = np.where(comp_ids[:,1] == model_comp_id[1])[0]
+            matching_entity_ids = np.where(model_comp_id == comp_ids)[0]
             r_entity_ids_per_model_entity.append(matching_entity_ids)
 
         nbody_combinations = self._generate_entity_combinations(
@@ -244,14 +247,17 @@ class mbPredict():
             Cartesian coordinates of all atoms of the structure specified in 
             the same order as ``z``. The array can be two or three dimensional.
         entity_ids : :obj:`numpy.ndarray`
-            An array specifying which atoms belong to what entities
-            (e.g., molecules).
+            A uniquely identifying integer specifying what atoms belong to
+            which entities. Entities can be a related set of atoms, molecules,
+            or functional group. For example, a water and methanol molecule
+            could be ``[0, 0, 0, 1, 1, 1, 1, 1, 1]``.
         comp_ids : :obj:`numpy.ndarray`
-            A 2D array relating ``entity_ids`` to a chemical component/species
-            id or label (``comp_id``). The first column is the unique
-            ``entity_id`` and the second is a unique ``comp_id`` for that
-            chemical species. Each ``comp_id`` is reused for the same chemical
-            species.
+            Relates ``entity_id`` to a fragment label for chemical components
+            or species. Labels could be ``WAT`` or ``h2o`` for water, ``MeOH``
+            for methanol, ``bz`` for benzene, etc. There are no standardized
+            labels for species. The index of the label is the respective
+            ``entity_id``. For example, a water and methanol molecule could
+            be ``['h2o', 'meoh']``.
         ignore_criteria : :obj:`bool`, optional
             Whether to take into account structure criteria and their cutoffs
             for each model. Defaults to ``False``.
@@ -352,14 +358,17 @@ class mbPredict():
             Cartesian coordinates of all atoms of the structure specified in 
             the same order as ``z``. The array can be two or three dimensional.
         entity_ids : :obj:`numpy.ndarray`
-            An array specifying which atoms belong to what entities
-            (e.g., molecules).
+            A uniquely identifying integer specifying what atoms belong to
+            which entities. Entities can be a related set of atoms, molecules,
+            or functional group. For example, a water and methanol molecule
+            could be ``[0, 0, 0, 1, 1, 1, 1, 1, 1]``.
         comp_ids : :obj:`numpy.ndarray`
-            A 2D array relating ``entity_ids`` to a chemical component/species
-            id or label (``comp_id``). The first column is the unique
-            ``entity_id`` and the second is a unique ``comp_id`` for that
-            chemical species. Each ``comp_id`` is reused for the same chemical
-            species.
+            Relates ``entity_id`` to a fragment label for chemical components
+            or species. Labels could be ``WAT`` or ``h2o`` for water, ``MeOH``
+            for methanol, ``bz`` for benzene, etc. There are no standardized
+            labels for species. The index of the label is the respective
+            ``entity_id``. For example, a water and methanol molecule could
+            be ``['h2o', 'meoh']``.
         ignore_criteria : :obj:`bool`, optional
             Whether to take into account structure criteria and their cutoffs
             for each model. Defaults to ``False``.

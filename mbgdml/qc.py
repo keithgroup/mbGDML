@@ -404,7 +404,7 @@ def slurm_engrad_calculation(
         if step_index != 0:
             engrad.template_input = templates.add_job + templates.input
 
-        step_R_string = utils.string_coords(step_z, step_R)
+        step_R_string = utils.string_xyz_arrays(step_z, step_R)
         _, calc_string = engrad.input(
             engrad_keyword,
             step_R_string,

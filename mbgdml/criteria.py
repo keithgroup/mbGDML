@@ -41,13 +41,17 @@ def get_z_slice(entity_ids, comp_ids, criteria_molecule_index):
     Parameters
     ----------
     entity_ids : :obj:`numpy.ndarray`
-        An array specifying which atoms belong to what entities
-        (e.g., molecules).
+        A uniquely identifying integer specifying what atoms belong to
+        which entities. Entities can be a related set of atoms, molecules,
+        or functional group. For example, a water and methanol molecule
+        could be ``[0, 0, 0, 1, 1, 1, 1, 1, 1]``.
     comp_ids : :obj:`numpy.ndarray`
-        A 2D array relating ``entity_ids`` to a chemical component/species
-        id or label (``comp_id``). The first column is the unique ``entity_id``
-        and the second is a unique ``comp_id`` for that chemical species.
-        Each ``comp_id`` is reused for the same chemical species.
+        Relates ``entity_id`` to a fragment label for chemical components
+        or species. Labels could be ``WAT`` or ``h2o`` for water, ``MeOH``
+        for methanol, ``bz`` for benzene, etc. There are no standardized
+        labels for species. The index of the label is the respective
+        ``entity_id``. For example, a water and methanol molecule could
+        be ``['h2o', 'meoh']``.
     criteria_molecule_index : :obj:`dict`
         The selected atom index of every possible species. Keys are the entity
         labels (e.g., ``'h2o''`, ``'mecn'``, etc.) and values are the index of
@@ -59,9 +63,8 @@ def get_z_slice(entity_ids, comp_ids, criteria_molecule_index):
         Indices of the atoms to be used for the cutoff calculation.
     """
     z_slice = []
-    for entity in comp_ids:
-        entity_id = int(entity[0])
-        comp_label = entity[1]
+    for entity_id in range(len(comp_ids)):
+        comp_label = comp_ids[entity_id]
         entity_idx = np.where(entity_ids == entity_id)[0]
         z_index = entity_idx[criteria_molecule_index[comp_label]]
         z_slice.append(z_index)
@@ -86,8 +89,10 @@ def distance_all(z, R, z_slice, entity_ids, cutoff=None):
     z_slice : :obj:`numpy.ndarray`
         Indices of the atoms to be used for the cutoff calculation.
     entity_ids : :obj:`numpy.ndarray`
-        An array specifying which atoms belong to what entities
-        (e.g., molecules).
+        A uniquely identifying integer specifying what atoms belong to
+        which entities. Entities can be a related set of atoms, molecules,
+        or functional group. For example, a water and methanol molecule
+        could be ``[0, 0, 0, 1, 1, 1, 1, 1, 1]``.
     cutoff : :obj:`list` [:obj:`float`]
         Distance cutoff between the atoms selected by ``z_slice``. Must be
         in the same units (e.g., Angstrom) as ``R``.
@@ -140,8 +145,10 @@ def cm_distance_sum(z, R, z_slice, entity_ids, cutoff=None):
     z_slice : :obj:`numpy.ndarray`
         Indices of the atoms to be used for the cutoff calculation.
     entity_ids : :obj:`numpy.ndarray`
-        An array specifying which atoms belong to what entities
-        (e.g., molecules).
+        A uniquely identifying integer specifying what atoms belong to
+        which entities. Entities can be a related set of atoms, molecules,
+        or functional group. For example, a water and methanol molecule
+        could be ``[0, 0, 0, 1, 1, 1, 1, 1, 1]``.
     cutoff : :obj:`list` [:obj:`float`], optional
         Distance cutoff between the atoms selected by ``z_slice``. Must be
         in the same units (e.g., Angstrom) as ``R``.
@@ -203,8 +210,10 @@ def distance_sum(z, R, z_slice, entity_ids, cutoff=None):
     z_slice : :obj:`numpy.ndarray`
         Indices of the atoms to be used for the cutoff calculation.
     entity_ids : :obj:`numpy.ndarray`
-        An array specifying which atoms belong to what entities
-        (e.g., molecules).
+        A uniquely identifying integer specifying what atoms belong to
+        which entities. Entities can be a related set of atoms, molecules,
+        or functional group. For example, a water and methanol molecule
+        could be ``[0, 0, 0, 1, 1, 1, 1, 1, 1]``.
     cutoff : :obj:`list` [:obj:`float`], optional
         Distance cutoff between the atoms selected by ``z_slice``. Must be
         in the same units (e.g., Angstrom) as ``R``.
