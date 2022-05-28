@@ -205,7 +205,6 @@ class sGDMLTraining():
         else:
             idxs_train = np.array(idxs_train)  # Ensures it is an array.
 
-        ###   CHANGED   ###
         # Handles validation indices.
         if idxs_valid is not None:
             idxs_valid = np.array(idxs_valid)
