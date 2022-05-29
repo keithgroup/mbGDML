@@ -9,3 +9,9 @@ from mbgdml import train
 from mbgdml import utils
 from mbgdml import criteria
 from mbgdml import analysis
+
+# Setup logging
+import logging
+from .logger import GDMLLogger
+logging.setLoggerClass(GDMLLogger)
+
