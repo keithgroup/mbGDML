@@ -23,7 +23,7 @@
 import itertools
 
 import numpy as np
-from sgdml.predict import GDMLPredict
+from .gdml.predict import GDMLPredict
 from mbgdml import criteria
 
 try:
@@ -58,7 +58,7 @@ class mbPredict():
     
 
     def _load_models(self, models, use_torch):
-        """Loads models and preprares GDMLPredict.
+        """Loads models and prepares GDMLPredict.
         
         Parameters
         ----------
@@ -142,7 +142,7 @@ class mbPredict():
             be ``['h2o', 'meoh']``.
         model : :obj:`dict`
             The dictionary of the loaded npz file. Stored in ``self.models``.
-        gdml : :obj:`sgdml.predict.GDMLPredict`
+        gdml : :obj:`mbgdml.gdml.predict.GDMLPredict`
             Object used to predict energies and forces of the structure defined 
             in ``r``.
         ignore_criteria : :obj:`bool`, optional

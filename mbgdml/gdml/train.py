@@ -26,6 +26,7 @@ import scipy as sp
 from .sample import draw_strat_sample
 from .perm import find_perms
 from .desc import Desc
+from .predict import GDMLPredict
 from ..utils import md5_data
 from .. import __version__
 
@@ -34,10 +35,6 @@ import multiprocessing as mp
 Pool = mp.get_context('fork').Pool
 from functools import partial
 import warnings
-
-from sgdml.predict import GDMLPredict
-from sgdml.utils import io
-import timeit
 
 try:
     import torch
