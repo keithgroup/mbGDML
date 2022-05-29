@@ -331,7 +331,7 @@ def md5_data(data, info=['z', 'R']):
     info : :obj:`list`, optional
         List of set keys to include in the MD5 hash. At minimum it defaults to
         ``z`` (atomic numbers) and ``R`` (atomic coordinates). Other information
-        such as ``E`` (energies) and ``F`` (forces) are highly encourged.
+        such as ``E`` (energies) and ``F`` (forces) are highly encouraged.
     
     Returns
     -------

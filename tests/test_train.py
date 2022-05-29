@@ -66,7 +66,6 @@ def test_train_results_1h2o():
         solver_tol=1e-4,
         n_inducing_pts_init=25,
         interact_cut_off=None,
-        callback=None,
         idxs_train=train_idxs,
         idxs_valid=valid_idxs,
     )

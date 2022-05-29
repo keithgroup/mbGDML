@@ -24,6 +24,9 @@
 import numpy as np
 import scipy as sp
 from .sample import draw_strat_sample
+from .perm import find_perms
+from .desc import Desc
+from ..utils import md5_data
 from .. import __version__
 
 # sGDML imports
@@ -33,8 +36,7 @@ from functools import partial
 import warnings
 
 from sgdml.predict import GDMLPredict
-from sgdml.utils.desc import Desc
-from sgdml.utils import io, perm, ui
+from sgdml.utils import io
 import timeit
 
 try:
@@ -45,6 +47,8 @@ else:
     _has_torch = True
 
 import logging
+log = logging.getLogger(__name__)
+from ..logger import log_array
 
 # TODO: convert glob to ray
 
@@ -227,17 +231,16 @@ class GDMLTrain(object):
         Parameters
         ----------
         max_processes : int, optional
-                Limit the max. number of processes. Otherwise
-                all CPU cores are used. This parameters has no
-                effect if `use_torch=True`
+            Limit the max. number of processes. Otherwise
+            all CPU cores are used. This parameters has no
+            effect if `use_torch=True`
         use_torch : boolean, optional
-                Use PyTorch to calculate predictions (if
-                supported by solver)
+            Use PyTorch to calculate predictions (if supported by solver).
 
         Raises
         ------
         Exception
-            If multiple instsances of this class are created.
+            If multiple instances of this class are created.
         ImportError
             If the optional PyTorch dependency is missing, but PyTorch features are used.
         """
@@ -259,8 +262,6 @@ class GDMLTrain(object):
             raise ImportError(
                 'Optional PyTorch dependency not found! Please run \'pip install sgdml[torch]\' to install it or disable the PyTorch option.'
             )
-
-        self.callback = None  # TODO: Fix
 
     def __del__(self):
 
@@ -285,7 +286,6 @@ class GDMLTrain(object):
         solver_tol=1e-4,  # TODO: document me
         n_inducing_pts_init=25,  # TODO: document me
         interact_cut_off=None,  # TODO: document me
-        callback=None,  # TODO: document me
         idxs_train=None,
         idxs_valid=None,
     ):
@@ -344,6 +344,23 @@ class GDMLTrain(object):
             If a reconstruction of the potential energy surface is requested,
             but the energy labels are missing in the dataset.
         """
+        log.info(
+            '\n-----------------------------------\n'
+            '|   Creating GDML training task   |\n'
+            '-----------------------------------\n'
+        )
+        log.info(
+            f'Number of training structures : {n_train}\n'
+            f'Number of validation structures : {n_valid}\n\n'
+            f'Kernel length scale (sigma) : {sig}\n'
+            f'Regularization strength (lam) : {lam}\n'
+            f'Compress kernel : {use_cprsn}\n'
+            f'Use symmetries : {use_sym}\n\n'
+            f'Use energies : {use_E}\n'
+            f'Include energy constraints in kernel : {use_E_cstr}\n\n'
+            f'Solver : {solver}\n'
+            f'Solver tolerance : {solver_tol}\n'
+        )
 
         if use_E and 'E' not in train_dataset:
             raise ValueError(
@@ -354,50 +371,67 @@ class GDMLTrain(object):
             )
 
         use_E_cstr = use_E and use_E_cstr
-
-        ###   CHANGED   ###
-        # n_atoms = train_dataset['R'].shape[1]
-        ###   UNCHANGED   ###
-
-        if callback is not None:
-            callback = partial(callback, disp_str='Hashing dataset(s)')
-            callback(NOT_DONE)
-
-        md5_train = io.dataset_md5(train_dataset)
-        md5_valid = io.dataset_md5(valid_dataset)
-
-        if callback is not None:
-            callback(DONE)
-
-        if callback is not None:
-            callback = partial(
-                callback, disp_str='Sampling training and validation subsets'
-            )
-            callback(NOT_DONE)
         
-        ###   CHANGED   ###
-        # Handles training indices
+        log.info(
+            'Dataset splitting\n'
+            '-----------------'
+        )
+        md5_train_keys = ['z', 'R', 'F']
+        md5_valid_keys = ['z', 'R', 'F']
+        if 'E' in train_dataset.keys():
+            md5_train_keys.insert(2, 'E')
+        if 'E' in valid_dataset.keys():
+            md5_valid_keys.insert(2, 'E')
+        md5_train = md5_data(train_dataset, md5_train_keys)
+        md5_valid = md5_data(valid_dataset, md5_valid_keys)
+        
+        log.info(
+            '\n###   Training   ###'
+        )
+        log.info(f'MD5: {md5_train}')
+        log.info(f'Size : {n_train}')
         if idxs_train is None:
+            log.info('Drawing structures from the dataset')
             if 'E' in train_dataset:
+                log.info(
+                    'Energies are included in the dataset\n'
+                    'Using the Freedman-Diaconis rule'
+                )
                 idxs_train = draw_strat_sample(
                     train_dataset['E'], n_train
                 )
             else:
+                log.info(
+                    'Energies are not included in the dataset\n'
+                    'Randomly selecting structures'
+                )
                 idxs_train = np.random.choice(
                     np.arange(train_dataset['F'].shape[0]),
-                    n_train - m0_n_train,
+                    size=n_train,
                     replace=False,
                 )
         else:
+            log.info('Training indices were manually specified')
             idxs_train = np.array(idxs_train)
+            log.debug(f'{log_array(idxs_train)}')
 
         # Handles validation indices.
+        log.info(
+            '\n###   Validation   ###'
+        )
+        log.info(f'MD5: {md5_valid}')
+        log.info(f'Size : {n_valid}')
         if idxs_valid is not None:
+            log.info('Validation indices were manually specified')
             idxs_valid = np.array(idxs_valid)
+            log.debug(f'{log_array(idxs_valid)}')
         else:
+            log.info('Drawing structures from the dataset')
             excl_idxs = (
                 idxs_train if md5_train == md5_valid else np.array([], dtype=np.uint)
             )
+            log.debug(f'Excluded {len(excl_idxs)} structures')
+            log.debug(f'{log_array(excl_idxs)}')
 
             if 'E' in valid_dataset:
                 idxs_valid = draw_strat_sample(
@@ -409,12 +443,8 @@ class GDMLTrain(object):
                     assume_unique=True
                 )
                 idxs_valid = np.random.choice(
-                    idxs_valid_cands, n_valid, replace=False
+                    idxs_valid_cands, size=n_valid, replace=False
                 )
-        ###   UNCHANGED   ###
-
-        if callback is not None:
-            callback(DONE)
 
         R_train = train_dataset['R'][idxs_train, :, :]
         task = {
@@ -463,48 +493,20 @@ class GDMLTrain(object):
             n_train = R_train.shape[0]
             R_train_sync_mat = R_train
             if n_train > 1000:
+                log.info(
+                    'Symmetry search has been restricted to a random subset\n'
+                    'of 1000 training points for faster convergence.'
+                )
                 R_train_sync_mat = R_train[
                     np.random.choice(n_train, 1000, replace=False), :, :
                 ]
-                self.log.info(
-                    'Symmetry search has been restricted to a random subset of 1000/{:d} training points for faster convergence.'.format(
-                        n_train
-                    )
-                )
 
-            # TOOD: PBCs disabled when matching (for now).
-            # task['perms'] = perm.find_perms(
-            #    R_train_sync_mat, train_dataset['z'], lat_and_inv=lat_and_inv, max_processes=self._max_processes,
-            # )
-            task['perms'] = perm.find_perms(
+            task['perms'] = find_perms(
                 R_train_sync_mat,
                 train_dataset['z'],
                 lat_and_inv=None,
-                callback=callback,
                 max_processes=self._max_processes,
             )
-
-            # NEW
-
-            USE_FRAG_PERMS = False
-
-            if USE_FRAG_PERMS:
-                frag_perms = perm.find_frag_perms(
-                    R_train_sync_mat,
-                    train_dataset['z'],
-                    lat_and_inv=None,
-                    max_processes=self._max_processes,
-                )
-                task['perms'] = np.vstack((task['perms'], frag_perms))
-                task['perms'] = np.unique(task['perms'], axis=0)
-
-                print(
-                    '| Keeping '
-                    + str(task['perms'].shape[0])
-                    + ' unique permutations.'
-                )
-
-            # NEW
 
         else:
             task['perms'] = np.arange(train_dataset['R'].shape[1])[
@@ -522,66 +524,6 @@ class GDMLTrain(object):
             task['cprsn_keep_atoms_idxs'] = cprsn_keep_idxs
 
         return task
-
-    def create_task_from_model(self, model, dataset):
-
-        idxs_train = model['idxs_train']
-        R_train = dataset['R'][idxs_train, :, :]
-        F_train = dataset['F'][idxs_train, :, :]
-
-        use_E = 'e_err' in model
-        use_E_cstr = 'alphas_E' in model
-        use_sym = model['perms'].shape[0] > 1
-
-        task = {
-            'type': 't',
-            'code_version': __version__,
-            'dataset_name': model['dataset_name'],
-            'dataset_theory': model['dataset_theory'],
-            'z': model['z'],
-            'R_train': R_train,
-            'F_train': F_train,
-            'idxs_train': idxs_train,
-            'md5_train': model['md5_train'],
-            'idxs_valid': model['idxs_valid'],
-            'md5_valid': model['md5_valid'],
-            'sig': model['sig'],
-            'lam': model['lam'],
-            'use_E': model['use_E'],
-            'use_E_cstr': use_E_cstr,
-            'use_sym': use_sym,
-            'perms': model['perms'],
-            'use_cprsn': model['use_cprsn'],
-            'solver_name': model['solver_name'],
-            'solver_tol': model['solver_tol'], # check me
-            'n_inducing_pts_init': model['n_inducing_pts_init'],
-            'interact_cut_off': None, # check me
-        }
-
-        if use_E:
-            task['E_train'] = dataset['E'][idxs_train]
-
-        if 'lattice' in model:
-            task['lattice'] = model['lattice']
-
-        if 'r_unit' in model and 'e_unit' in model:
-            task['r_unit'] = model['r_unit']
-            task['e_unit'] = model['e_unit']
-
-        if 'alphas_F' in model:
-            task['alphas0_F'] = model['alphas_F']
-
-        if 'alphas_E' in model:
-            task['alphas0_E'] = model['alphas_E']
-
-        if 'solver_iters' in model:
-            task['solver_iters'] = model['solver_iters']
-
-        if 'inducing_pts_idxs' in model:
-            task['inducing_pts_idxs'] = model['inducing_pts_idxs']
-
-        return task
-
 
     def create_model(
         self,
@@ -696,9 +638,6 @@ class GDMLTrain(object):
     def train(  # noqa: C901
         self,
         task,
-        cprsn_callback=None,
-        save_progr_callback=None,  # TODO: document me
-        callback=None,
     ):
         """
         Train a model based on a training task.
@@ -707,38 +646,6 @@ class GDMLTrain(object):
         ----------
         task : :obj:`dict`
             Data structure of custom type :obj:`task`.
-        cprsn_callback : callable, optional
-            Symmetry compression status.
-                n_atoms : int
-                    Total number of atoms.
-                n_atoms_kept : float or None, optional
-                    Number of atoms kept after compression.
-        desc_callback : callable, optional
-            Descriptor and descriptor Jacobian generation status.
-                current : int
-                    Current progress (number of completed descriptors).
-                total : int
-                    Task size (total number of descriptors to create).
-                done_str : :obj:`str`, optional
-                    Once complete, this string contains the
-                    time it took complete this task (seconds).
-        ker_progr_callback : callable, optional
-            Kernel assembly progress function that takes three
-            arguments:
-                current : int
-                    Current progress (number of completed entries).
-                total : int
-                    Task size (total number of entries to create).
-                done_str : :obj:`str`, optional
-                    Once complete, this string contains the
-                    time it took to assemble the kernel (seconds).
-        solve_callback : callable, optional
-            Linear system solver status.
-                done : bool
-                    False when solver starts, True when it finishes.
-                done_str : :obj:`str`, optional
-                    Once done, this string contains the runtime
-                    of the solver (seconds).
 
         Returns
         -------
@@ -809,10 +716,7 @@ class GDMLTrain(object):
 
             alphas = self.solve_analytic(
                 task, desc, R_desc, R_d_desc, tril_perms_lin, y,
-                callback=callback
             )
-            # analytic = Analytic(self, desc, callback=callback)
-            # alphas = analytic.solve(task, R_desc, R_d_desc, tril_perms_lin, y)
 
         else:
             raise ValueError(f'{solver} solver is not supported')
@@ -823,10 +727,6 @@ class GDMLTrain(object):
             alphas_E = alphas[-n_train:]
             alphas_F = alphas[:-n_train]
 
-        np.save('R_desc', R_desc)
-        np.save('R_d_desc', R_d_desc)
-        np.save('tril_perms_lin', tril_perms_lin)
-        np.save('alphas_F', alphas_F)
         model = self.create_model(
             task,
             solver,
@@ -861,8 +761,13 @@ class GDMLTrain(object):
         return model
     
     def solve_analytic(
-        self, task, desc, R_desc, R_d_desc, tril_perms_lin, y, callback=None
+        self, task, desc, R_desc, R_d_desc, tril_perms_lin, y
     ):
+        log.info(
+            '\n-------------------------\n'
+            '|   Analytical solver   |\n'
+            '-------------------------\n'
+        )
 
         sig = task['sig']
         lam = task['lam']
@@ -881,14 +786,6 @@ class GDMLTrain(object):
                 np.arange(dim_i).reshape(n_atoms, -1)[cprsn_keep_idxs, :].ravel()
             )
 
-            # if cprsn_callback is not None:
-            #    cprsn_callback(n_atoms, cprsn_keep_idxs.shape[0])
-
-            # if solver != 'analytic':
-            #    raise ValueError(
-            #        'Iterative solvers and compression are mutually exclusive options for now.'
-            #    )
-
             col_idxs = (
                 cprsn_keep_idxs_lin[:, None] + np.arange(n_train) * dim_i
             ).T.ravel()
@@ -901,10 +798,7 @@ class GDMLTrain(object):
             desc,
             use_E_cstr=use_E_cstr,
             col_idxs=col_idxs,
-            callback=callback,
         )
-
-        start = timeit.default_timer()
 
         with warnings.catch_warnings():
             warnings.simplefilter('ignore')
@@ -913,15 +807,8 @@ class GDMLTrain(object):
 
                 K[np.diag_indices_from(K)] -= lam  # regularize
 
-                if callback is not None:
-                    callback = partial(
-                        callback,
-                        disp_str='Solving linear system (Cholesky factorization)',
-                    )
-                    callback(NOT_DONE)
-
                 try:
-
+                    log.info('Solving linear system (Cholesky factorization)')
                     # Cholesky
                     L, lower = sp.linalg.cho_factor(
                         -K, overwrite_a=True, check_finite=False
@@ -930,13 +817,8 @@ class GDMLTrain(object):
                         (L, lower), y, overwrite_b=True, check_finite=False
                     )
                 except np.linalg.LinAlgError:  # try a solver that makes less assumptions
-
-                    if callback is not None:
-                        callback = partial(
-                            callback,
-                            disp_str='Solving linear system (LU factorization)      ',  # Keep whitespaces!
-                        )
-                        callback(NOT_DONE)
+                    log.info('Failed! (NumPy LinAlgError)')
+                    log.info('Solving linear system (LU factorization)')
 
                     try:
                         # LU
@@ -944,43 +826,25 @@ class GDMLTrain(object):
                             K, y, overwrite_a=True, overwrite_b=True, check_finite=False
                         )
                     except MemoryError:
-                        self.log.critical(
+                        log.critical(
                             'Not enough memory to train this system using a closed form solver.\n'
                             + 'Please reduce the size of the training set or consider one of the approximate solver options.'
                         )
-                        print()
                         sys.exit()
 
                 except MemoryError:
-                    self.log.critical(
+                    log.critical(
                         'Not enough memory to train this system using a closed form solver.\n'
                         + 'Please reduce the size of the training set or consider one of the approximate solver options.'
                     )
-                    print()
                     sys.exit()
             else:
-
-                if self.callback is not None:
-                    self.callback = partial(
-                        self.callback,
-                        disp_str='Solving overdetermined linear system (least squares approximation)',
-                    )
-                    self.callback(NOT_DONE)
+                log.info('FAILED!')
+                log.info('Solving overdetermined linear system (least squares approximation)')
 
                 # least squares for non-square K
                 alphas = np.linalg.lstsq(K, y, rcond=-1)[0]
-
-        stop = timeit.default_timer()
-
-        if self.callback is not None:
-            dur_s = (stop - start) / 2
-            sec_disp_str = 'took {:.1f} s'.format(dur_s) if dur_s >= 0.1 else ''
-            self.callback(
-                DONE,
-                disp_str='Training on {:,} points'.format(n_train),
-                sec_disp_str=sec_disp_str,
-            )
-
+        
         return alphas
 
     def _recov_int_const(
@@ -996,19 +860,19 @@ class GDMLTrain(object):
 
         Parameters
         ----------
-            model : :obj:`dict`
-                Data structure of custom type :obj:`model`.
-            task : :obj:`dict`
-                Data structure of custom type :obj:`task`.
-            R_desc : :obj:`numpy.ndarray`, optional
-                    An 2D array of size M x D containing the
-                    descriptors of dimension D for M
-                    molecules.
-            R_d_desc : :obj:`numpy.ndarray`, optional
-                    A 2D array of size M x D x 3N containing of the
-                    descriptor Jacobians for M molecules. The descriptor
-                    has dimension D with 3N partial derivatives with
-                    respect to the 3N Cartesian coordinates of each atom.
+        model : :obj:`dict`
+            Data structure of custom type :obj:`model`.
+        task : :obj:`dict`
+            Data structure of custom type :obj:`task`.
+        R_desc : :obj:`numpy.ndarray`, optional
+                An 2D array of size M x D containing the
+                descriptors of dimension D for M
+                molecules.
+        R_d_desc : :obj:`numpy.ndarray`, optional
+                A 2D array of size M x D x 3N containing of the
+                descriptor Jacobians for M molecules. The descriptor
+                has dimension D with 3N partial derivatives with
+                respect to the 3N Cartesian coordinates of each atom.
 
         Returns
         -------
@@ -1077,9 +941,8 @@ class GDMLTrain(object):
         desc,  # TODO: document me
         use_E_cstr=False,
         col_idxs=np.s_[:],  # TODO: document me
-        callback=None,
     ):
-        r"""
+        """
         Compute force field kernel matrix.
 
         The Hessian of the Matern kernel is used with n = 2 (twice
@@ -1089,38 +952,27 @@ class GDMLTrain(object):
 
         Parameters
         ----------
-            R_desc : :obj:`numpy.ndarray`
-                Array containing the descriptor for each training point.
-            R_d_desc : :obj:`numpy.ndarray`
-                Array containing the gradient of the descriptor for
-                each training point.
-            tril_perms_lin : :obj:`numpy.ndarray`
-                1D array containing all recovered permutations
-                expanded as one large permutation to be applied to a
-                tiled copy of the object to be permuted.
-            sig : int
-                Hyper-parameter :math:`\sigma`(kernel length scale).
-            use_E_cstr : bool, optional
-                True: include energy constraints in the kernel,
-                False: default (s)GDML kernel.
-            callback : callable, optional
-                Kernel assembly progress function that takes three
-                arguments:
-                    current : int
-                        Current progress (number of completed entries).
-                    total : int
-                        Task size (total number of entries to create).
-                    done_str : :obj:`str`, optional
-                        Once complete, this string contains the
-                        time it took to assemble the kernel (seconds).
-            cols_m_limit : int, optional
-                Only generate the columns up to index 'cols_m_limit'. This creates
-                a M*3N x cols_m_limit*3N kernel matrix, instead of M*3N x M*3N.
-            cols_3n_keep_idxs : :obj:`numpy.ndarray`, optional
-                Only generate columns with the given indices in the 3N x 3N
-                kernel function. The resulting kernel matrix will have dimension
-                M*3N x M*len(cols_3n_keep_idxs).
-
+        R_desc : :obj:`numpy.ndarray`
+            Array containing the descriptor for each training point.
+        R_d_desc : :obj:`numpy.ndarray`
+            Array containing the gradient of the descriptor for
+            each training point.
+        tril_perms_lin : :obj:`numpy.ndarray`
+            1D array containing all recovered permutations
+            expanded as one large permutation to be applied to a
+            tiled copy of the object to be permuted.
+        sig : int
+            Hyper-parameter :math:`\sigma`(kernel length scale).
+        use_E_cstr : bool, optional
+            True: include energy constraints in the kernel,
+            False: default (s)GDML kernel.
+        cols_m_limit : int, optional
+            Only generate the columns up to index 'cols_m_limit'. This creates
+            a M*3N x cols_m_limit*3N kernel matrix, instead of M*3N x M*3N.
+        cols_3n_keep_idxs : :obj:`numpy.ndarray`, optional
+            Only generate columns with the given indices in the 3N x 3N
+            kernel function. The resulting kernel matrix will have dimension
+            M*3N x M*len(cols_3n_keep_idxs).
 
         Returns
         -------
@@ -1219,7 +1071,6 @@ class GDMLTrain(object):
 
         glob['desc_func'] = desc
 
-        start = timeit.default_timer()
         pool = Pool(self._max_processes)
 
         todo, done = K_n_cols, 0
@@ -1236,17 +1087,8 @@ class GDMLTrain(object):
         ):
             done += done_wkr
 
-            if callback is not None:
-                callback(done, todo, newline_when_done=False)
-
         pool.close()
         pool.join()  # Wait for the worker processes to terminate (to measure total runtime correctly).
-        stop = timeit.default_timer()
-
-        if callback is not None:
-            dur_s = (stop - start) / 2
-            sec_disp_str = 'took {:.1f} s'.format(dur_s) if dur_s >= 0.1 else ''
-            callback(DONE, sec_disp_str=sec_disp_str)
 
         # Release some memory.
         glob.pop('K', None)
