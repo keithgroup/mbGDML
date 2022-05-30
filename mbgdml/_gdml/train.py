@@ -47,8 +47,6 @@ import logging
 log = logging.getLogger(__name__)
 from ..logger import log_array
 
-# TODO: convert glob to ray
-
 def _share_array(arr_np, typecode_or_type):
     """Return a ctypes array allocated from shared memory with data from a
     NumPy array.
@@ -281,7 +279,6 @@ class GDMLTrain(object):
         use_cprsn=False,
         solver='analytic',  # TODO: document me
         solver_tol=1e-4,  # TODO: document me
-        n_inducing_pts_init=25,  # TODO: document me
         interact_cut_off=None,  # TODO: document me
         idxs_train=None,
         idxs_valid=None,
@@ -464,7 +461,6 @@ class GDMLTrain(object):
             'use_cprsn': use_cprsn,
             'solver_name': solver,
             'solver_tol': solver_tol,
-            'n_inducing_pts_init': n_inducing_pts_init,
             'interact_cut_off': interact_cut_off,
         }
 
@@ -478,7 +474,7 @@ class GDMLTrain(object):
             try:
                 lat_and_inv = (task['lattice'], np.linalg.inv(task['lattice']))
             except np.linalg.LinAlgError:
-                raise ValueError(  # TODO: Document me
+                raise ValueError(
                     'Provided dataset contains invalid lattice vectors (not invertible). Note: Only rank 3 lattice vector matrices are supported.'
                 )
 
@@ -535,7 +531,7 @@ class GDMLTrain(object):
         solver_resid=None,
         solver_iters=None,
         norm_y_train=None,
-        inducing_pts_idxs=None,  # NEW : which columns were used to construct nystrom preconditioner
+        inducing_pts_idxs=None,
     ):
 
         n_train, dim_d = R_d_desc.shape[:2]
@@ -563,8 +559,6 @@ class GDMLTrain(object):
 
         else:
 
-            # TOOD: why not use 'd_desc_dot_vec'?
-
             i, j = np.tril_indices(n_atoms, k=-1)
             alphas_F_exp = alphas_F.reshape(-1, n_atoms, 3)
 
@@ -580,7 +574,6 @@ class GDMLTrain(object):
             'solver_name': solver,
             'solver_tol': task['solver_tol'],
             'norm_y_train': norm_y_train,
-            'n_inducing_pts_init': task['n_inducing_pts_init'],
             'z': task['z'],
             'idxs_train': task['idxs_train'],
             'md5_train': task['md5_train'],
@@ -629,13 +622,7 @@ class GDMLTrain(object):
 
         return model
 
-    #from memory_profiler import profile
-
-    #@profile
-    def train(  # noqa: C901
-        self,
-        task,
-    ):
+    def train(self, task):
         """
         Train a model based on a training task.
 
@@ -757,9 +744,7 @@ class GDMLTrain(object):
 
         return model
     
-    def solve_analytic(
-        self, task, desc, R_desc, R_d_desc, tril_perms_lin, y
-    ):
+    def solve_analytic(self, task, desc, R_desc, R_d_desc, tril_perms_lin, y):
         log.info(
             '\n-------------------------\n'
             '|   Analytical solver   |\n'
@@ -844,9 +829,7 @@ class GDMLTrain(object):
         
         return alphas
 
-    def _recov_int_const(
-        self, model, task, R_desc=None, R_d_desc=None
-    ):
+    def _recov_int_const(self, model, task, R_desc=None, R_d_desc=None):
         """
         Estimate the integration constant for a force field model.
 
@@ -862,32 +845,32 @@ class GDMLTrain(object):
         task : :obj:`dict`
             Data structure of custom type :obj:`task`.
         R_desc : :obj:`numpy.ndarray`, optional
-                An 2D array of size M x D containing the
-                descriptors of dimension D for M
-                molecules.
+            An 2D array of size M x D containing the
+            descriptors of dimension D for M
+            molecules.
         R_d_desc : :obj:`numpy.ndarray`, optional
-                A 2D array of size M x D x 3N containing of the
-                descriptor Jacobians for M molecules. The descriptor
-                has dimension D with 3N partial derivatives with
-                respect to the 3N Cartesian coordinates of each atom.
+            A 2D array of size M x D x 3N containing of the
+            descriptor Jacobians for M molecules. The descriptor
+            has dimension D with 3N partial derivatives with
+            respect to the 3N Cartesian coordinates of each atom.
 
         Returns
         -------
-            float
-                Estimate for the integration constant.
+        float
+            Estimate for the integration constant.
 
         Raises
         ------
-            ValueError
-                If the sign of the force labels in the dataset from
-                which the model emerged is switched (e.g. gradients
-                instead of forces).
-            ValueError
-                If inconsistent/corrupted energy labels are detected
-                in the provided dataset.
-            ValueError
-                If different scales in energy vs. force labels are
-                detected in the provided dataset.
+        ValueError
+            If the sign of the force labels in the dataset from
+            which the model emerged is switched (e.g. gradients
+            instead of forces).
+        ValueError
+            If inconsistent/corrupted energy labels are detected
+            in the provided dataset.
+        ValueError
+            If different scales in energy vs. force labels are
+            detected in the provided dataset.
         """
 
         gdml = GDMLPredict(
@@ -913,14 +896,12 @@ class GDMLTrain(object):
             return None
 
         if corrcoef < 0.95:
-            # TODO: put back
             self.log.warning(
                 'Inconsistent energy labels detected!\n'
             )
             return None
 
         if np.abs(e_fact - 1) > 1e-1:
-            # TODO: put back
             self.log.warning(
                 'Different scales in energy vs. force labels detected!\n'
             )
@@ -930,14 +911,8 @@ class GDMLTrain(object):
         return np.sum(E_ref - E_pred) / E_ref.shape[0]
 
     def _assemble_kernel_mat(
-        self,
-        R_desc,
-        R_d_desc,
-        tril_perms_lin,
-        sig,
-        desc,  # TODO: document me
-        use_E_cstr=False,
-        col_idxs=np.s_[:],  # TODO: document me
+        self, R_desc, R_d_desc, tril_perms_lin, sig, desc, use_E_cstr=False,
+        col_idxs=np.s_[:]
     ):
         """
         Compute force field kernel matrix.
@@ -973,15 +948,10 @@ class GDMLTrain(object):
 
         Returns
         -------
-            :obj:`numpy.ndarray`
-                Force field kernel matrix.
+        :obj:`numpy.ndarray`
+            Force field kernel matrix.
         """
-
         global glob
-
-        # Note: This function does not support unsorted (ascending) index arrays.
-        # if not isinstance(col_idxs, slice):
-        #    assert np.array_equal(col_idxs, np.sort(col_idxs))
 
         n_train, dim_d = R_d_desc.shape[:2]
         dim_i = 3 * int((1 + np.sqrt(8 * dim_d + 1)) / 2)
@@ -1093,3 +1063,267 @@ class GDMLTrain(object):
         glob.pop('R_d_desc', None)
 
         return np.frombuffer(K).reshape(glob['K_shape'])
+
+
+def get_test_idxs(model, dataset, n_test=None):
+    """Gets dataset indices for testing a model.
+
+    Parameters
+    ----------
+    model : :obj:`dict`
+        Model to test.
+    dataset : :obj:`dict`
+        Dataset to be used for testing.
+    n_test : :obj:`int`, default: ``None``
+        Number of points to include in test indices. Defaults to all available
+        indices.
+    
+    Returns
+    -------
+    :obj:`numpy.ndarray`
+        Structure indices for model testing.
+    """
+    # exclude training and/or test sets from validation set if necessary
+    excl_idxs = np.empty((0,), dtype=np.uint)
+    if dataset['md5'] == model['md5_train']:
+        excl_idxs = np.concatenate([excl_idxs, model['idxs_train']]).astype(
+            np.uint
+        )
+    if dataset['md5'] == model['md5_valid']:
+        excl_idxs = np.concatenate([excl_idxs, model['idxs_valid']]).astype(
+            np.uint
+        )
+
+    n_data = dataset['F'].shape[0]
+    n_data_eff = n_data - len(excl_idxs)
+    if n_test is None:
+        n_test = n_data_eff
+
+    if n_data_eff == 0:
+        log.warning('No unused points for testing in provided dataset.')
+        return
+    
+    log.info(
+        f'Test set size was automatically set to {n_data_eff} points.'
+    )
+
+    if 'E' in dataset:
+        test_idxs = draw_strat_sample(
+            dataset['E'], n_test, excl_idxs=excl_idxs
+        )
+    else:
+        test_idxs = np.delete(np.arange(n_data), excl_idxs)
+
+        log.warning(
+            'Test dataset will be sampled with no guidance from energy labels (randomly)!\n'
+            + 'Note: Larger test datasets are recommended due to slower convergence of the error.'
+        )
+    
+    return test_idxs
+
+
+def add_valid_errors(
+    model, dataset, overwrite=False, max_processes=None, use_torch=False
+):
+    """Calculate and add energy and force validation errors to a model.
+    
+    Parameters
+    ----------
+    model : :obj:`dict`
+        Trained GDML model.
+    dataset : :obj:`dict`
+        Validation dataset.
+    overwrite : :obj:`bool`, default: ``False``
+        Will overwrite validation errors in model if they already exist.
+    
+    Return
+    ------
+    :obj:`dict`
+        Validation errors with the following keys.
+
+            ``'force'`` which contains ``'mae'`` and ``'rmse'``
+
+            ``'energy'`` which contains ``'mae'`` and ``'rmse'``
+    :obj:`dict`
+        Model with validation errors.
+    """
+    log.info(
+        '\n------------------------\n'
+        '|   Model Validation   |\n'
+        '------------------------\n'
+    )
+    if model['use_E']:
+        e_err = np.array(model['e_err']).item()
+    f_err = np.array(model['f_err']).item()
+    is_model_validated = not (np.isnan(f_err['mae']) or np.isnan(f_err['rmse']))
+    if is_model_validated and not overwrite:
+        log.warning('Model is already validated and overwrite is False.')
+        return
+
+    n_valid, e_mae, e_rmse, f_mae, f_rmse = model_errors(
+        model, dataset, is_valid=True, max_processes=max_processes,
+        use_torch=use_torch
+    )
+
+    model['n_test'] = 0  # flag the model as not tested
+
+    results = {
+        'force': {'mae': f_mae, 'rmse': f_rmse}
+    }
+    model['f_err'] = results['force']
+
+    if model['use_E']:
+        results['energy'] = {
+            'mae': e_mae,
+            'rmse': e_rmse,
+        }
+        model['e_err'] = results['energy']
+    
+    log.info(f"Force MAE : {results['force']['mae']}")
+    log.info(f"Force RMSE : {results['force']['rmse']}")
+    log.info(f"Energy MAE : {results['energy']['mae']}")
+    log.info(f"Energy RMSE : {results['energy']['rmse']}")
+    
+    return results, model
+
+def save_model(model, model_path):
+    np.savez_compressed(model_path, **model)
+
+def model_errors(
+    model, dataset, is_valid=False, n_test=None, max_processes=None,
+    use_torch=False
+):
+    """Computes model errors for either validation or testing purposes.
+
+    Parameters
+    ----------
+    model : :obj:`dict`
+        Trained GDML model.
+    dataset : :obj:`dict`
+        Dataset to test the model against.
+    is_valid : :obj:`bool`, default: ``False``
+        Is this for model validation? Determines how we get the structure
+        indices.
+    n_test : :obj:`int`, default: ``None``
+        Number of desired testing indices. ``None`` will test against all
+        available structures.
+    
+    Returns
+    -------
+    :obj:`int`
+        Number of structures predicted.
+    :obj:`float`
+        Energy MAE
+    :obj:`float`
+        Energy RMSE
+    :obj:`float`
+        Force MAE
+    :obj:`float`
+        Force RMSE
+    """
+    num_workers, batch_size = 0, 0
+
+    if not np.array_equal(model['z'], dataset['z']):
+        raise AssistantError(
+            'Atom composition or order in dataset does not match the one in model'
+        )
+
+    if ('lattice' in model) is not ('lattice' in dataset):
+        if 'lattice' in model:
+            raise AssistantError(
+                'Model contains lattice vectors, but dataset does not.'
+            )
+        elif 'lattice' in dataset:
+            raise AssistantError(
+                'Dataset contains lattice vectors, but model does not.'
+            )
+
+    if is_valid:
+        test_idxs = model['idxs_valid']
+    else:
+        test_idxs = get_test_idxs(model, dataset, n_test=n_test)
+
+    z = dataset['z']
+    R = dataset['R'][test_idxs, :, :]
+    F = dataset['F'][test_idxs, :, :]
+
+    if model['use_E']:
+        E = dataset['E'][test_idxs]
+
+    try:
+        gdml_predict = GDMLPredict(
+            model, max_processes=max_processes, use_torch=use_torch
+        )
+    except:
+        raise
+
+    b_size = min(1000, len(test_idxs))
+
+    if not use_torch:
+        if num_workers == 0 or batch_size == 0:
+            log.info('Optimizing parallelism')
+
+            gps, is_from_cache = gdml_predict.prepare_parallel(
+                n_bulk=b_size, return_is_from_cache=True
+            )
+            num_workers, batch_size, bulk_mp = (
+                gdml_predict.num_workers,
+                gdml_predict.chunk_size,
+                gdml_predict.bulk_mp,
+            )
+
+            if is_from_cache:
+                log.info('Taken from cache')
+            log.info(f'Using {num_workers} workers with chunks of {batch_size}')
+        else:
+            gdml_predict._set_num_workers(num_workers)
+            gdml_predict._set_batch_size(batch_size)
+            gdml_predict._set_bulk_mp(bulk_mp)
+
+    n_atoms = z.shape[0]
+
+    if model['use_E']:
+        e_mae_sum, e_rmse_sum = 0, 0
+    f_mae_sum, f_rmse_sum = 0, 0
+    cos_mae_sum, cos_rmse_sum = 0, 0
+    mag_mae_sum, mag_rmse_sum = 0, 0
+
+    n_done = 0
+    for b_range in _batch(list(range(len(test_idxs))), b_size):
+
+        n_done_step = len(b_range)
+        n_done += n_done_step
+
+        r = R[b_range].reshape(n_done_step, -1)
+        e_pred, f_pred = gdml_predict.predict(r)
+
+        # energy error
+        if model['use_E']:
+            e = E[b_range]
+            e_mae, e_mae_sum, e_rmse, e_rmse_sum = _online_err(
+                np.squeeze(e) - e_pred, 1, n_done, e_mae_sum, e_rmse_sum
+            )
+
+        # force component error
+        f = F[b_range].reshape(n_done_step, -1)
+        f_mae, f_mae_sum, f_rmse, f_rmse_sum = _online_err(
+            f - f_pred, 3 * n_atoms, n_done, f_mae_sum, f_rmse_sum
+        )
+
+    return len(test_idxs), e_mae, e_rmse, f_mae, f_rmse
+
+def _online_err(err, size, n, mae_n_sum, rmse_n_sum):
+    err = np.abs(err)
+
+    mae_n_sum += np.sum(err) / size
+    mae = mae_n_sum / n
+
+    rmse_n_sum += np.sum(err ** 2) / size
+    rmse = np.sqrt(rmse_n_sum / n)
+
+    return mae, mae_n_sum, rmse, rmse_n_sum
+
+def _batch(iterable, n=1):
+    l = len(iterable)
+    for ndx in range(0, l, n):
+        yield iterable[ndx : min(ndx + n, l)]

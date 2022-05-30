@@ -27,7 +27,8 @@ import pytest
 import numpy as np
 import os
 from mbgdml.data import dataSet
-from mbgdml.gdml.train import GDMLTrain
+from mbgdml._gdml.train import GDMLTrain
+from mbgdml.train import mbGDMLTrain
 
 dset_dir = './tests/data/datasets'
 train_dir = './tests/data/train'
@@ -64,7 +65,6 @@ def test_train_results_1h2o():
         use_cprsn=False,
         solver='analytic',
         solver_tol=1e-4,
-        n_inducing_pts_init=25,
         interact_cut_off=None,
         idxs_train=train_idxs,
         idxs_valid=valid_idxs,
@@ -93,3 +93,41 @@ def test_train_results_1h2o():
     assert np.allclose(R_desc, R_desc_ref)
     assert model['c'] == 331288.48632617114
     assert model['norm_y_train'] == 321987215081.7051
+
+def test_1h2o_train_grid_search():
+    dset_path = os.path.join(
+        dset_dir, '1h2o/140h2o.sphere.gfn2.md.500k.prod1.3h2o.dset.1h2o-dset.npz'
+    )
+    dset = dataSet(dset_path)
+
+    train_dir_1h2o = os.path.join(train_dir, '1h2o/')
+    train_idxs_path = os.path.join(train_dir_1h2o, 'train_idxs.npy')
+    valid_idxs_path = os.path.join(train_dir_1h2o, 'valid_idxs.npy')
+    train_idxs = np.load(train_idxs_path, allow_pickle=True)
+    valid_idxs = np.load(valid_idxs_path, allow_pickle=True)
+
+    n_train = 50
+    n_valid = 100
+    sigmas = [32, 42, 52]
+
+    train = mbGDMLTrain(
+        use_sym=True, use_E=True, use_E_cstr=False, use_cprsn=False,
+        solver='analytic', lam=1e-15, solver_tol=1e-4, interact_cut_off=None
+    )
+    model = train.grid_search(
+        dset,
+        '1h2o',
+        n_train,
+        n_valid,
+        sigmas,
+        train_idxs=train_idxs,
+        valid_idxs=valid_idxs,
+        write_json=True,
+        write_idxs=True,
+        overwrite=True,
+        save_dir='./tests/tmp/1h2o-grid'
+    )
+
+    assert model['sig'].item() == 42
+    assert model['f_err'].item()['rmse'] == 0.4673520776718695
+    assert model['perms'].shape[0] == 2

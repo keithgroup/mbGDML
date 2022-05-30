@@ -21,6 +21,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import numpy as np
+
 def draw_strat_sample(T, n, excl_idxs=None):
     """
     Draw sample from dataset that preserves its original distribution.

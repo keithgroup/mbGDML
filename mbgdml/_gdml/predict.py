@@ -44,6 +44,8 @@ import numpy as np
 from .. import __version__
 from .desc import Desc
 
+import logging
+log = logging.getLogger(__name__)
 
 def share_array(arr_np):
     """

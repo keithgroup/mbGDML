@@ -23,7 +23,7 @@
 import itertools
 
 import numpy as np
-from .gdml.predict import GDMLPredict
+from ._gdml.predict import GDMLPredict
 from mbgdml import criteria
 
 try:

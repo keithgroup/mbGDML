@@ -39,6 +39,9 @@ except ImportError:
 else:
     _has_torch = True
 
+import logging
+log = logging.getLogger(__name__)
+
 
 def _pbc_diff(diffs, lat_and_inv, use_torch=False):
     """
