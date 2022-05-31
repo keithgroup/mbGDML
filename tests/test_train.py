@@ -131,3 +131,49 @@ def test_1h2o_train_grid_search():
     assert model['sig'].item() == 42
     assert model['f_err'].item()['rmse'] == 0.4673520776718695
     assert model['perms'].shape[0] == 2
+
+def test_1h2o_train_bayes_opt():
+    try:
+        import bayes_opt
+    except ImportError:
+        return
+    
+    dset_path = os.path.join(
+        dset_dir, '1h2o/140h2o.sphere.gfn2.md.500k.prod1.3h2o.dset.1h2o-dset.npz'
+    )
+    dset = dataSet(dset_path)
+
+    train_dir_1h2o = os.path.join(train_dir, '1h2o/')
+    train_idxs_path = os.path.join(train_dir_1h2o, 'train_idxs.npy')
+    valid_idxs_path = os.path.join(train_dir_1h2o, 'valid_idxs.npy')
+    train_idxs = np.load(train_idxs_path, allow_pickle=True)
+    valid_idxs = np.load(valid_idxs_path, allow_pickle=True)
+
+    n_train = 50
+    n_valid = 100
+    sigmas = [32, 42, 52]
+
+    train = mbGDMLTrain(
+        use_sym=True, use_E=True, use_E_cstr=False, use_cprsn=False,
+        solver='analytic', lam=1e-15, solver_tol=1e-4, interact_cut_off=None
+    )
+    gp_params = {'init_points': 5, 'n_iter': 5, 'alpha': 0.001}
+    model, optimizer = train.bayes_opt(
+        dset,
+        '1h2o',
+        n_train,
+        n_valid,
+        sigma_bounds=(2, 100),
+        save_dir='./tests/tmp/1h2o-bo',
+        gp_params=gp_params,
+        train_idxs=train_idxs,
+        valid_idxs=valid_idxs,
+        overwrite=True,
+        write_json=True,
+        write_idxs=True,
+        bo_verbose=2
+    )
+
+    best_sig = model['sig'].item()
+    assert 40 <= best_sig <= 50
+    assert model['perms'].shape[0] == 2
