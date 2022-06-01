@@ -26,11 +26,11 @@ import os
 from random import randrange, sample, choice
 import numpy as np
 from cclib.parser.utils import convertor
-from mbgdml.data import mbGDMLData
-from mbgdml import __version__ as mbgdml_version
-from mbgdml.parse import parse_stringfile
-from mbgdml import utils
-from mbgdml.predict import mbPredict
+from .basedata import mbGDMLData
+from .. import __version__ as mbgdml_version
+from ..parse import parse_stringfile
+from .. import utils
+from ..predict import mbPredict
   
 
 class dataSet(mbGDMLData):

@@ -231,8 +231,7 @@ class GDMLPredict:
     def __init__(
         self, model, batch_size=None, num_workers=1, max_processes=None, use_torch=False
     ):
-        """
-        Query trained sGDML force fields.
+        """Query trained sGDML force fields.
 
         This class is used to load a trained model and make energy and
         force predictions for new geometries. GPU support is provided
@@ -251,19 +250,17 @@ class GDMLPredict:
         Parameters
         ----------
         model : :obj:`dict`
-                Data structure that holds all parameters of the
-                trained model. This object is the output of
-                `GDMLTrain.train`
+            Data structure that holds all parameters of the trained model.
+            This object is the output of `GDMLTrain.train`
         batch_size : int, optional
-                Chunk size for processing parallel tasks.
+            Chunk size for processing parallel tasks.
         num_workers : int, optional
-                Number of parallel workers.
+            Number of parallel workers.
         max_processes : int, optional
-                Limit the max. number of processes. Otherwise
-                all CPU cores are used. This parameters has no
-                effect if `use_torch=True`
+            Limit the max. number of processes. Otherwise all CPU cores are
+            used. This parameters has no effect if `use_torch=True`
         use_torch : boolean, optional
-                Use PyTorch to calculate predictions
+            Use PyTorch to calculate predictions
         """
 
         global globs
@@ -391,8 +388,7 @@ class GDMLPredict:
     ## Public ##
 
     def set_alphas(self, R_d_desc, alphas_F, alphas_E=None):
-        """
-        Reconfigure the current model with a new set of regression parameters.
+        """Reconfigure the current model with a new set of regression parameters.
         This is necessary when training the model iteratively.
 
         Parameters
@@ -447,9 +443,12 @@ class GDMLPredict:
         """
         Set number of processes to use during prediction.
 
-        If bulk_mp == True, each worker handles the whole generation of single prediction (this if for querying multiple geometries at once)
-        If bulk_mp == False, each worker may handle only a part of a prediction (chunks are defined in 'wkr_starts_stops'). In that scenario multiple proesses
-        are used to distribute the work of generating a single prediction
+        If bulk_mp == True, each worker handles the whole generation of single
+        prediction (this if for querying multiple geometries at once)
+        If bulk_mp == False, each worker may handle only a part of a prediction
+        (chunks are defined in 'wkr_starts_stops'). In that scenario multiple
+        processes are used to distribute the work of generating a single
+        prediction.
 
         This number should not exceed the number of available CPU cores.
 
@@ -461,8 +460,8 @@ class GDMLPredict:
         Parameters
         ----------
         num_workers : int, optional
-                Number of processes (maximum value is set if
-                `None`).
+            Number of processes (maximum value is set if
+            `None`).
         """
 
         if self.num_workers is not num_workers:
@@ -507,7 +506,7 @@ class GDMLPredict:
 
         Every prediction is generated as a linear combination of the training
         points that the model is comprised of. If multiple workers are available
-        (and bulk mode is disabled), each one processes an (approximatelly equal)
+        (and bulk mode is disabled), each one processes an (approximately equal)
         part of those training points. Then, the chunk size determines how much of
         a processes workload is passed to NumPy's underlying low-level routines at
         once. If the chunk size is smaller than the number of points the worker is
@@ -586,25 +585,23 @@ class GDMLPredict:
         Parameters
         ----------
         n_bulk : int, optional
-                Number of geometries that will be passed to the
-                `predict` function in each call (performance
-                will be optimized for that exact use case).
+            Number of geometries that will be passed to the
+            `predict` function in each call (performance
+            will be optimized for that exact use case).
         n_reps : int, optional
-                Number of repetitions (bigger value: more
-                accurate, but also slower).
+            Number of repetitions (bigger value: more
+            accurate, but also slower).
         return_is_from_cache : bool, optional
-                If enabled, this function returns a second value
-                indicating if the returned results were obtained
-                from cache.
+            If enabled, this function returns a second value
+            indicating if the returned results were obtained
+            from cache.
 
         Returns
         -------
         int
-            Force and energy prediciton speed in geometries
-            per second.
+            Force and energy prediction speed in geometries per second.
         boolean, optional
-            Return, whether this function obtained the results
-            from cache.
+            Return, whether this function obtained the results from cache.
         """
 
         # No benchmarking necessary if prediction is running on GPUs.

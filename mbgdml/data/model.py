@@ -24,9 +24,9 @@
 
 import os
 import numpy as np
-from mbgdml.data import mbGDMLData
-from mbgdml.utils import md5_data
-from mbgdml import __version__ as mbgdml_version
+from .basedata import mbGDMLData
+from ..utils import md5_data
+from .. import __version__ as mbgdml_version
 
 
 class mbModel(mbGDMLData):

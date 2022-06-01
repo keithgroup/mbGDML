@@ -30,7 +30,6 @@ from .predict import GDMLPredict
 from ..utils import md5_data
 from .. import __version__
 
-# sGDML imports
 import multiprocessing as mp
 Pool = mp.get_context('fork').Pool
 from functools import partial
@@ -45,7 +44,6 @@ else:
 
 import logging
 log = logging.getLogger(__name__)
-from ..logger import log_array
 
 def _share_array(arr_np, typecode_or_type):
     """Return a ctypes array allocated from shared memory with data from a
@@ -65,7 +63,6 @@ def _share_array(arr_np, typecode_or_type):
     """
     arr = mp.RawArray(typecode_or_type, arr_np.ravel())
     return arr, arr_np.shape
-
 
 def _assemble_kernel_mat_wkr(
     j, tril_perms_lin, sig, use_E_cstr=False, exploit_sym=False, cols_m_limit=None
@@ -215,8 +212,7 @@ def _assemble_kernel_mat_wkr(
 
 class GDMLTrain(object):
     def __init__(self, max_processes=None, use_torch=False):
-        """
-        Train sGDML force fields.
+        """Train sGDML force fields.
 
         This class is used to train models using different closed-form
         and numerical solvers. GPU support is provided
@@ -225,11 +221,10 @@ class GDMLTrain(object):
 
         Parameters
         ----------
-        max_processes : int, optional
-            Limit the max. number of processes. Otherwise
-            all CPU cores are used. This parameters has no
-            effect if `use_torch=True`
-        use_torch : boolean, optional
+        max_processes : :obj:`int`, default: ``None``
+            Limit the max. number of processes. Otherwise all CPU cores are
+            used. This parameters has no effect if `use_torch=True`
+        use_torch : boolean, default: ``False``
             Use PyTorch to calculate predictions (if supported by solver).
 
         Raises
@@ -245,17 +240,16 @@ class GDMLTrain(object):
             glob = {}
         else:
             raise Exception(
-                'You can not create multiple instances of this class. Please reuse your first one.'
+                'You can not create multiple instances of this class. '
+                'Please reuse your first one.'
             )
-
-        self.log = logging.getLogger(__name__)
-
+        
         self._max_processes = max_processes
         self._use_torch = use_torch
 
         if use_torch and not _has_torch:
             raise ImportError(
-                'Optional PyTorch dependency not found! Please run \'pip install sgdml[torch]\' to install it or disable the PyTorch option.'
+                'Optional PyTorch dependency not found!'
             )
 
     def __del__(self):
@@ -266,25 +260,12 @@ class GDMLTrain(object):
             del glob
 
     def create_task(
-        self,
-        train_dataset,
-        n_train,
-        valid_dataset,
-        n_valid,
-        sig,
-        lam=1e-15,
-        use_sym=True,
-        use_E=True,
-        use_E_cstr=False,
-        use_cprsn=False,
-        solver='analytic',  # TODO: document me
-        solver_tol=1e-4,  # TODO: document me
-        interact_cut_off=None,  # TODO: document me
-        idxs_train=None,
-        idxs_valid=None,
+        self, train_dataset, n_train, valid_dataset, n_valid, sig, lam=1e-15,
+        use_sym=True, use_E=True, use_E_cstr=False, use_cprsn=False,
+        solver='analytic', solver_tol=1e-4, interact_cut_off=None,
+        idxs_train=None, idxs_valid=None,
     ):
-        """
-        Create a data structure of custom type `task`.
+        """Create a data structure of custom type `task`.
 
         These data structures serve as recipes for model creation,
         summarizing the configuration of one particular training run.
@@ -300,36 +281,36 @@ class GDMLTrain(object):
         train_dataset : :obj:`dict`
             Data structure of custom type :obj:`dataset` containing
             train dataset.
-        n_train : int
+        n_train : :obj:`int`
             Number of training points to sample.
         valid_dataset : :obj:`dict`
             Data structure of custom type :obj:`dataset` containing
             validation dataset.
-        n_valid : int
+        n_valid : :obj:`int`
             Number of validation points to sample.
-        sig : int
+        sig : :obj:`int`
             Hyper-parameter (kernel length scale).
-        lam : float, optional
+        lam : :obj:`float`, default: ``1e-15``
             Hyper-parameter lambda (regularization strength).
-        use_sym : bool, optional
+        use_sym : bool, default: ``True``
             True: include symmetries (sGDML), False: GDML.
         use_E : bool, optional
-            True: reconstruct force field with corresponding potential energy surface,
-            False: ignore energy during training, even if energy labels are available
+            ``True``: reconstruct force field with corresponding potential energy surface,
+            ``False``: ignore energy during training, even if energy labels are available
                     in the dataset. The trained model will still be able to predict
                     energies up to an unknown integration constant. Note, that the
                     energy predictions accuracy will be untested.
-        use_E_cstr : bool, optional
+        use_E_cstr : bool, default: ``False``
             True: include energy constraints in the kernel,
             False: default (s)GDML.
-        use_cprsn : bool, optional
+        use_cprsn : bool, default: ``False``
             True: compress kernel matrix along symmetric degrees of
             freedom,
             False: train using full kernel matrix
 
         Returns
         -------
-        dict
+        :obj:`dict`
             Data structure of custom type :obj:`task`.
 
         Raises
@@ -338,22 +319,17 @@ class GDMLTrain(object):
             If a reconstruction of the potential energy surface is requested,
             but the energy labels are missing in the dataset.
         """
+        t_create_task = log.t_start()
         log.info(
-            '\n-----------------------------------\n'
+            '-----------------------------------\n'
             '|   Creating GDML training task   |\n'
             '-----------------------------------\n'
         )
-        log.info(
-            f'Number of training structures : {n_train}\n'
-            f'Number of validation structures : {n_valid}\n\n'
-            f'Kernel length scale (sigma) : {sig}\n'
-            f'Regularization strength (lam) : {lam}\n'
-            f'Compress kernel : {use_cprsn}\n'
-            f'Use symmetries : {use_sym}\n\n'
-            f'Use energies : {use_E}\n'
-            f'Include energy constraints in kernel : {use_E_cstr}\n\n'
-            f'Solver : {solver}\n'
-            f'Solver tolerance : {solver_tol}\n'
+
+        log.log_model(
+            {'z': train_dataset['z'], 'n_train': n_train, 'n_valid': n_valid,
+            'sig': sig, 'lam': lam, 'use_sym': use_sym, 'use_E': use_E,
+            'use_E_cstr': use_E_cstr, 'use_cprsn': use_cprsn, 'type': 't'}
         )
 
         if use_E and 'E' not in train_dataset:
@@ -367,7 +343,7 @@ class GDMLTrain(object):
         use_E_cstr = use_E and use_E_cstr
         
         log.info(
-            'Dataset splitting\n'
+            '\nDataset splitting\n'
             '-----------------'
         )
         md5_train_keys = ['z', 'R', 'F']
@@ -380,7 +356,7 @@ class GDMLTrain(object):
         md5_valid = md5_data(valid_dataset, md5_valid_keys)
         
         log.info(
-            '\n###   Training   ###'
+            '\n#   Training   #'
         )
         log.info(f'MD5: {md5_train}')
         log.info(f'Size : {n_train}')
@@ -407,25 +383,25 @@ class GDMLTrain(object):
         else:
             log.info('Training indices were manually specified')
             idxs_train = np.array(idxs_train)
-            log.debug(f'{log_array(idxs_train)}')
+            log.log_array(idxs_train, level=10)
 
         # Handles validation indices.
         log.info(
-            '\n###   Validation   ###'
+            '\n#   Validation   #'
         )
         log.info(f'MD5: {md5_valid}')
         log.info(f'Size : {n_valid}')
         if idxs_valid is not None:
             log.info('Validation indices were manually specified')
             idxs_valid = np.array(idxs_valid)
-            log.debug(f'{log_array(idxs_valid)}')
+            log.log_array(idxs_valid, level=10)
         else:
             log.info('Drawing structures from the dataset')
             excl_idxs = (
                 idxs_train if md5_train == md5_valid else np.array([], dtype=np.uint)
             )
             log.debug(f'Excluded {len(excl_idxs)} structures')
-            log.debug(f'{log_array(excl_idxs)}')
+            log.log_array(excl_idxs, level=10)
 
             if 'E' in valid_dataset:
                 idxs_valid = draw_strat_sample(
@@ -469,6 +445,8 @@ class GDMLTrain(object):
 
         lat_and_inv = None
         if 'lattice' in train_dataset:
+            log.info('\nLattice was found in the dataset')
+            log.debug(train_dataset['lattice'])
             task['lattice'] = train_dataset['lattice']
 
             try:
@@ -479,6 +457,8 @@ class GDMLTrain(object):
                 )
 
         if 'r_unit' in train_dataset and 'e_unit' in train_dataset:
+            log.info(f'\nCoordinate unit : {train_dataset["r_unit"]}')
+            log.info(f'Energy unit : {train_dataset["e_unit"]}')
             task['r_unit'] = train_dataset['r_unit']
             task['e_unit'] = train_dataset['e_unit']
 
@@ -515,25 +495,19 @@ class GDMLTrain(object):
             )
 
             task['cprsn_keep_atoms_idxs'] = cprsn_keep_idxs
-
+        
+        log.t_stop(
+            t_create_task, message='\nCreating task took {time} s'
+        )
         return task
 
     def create_model(
-        self,
-        task,
-        solver,
-        R_desc,
-        R_d_desc,
-        tril_perms_lin,
-        std,
-        alphas_F,
-        alphas_E=None,
-        solver_resid=None,
-        solver_iters=None,
-        norm_y_train=None,
+        self, task, solver, R_desc, R_d_desc, tril_perms_lin, std, alphas_F,
+        alphas_E=None, solver_resid=None, solver_iters=None, norm_y_train=None,
         inducing_pts_idxs=None,
     ):
-
+        """Create a data structure of custom type ``model``.
+        """
         n_train, dim_d = R_d_desc.shape[:2]
         n_atoms = int((1 + np.sqrt(8 * dim_d + 1)) / 2)
 
@@ -558,7 +532,6 @@ class GDMLTrain(object):
             )
 
         else:
-
             i, j = np.tril_indices(n_atoms, k=-1)
             alphas_F_exp = alphas_F.reshape(-1, n_atoms, 3)
 
@@ -623,8 +596,7 @@ class GDMLTrain(object):
         return model
 
     def train(self, task):
-        """
-        Train a model based on a training task.
+        """Train a model based on a task.
 
         Parameters
         ----------
@@ -665,15 +637,14 @@ class GDMLTrain(object):
         perm_offsets = np.arange(n_perms)[:, None] * dim_d
         tril_perms_lin = (tril_perms + perm_offsets).flatten('F')
 
-        # TODO: check if all atoms are in span of lattice vectors, otherwise suggest that
-        # rows and columns might have been switched.
         lat_and_inv = None
         if 'lattice' in task:
             try:
                 lat_and_inv = (task['lattice'], np.linalg.inv(task['lattice']))
             except np.linalg.LinAlgError:
-                raise ValueError(  # TODO: Document me
-                    'Provided dataset contains invalid lattice vectors (not invertible). Note: Only rank 3 lattice vector matrices are supported.'
+                raise ValueError(
+                    'Provided dataset contains invalid lattice vectors (not invertible).'
+                    'Note: Only rank 3 lattice vector matrices are supported.'
                 )
 
         R = task['R_train'].reshape(n_train, -1)
@@ -754,6 +725,7 @@ class GDMLTrain(object):
         sig = task['sig']
         lam = task['lam']
         use_E_cstr = task['use_E_cstr']
+        log.log_model(task)
 
         n_train, dim_d = R_d_desc.shape[:2]
         n_atoms = int((1 + np.sqrt(8 * dim_d + 1)) / 2)
@@ -772,6 +744,8 @@ class GDMLTrain(object):
                 cprsn_keep_idxs_lin[:, None] + np.arange(n_train) * dim_i
             ).T.ravel()
 
+        log.info('\nAssembling kernel matrix')
+        t_assemble = log.t_start()
         K = self._assemble_kernel_mat(
             R_desc,
             R_d_desc,
@@ -781,6 +755,7 @@ class GDMLTrain(object):
             use_E_cstr=use_E_cstr,
             col_idxs=col_idxs,
         )
+        log.t_stop(t_assemble)
 
         with warnings.catch_warnings():
             warnings.simplefilter('ignore')
@@ -790,6 +765,7 @@ class GDMLTrain(object):
                 K[np.diag_indices_from(K)] -= lam  # regularize
 
                 try:
+                    t_cholesky = log.t_start()
                     log.info('Solving linear system (Cholesky factorization)')
                     # Cholesky
                     L, lower = sp.linalg.cho_factor(
@@ -798,16 +774,30 @@ class GDMLTrain(object):
                     alphas = -sp.linalg.cho_solve(
                         (L, lower), y, overwrite_b=True, check_finite=False
                     )
+                    
+                    log.t_stop(
+                        t_cholesky, message='Done in {time} s'
+                    )
                 except np.linalg.LinAlgError:  # try a solver that makes less assumptions
-                    log.info('Failed! (NumPy LinAlgError)')
+                    log.t_stop(
+                        t_cholesky, message='Cholesky factorization failed in {time} s'
+                    )
                     log.info('Solving linear system (LU factorization)')
 
                     try:
                         # LU
+                        t_lu = log.t_start()
                         alphas = sp.linalg.solve(
-                            K, y, overwrite_a=True, overwrite_b=True, check_finite=False
+                            K, y, overwrite_a=True, overwrite_b=True,
+                            check_finite=False
+                        )
+                        log.t_stop(
+                            t_lu, message='Done in {time} s'
                         )
                     except MemoryError:
+                        log.t_stop(
+                            t_lu, message='LU factorization failed in {time} s', level=50
+                        )
                         log.critical(
                             'Not enough memory to train this system using a closed form solver.\n'
                             + 'Please reduce the size of the training set or consider one of the approximate solver options.'
@@ -821,11 +811,11 @@ class GDMLTrain(object):
                     )
                     sys.exit()
             else:
-                log.info('FAILED!')
                 log.info('Solving overdetermined linear system (least squares approximation)')
-
+                t_least_squares = log.t_start()
                 # least squares for non-square K
                 alphas = np.linalg.lstsq(K, y, rcond=-1)[0]
+                log.t_stop(t_least_squares)
         
         return alphas
 
@@ -845,9 +835,8 @@ class GDMLTrain(object):
         task : :obj:`dict`
             Data structure of custom type :obj:`task`.
         R_desc : :obj:`numpy.ndarray`, optional
-            An 2D array of size M x D containing the
-            descriptors of dimension D for M
-            molecules.
+            An 2D array of size M x D containing the descriptors of dimension
+            D for M molecules.
         R_d_desc : :obj:`numpy.ndarray`, optional
             A 2D array of size M x D x 3N containing of the
             descriptor Jacobians for M molecules. The descriptor
@@ -872,10 +861,9 @@ class GDMLTrain(object):
             If different scales in energy vs. force labels are
             detected in the provided dataset.
         """
-
         gdml = GDMLPredict(
             model, max_processes=self._max_processes
-        )  # , use_torch=self._use_torch
+        )
 
         n_train = task['E_train'].shape[0]
         R = task['R_train'].reshape(n_train, -1)
@@ -889,20 +877,25 @@ class GDMLTrain(object):
         corrcoef = np.corrcoef(E_ref, E_pred)[0, 1]
 
         if np.sign(e_fact) == -1:
-            self.log.warning(
+            log.warning(
                 'The provided dataset contains gradients instead of force labels (flipped sign). Please correct!\n'
                 + 'Note: The energy prediction accuracy of the model will thus neither be validated nor tested in the following steps!'
             )
             return None
 
         if corrcoef < 0.95:
-            self.log.warning(
-                'Inconsistent energy labels detected!\n'
+            log.warning(
+                'Inconsistent energy labels detected!'
+            )
+            log.warning(
+                'The predicted energies for the training data are only weakly\n'
+                f'correlated with the reference labels (correlation coefficient {corrcoef:.2f})\n'
+                'which indicates that the issue is most likely NOT just a unit conversion error.\n'
             )
             return None
 
         if np.abs(e_fact - 1) > 1e-1:
-            self.log.warning(
+            log.warning(
                 'Different scales in energy vs. force labels detected!\n'
             )
             return None
@@ -1150,7 +1143,7 @@ def add_valid_errors(
     log.info(
         '\n------------------------\n'
         '|   Model Validation   |\n'
-        '------------------------\n'
+        '------------------------'
     )
     if model['use_E']:
         e_err = np.array(model['e_err']).item()
@@ -1178,11 +1171,11 @@ def add_valid_errors(
             'rmse': e_rmse,
         }
         model['e_err'] = results['energy']
-    
-    log.info(f"Force MAE : {results['force']['mae']}")
-    log.info(f"Force RMSE : {results['force']['rmse']}")
-    log.info(f"Energy MAE : {results['energy']['mae']}")
-    log.info(f"Energy RMSE : {results['energy']['rmse']}")
+    else:
+        results['energy'] = {
+            'mae': None,
+            'rmse': None,
+        }
     
     return results, model
 
@@ -1241,6 +1234,11 @@ def model_errors(
     if is_valid:
         test_idxs = model['idxs_valid']
     else:
+        log.info('\n---------------------\n'
+            '|   Model Testing   |\n'
+            '---------------------\n'
+        )
+        log.log_model(model)
         test_idxs = get_test_idxs(model, dataset, n_test=n_test)
 
     z = dataset['z']
@@ -1256,8 +1254,10 @@ def model_errors(
         )
     except:
         raise
-
+    
+    log.info(f'\nPredicting {len(test_idxs)} structures')
     b_size = min(1000, len(test_idxs))
+    log.info(f'Batch size : {b_size} structures\n')
 
     if not use_torch:
         if num_workers == 0 or batch_size == 0:
@@ -1287,7 +1287,8 @@ def model_errors(
     f_mae_sum, f_rmse_sum = 0, 0
     cos_mae_sum, cos_rmse_sum = 0, 0
     mag_mae_sum, mag_rmse_sum = 0, 0
-
+    
+    t_pred = log.t_start()
     n_done = 0
     for b_range in _batch(list(range(len(test_idxs))), b_size):
 
@@ -1309,8 +1310,20 @@ def model_errors(
         f_mae, f_mae_sum, f_rmse, f_rmse_sum = _online_err(
             f - f_pred, 3 * n_atoms, n_done, f_mae_sum, f_rmse_sum
         )
-
-    return len(test_idxs), e_mae, e_rmse, f_mae, f_rmse
+    
+    log.info(f"\nForce MAE  : {f_mae:.5f}")
+    log.info(f"Force RMSE : {f_rmse:.5f}")
+    if model['use_E']:
+        log.info(f"Energy MAE  : {e_mae:.5f}")
+        log.info(f"Energy RMSE : {e_rmse:.5f}")
+    t_elapsed = log.t_stop(
+        t_pred, message='\nTook {time} s'
+    )
+    log.info(f'Prediction rate : {n_done/t_elapsed:.2f} structures per second')
+    if model['use_E']:
+        return len(test_idxs), e_mae, e_rmse, f_mae, f_rmse
+    else:
+        return len(test_idxs), None, None, f_mae, f_rmse
 
 def _online_err(err, size, n, mae_n_sum, rmse_n_sum):
     err = np.abs(err)

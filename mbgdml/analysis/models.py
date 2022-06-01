@@ -24,7 +24,7 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-from mbgdml.utils import atoms_by_element
+from ..utils import atoms_by_element
 
 class forceComparison:
     """Compare force vectors.

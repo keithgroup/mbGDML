@@ -21,7 +21,7 @@
 # SOFTWARE.
 
 import cclib
-from mbgdml import utils
+from . import utils
 
 def parse_coords(fileName):
     

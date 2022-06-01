@@ -40,7 +40,6 @@ from .desc import Desc
 
 import logging
 log = logging.getLogger(__name__)
-from ..logger import log_array
 
 glob = {}
 
@@ -86,10 +85,9 @@ def _bipartite_match_wkr(i, n_train, same_z_cost):
         
     return match_perms
 
-
 def bipartite_match(R, z, lat_and_inv=None, max_processes=None):
     global glob
-    log.info('Bipartite Matching')
+    log.info('Performing Bipartite matching ...')
 
     n_train, n_atoms, _ = R.shape
 
@@ -97,7 +95,7 @@ def bipartite_match(R, z, lat_and_inv=None, max_processes=None):
     log.debug('Atom mixing penalties')
     same_z_cost = np.repeat(z[:, None], len(z), axis=1) - z
     same_z_cost[same_z_cost != 0] = 1
-    log.debug(log_array(same_z_cost))
+    log.log_array(same_z_cost, level=10)
 
     match_cost = np.zeros((n_train, n_train))
 
@@ -146,7 +144,6 @@ def bipartite_match(R, z, lat_and_inv=None, max_processes=None):
     match_cost = csr_matrix(match_cost)
 
     return match_perms_all, match_cost
-
 
 def sync_perm_mat(match_perms_all, match_cost, n_atoms):
 
@@ -225,11 +222,7 @@ def complete_sym_group(perms, n_perms_max=None):
 
 
 def find_perms(R, z, lat_and_inv=None, max_processes=None):
-    log.info(
-        '\n--------------------------\n'
-        '|   Finding symmetries   |\n'
-        '--------------------------\n'
-    )
+    log.info('\n#   Finding symmetries   #')
 
     m, n_atoms = R.shape[:2]
 

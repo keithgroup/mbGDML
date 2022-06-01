@@ -23,10 +23,10 @@
 import os
 import numpy as np
 from cclib.parser.utils import convertor
-from mbgdml.data import mbGDMLData
-from mbgdml import __version__
-from mbgdml.parse import parse_stringfile
-from mbgdml import utils
+from .basedata import mbGDMLData
+from .. import __version__
+from ..parse import parse_stringfile
+from .. import utils
 
 class structureSet(mbGDMLData):
     """For creating, loading, manipulating, and using structure sets.

@@ -13,6 +13,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Changed
 
+- Removed sGDML dependency.
+- Use relative imports.
 - Hyperparameter grid search in ``mbGDMLTrain`` class.
 - Moved sGDML modified training routines to ``_train.py``.
 - Changed ``Rset_md5`` to ``r_prov_ids`` and ``Rset_info`` to ``r_prov_specs``.

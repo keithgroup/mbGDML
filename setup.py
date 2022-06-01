@@ -6,7 +6,7 @@ from setuptools import setup, find_packages
 import versioneer
 
 requirements = [
-    'natsort', 'cclib>=1.7', 'numpy', 'ase', 'sgdml', 'mako'
+    'natsort', 'cclib>=1.7', 'numpy', 'ase', 'mako'
 ]
 
 setup_requirements = [ ]

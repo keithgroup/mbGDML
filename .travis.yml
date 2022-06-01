@@ -5,12 +5,6 @@ install:
   - pip install natsort cclib numpy ase mako matplotlib umap-learn bayes_opt
   - pip install pytest-cov codecov furo Sphinx coverage bump2version
   - pip install wheel watchdog tox twine
-  - git clone https://github.com/aalexmmaldonado/sGDML
-  - cd sGDML
-  - git pull
-  - git checkout logging
-  - pip install .
-  - cd ..
 script:
   - pip install .
 after_success:

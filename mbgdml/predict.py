@@ -24,7 +24,7 @@ import itertools
 
 import numpy as np
 from ._gdml.predict import GDMLPredict
-from mbgdml import criteria
+from . import criteria
 
 try:
     import torch

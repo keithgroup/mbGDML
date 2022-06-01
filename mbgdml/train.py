@@ -23,10 +23,11 @@
 
 import os
 import shutil
-from mbgdml.data import mbModel
-from mbgdml.data import dataSet
+from .data import mbModel, dataSet
 
 from ._gdml.train import *
+import logging
+log = logging.getLogger(__name__)
 
 def loss_f_rmse(results):
     """Returns the force RMSE.
@@ -81,6 +82,8 @@ class mbGDMLTrain:
         max_processes : :obj:`int`, default: ``None``
             The maximum number of cores to use for the training process. Will
             automatically calculate if not specified.
+        verbose : :obj:`int`
+            Sets the root logger level.
         """
         self.use_sym = use_sym
         self.use_E = use_E
@@ -92,12 +95,17 @@ class mbGDMLTrain:
         self.interact_cut_off = None
         self.use_torch = use_torch
         self.max_processes = max_processes
+
+        self.GDMLTrain = GDMLTrain(
+            max_processes=max_processes, use_torch=use_torch
+        )
     
-    def train_model(
+    def create_task(
         self, train_dataset, n_train, valid_dataset, n_valid, sigma,
         train_idxs=None, valid_idxs=None
     ):
-        """Creates a task and trains a GDML model.
+        """Create a single training task that can be used as a template for
+        hyperparameter searches.
 
         Parameters
         ----------
@@ -117,21 +125,32 @@ class mbGDMLTrain:
         valid_idxs : :obj:`numpy.ndarray`, default: ``None``
             The specific indices of structures to validate models on.
             If ``None``, structures will be automatically determined.
-        
-        Returns
-        -------
-        :obj:`dict`
-            Trained (not validated or tested) model.
         """
-        train = GDMLTrain()
-        task = train.create_task(
+        self.task = self.GDMLTrain.create_task(
             train_dataset, n_train, valid_dataset, n_valid, sigma, lam=self.lam,
             use_sym=self.use_sym, use_E=self.use_E, use_E_cstr=self.use_E_cstr,
             use_cprsn=self.use_cprsn, solver=self.solver,
             solver_tol=self.solver_tol, interact_cut_off=self.interact_cut_off,
             idxs_train=train_idxs, idxs_valid=valid_idxs
         )
-        model = train.train(task)
+        return self.task
+    
+    def train_model(self, task):
+        """Trains a GDML model from a task.
+
+        Parameters
+        ----------
+        task : :obj:`dict`
+            Training task.
+        n_train : :obj:`int`
+            The number of training points to sample.
+        
+        Returns
+        -------
+        :obj:`dict`
+            Trained (not validated or tested) model.
+        """
+        model = self.GDMLTrain.train(task)
         return model
     
     def test_model(self, model, dataset, n_test=None):
@@ -142,7 +161,7 @@ class mbGDMLTrain:
         model : :obj:`mbgdml.data.mbModel`
             Model to test.
         dataset : :obj:`dict`
-            Training dataset
+            Test dataset.
         
         Returns
         -------
@@ -180,14 +199,15 @@ class mbGDMLTrain:
         dataset : :obj:`dict`
             Dataset used for training, validation, and testing.
         """
+        log.info('\n#   Writing train, valid, and test indices   #')
         train_idxs = model.model['idxs_train']
         valid_idxs = model.model['idxs_valid']
 
-        np.save(os.path.join(save_dir, 'train-idxs'), train_idxs)
-        np.save(os.path.join(save_dir, 'valid-idxs'), valid_idxs)
+        np.save(os.path.join(save_dir, 'train_idxs'), train_idxs)
+        np.save(os.path.join(save_dir, 'valid_idxs'), valid_idxs)
 
         test_idxs = get_test_idxs(model.model, dataset, n_test=n_test)
-        np.save(os.path.join(save_dir, 'test-idxs'), test_idxs)
+        np.save(os.path.join(save_dir, 'test_idxs'), test_idxs)
     
     def save_json(self, json_dict, save_dir, json_name='log'):
         """Save JSON file.
@@ -217,7 +237,7 @@ class mbGDMLTrain:
         sigma_bounds=(2, 300), n_test=None, save_dir='.',
         gp_params={'init_points': 10, 'n_iter': 10, 'alpha': 0.001},
         loss=loss_f_rmse, train_idxs=None, valid_idxs=None,
-        overwrite=False, write_json=False, write_idxs=True, bo_verbose=2
+        overwrite=False, write_json=False, write_idxs=True
     ):
         """Train a GDML model using Bayesian optimization for sigma.
 
@@ -229,7 +249,6 @@ class mbGDMLTrain:
 
         ``gp_params`` can be used to specify options to
         ``BayesianOptimization.maximize()`` method.
-
 
         Parameters
         ----------
@@ -280,9 +299,6 @@ class mbGDMLTrain:
             Write a JSON file containing information about the training job.
         write_idxs : :obj:`bool`, default: ``True``
             Write npy files for training, validation, and test indices.
-        bo_verbose : :obj:`int`, default: ``2``
-            ``bayes_opt`` verbosity. ``2`` prints out every trail, ``1``
-            prints the most recent best model, and ``0`` prints nothing.
         
         Returns
         -------
@@ -293,12 +309,21 @@ class mbGDMLTrain:
         """
         from bayes_opt import BayesianOptimization
 
+        t_job = log.t_start()
+
+        log.info(
+            '#############################\n'
+            '#         Training          #\n'
+            '#   Bayesian Optimization   #\n'
+            '#############################\n'
+        )
+
         if write_json:
             write_json = True
             job_json = {
                 'model': {},
-                'validation': {},
                 'testing': {},
+                'validation': {},
                 'training': {'idxs': []},
             }
         else:
@@ -316,6 +341,11 @@ class mbGDMLTrain:
         task_dir = os.path.join(save_dir, 'tasks')
         os.makedirs(task_dir, exist_ok=overwrite)
 
+        task = self.create_task(
+            dset_dict, n_train, dset_dict, n_valid, None,
+            train_idxs=train_idxs, valid_idxs=valid_idxs
+        )
+
         losses = []
         valid_json = {
             'sigmas': [],
@@ -323,12 +353,9 @@ class mbGDMLTrain:
             'energy': {'mae': [], 'rmse': []},
             'idxs': [],
         }
-
         def opt_func(sigma):
-            model_trial = self.train_model(
-                dset_dict, n_train, dset_dict, n_valid, sigma,
-                train_idxs=train_idxs, valid_idxs=valid_idxs
-            )
+            task['sig'] = sigma
+            model_trial = self.train_model(task)
 
             if len(valid_json['idxs']) == 0:
                 valid_json['idxs'] = model_trial['idxs_valid'].tolist()
@@ -357,7 +384,7 @@ class mbGDMLTrain:
         optimizer = BayesianOptimization(
             f=opt_func,
             pbounds={'sigma': sigma_bounds},
-            verbose=bo_verbose,
+            verbose=0,
         )
         optimizer.maximize(**gp_params)
         best_res = optimizer.max
@@ -393,6 +420,7 @@ class mbGDMLTrain:
         # Saving model.
         model_best.save(model_name, model_best.model, save_dir)
 
+        log.t_stop(t_job, message='\nJob duration : {time} s', precision=2)
         return model_best.model, optimizer
 
         
@@ -453,13 +481,27 @@ class mbGDMLTrain:
             Write a JSON file containing information about the training job.
         write_idxs : :obj:`bool`, default: ``True``
             Write npy files for training, validation, and test indices.
+        
+        Returns
+        -------
+        :obj:`dict`
+            GDML model with an optimal hyperparameter found via grid search.
         """
+        log.log_package()
+
+        t_job = log.t_start()
+        log.info(
+            '###################\n'
+            '#    Training     #\n'
+            '#   Grid Search   #\n'
+            '###################\n'
+        )
         if write_json:
             write_json = True
             job_json = {
                 'model': {},
-                'validation': {},
                 'testing': {},
+                'validation': {},
                 'training': {'idxs': []},
             }
         else:
@@ -477,6 +519,11 @@ class mbGDMLTrain:
         task_dir = os.path.join(save_dir, 'tasks')
         os.makedirs(task_dir, exist_ok=overwrite)
 
+        task = self.create_task(
+            dset_dict, n_train, dset_dict, n_valid, sigmas[0],
+            train_idxs=train_idxs, valid_idxs=valid_idxs
+        )
+
         # Starting grid search
         sigmas.sort()
         trial_model_paths = []
@@ -488,11 +535,8 @@ class mbGDMLTrain:
             'idxs': [],
         }
         model_best_path = None
-        for sigma in sigmas:
-            model_trial = self.train_model(
-                dset_dict, n_train, dset_dict, n_valid, sigma,
-                train_idxs=train_idxs, valid_idxs=valid_idxs
-            )
+        for next_sigma in sigmas[1:]:
+            model_trial = self.train_model(task)
 
             if len(valid_json['idxs']) == 0:
                 valid_json['idxs'] = model_trial['idxs_valid'].tolist()
@@ -515,13 +559,15 @@ class mbGDMLTrain:
             save_model(model_trial, model_trail_path)
             trial_model_paths.append(model_trail_path)
             
-            if len(losses) > 2:
+            if len(losses) > 1:
                 if losses[-1] > losses[-2]:
-                    log.info('Validation errors are rising')
+                    log.info('\nValidation errors are rising')
                     log.info('Terminating grid search')
                     model_best_path = trial_model_paths[-2]
                     on_grid_bounds = False
                     break
+            
+            task['sig'] = next_sigma
         
         # Determine best model and checking optimal sigma.
         if model_best_path is None:
@@ -568,4 +614,5 @@ class mbGDMLTrain:
         # Saving model.
         model_best.save(model_name, model_best.model, save_dir)
 
+        log.t_stop(t_job, message='\nJob duration : {time} s', precision=2)
         return model_best.model

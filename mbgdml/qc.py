@@ -24,7 +24,7 @@ import os
 import subprocess
 import numpy as np
 from mako.template import Template
-from mbgdml import utils
+from . import utils
 
 class CalcTemplate:
     """Contains all quantum chemistry templates for mako.

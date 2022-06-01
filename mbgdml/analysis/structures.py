@@ -24,8 +24,8 @@
 
 import itertools
 import numpy as np
-from sgdml.utils.desc import Desc
-from mbgdml import utils
+from .._gdml.desc import Desc
+from .. import utils
 import umap.umap_ as umap
 
 class structureEmbedding:

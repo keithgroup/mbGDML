@@ -171,7 +171,6 @@ def test_1h2o_train_bayes_opt():
         overwrite=True,
         write_json=True,
         write_idxs=True,
-        bo_verbose=2
     )
 
     best_sig = model['sig'].item()
