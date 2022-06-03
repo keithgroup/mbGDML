@@ -49,9 +49,9 @@ class mbPredict():
         
         Parameters
         ----------
-        models : :obj:`list` [:obj:`str`]
-            Contains paths to either standard or many-body GDML models.
-        use_torch : :obj:`bool`, optional
+        models : :obj:`list` of :obj:`str` or :obj:`dict`
+            Contains paths or dictionaries of many-body GDML models.
+        use_torch : :obj:`bool`, default: ``False``
             Use PyTorch to make predictions.
         """
         self._load_models(models, use_torch)
@@ -65,18 +65,14 @@ class mbPredict():
         models : :obj:`list` [:obj:`str`]
             Contains paths to either standard or many-body GDML models.
         """
-        self.gdmls = []
-        self.models = []
-        self.entity_ids = []
-        self.comp_ids = []
-        self.criteria = []
-        self.z_slice = []
-        self.cutoff = []
+        self.gdmls, self.models, self.entity_ids, self.comp_ids = [], [], [], []
+        self.criteria, self.z_slice, self.cutoff = [], [], []
         for model in models:
-            loaded = np.load(model, allow_pickle=True)
-            model = dict(loaded)
+            if isinstance(model, str):
+                loaded = np.load(model, allow_pickle=True)
+                model = dict(loaded)
             self.models.append(model)
-            gdml = GDMLPredict(loaded, use_torch=use_torch)
+            gdml = GDMLPredict(model, use_torch=use_torch)
             self.gdmls.append(gdml)
 
             if model['criteria'] == '':

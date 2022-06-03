@@ -208,7 +208,6 @@ def test_rset_sampling_all_2mers_ignore_duplicate():
     assert np.all(dset.entity_ids == np.array([0, 0, 0, 1, 1, 1]))
     assert np.all(dset.comp_ids == np.array(['h2o', 'h2o']))
     assert dset_duplicate.R.shape == (30, 6, 3)
-    print('yes')
 
 def test_rset_sampling_all_2mers_centering():
     rset = trim_140h2o_rset()

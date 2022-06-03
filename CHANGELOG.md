@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Added
 
+- Active learning training procedure.
 - Bayesian optimization for hyperparameter search.
 - Basic logging capabilities.
 - Write JSON file after training with useful information.

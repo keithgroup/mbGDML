@@ -24,8 +24,9 @@
 import os
 import shutil
 from .data import mbModel, dataSet
-
+from .active.problematic import prob_structures
 from ._gdml.train import *
+
 import logging
 log = logging.getLogger(__name__)
 
@@ -406,7 +407,7 @@ class mbGDMLTrain:
             job_json['testing']['energy'] = results_test['energy']
             job_json['testing']['force'] = results_test['force']
 
-            job_json['model']['sigma'] = int(model_best.model['sig'][()])
+            job_json['model']['sigma'] = model_best.model['sig'][()]
             job_json['model']['n_symm'] = len(model_best.model['perms'])
             job_json['validation'] = valid_json
 
@@ -487,8 +488,6 @@ class mbGDMLTrain:
         :obj:`dict`
             GDML model with an optimal hyperparameter found via grid search.
         """
-        log.log_package()
-
         t_job = log.t_start()
         log.info(
             '###################\n'
@@ -600,7 +599,7 @@ class mbGDMLTrain:
             job_json['testing']['energy'] = results_test['energy']
             job_json['testing']['force'] = results_test['force']
 
-            job_json['model']['sigma'] = int(model_best.model['sig'][()])
+            job_json['model']['sigma'] = model_best.model['sig'][()]
             job_json['model']['n_symm'] = len(model_best.model['perms'])
             job_json['validation'] = valid_json
 
@@ -616,3 +615,82 @@ class mbGDMLTrain:
 
         log.t_stop(t_job, message='\nJob duration : {time} s', precision=2)
         return model_best.model
+    
+    def iterative_train(
+        self, dataset, model_name, n_train_init, n_train_final, n_valid,
+        model0=None, n_train_step=100, sigma_bounds=(2, 300), n_test=None,
+        save_dir='.', gp_params={'init_points': 10, 'n_iter': 10, 'alpha': 0.001},
+        loss=loss_f_rmse, train_idxs=None, overwrite=False, write_json=False,
+        write_idxs=True
+    ):
+        """Iteratively trains a GDML model by using Bayesian optimization and
+        adding problematic (high error) structures to the training set.
+
+        Parameters
+        ----------
+        dataset : :obj:`mbgdml.data.dataSet`
+
+        model0 : :obj:`dict`, default: ``None``
+            Initial model to start iterative training with. Training indices
+            will be taken from here.
+        """
+        log.log_package()
+
+        t_job = log.t_start()
+        log.info(
+            '###################\n'
+            '#    Iterative    #\n'
+            '#    Training     #\n'
+            '###################\n'
+        )
+        log.info(f'Initial training set size : {n_train_init}')
+        if model0 is not None:
+            log.info('Initial model was provided')
+            log.info('Taking training indices from model')
+            train_idxs = model0['idxs_train']
+            log.log_array(train_idxs, level=10)
+            prob_idxs = prob_structures([model0])
+            train_idxs = np.concatenate((train_idxs, prob_idxs))
+            log.info(f'Extended the training set to {len(train_idxs)}')
+            n_stages = int((n_train_final-len(train_idxs))/n_train_step)
+            n_train = len(train_idxs)
+        else:
+            log.info('An initial model will be trained')
+            n_stages = int((n_train_final-n_train_init)/n_train_step)
+            n_train = n_train_init
+        
+        i = 0
+        while n_train <= n_train_final:
+            
+            save_dir_i = os.path.join(save_dir, str(i))
+            model, _ = self.bayes_opt(
+                dataset, model_name+f'-train{n_train}', n_train, n_valid,
+                sigma_bounds=sigma_bounds, n_test=n_test, save_dir=save_dir_i,
+                gp_params=gp_params, loss=loss, train_idxs=train_idxs,
+                valid_idxs=None, overwrite=overwrite,
+                write_json=write_json, write_idxs=write_idxs
+            )
+
+            # Check sigma bounds
+            buffer = 5
+            lower_buffer = min(sigma_bounds) + buffer
+            upper_buffer = max(sigma_bounds) - buffer
+            if (model['sig'] <= lower_buffer):
+                log.warning(
+                    f'WARNING: Optimal sigma is {model["sig"]-lower_buffer} from the lower sigma bound'
+                )
+            elif (model['sig'] >= upper_buffer):
+                log.warning(
+                    f'WARNING: Optimal sigma is {upper_buffer-model["sig"]} from the upper sigma bound'
+                )
+
+            train_idxs = model['idxs_train']
+            prob_s = prob_structures([model])
+            prob_idxs = prob_s.find(dataset, n_train_step)
+            
+            train_idxs = np.concatenate((train_idxs, prob_idxs))
+            n_train = len(train_idxs)
+            
+            i += 1
+
+        return model

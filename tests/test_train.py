@@ -29,6 +29,7 @@ import os
 from mbgdml.data import dataSet
 from mbgdml._gdml.train import GDMLTrain
 from mbgdml.train import mbGDMLTrain
+from mbgdml.active.problematic import prob_structures
 
 dset_dir = './tests/data/datasets'
 train_dir = './tests/data/train'
@@ -176,3 +177,32 @@ def test_1h2o_train_bayes_opt():
     best_sig = model['sig'].item()
     assert 40 <= best_sig <= 50
     assert model['perms'].shape[0] == 2
+
+def test_1h2o_prob_indices():
+    dset_path = os.path.join(
+        dset_dir, '1h2o/140h2o.sphere.gfn2.md.500k.prod1.3h2o.dset.1h2o-dset.npz'
+    )
+    model_path = os.path.join(
+        './tests/data/models', '1h2o-model.npz'
+    )
+    dset = dataSet(dset_path)
+
+    prob_s = prob_structures([model_path])
+    n_find = 100
+    prob_idxs = prob_s.find(dset, n_find)
+
+    ref = np.array(
+        [
+            830, 3738, 9747, 790, 7725, 7529, 7900, 11864, 1890, 8253, 13463,
+            8006, 9226, 2665, 10525, 1663, 247, 9995, 10763, 6961, 6900, 1665,
+            8489, 921, 10982, 7713, 171, 12167, 6394, 12605, 10144, 9667, 2218,
+            3998, 11005, 3329, 9919, 8810, 5102, 1061, 13151, 3795, 6986, 6648,
+            9169, 2123, 5666, 8074, 2090, 12775, 541, 12465, 10065, 807, 8532,
+            2246, 10057, 13192, 2712, 1240, 12478, 10062, 12664, 10025, 3510,
+            3971, 6787, 11970, 11536, 7257, 9221, 11730, 5230, 13287, 5532,
+            953, 12049, 6536, 2686, 1058, 9668, 11747, 3869, 12329, 5150,
+            12878, 12140, 1618, 11745, 6943, 3485, 9952, 4660, 1510, 9728, 7525
+        ]
+    )
+    ref = ref.sort()
+    assert np.array_equal(prob_idxs.sort(), ref)
