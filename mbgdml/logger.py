@@ -85,6 +85,8 @@ class GDMLLogger(logging.Logger, timeTracker):
         return
 
     def log_array(self, array, level=20):
+        if isinstance(array, list) or isinstance(array, tuple):
+            array = np.array(array)
         arr_str = np.array2string(
             array, separator=', '
         )

@@ -29,7 +29,7 @@ import os
 from mbgdml.data import dataSet
 from mbgdml._gdml.train import GDMLTrain
 from mbgdml.train import mbGDMLTrain
-from mbgdml.active.problematic import prob_structures
+from mbgdml.analysis.problematic import prob_structures
 
 dset_dir = './tests/data/datasets'
 train_dir = './tests/data/train'

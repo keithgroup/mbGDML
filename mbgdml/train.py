@@ -24,7 +24,7 @@
 import os
 import shutil
 from .data import mbModel, dataSet
-from .active.problematic import prob_structures
+from .analysis.problematic import prob_structures
 from ._gdml.train import *
 
 import logging
