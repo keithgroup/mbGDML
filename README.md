@@ -41,7 +41,6 @@ Every aspect of the process from preparing energy+gradient calculations, creatin
 Creating mbGDML models:
 
 - Partition structures into monomers, dimers, trimers, etc.
-- Prepare energy and gradient calculations for data sets with [ORCA](https://sites.google.com/site/orcainputlibrary/home).
 - Structure and data set breadcrumb trails using MD5 hashes.
 - Simple GDML training interface using CPUs or GPUs.
 

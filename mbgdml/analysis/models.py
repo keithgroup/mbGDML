@@ -81,7 +81,7 @@ class forceComparison:
         """
         F = {}
         F_index = 1
-        while f'F_{F_index}' in predict_set.asdict.keys():
+        while f'F_{F_index}' in predict_set.asdict().keys():
             _, F_nbody = predict_set.nbody_predictions(F_index)
             F[f'F_{F_index}'] = F_nbody[structure_index]
             F_index += 1

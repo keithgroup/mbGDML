@@ -314,7 +314,7 @@ class dataSet(mbGDMLData):
         :type: :obj:`str`
         """
         try:
-            return self.asdict['md5'][()].decode()
+            return self.asdict()['md5'][()].decode()
         except BaseException:
             print('Not enough information in dset for MD5')
             raise
@@ -1054,13 +1054,13 @@ class dataSet(mbGDMLData):
         self.E = E
         self.F = F
     
-    def add_pes_data(
+    def add_pes_json(
         self, calc_dir, theory_label, e_unit_dset, e_unit_calc, dtype='qcjson',
         allow_remaining_nan=True, center_calc_R=False, r_match_atol=5.1e-07,
         r_match_rtol=0.0
     ):
         """Add potential energy surface (PES) data (i.e., energies and/or
-        forces) to the data set (``E`` and ``F``).
+        forces) to the data set (``E`` and ``F``) using a JSON format.
 
         Assumes that ``mbgdml.data.basedata.mbGDMLData.r_unit`` of the
         calculation is the same as the data set.
@@ -1102,11 +1102,7 @@ class dataSet(mbGDMLData):
             Relative tolerance for matching the coordinates of a calculation to
             a structure in the data set. Defaults to ``0.0``.
         """
-
-        if dtype == 'qcjson':
-            search_string = 'json'
-        else:
-            raise ValueError(f'{dtype} is not a valid selection.')
+        search_string = 'json'
         
         # Gets all engrad output quantum chemistry json files.
         # For more information: https://github.com/keithgroup/qcjson
@@ -1226,11 +1222,12 @@ class dataSet(mbGDMLData):
         else:
             raise ValueError(f'There was an issue parsing F from {file_path}.')
 
-    @property
     def asdict(self):
-        """Contains all data as :obj:`numpy.ndarray` objects.
+        """Converts object into a custom :obj:`dict`.
 
-        :type: :obj:`dict`
+        Returns
+        -------
+        :obj:`dict`
         """
         # Data always available for data sets.
         dataset = {
@@ -1344,7 +1341,7 @@ class dataSet(mbGDMLData):
             `npz`.
         """
         predict = mbPredict(model_paths)
-        dataset = predict.remove_nbody(ref_dset.asdict)
+        dataset = predict.remove_nbody(ref_dset.asdict())
         self._update(dataset)
     
     def create_mb_from_dsets(self, ref_dset, dset_lower_paths):
@@ -1383,4 +1380,4 @@ class dataSet(mbGDMLData):
                 mb_dsets_md5.append(dset_lower.md5)
         ref_dset.mb_dsets_md5 = np.array(mb_dsets_md5)
         
-        self._update(ref_dset.asdict)
+        self._update(ref_dset.asdict())

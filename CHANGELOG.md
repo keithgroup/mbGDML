@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Added
 
-- Iterative learning training procedure.
+- Iterative training procedure by finding problematic structures.
 - Bayesian optimization for hyperparameter search.
 - Basic logging capabilities.
 - Write JSON file after training with useful information.
@@ -14,6 +14,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Changed
 
+- Renamed ``add_pes_data`` to ``add_pes_json``
+- `asdict` is now a method instead of a property.
 - Removed sGDML dependency.
 - Use relative imports.
 - Hyperparameter grid search in ``mbGDMLTrain`` class.
@@ -28,6 +30,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Address Sphinx documentation warnings and errors.
 - Only deploy documentation on keithgroup repo.
 - Correct dataSet Rset_info documentation.
+
+### Removed
+
+- ``qc`` module. This does not belong in this package.
 
 ## [0.0.1] - 2022-02-24
 

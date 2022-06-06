@@ -116,7 +116,7 @@ class structureSet(mbGDMLData):
 
         :type: :obj:`str`
         """
-        return utils.md5_data(self.asdict, ['z', 'R'])
+        return utils.md5_data(self.asdict(), ['z', 'R'])
     
     def convertR(self, R_units):
         """Convert coordinates and updates ``r_unit``.
@@ -254,11 +254,13 @@ class structureSet(mbGDMLData):
         self.entity_ids = np.array(entity_ids)
         self.comp_ids = np.array(comp_ids)
 
-    @property
-    def asdict(self):
-        """Contains all data as :obj:`numpy.ndarray` objects.
 
-        :type: :obj:`dict`
+    def asdict(self):
+        """Converts object into a custom :obj:`dict`.
+
+        Returns
+        -------
+        :obj:`dict`
         """
         structureset = {
             'type': np.array('s'),

@@ -46,7 +46,7 @@ class mbModel(mbGDMLData):
 
     @property
     def code_version(self):
-        """sGDML code version used to train the model.
+        """mbGDML version used to train the model.
 
         Raises
         ------

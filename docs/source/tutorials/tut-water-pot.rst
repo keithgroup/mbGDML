@@ -175,7 +175,7 @@ The following code will generate a :ref:`structure set<structure-sets>` just lik
     rset = structureSet()
     rset.from_xyz(xyz_path, r_unit, entity_ids, comp_ids)  # Adds data to structure set.
     rset.name = name  # Assigns name to the structure set.
-    rset.save(rset.name, rset.asdict)  # Will save in current directory.
+    rset.save(rset.name, rset.asdict())  # Will save in current directory.
 
 Curating data sets
 ==================
@@ -285,7 +285,7 @@ The following Python script will sample 5,000 trimer structures from our product
         sampling_updates=sampling_updates
     )
 
-    dset.save(dset.name, dset.asdict, save_dir)
+    dset.save(dset.name, dset.asdict(), save_dir)
 
 Sampling from data sets
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -336,7 +336,7 @@ The script is very similar with only a few modifications.
         sampling_updates=sampling_updates
     )
 
-    dset.save(dset.name, dset.asdict, save_dir)
+    dset.save(dset.name, dset.asdict(), save_dir)
 
 The above script directly results in :download:`this dimer data set<../files/tut-water/dsets/2h2o/140h2o.pm.gfn2.md.500k.prod1.3h2o.cm10.dset.2h2o-dset-noef.npz>`.
 By changing ``dset_name`` and ``size = 2`` to ``1`` we get :download:`this monomer data set<../files/tut-water/dsets/1h2o/140h2o.pm.gfn2.md.500k.prod1.3h2o.cm10.dset.1h2o-dset-noef.npz>`.
@@ -347,146 +347,13 @@ Computing energies and forces
 GDML requires, at minimum, the gradients of every structure sampled in the :ref:`data set<data-sets>`.
 Energies are useful to parameterize the integration constant or even include it in the kernel.
 These properties can be computed with any desired program and then added to data set.
-In the script below we generate ORCA v4.2.0 job that contain up to 100 energy+gradient calculations.
-
-.. code-block:: python
-
-    import os
-    import numpy as np
-    from mbgdml.data import dataSet
-    from mbgdml.qc import slurm_engrad_calculation
-
-    # Script setup.
-    dset_path = '140h2o.pm.gfn2.md.500k.prod1.3h2o-dset-cm10.noef.npz'  # The data set to make engrad jobs from.
-    structure_label = '140h2o.pm.gfn2.md.500k.prod1.3h2o.cm10'  # Structure label for the engrad calculations.
-    calc_name = f'{structure_label}-orca.engrad-mp2.def2tzvp'  # Job name.
-    max_calcs = 100  # Maximum number of consecutive calculations to put in one job.
-
-    # Ensures we execute from script directory (for relative paths).
-    os.chdir(os.path.dirname(os.path.realpath(__file__)))
-
-    save_dir = f'./{structure_label}-calcs'
-    if save_dir[-1] != '/':
-        save_dir += '/'
-    os.makedirs(save_dir, exist_ok=True)
-
-    def prepare_calc(calc_name, z, R, save_dir):
-        slurm_engrad_calculation(
-            'orca',
-            z,
-            R,
-            calc_name,
-            calc_name,
-            calc_name,
-            theory='MP2',
-            basis_set='def2-TZVP',
-            charge=0,
-            multiplicity=1,
-            cluster='smp',
-            nodes=1,
-            cores=24,
-            days=3,
-            hours=00,
-            calc_dir=save_dir,
-            options='TightSCF FrozenCore',
-            control_blocks=(
-                '%maxcore 8000\n\n'
-                '%scf\n    ConvForced true\nend'
-            ),
-            write=True,
-            submit=False
-        )
-
-    dset = dataSet(dset_path)
-    missing_engrad_indices = np.argwhere(np.isnan(dset.E))[:,0]
-
-    # Splits up calculations to a maximum number of engrads per job.
-    if len(missing_engrad_indices) > max_calcs:
-        start = 0
-        end = max_calcs
-        while start < len(missing_engrad_indices):
-            if end > len(missing_engrad_indices):
-                end = len(missing_engrad_indices)
-            calc_name_iter = f'{calc_name}-{start}.to.{end-1}'
-            save_dir_calc = f'{save_dir}/{calc_name_iter}'
-
-            if save_dir_calc[-1] != '/':
-                save_dir_calc += '/'
-            
-            os.makedirs(save_dir_calc, exist_ok=True)
-
-            prepare_calc(calc_name_iter, dset.z, dset.R[start:end], save_dir_calc)
-
-            start += max_calcs
-            end += max_calcs
-    else:
-        prepare_calc(calc_name, dset.z, dset.R[missing_engrad_indices], save_dir)
-
-The first two calculations are shown below.
-
-.. code-block:: text
-
-    # 140h2o.pm.gfn2.md.500k.prod1.3h2o.cm10-orca.engrad-mp2.def2tzvp-0.to.99
-    ! MP2 def2-TZVP EnGrad TightSCF FrozenCore
-
-    %pal
-        nprocs 24
-    end
-
-    %maxcore 8000
-
-    %scf
-        ConvForced true
-    end
-
-    *xyz 0 1
-    O   0.577096335  -2.910013209  -1.469728926
-    H   0.719154865  -2.645061494  -2.428305146
-    H   1.514695271  -3.029077780  -1.202822563
-    O  -0.046882667   0.333722805  -0.023751790
-    H   0.547109024   0.746187830  -0.616407617
-    H  -0.118653895   0.901757409   0.740811852
-    O  -0.648361732   2.498671995   1.470652220
-    H   0.177319851   3.012341517   1.445782624
-    H  -0.964075000   2.246011633   2.423333479
-    *
-
-
-    $new_job
-
-    # 140h2o.pm.gfn2.md.500k.prod1.3h2o.cm10-orca.engrad-mp2.def2tzvp-0.to.99
-    ! MP2 def2-TZVP EnGrad TightSCF FrozenCore
-
-    %pal
-        nprocs 24
-    end
-
-    %maxcore 8000
-
-    %scf
-        ConvForced true
-    end
-
-    *xyz 0 1
-    O   2.186900029   1.103131746   0.440180559
-    H   3.132328705   1.052402431   0.150975525
-    H   1.713400705   2.019828029   0.343004762
-    O  -2.135618996  -1.688550022   0.713837639
-    H  -2.773132665  -0.989875555   0.770465470
-    H  -1.826474091  -1.487707395  -0.182951687
-    O  -0.064924338   0.527011920  -1.137617882
-    H  -0.007597048   0.789579633  -0.215653695
-    H  -0.021943960  -0.457051162  -1.126188389
-    *
-
-
 
 Adding energies and forces
 --------------------------
 
 After all energy+gradient calculations are complete we need to add the data to each data set.
 We decided to take the approach of converting ORCA log files into JSON files (using a custom `qcjson package <https://github.com/keithgroup/qcjson>`_).
-The :func:`~mbgdml.data.dataset.dataSet.add_pes_data` method is used to add energies and forces to the data set.
+The :func:`~mbgdml.data.dataset.dataSet.add_pes_json` method is used to add energies and forces to the data set.
 Nothing precludes other custom methods as long as :attr:`~mbgdml.data.dataset.dataSet.E` and :attr:`~mbgdml.data.dataset.dataSet.F` data are added to the data set.
 In the end we should be left with three data sets containing water monomers, dimers, and trimers along with MP2/def2-TZVP energies and forces:
 
@@ -532,7 +399,7 @@ The following script demonstrates how to create a 2-body data set from our dimer
     mb_dataset.create_mb_from_dsets(ref_dset, lower_dset_paths)
     mb_dataset.name = dset_mb_name
 
-    mb_dataset.save(mb_dataset.name, mb_dataset.asdict, save_dir)
+    mb_dataset.save(mb_dataset.name, mb_dataset.asdict(), save_dir)
 
 To create the 3-body data set you just need to include the 2-body data set path in ``lower_dset_paths``.
 The monomer data set does not need any modifications, so we end up with two additional data sets:

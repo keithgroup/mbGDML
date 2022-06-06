@@ -481,7 +481,7 @@ def test_adding_pes_data_with_qcjson():
     dset = data.dataSet(f'{dset_dir}/6h2o/6h2o.temelso.etal-dset-no.data.npz')
     dset_ref = data.dataSet(f'{dset_dir}/6h2o/6h2o.temelso.etal-dset.npz')
 
-    dset.add_pes_data(
+    dset.add_pes_json(
         './tests/data/engrads/h2o/6h2o/6h2o.temelso.etal',
         'MP2/def2-TZVP', 'kcal/mol', 'hartree', allow_remaining_nan=False
     )

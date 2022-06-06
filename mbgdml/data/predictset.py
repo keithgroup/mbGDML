@@ -80,12 +80,13 @@ class predictSet(mbGDMLData):
         self.mbgdml_version = mbgdml_version
         self._predicted = True
 
-    @property
     def asdict(self):
-        """Contains all data as :obj:`numpy.ndarray` objects.
+        """Converts object into a custom :obj:`dict`.
 
-        :type: :obj:`dict`
-        """        
+        Returns
+        -------
+        :obj:`dict`
+        """     
         predictset = {
             'type': np.array('p'),
             'sgdml_version': np.array(self.sgdml_version),
