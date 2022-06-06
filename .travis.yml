@@ -2,8 +2,8 @@ language: python
 python:
   - 3.9
 install:
-  - pip install natsort cclib numpy ase mako matplotlib umap-learn bayes_opt
-  - pip install pytest-cov codecov furo Sphinx coverage bump2version
+  - pip install natsort cclib numpy ase mako matplotlib umap-learn bayesian-optimization
+  - pip install pytest-cov codecov coverage bump2version
   - pip install wheel watchdog tox twine
 script:
   - pip install .

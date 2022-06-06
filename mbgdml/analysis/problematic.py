@@ -195,7 +195,7 @@ class prob_structures:
 
         Parameters
         ----------
-        dset : :obj:`mbgdml.data.dataSet`
+        dset : :obj:`mbgdml.data.dataset.dataSet`
             Dataset to cluster and analyze errors.
         n_find : :obj:`int`
             Number of dataset indices to find.

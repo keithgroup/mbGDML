@@ -50,41 +50,40 @@ class mbGDMLTrain:
         use_torch=False, max_processes=None
     ):
         """
-
         Parameters
         ----------
-        use_sym : :obj:`bool`, optional
-            Whether or not to use (``True``) symmetric or (``False``)
-            nonsymmetric GDML. Usually ``True`` is recommended.
-        use_E : :obj:`bool`, optional
+        use_sym : :obj:`bool`, default: ``True``
+            If to identify and include symmetries when training GDML models.
+            This usually increases training and prediction times, but comes
+            with accuracy improvements.
+        use_E : :obj:`bool`, default: ``True``
             Whether or not to reconstruct the potential energy surface
-            (``True``) with or (``False``) without energy labels. Almost always
-            should be ``True``.
-        use_E_cstr : :obj:`bool`, optional
+            (``True``) with or (``False``) without energy labels. It is
+            highly recommended to train with energies.
+        use_E_cstr : :obj:`bool`, default: ``False``
             Whether or not to include energies as a part of the model training.
             Meaning ``True`` will add another column of alphas that will be
-            trained to the energies. This is not necessary, but is sometimes
-            useful for higher order *n*-body models. Defaults to ``True``.
-        use_cprsn : :obj:`bool`, optional
+            trained to the energies. This is rarely
+            useful for higher order *n*-body models.
+        use_cprsn : :obj:`bool`, default: ``False``
             Compresses the kernel matrix along symmetric degrees of freedom to
             try to reduce training time. Usually does not provide significant
-            benefits. Defaults to ``False``.
-        solver : :obj:`str`, optional
-            The sGDML solver to use. Currently the only option is
+            benefits.
+        solver : :obj:`str`, default: ``'analytic'``
+            The GDML solver to use. Currently the only option is
             ``'analytic'``.
-        lam : float, optional
-            Hyper-parameter lambda (regularization strength).
-        solver_tol : float, optional
+        lam : float, default: ``1e-15``
+            Hyper-parameter lambda (regularization strength). This generally
+            does not need to change.
+        solver_tol : float, default: ``1e-4``
            Solver tolerance.
-        interact_cut_off : :obj:`float`, optional
+        interact_cut_off : :obj:`float`, default: ``None``
             Untested option. Not recommended and turned off.
-        use_torch : :obj:`bool`, optional
+        use_torch : :obj:`bool`, default: ``False``
             Use PyTorch to enable GPU acceleration.
         max_processes : :obj:`int`, default: ``None``
             The maximum number of cores to use for the training process. Will
             automatically calculate if not specified.
-        verbose : :obj:`int`
-            Sets the root logger level.
         """
         self.use_sym = use_sym
         self.use_E = use_E
@@ -100,6 +99,29 @@ class mbGDMLTrain:
         self.GDMLTrain = GDMLTrain(
             max_processes=max_processes, use_torch=use_torch
         )
+    
+    def min_memory(self, n_train, n_atoms):
+        """Minimum memory recommendation for training.
+
+        GDML currently only supports closed form solutions (i.e., analytically).
+        Thus, the entire kernel matrix must be in memory which requires
+        :math:`(M * 3N)^2` double precision (8 byte) entries. This provides
+        a rough estimate for memory requirements.
+
+        Parameters
+        ----------
+        n_train : :obj:`int`
+            Number of training structures.
+        n_atoms : :obj:`int`
+            Number of atoms in a single structure.
+        
+        Returns
+        -------
+        :obj:`float`
+            Minimum memory requirements in MB.
+        """
+        mem = (8*((n_train * 3*n_atoms)**2))/1000000
+        return mem
     
     def create_task(
         self, train_dataset, n_train, valid_dataset, n_valid, sigma,
@@ -238,7 +260,7 @@ class mbGDMLTrain:
         sigma_bounds=(2, 300), n_test=None, save_dir='.',
         gp_params={'init_points': 10, 'n_iter': 10, 'alpha': 0.001},
         loss=loss_f_rmse, train_idxs=None, valid_idxs=None,
-        overwrite=False, write_json=False, write_idxs=True
+        overwrite=False, write_json=True, write_idxs=True
     ):
         """Train a GDML model using Bayesian optimization for sigma.
 
@@ -429,7 +451,7 @@ class mbGDMLTrain:
         self, dataset, model_name, n_train, n_valid,
         sigmas=list(range(2, 400, 30)), n_test=None, save_dir='.',
         loss=loss_f_rmse, train_idxs=None, valid_idxs=None,
-        overwrite=False, write_json=False, write_idxs=True,
+        overwrite=False, write_json=True, write_idxs=True,
     ):
         """Train a GDML model using a grid search for sigma.
 
@@ -620,19 +642,68 @@ class mbGDMLTrain:
         self, dataset, model_name, n_train_init, n_train_final, n_valid,
         model0=None, n_train_step=100, sigma_bounds=(2, 300), n_test=None,
         save_dir='.', gp_params={'init_points': 10, 'n_iter': 10, 'alpha': 0.001},
-        loss=loss_f_rmse, train_idxs=None, overwrite=False, write_json=False,
-        write_idxs=True
+        loss=loss_f_rmse, overwrite=False, write_json=True, write_idxs=True
     ):
         """Iteratively trains a GDML model by using Bayesian optimization and
         adding problematic (high error) structures to the training set.
 
+        Trains a GDML model with :meth:`mbgdml.train.mbGDMLTrain.bayes_opt`
+        using ``sigma_bounds`` and ``gp_params``.
+
         Parameters
         ----------
         dataset : :obj:`mbgdml.data.dataSet`
-
+            Data set to split into training, validation, and test sets are
+            derived from.
+        model_name : :obj:`str`
+            User-defined model name without the ``'.npz'`` file extension.
+        n_train_init : :obj:`int`
+            Initial size of the training set. If ``model0`` is provided, this
+            is the size of that model.
+        n_train_final : :obj:`int`
+            Training set size of the final model.
+        n_valid : :obj:`int`
+            Size of the validation set to be used for each training task.
+            Different structures are sampled for each training task.
         model0 : :obj:`dict`, default: ``None``
             Initial model to start iterative training with. Training indices
             will be taken from here.
+        n_train_step : :obj:`int`, default: ``100``
+            Number of problematic structures to add to the training set for
+            each iteration.
+        sigma_bounds : :obj:`tuple`, default: ``(2, 300)``
+            Kernel length scale bounds for the Bayesian optimization.
+        n_test : :obj:`int`, default: ``None``
+            The number of test points to test the validated GDML model.
+            Defaults to testing all available structures.
+        save_dir : :obj:`str`, default: ``'.'``
+            Path to train and save the mbGDML model.
+        gp_params : :obj:`dict`
+            Gaussian process kwargs. Others can be provided.
+
+            ``init_points`` : (:obj:`int`, default: ``10``)
+                How many steps of random exploration you want to perform.
+                Random exploration can help by diversifying the exploration
+                space. Defaults to ``10``.
+            
+            ``n_iter`` : (:obj:`int`, default: ``10``)
+                How many steps of bayesian optimization you want to perform.
+                The more steps the more likely to find a good maximum you are.
+
+            ``alpha``  : (:obj:`float`, default: ``0.001``)
+                This parameters controls how much noise the GP can handle, so
+                increase it whenever you think that extra flexibility is needed.
+        
+        loss : callable, default: :obj:`mbgdml.train.loss_f_rmse`
+            Loss function for validation. The input of this function is the
+            dictionary of :obj:`mbgdml.gdml.train.add_valid_errors` which
+            contains force and energy MAEs and RMSEs.
+        overwrite : :obj:`bool`, default: ``False``
+            Overwrite existing files.
+        write_json : :obj:`bool`, default: ``True``
+            Write a JSON file containing information about the training job.
+        write_idxs : :obj:`bool`, default: ``True``
+            Write npy files for training, validation, and test indices.
         """
         log.log_package()
 

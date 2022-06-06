@@ -36,8 +36,17 @@ extensions = [
     'sphinx.ext.autosectionlabel'
 ]
 
-# Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+# -- Options for autodoc ----------------------------------------------------
+# https://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html#configuration
+
+# Automatically extract typehints when specified and place them in
+# descriptions of the relevant function/method.
+autodoc_typehints = "description"
+
+# Include __init__ docstring for classes
+autoclass_content = 'both'
+
+
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.

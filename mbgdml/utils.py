@@ -94,8 +94,6 @@ def get_files(path, expression, recursive=True):
     """Returns paths to all files in a given directory that matches a provided
     expression in the file name.
     
-    Commonly used to find all files of a certain type, e.g. output or xyz files.
-    
     Parameters
     ----------
     path : :obj:`str`

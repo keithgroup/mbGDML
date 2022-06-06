@@ -168,14 +168,19 @@ def get_cluster_losses(loss_func, loss_kwargs):
     return np.array(losses)
 
 def idx_loss_f_mse(**kwargs):
-    """Compute force MSE of individual structures.
+    r"""Compute force MSE of individual structures.
 
     Parameters
     ----------
-    \**kwargs
+    **kwargs : :obj:`dict`
+        Keyword arguments for the loss function.
 
-        - ``'F_errors'`` : :obj:`numpy.ndarray`
-            Force predictions errors of all structures in a cluster.
+        ``F_errors`` : (:obj:`numpy.ndarray`) -
+        Force predictions errors of all structures in a cluster.
+    
+    Returns
+    -------
+    :obj:`numpy.ndarray`
     """
     F_errors = kwargs['F_errors']
     F_shape = F_errors.shape
@@ -189,10 +194,15 @@ def idx_loss_f_rmse(**kwargs):
 
     Parameters
     ----------
-    \**kwargs
+    **kwargs : :obj:`dict`
+        Keyword arguments for the loss function.
 
-        - ``'F_errors'`` : :obj:`numpy.ndarray`
-            Force predictions errors of all structures in a cluster.
+        ``F_errors`` : (:obj:`numpy.ndarray`) -
+        Force predictions errors of all structures in a cluster.
+    
+    Returns
+    -------
+    :obj:`numpy.ndarray`
     """
     mse = idx_loss_f_mse(**kwargs)
     return np.sqrt(mse)
@@ -202,12 +212,16 @@ def cluster_loss_F_mse(**kwargs):
 
     Parameters
     ----------
-    \**kwargs
+    **kwargs : :obj:`dict`
+        Keyword arguments for the loss function.
 
-        - ``'F_errors'`` : :obj:`numpy.ndarray`
-            Force predictions errors of all structures in a cluster.
+        ``F_errors`` : (:obj:`numpy.ndarray`) -
+        Force predictions errors of all structures in a cluster.
 
-    Prediction loss function for a single cluster."""
+    Returns
+    -------
+    :obj:`float`
+    """
     return np.mean((kwargs['F_errors'])**2)
 
 def cluster_loss_F_rmse(**kwargs):
@@ -215,11 +229,15 @@ def cluster_loss_F_rmse(**kwargs):
 
     Parameters
     ----------
-    \**kwargs
+    **kwargs : :obj:`dict`
+        Keyword arguments for the loss function.
 
-        - ``'F_errors'`` : :obj:`numpy.ndarray`
-            Force predictions errors of all structures in a cluster.
+        ``F_errors`` : (:obj:`numpy.ndarray`) -
+        Force predictions errors of all structures in a cluster.
 
-    Prediction loss function for a single cluster."""
+    Returns
+    -------
+    :obj:`float`
+    """
     mse = cluster_loss_F_mse(**kwargs)
     return np.sqrt(mse)
