@@ -6,7 +6,7 @@ from setuptools import setup, find_packages
 import versioneer
 
 requirements = [
-    'ase', 'cclib>=1.7', 'numpy'
+    'ase', 'cclib>=1.7', 'numpy', 'scipy'
 ]
 
 setup_requirements = [ ]

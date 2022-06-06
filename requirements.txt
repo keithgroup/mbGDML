@@ -1,3 +1,4 @@
 ase
 cclib>=1.7
 numpy
+scipy
