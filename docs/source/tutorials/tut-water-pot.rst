@@ -434,17 +434,15 @@ Please refer to the :ref:`training <Training>` page for more information.
     os.chdir(os.path.dirname(os.path.realpath(__file__)))
 
     dset = dataSet(dset_path)
-    total_number = dset.n_R  # Number to total structures in data set.
-    num_train = 500  # Number of data points to train on.
-    num_validate = 2000  # Number of data points to compare candidate models with.
-    num_test = total_number - num_train - num_validate  # Number of data points to test final model with.
-    if num_test > 3000:
-        num_test = 3000
-    sigmas = list(range(200, 400, 20))  # Sigmas to train models on.
-    use_E_cstr = False  # Adds energy constraints to the kernel. `False` usually provides better performance. `True` can help converge training in rare cases.
-    overwrite = True  # Whether the script will overwrite a model.
-    torch = False  # Whether to use torch to accelerate training.
+
     model_name = f'140h2o.pm.gfn2.md.500k.prod1.3h2o.cm10.dset.2h2o.mp2.def2tzvp-model.mb-train{num_train}'
+    n_train = 500  # Number of data points to train on.
+    n_valid = 2000  # Number of data points to compare candidate models with.
+    n_test = dset.n_R - num_train - num_validate  # Number of data points to test final model with.
+    # We limit n_test just for the sake of speed.
+    if n_test > 3000:
+        n_test = 3000
+    sigmas = list(range(200, 400, 20))  # Sigmas to train models on.
 
     # None for automatically selected or specify an array.
     idxs_train = None
@@ -452,13 +450,11 @@ Please refer to the :ref:`training <Training>` page for more information.
     if idxs_train is not None:
         assert num_train == len(idxs_train)
 
-    train = mbGDMLTrain()
-    train.load_dataset(dset_path)
-    train.train(
-        model_name, num_train, num_validate, num_test, solver='analytic',
-        sigmas=sigmas, save_dir=model_save_dir, use_sym=True, use_E=True,
-        use_E_cstr=use_E_cstr, use_cprsn=False, idxs_train=idxs_train,
-        max_processes=None, overwrite=overwrite, torch=torch,
+    train = mbGDMLTrain(
+        use_sym=True, use_E=True, use_E_cstr=False, use_cprsn=False
+    )
+    train.grid_search(
+        dset, model_name, n_train, n_valid, sigmas=sigmas, n_test=n_test
     )
 
 By tailoring the above script for each data set we obtain the following models.
