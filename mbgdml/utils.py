@@ -24,7 +24,6 @@
 import os
 import numpy as np
 import cclib
-from natsort import natsorted, ns
 import hashlib
 import itertools
 
@@ -164,6 +163,7 @@ def natsort_list(unsorted_list):
     list
         Sorted list of string.
     """
+    from natsort import natsorted, ns
     sorted_list = natsorted(unsorted_list, alg=ns.IGNORECASE)
 
     return sorted_list

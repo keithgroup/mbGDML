@@ -6,7 +6,7 @@ from setuptools import setup, find_packages
 import versioneer
 
 requirements = [
-    'natsort', 'cclib>=1.7', 'numpy', 'ase', 'mako'
+    'ase', 'cclib>=1.7', 'numpy'
 ]
 
 setup_requirements = [ ]
@@ -15,7 +15,12 @@ test_requirements = requirements.append(['pytest'])
 
 setup(
     install_requires=requirements,
-    extras_require={'analysis': ['matplotlib', 'umap-learn']},
+    extras_require={
+        'all': [
+            'natsort', 'mako', 'umap-learn', 'bayesian-optimization',
+            'matplotlib'
+        ]
+    },
     include_package_data=True,
     packages=find_packages(include=['mbgdml', 'mbgdml.*']),
     setup_requires=setup_requirements,

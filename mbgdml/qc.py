@@ -23,7 +23,6 @@
 import os
 import subprocess
 import numpy as np
-from mako.template import Template
 from . import utils
 
 class CalcTemplate:
@@ -36,6 +35,7 @@ class CalcTemplate:
     """
 
     def __init__(self, package):
+        from mako.template import Template
         if package.lower() == 'orca':
             self.input = (
                 "# ${job_name}\n"
