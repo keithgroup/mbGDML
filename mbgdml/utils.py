@@ -99,7 +99,7 @@ def get_files(path, expression, recursive=True):
         Specifies the directory to search.
     expression : :obj:`str`
         Expression to be tested against all file names in ``path``.
-    recursive :obj:`bool`, optional
+    recursive : :obj:`bool`, optional
         Recursively find all files in all subdirectories.
     
     Returns
@@ -256,7 +256,7 @@ def convert_forces(
     e_units : :obj:`str`
         Desired units of energy. Available units are ``'eV'``, ``'hartree'``,
         ``'kcal/mol'``, and ``'kJ/mol'``.
-    r_units : obj:`str`
+    r_units : :obj:`str`
         Desired units of distance. Available units are ``'Angstrom'`` and
         ``'bohr'``.
     

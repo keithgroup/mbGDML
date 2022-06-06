@@ -21,11 +21,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import numpy as np
 import os
 import shutil
 from .data import mbModel, dataSet
 from .analysis.problematic import prob_structures
-from ._gdml.train import *
+from ._gdml.train import GDMLTrain, model_errors, add_valid_errors
+from ._gdml.train import save_model, get_test_idxs
 
 import logging
 log = logging.getLogger(__name__)
@@ -122,6 +124,12 @@ class mbGDMLTrain:
         """
         mem = (8*((n_train * 3*n_atoms)**2))/1000000
         return mem
+    
+    def __del__(self):
+        global glob
+
+        if 'glob' in globals():
+            del glob
     
     def create_task(
         self, train_dataset, n_train, valid_dataset, n_valid, sigma,
@@ -308,7 +316,7 @@ class mbGDMLTrain:
                 Defaults to ``0.001``.
         loss : callable, default: :obj:`mbgdml.train.loss_f_rmse`
             Loss function for validation. The input of this function is the
-            dictionary of :obj:`mbgdml.gdml.train.add_valid_errors` which
+            dictionary of :obj:`mbgdml._gdml.train.add_valid_errors` which
             contains force and energy MAEs and RMSEs.
         train_idxs : :obj:`numpy.ndarray`, default: ``None``
             The specific indices of structures to train the model on. If
@@ -490,7 +498,7 @@ class mbGDMLTrain:
             directory.
         loss : callable, default: :obj:`mbgdml.train.loss_f_rmse`
             Loss function for validation. The input of this function is the
-            dictionary of :obj:`mbgdml.gdml.train.add_valid_errors` which
+            dictionary of :obj:`mbgdml._gdml.train.add_valid_errors` which
             contains force and energy MAEs and RMSEs.
         train_idxs : :obj:`numpy.ndarray`, default: ``None``
             The specific indices of structures to train the model on. If
@@ -696,7 +704,7 @@ class mbGDMLTrain:
         
         loss : callable, default: :obj:`mbgdml.train.loss_f_rmse`
             Loss function for validation. The input of this function is the
-            dictionary of :obj:`mbgdml.gdml.train.add_valid_errors` which
+            dictionary of :obj:`mbgdml._gdml.train.add_valid_errors` which
             contains force and energy MAEs and RMSEs.
         overwrite : :obj:`bool`, default: ``False``
             Overwrite existing files.

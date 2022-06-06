@@ -42,6 +42,12 @@ class prob_structures:
     """
 
     def __init__(self, models):
+        """
+        Parameters
+        ----------
+        models : :obj:`list` of :obj:`str` or :obj:`dict`
+            Contains paths or dictionaries of many-body GDML models.
+        """
         self.predict = mbPredict(models)
         self.model_dicts = self.predict.models
     

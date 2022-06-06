@@ -31,11 +31,6 @@ from .. import utils
 class structureSet(mbGDMLData):
     """For creating, loading, manipulating, and using structure sets.
 
-    Parameters
-    ----------
-    structureset_path : :obj:`str`, optional
-        Path to a saved `npz`.
-
     Attributes
     ----------
     name : :obj:`str`
@@ -43,6 +38,12 @@ class structureSet(mbGDMLData):
     """
 
     def __init__(self, *args):
+        """
+        Parameters
+        ----------
+        structureset_path : :obj:`str`, optional
+            Path to a saved `npz`.
+        """
         self.type = 's'
         self.name = 'structureset'
         if len(args) == 1:
@@ -225,7 +226,7 @@ class structureSet(mbGDMLData):
             Path to npz file.
         z_label : :obj:`str`
             Npz label that contains the z data as an array.
-        R_label : obj:`str`
+        R_label : :obj:`str`
             Npz label that contains the R data as an array.
         r_unit : :obj:`str`
             Units of distance. Options are ``'Angstrom'`` or ``'bohr'`` (defined

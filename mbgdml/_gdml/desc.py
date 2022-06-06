@@ -53,7 +53,7 @@ def _pbc_diff(diffs, lat_and_inv, use_torch=False):
         N x 3 matrix of N pairwise differences between vectors `u - v`
     lat_and_inv : tuple of :obj:`numpy.ndarray`
         Tuple of 3 x 3 matrix containing lattice vectors as columns and its inverse.
-    use_torch : boolean, optional
+    use_torch : :obj:`bool`, optional
         Enable, if the inputs are PyTorch objects.
 
     Returns
@@ -88,7 +88,7 @@ def _pdist(r, lat_and_inv=None):  # TODO: update return (no squareform anymore)
     r : :obj:`numpy.ndarray`
         Array of size 3N containing the Cartesian coordinates of
         each atom.
-    lat_and_inv : tuple of :obj:`numpy.ndarray`, optional
+    lat_and_inv : :obj:`tuple` of :obj:`numpy.ndarray`, optional
         Tuple of 3x3 matrix containing lattice vectors as columns and its inverse.
 
     Returns
@@ -162,7 +162,7 @@ def _r_to_d_desc(r, pdist, lat_and_inv=None, coff=None):  # TODO: fix documentat
     pdist : :obj:`numpy.ndarray`
         Array of size N x N containing the Euclidean distance
         (2-norm) for each pair of atoms.
-    lat_and_inv : tuple of :obj:`numpy.ndarray`, optional
+    lat_and_inv : :obj:`tuple` of :obj:`numpy.ndarray`, optional
         Tuple of 3x3 matrix containing lattice vectors as columns and its inverse.
 
     Returns
@@ -212,7 +212,7 @@ def _from_r(r, lat_and_inv=None, coff=None):
     r : :obj:`numpy.ndarray`
         Array of size 3N containing the Cartesian coordinates of
         each atom.
-    lat_and_inv : tuple of :obj:`numpy.ndarray`, optional
+    lat_and_inv : :obj:`tuple` of :obj:`numpy.ndarray`, optional
         Tuple of 3 x 3 matrix containing lattice vectors as columns and its inverse.
 
     Returns
@@ -237,16 +237,18 @@ def _from_r(r, lat_and_inv=None, coff=None):
 
 
 class Desc(object):
+    """Generate descriptors and their Jacobians for molecular geometries,
+    including support for periodic boundary conditions.
+    """
+    
     def __init__(self, n_atoms, interact_cut_off=None, max_processes=None):
         """
-        Generate descriptors and their Jacobians for molecular geometries,
-        including support for periodic boundary conditions.
 
         Parameters
         ----------
-        n_atoms : int
+        n_atoms : :obj:`int`
                 Number of atoms in the represented system.
-        max_processes : int, optional
+        max_processes : :obj:`int`, optional
                 Limit the max. number of processes. Otherwise
                 all CPU cores are used. This parameters has no
                 effect if `use_torch=True`.
@@ -301,7 +303,7 @@ class Desc(object):
         R : :obj:`numpy.ndarray`
             Array of size M x 3N containing the Cartesian coordinates of
             each atom.
-        lat_and_inv : tuple of :obj:`numpy.ndarray`, optional
+        lat_and_inv : :obj:`tuple` of :obj:`numpy.ndarray`, optional
             Tuple of 3 x 3 matrix containing lattice vectors as columns and its inverse.
 
         Returns

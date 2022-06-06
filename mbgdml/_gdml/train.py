@@ -53,13 +53,13 @@ def _share_array(arr_np, typecode_or_type):
     ----------
     arr_np : :obj:`numpy.ndarray`
         NumPy array.
-    typecode_or_type : char or :obj:`ctype`
+    typecode_or_type : char or ``ctype``
         Either a ctypes type or a one character typecode of the
         kind used by the Python array module.
 
     Returns
     -------
-        array of :obj:`ctype`
+        Array of ``ctype``.
     """
     arr = mp.RawArray(typecode_or_type, arr_np.ravel())
     return arr, arr_np.shape
@@ -76,27 +76,26 @@ def _assemble_kernel_mat_wkr(
 
     Parameters
     ----------
-    j : int
+    j : :obj:`int`
         Index of training point.
-    tril_perms_lin : :obj:`numpy.ndarray`
-        1D array (int) containing all recovered permutations
-        expanded as one large permutation to be applied to a tiled
-        copy of the object to be permuted.
-    sig : int
-        Hyper-parameter :math:`\sigma`.
-    use_E_cstr : bool, optional
+    tril_perms_lin : :obj:`numpy.ndarray` of :obj:`int`
+        1D array containing all recovered permutations expanded as one large
+        permutation to be applied to a tiled copy of the object to be permuted.
+    sig : :obj:`int` or :obj:`float`
+        Hyperparameter sigma (kernel length scale).
+    use_E_cstr : :obj:`bool`, optional
         True: include energy constraints in the kernel,
         False: default (s)GDML kernel.
-    exploit_sym : boolean, optional
+    exploit_sym : :obj:`bool`, optional
         Do not create symmetric entries of the kernel matrix twice
-        (this only works for spectific inputs for `cols_m_limit`)
-    cols_m_limit : int, optional
-        Limit the number of columns (include training points 1-`M`).
+        (this only works for specific inputs for ``cols_m_limit``)
+    cols_m_limit : :obj:`int`, optional
+        Limit the number of columns (include training points 1-``M``).
         Note that each training points consists of multiple columns.
 
     Returns
     -------
-    int
+    :obj:`int`
         Number of kernel matrix blocks created, divided by 2
         (symmetric blocks are always created at together).
     """
@@ -211,14 +210,15 @@ def _assemble_kernel_mat_wkr(
 
 
 class GDMLTrain(object):
+    """Train GDML force fields.
+
+    This class is used to train models using different closed-form
+    and numerical solvers. GPU support is provided
+    through PyTorch (requires optional `torch` dependency to be
+    installed) for some solvers.
+    """
     def __init__(self, max_processes=None, use_torch=False):
-        """Train sGDML force fields.
-
-        This class is used to train models using different closed-form
-        and numerical solvers. GPU support is provided
-        through PyTorch (requires optional `torch` dependency to be
-        installed) for some solvers.
-
+        """
         Parameters
         ----------
         max_processes : :obj:`int`, default: ``None``
@@ -265,7 +265,7 @@ class GDMLTrain(object):
         solver='analytic', solver_tol=1e-4, interact_cut_off=None,
         idxs_train=None, idxs_valid=None,
     ):
-        """Create a data structure of custom type `task`.
+        """Create a data structure of custom type ``task``.
 
         These data structures serve as recipes for model creation,
         summarizing the configuration of one particular training run.
@@ -279,27 +279,28 @@ class GDMLTrain(object):
         Parameters
         ----------
         train_dataset : :obj:`dict`
-            Data structure of custom type :obj:`dataset` containing
+            Data structure of custom type ``dataset`` containing
             train dataset.
         n_train : :obj:`int`
             Number of training points to sample.
         valid_dataset : :obj:`dict`
-            Data structure of custom type :obj:`dataset` containing
+            Data structure of custom type ``dataset`` containing
             validation dataset.
         n_valid : :obj:`int`
             Number of validation points to sample.
         sig : :obj:`int`
-            Hyper-parameter (kernel length scale).
+            Hyperparameter sigma (kernel length scale).
         lam : :obj:`float`, default: ``1e-15``
             Hyper-parameter lambda (regularization strength).
         use_sym : bool, default: ``True``
             True: include symmetries (sGDML), False: GDML.
-        use_E : bool, optional
+        use_E : :obj:`bool`, optional
             ``True``: reconstruct force field with corresponding potential energy surface,
+
             ``False``: ignore energy during training, even if energy labels are available
-                    in the dataset. The trained model will still be able to predict
-                    energies up to an unknown integration constant. Note, that the
-                    energy predictions accuracy will be untested.
+            in the dataset. The trained model will still be able to predict
+            energies up to an unknown integration constant. Note, that the
+            energy predictions accuracy will be untested.
         use_E_cstr : bool, default: ``False``
             True: include energy constraints in the kernel,
             False: default (s)GDML.
@@ -311,7 +312,7 @@ class GDMLTrain(object):
         Returns
         -------
         :obj:`dict`
-            Data structure of custom type :obj:`task`.
+            Data structure of custom type ``task``.
 
         Raises
         ------
@@ -601,18 +602,17 @@ class GDMLTrain(object):
         Parameters
         ----------
         task : :obj:`dict`
-            Data structure of custom type :obj:`task`.
+            Data structure of custom type ``task``.
 
         Returns
         -------
         :obj:`dict`
-            Data structure of custom type :obj:`model`.
+            Data structure of custom type ``model``.
 
         Raises
         ------
         ValueError
-            If the provided dataset contains invalid lattice
-            vectors.
+            If the provided dataset contains invalid lattice vectors.
         """
 
         task = dict(task)  # make mutable
@@ -831,9 +831,9 @@ class GDMLTrain(object):
         Parameters
         ----------
         model : :obj:`dict`
-            Data structure of custom type :obj:`model`.
+            Data structure of custom type ``model``.
         task : :obj:`dict`
-            Data structure of custom type :obj:`task`.
+            Data structure of custom type ``task``.
         R_desc : :obj:`numpy.ndarray`, optional
             An 2D array of size M x D containing the descriptors of dimension
             D for M molecules.
@@ -927,11 +927,11 @@ class GDMLTrain(object):
             expanded as one large permutation to be applied to a
             tiled copy of the object to be permuted.
         sig : int
-            Hyper-parameter :math:`\sigma`(kernel length scale).
-        use_E_cstr : bool, optional
+            Hyperparameter sigma (kernel length scale).
+        use_E_cstr : :obj:`bool`, optional
             True: include energy constraints in the kernel,
             False: default (s)GDML kernel.
-        cols_m_limit : int, optional
+        cols_m_limit : :obj:`int`, optional
             Only generate the columns up to index 'cols_m_limit'. This creates
             a M*3N x cols_m_limit*3N kernel matrix, instead of M*3N x M*3N.
         cols_3n_keep_idxs : :obj:`numpy.ndarray`, optional

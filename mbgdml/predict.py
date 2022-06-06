@@ -35,18 +35,10 @@ else:
 
 class mbPredict():
     """Predict energies and forces of structures using many-body GDML models.
-
-    Parameters
-    ----------
-    models : :obj:`list` [:obj:`str`]
-        Contains paths to either standard or many-body GDML models.
-    use_torch : :obj:`bool`, optional
-        Use PyTorch to make predictions.
     """
 
     def __init__(self, models, use_torch=False):
-        """Sets GDML models to be used for many-body predictions.
-        
+        """ 
         Parameters
         ----------
         models : :obj:`list` of :obj:`str` or :obj:`dict`
@@ -94,7 +86,7 @@ class mbPredict():
         r_entity_ids_per_model_entity : :obj:`list` [:obj:`numpy.ndarray`]
             A list of ``entity_ids`` that match the ``comp_id`` of each
             model ``entity_id``. Note that the index of the
-            :obj:`numpy.ndarray``is equal to the model ``entity_id`` and the
+            :obj:`numpy.ndarray` is equal to the model ``entity_id`` and the
             values are ``r`` ``entity_ids`` that match the ``comp_id``.
         """
         nbody_combinations = itertools.product(*r_entity_ids_per_model_entity)
@@ -138,7 +130,7 @@ class mbPredict():
             be ``['h2o', 'meoh']``.
         model : :obj:`dict`
             The dictionary of the loaded npz file. Stored in ``self.models``.
-        gdml : :obj:`mbgdml.gdml.predict.GDMLPredict`
+        gdml : :obj:`mbgdml._gdml.predict.GDMLPredict`
             Object used to predict energies and forces of the structure defined 
             in ``r``.
         ignore_criteria : :obj:`bool`, optional

@@ -1,5 +1,4 @@
-"""Data structures handled by mbgdml.
-"""
+"""Data structures handled by mbgdml."""
 
 from .basedata import mbGDMLData
 from .calculation import PartitionOutput

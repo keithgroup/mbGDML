@@ -46,7 +46,6 @@ class structureEmbedding:
 
     def __init__(self, n_neighbors=9, min_dist=0.1, random_state=None):
         """
-
         Parameters
         ----------
         n_neighbors : :obj:`int`, optional

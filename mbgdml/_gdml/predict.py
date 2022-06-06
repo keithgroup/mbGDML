@@ -55,11 +55,11 @@ def share_array(arr_np):
     Parameters
     ----------
     arr_np : :obj:`numpy.ndarray`
-            NumPy array.
+        NumPy array.
 
     Returns
     -------
-    array of :obj:`ctype`
+    array of ``ctype``
     """
 
     arr = mp.RawArray('d', arr_np.ravel())
@@ -73,49 +73,49 @@ def _predict_wkr(
     Compute (part) of a prediction.
 
     Every prediction is a linear combination involving the training points used for
-    this model. This function evalutates that combination for the range specified by
+    this model. This function evaluates that combination for the range specified by
     `wkr_start_stop`. This workload can optionally be processed in chunks,
     which can be faster as it requires less memory to be allocated.
 
     Note
     ----
-    It is sufficient to provide either the parameter `r` or `r_desc_d_desc`.
-    The other one can be set to `None`.
+    It is sufficient to provide either the parameter ``r`` or ``r_desc_d_desc``.
+    The other one can be set to ``None``.
 
     Parameters
     ----------
     r : :obj:`numpy.ndarray`
-            An array of size 3N containing the Cartesian
-            coordinates of each atom in the molecule.
-    r_desc_d_desc : tuple of :obj:`numpy.ndarray`
-            A tuple made up of:
-                (1) An array of size D containing the descriptors
-                of dimension D for the molecule.
-                (2) An array of size D x 3N containing the
-                descriptor Jacobian for the molecules. It has dimension
-                D with 3N partial derivatives with respect to the 3N
-                Cartesian coordinates of each atom.
-    lat_and_inv : tuple of :obj:`numpy.ndarray`
-            Tuple of 3 x 3 matrix containing lattice vectors as columns and
-            its inverse.
-    glob_id : int
-            Identifier of the global namespace that this
-            function is supposed to be using (zero if only one
-            instance of this class exists at the same time).
-    wkr_start_stop : tuple of int, optional
-            Range defined by the indices of first and last (exclusive)
-            sum element. The full prediction is generated if this parameter
-            is not specified.
-    chunk_size : int, optional
-            Chunk size. The whole linear combination is evaluated in a large
-            vector operation instead of looping over smaller chunks if this
-            parameter is left unspecified.
+        An array of size 3N containing the Cartesian
+        coordinates of each atom in the molecule.
+    r_desc_d_desc : :obj:`tuple` of :obj:`numpy.ndarray`
+        A tuple made up of:
+            (1) An array of size D containing the descriptors
+            of dimension D for the molecule.
+            (2) An array of size D x 3N containing the
+            descriptor Jacobian for the molecules. It has dimension
+            D with 3N partial derivatives with respect to the 3N
+            Cartesian coordinates of each atom.
+    lat_and_inv : :obj:`tuple` of :obj:`numpy.ndarray`
+        Tuple of 3 x 3 matrix containing lattice vectors as columns and
+        its inverse.
+    glob_id : :obj:`int`
+        Identifier of the global namespace that this
+        function is supposed to be using (zero if only one
+        instance of this class exists at the same time).
+    wkr_start_stop : :obj:`tuple` of :obj:`int`, optional
+        Range defined by the indices of first and last (exclusive)
+        sum element. The full prediction is generated if this parameter
+        is not specified.
+    chunk_size : :obj:`int`, optional
+        Chunk size. The whole linear combination is evaluated in a large
+        vector operation instead of looping over smaller chunks if this
+        parameter is left unspecified.
 
     Returns
     -------
     :obj:`numpy.ndarray`
-            Partial prediction of all force components and
-            energy (appended to array as last element).
+        Partial prediction of all force components and energy (appended to
+        array as last element).
     """
 
     global globs
@@ -252,14 +252,14 @@ class GDMLPredict:
         model : :obj:`dict`
             Data structure that holds all parameters of the trained model.
             This object is the output of `GDMLTrain.train`
-        batch_size : int, optional
+        batch_size : :obj:`int`, optional
             Chunk size for processing parallel tasks.
-        num_workers : int, optional
+        num_workers : :obj:`int`, optional
             Number of parallel workers.
-        max_processes : int, optional
+        max_processes : :obj:`int`, optional
             Limit the max. number of processes. Otherwise all CPU cores are
             used. This parameters has no effect if `use_torch=True`
-        use_torch : boolean, optional
+        use_torch : :obj:`bool`, optional
             Use PyTorch to calculate predictions
         """
 
@@ -459,7 +459,7 @@ class GDMLPredict:
 
         Parameters
         ----------
-        num_workers : int, optional
+        num_workers : :obj:`int`, optional
             Number of processes (maximum value is set if
             `None`).
         """
@@ -544,7 +544,7 @@ class GDMLPredict:
 
         Parameters
         ----------
-        bulk_mp : bool, optional
+        bulk_mp : :obj:`bool`, optional
             Enable or disable bulk prediction mode.
         """
 
@@ -584,23 +584,23 @@ class GDMLPredict:
 
         Parameters
         ----------
-        n_bulk : int, optional
+        n_bulk : :obj:`int`, optional
             Number of geometries that will be passed to the
             `predict` function in each call (performance
             will be optimized for that exact use case).
-        n_reps : int, optional
+        n_reps : :obj:`int`, optional
             Number of repetitions (bigger value: more
             accurate, but also slower).
-        return_is_from_cache : bool, optional
+        return_is_from_cache : :obj:`bool`, optional
             If enabled, this function returns a second value
             indicating if the returned results were obtained
             from cache.
 
         Returns
         -------
-        int
+        :obj:`int`
             Force and energy prediction speed in geometries per second.
-        boolean, optional
+        :obj:`bool`, optional
             Return, whether this function obtained the results from cache.
         """
 

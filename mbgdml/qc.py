@@ -27,15 +27,15 @@ from . import utils
 
 class CalcTemplate:
     """Contains all quantum chemistry templates for mako.
-
-    Parameters
-    ----------
-    package : :obj:`str`
-        Computational chemistry package to perform calculations.
     """
 
     def __init__(self, package):
-        from mako.template import Template
+        """
+        Parameters
+        ----------
+        package : :obj:`str`
+            Computational chemistry package to perform calculations.
+        """
         if package.lower() == 'orca':
             self.input = (
                 "# ${job_name}\n"
@@ -156,6 +156,8 @@ class ORCA:
         input_extension: :obj:`str`, optional
             File extension for ORCA input. Defaults to ``'inp'``.
         """
+        from mako.template import Template
+
         self.calc_type = calc_type
         self.charge = charge
         self.multiplicity = multiplicity
@@ -228,6 +230,8 @@ class ORCA:
         :obj:`str`
             Rendered submission script.
         """
+        from mako.template import Template
+        
         # Run options
         self.cluster = cluster
         self.nodes = nodes

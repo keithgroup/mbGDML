@@ -35,14 +35,15 @@ from ..predict import mbPredict
 
 class dataSet(mbGDMLData):
     """For creating, loading, manipulating, and using data sets.
-
-    Parameters
-    ----------
-    dataset_path : :obj:`str`, optional
-        Path to a `npz` file.
     """
 
     def __init__(self, *args):
+        """
+        Parameters
+        ----------
+        dataset_path : :obj:`str`, optional
+            Path to a `npz` file.
+        """
         self.type = 'd'
         self.name = 'dataset'
         if len(args) == 1:
@@ -550,7 +551,7 @@ class dataSet(mbGDMLData):
         Rset : :obj:`mbgdml.data`
             A loaded :obj:`mbgdml.data.structureSet` or
             :obj:`mbgdml.data.dataSet` object.
-        selected_r_prov_id : obj:`int`, optional
+        selected_r_prov_id : :obj:`int`, optional
             Currently dset sampling can only be done for one r_prov_id at a time.
             This specifies which rset structures in the data set to sample from.
             Defaults to ``None``.
@@ -596,11 +597,11 @@ class dataSet(mbGDMLData):
         comp_ids : :obj:`numpy.ndarray`
             Already sampled ``comp_ids`` of the data set. Could be an empty
             array.
-        data_entity_ids :obj:`numpy.ndarray`
-            entity_ids of a data or structure set being sampled.
-        data_comp_ids :obj:`numpy.ndarray`
+        data_entity_ids : :obj:`numpy.ndarray`
+            ``entity_ids`` of a data or structure set being sampled.
+        data_comp_ids : :obj:`numpy.ndarray`
             ``comp_ids`` of a data or structure set being sampled.
-        sampled_entity_ids_split : :obj:`list` [:obj:`numpy.ndarray`]
+        sampled_entity_ids_split : :obj:`list` of :obj:`numpy.ndarray`
             The unique data entity_ids of each new entity for this data set.
             For example, all the data entity_ids (from a structure set) that
             are included as entity_id = 0 in this data set.
@@ -719,7 +720,7 @@ class dataSet(mbGDMLData):
             An array specifying where each structure in R originates from.
         size : :obj:`int`
             Desired number of molecules in each selection.
-        criteria : :obj:`mbgdml.sample.sampleCritera`, optional
+        criteria : ``callable``, optional
             Structure criteria during the sampling procedure. Defaults to
             ``None`` if no criteria should be used.
         z_slice : :obj:`numpy.ndarray`, optional
