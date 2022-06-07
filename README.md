@@ -65,11 +65,11 @@ cd mbGDML
 pip install .
 ```
 
-An analysis submodule is available that requires extra dependencies.
+There are additional dependencies that enable other features like Bayesian optimization for hyperparameters and plots.
 To automatically include these dependencies you can use the "Package Extras" feature of pip like so.
 
 ```text
-pip install .[analysis]
+pip install .[all]
 ```
 
 # License
