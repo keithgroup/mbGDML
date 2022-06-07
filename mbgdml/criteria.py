@@ -22,7 +22,7 @@
 
 import itertools
 import numpy as np
-from mbgdml.utils import z_to_mass
+from .utils import z_to_mass
 
 def _calc_distance(r1, r2):
     """Calculates the Euclidean distance between two points.

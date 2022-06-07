@@ -23,8 +23,7 @@
 """Analyses for mbGDML models."""
 
 import numpy as np
-import matplotlib.pyplot as plt
-from mbgdml.utils import atoms_by_element
+from ..utils import atoms_by_element
 
 class forceComparison:
     """Compare force vectors.
@@ -82,7 +81,7 @@ class forceComparison:
         """
         F = {}
         F_index = 1
-        while f'F_{F_index}' in predict_set.asdict.keys():
+        while f'F_{F_index}' in predict_set.asdict().keys():
             _, F_nbody = predict_set.nbody_predictions(F_index)
             F[f'F_{F_index}'] = F_nbody[structure_index]
             F_index += 1
@@ -173,6 +172,7 @@ class nbodyHeatMaps(forceComparison):
         :obj:`matplotlib.axes.Axes`
             Axes object.
         """
+        import matplotlib.pyplot as plt
         fig, heatmap = plt.subplots(figsize=(3, 4), constrained_layout=True)
         #norm = mpl.colors.Normalize(vmin=0, vmax=2.0)
         #im = heatmap.imshow(similarity, cmap='Reds', vmin=0.0, vmax=2.0, norm=norm)

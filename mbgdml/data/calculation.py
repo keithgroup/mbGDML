@@ -23,7 +23,7 @@
 import numpy as np
 from cclib.io import ccread
 from cclib.parser.utils import convertor
-from mbgdml.utils import convert_forces
+from ..utils import convert_forces
 
 
 class PartitionOutput:

@@ -23,18 +23,13 @@
 import os
 import numpy as np
 from cclib.parser.utils import convertor
-from mbgdml.data import mbGDMLData
-from mbgdml import __version__
-from mbgdml.parse import parse_stringfile
-from mbgdml import utils
+from .basedata import mbGDMLData
+from .. import __version__
+from ..parse import parse_stringfile
+from .. import utils
 
 class structureSet(mbGDMLData):
     """For creating, loading, manipulating, and using structure sets.
-
-    Parameters
-    ----------
-    structureset_path : :obj:`str`, optional
-        Path to a saved `npz`.
 
     Attributes
     ----------
@@ -43,6 +38,12 @@ class structureSet(mbGDMLData):
     """
 
     def __init__(self, *args):
+        """
+        Parameters
+        ----------
+        structureset_path : :obj:`str`, optional
+            Path to a saved `npz`.
+        """
         self.type = 's'
         self.name = 'structureset'
         if len(args) == 1:
@@ -115,7 +116,7 @@ class structureSet(mbGDMLData):
 
         :type: :obj:`str`
         """
-        return utils.md5_data(self.asdict, ['z', 'R'])
+        return utils.md5_data(self.asdict(), ['z', 'R'])
     
     def convertR(self, R_units):
         """Convert coordinates and updates ``r_unit``.
@@ -225,7 +226,7 @@ class structureSet(mbGDMLData):
             Path to npz file.
         z_label : :obj:`str`
             Npz label that contains the z data as an array.
-        R_label : obj:`str`
+        R_label : :obj:`str`
             Npz label that contains the R data as an array.
         r_unit : :obj:`str`
             Units of distance. Options are ``'Angstrom'`` or ``'bohr'`` (defined
@@ -253,11 +254,13 @@ class structureSet(mbGDMLData):
         self.entity_ids = np.array(entity_ids)
         self.comp_ids = np.array(comp_ids)
 
-    @property
-    def asdict(self):
-        """Contains all data as :obj:`numpy.ndarray` objects.
 
-        :type: :obj:`dict`
+    def asdict(self):
+        """Converts object into a custom :obj:`dict`.
+
+        Returns
+        -------
+        :obj:`dict`
         """
         structureset = {
             'type': np.array('s'),

@@ -26,23 +26,24 @@ import os
 from random import randrange, sample, choice
 import numpy as np
 from cclib.parser.utils import convertor
-from mbgdml.data import mbGDMLData
-from mbgdml import __version__ as mbgdml_version
-from mbgdml.parse import parse_stringfile
-from mbgdml import utils
-from mbgdml.predict import mbPredict
+from .basedata import mbGDMLData
+from .. import __version__ as mbgdml_version
+from ..parse import parse_stringfile
+from .. import utils
+from ..predict import mbPredict
   
 
 class dataSet(mbGDMLData):
     """For creating, loading, manipulating, and using data sets.
-
-    Parameters
-    ----------
-    dataset_path : :obj:`str`, optional
-        Path to a `npz` file.
     """
 
     def __init__(self, *args):
+        """
+        Parameters
+        ----------
+        dataset_path : :obj:`str`, optional
+            Path to a `npz` file.
+        """
         self.type = 'd'
         self.name = 'dataset'
         if len(args) == 1:
@@ -313,7 +314,7 @@ class dataSet(mbGDMLData):
         :type: :obj:`str`
         """
         try:
-            return self.asdict['md5'][()].decode()
+            return self.asdict()['md5'][()].decode()
         except BaseException:
             print('Not enough information in dset for MD5')
             raise
@@ -550,7 +551,7 @@ class dataSet(mbGDMLData):
         Rset : :obj:`mbgdml.data`
             A loaded :obj:`mbgdml.data.structureSet` or
             :obj:`mbgdml.data.dataSet` object.
-        selected_r_prov_id : obj:`int`, optional
+        selected_r_prov_id : :obj:`int`, optional
             Currently dset sampling can only be done for one r_prov_id at a time.
             This specifies which rset structures in the data set to sample from.
             Defaults to ``None``.
@@ -596,11 +597,11 @@ class dataSet(mbGDMLData):
         comp_ids : :obj:`numpy.ndarray`
             Already sampled ``comp_ids`` of the data set. Could be an empty
             array.
-        data_entity_ids :obj:`numpy.ndarray`
-            entity_ids of a data or structure set being sampled.
-        data_comp_ids :obj:`numpy.ndarray`
+        data_entity_ids : :obj:`numpy.ndarray`
+            ``entity_ids`` of a data or structure set being sampled.
+        data_comp_ids : :obj:`numpy.ndarray`
             ``comp_ids`` of a data or structure set being sampled.
-        sampled_entity_ids_split : :obj:`list` [:obj:`numpy.ndarray`]
+        sampled_entity_ids_split : :obj:`list` of :obj:`numpy.ndarray`
             The unique data entity_ids of each new entity for this data set.
             For example, all the data entity_ids (from a structure set) that
             are included as entity_id = 0 in this data set.
@@ -719,7 +720,7 @@ class dataSet(mbGDMLData):
             An array specifying where each structure in R originates from.
         size : :obj:`int`
             Desired number of molecules in each selection.
-        criteria : :obj:`mbgdml.sample.sampleCritera`, optional
+        criteria : ``callable``, optional
             Structure criteria during the sampling procedure. Defaults to
             ``None`` if no criteria should be used.
         z_slice : :obj:`numpy.ndarray`, optional
@@ -1053,13 +1054,13 @@ class dataSet(mbGDMLData):
         self.E = E
         self.F = F
     
-    def add_pes_data(
+    def add_pes_json(
         self, calc_dir, theory_label, e_unit_dset, e_unit_calc, dtype='qcjson',
         allow_remaining_nan=True, center_calc_R=False, r_match_atol=5.1e-07,
         r_match_rtol=0.0
     ):
         """Add potential energy surface (PES) data (i.e., energies and/or
-        forces) to the data set (``E`` and ``F``).
+        forces) to the data set (``E`` and ``F``) using a JSON format.
 
         Assumes that ``mbgdml.data.basedata.mbGDMLData.r_unit`` of the
         calculation is the same as the data set.
@@ -1101,11 +1102,7 @@ class dataSet(mbGDMLData):
             Relative tolerance for matching the coordinates of a calculation to
             a structure in the data set. Defaults to ``0.0``.
         """
-
-        if dtype == 'qcjson':
-            search_string = 'json'
-        else:
-            raise ValueError(f'{dtype} is not a valid selection.')
+        search_string = 'json'
         
         # Gets all engrad output quantum chemistry json files.
         # For more information: https://github.com/keithgroup/qcjson
@@ -1225,11 +1222,12 @@ class dataSet(mbGDMLData):
         else:
             raise ValueError(f'There was an issue parsing F from {file_path}.')
 
-    @property
     def asdict(self):
-        """Contains all data as :obj:`numpy.ndarray` objects.
+        """Converts object into a custom :obj:`dict`.
 
-        :type: :obj:`dict`
+        Returns
+        -------
+        :obj:`dict`
         """
         # Data always available for data sets.
         dataset = {
@@ -1343,7 +1341,7 @@ class dataSet(mbGDMLData):
             `npz`.
         """
         predict = mbPredict(model_paths)
-        dataset = predict.remove_nbody(ref_dset.asdict)
+        dataset = predict.remove_nbody(ref_dset.asdict())
         self._update(dataset)
     
     def create_mb_from_dsets(self, ref_dset, dset_lower_paths):
@@ -1382,4 +1380,4 @@ class dataSet(mbGDMLData):
                 mb_dsets_md5.append(dset_lower.md5)
         ref_dset.mb_dsets_md5 = np.array(mb_dsets_md5)
         
-        self._update(ref_dset.asdict)
+        self._update(ref_dset.asdict())

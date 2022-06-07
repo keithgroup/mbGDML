@@ -21,7 +21,7 @@
 # SOFTWARE.
 
 import numpy as np
-from mbgdml import utils
+from .. import utils
 
 class mbGDMLData():
     """Parent class for mbGDML structure, data, and predict sets.

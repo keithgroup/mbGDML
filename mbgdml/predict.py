@@ -23,8 +23,8 @@
 import itertools
 
 import numpy as np
-from sgdml.predict import GDMLPredict
-from mbgdml import criteria
+from ._gdml.predict import GDMLPredict
+from . import criteria
 
 try:
     import torch
@@ -35,48 +35,36 @@ else:
 
 class mbPredict():
     """Predict energies and forces of structures using many-body GDML models.
-
-    Parameters
-    ----------
-    models : :obj:`list` [:obj:`str`]
-        Contains paths to either standard or many-body GDML models.
-    use_torch : :obj:`bool`, optional
-        Use PyTorch to make predictions.
     """
 
     def __init__(self, models, use_torch=False):
-        """Sets GDML models to be used for many-body predictions.
-        
+        """ 
         Parameters
         ----------
-        models : :obj:`list` [:obj:`str`]
-            Contains paths to either standard or many-body GDML models.
-        use_torch : :obj:`bool`, optional
+        models : :obj:`list` of :obj:`str` or :obj:`dict`
+            Contains paths or dictionaries of many-body GDML models.
+        use_torch : :obj:`bool`, default: ``False``
             Use PyTorch to make predictions.
         """
         self._load_models(models, use_torch)
     
 
     def _load_models(self, models, use_torch):
-        """Loads models and preprares GDMLPredict.
+        """Loads models and prepares GDMLPredict.
         
         Parameters
         ----------
         models : :obj:`list` [:obj:`str`]
             Contains paths to either standard or many-body GDML models.
         """
-        self.gdmls = []
-        self.models = []
-        self.entity_ids = []
-        self.comp_ids = []
-        self.criteria = []
-        self.z_slice = []
-        self.cutoff = []
+        self.gdmls, self.models, self.entity_ids, self.comp_ids = [], [], [], []
+        self.criteria, self.z_slice, self.cutoff = [], [], []
         for model in models:
-            loaded = np.load(model, allow_pickle=True)
-            model = dict(loaded)
+            if isinstance(model, str):
+                loaded = np.load(model, allow_pickle=True)
+                model = dict(loaded)
             self.models.append(model)
-            gdml = GDMLPredict(loaded, use_torch=use_torch)
+            gdml = GDMLPredict(model, use_torch=use_torch)
             self.gdmls.append(gdml)
 
             if model['criteria'] == '':
@@ -98,7 +86,7 @@ class mbPredict():
         r_entity_ids_per_model_entity : :obj:`list` [:obj:`numpy.ndarray`]
             A list of ``entity_ids`` that match the ``comp_id`` of each
             model ``entity_id``. Note that the index of the
-            :obj:`numpy.ndarray``is equal to the model ``entity_id`` and the
+            :obj:`numpy.ndarray` is equal to the model ``entity_id`` and the
             values are ``r`` ``entity_ids`` that match the ``comp_id``.
         """
         nbody_combinations = itertools.product(*r_entity_ids_per_model_entity)
@@ -142,7 +130,7 @@ class mbPredict():
             be ``['h2o', 'meoh']``.
         model : :obj:`dict`
             The dictionary of the loaded npz file. Stored in ``self.models``.
-        gdml : :obj:`sgdml.predict.GDMLPredict`
+        gdml : :obj:`mbgdml._gdml.predict.GDMLPredict`
             Object used to predict energies and forces of the structure defined 
             in ``r``.
         ignore_criteria : :obj:`bool`, optional

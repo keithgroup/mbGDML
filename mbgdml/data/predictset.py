@@ -24,10 +24,9 @@
 
 
 import numpy as np
-from sgdml import __version__ as sgdml_version
-from mbgdml import __version__ as mbgdml_version
-from mbgdml.data import mbGDMLData
-from mbgdml.predict import mbPredict
+from .. import __version__ as mbgdml_version
+from .basedata import mbGDMLData
+from ..predict import mbPredict
 
 
 class predictSet(mbGDMLData):
@@ -40,8 +39,6 @@ class predictSet(mbGDMLData):
 
     Attributes
     ----------
-    sgdml_version : :obj:`str`
-        The sGDML Python package version used for predictions.
     name : :obj:`str`
         File name of the predict set.
     theory : :obj:`str`
@@ -80,16 +77,16 @@ class predictSet(mbGDMLData):
             ignore_criteria=ignore_criteria, store_each=True
         )
         
-        self.sgdml_version = sgdml_version
         self.mbgdml_version = mbgdml_version
         self._predicted = True
 
-    @property
     def asdict(self):
-        """Contains all data as :obj:`numpy.ndarray` objects.
+        """Converts object into a custom :obj:`dict`.
 
-        :type: :obj:`dict`
-        """        
+        Returns
+        -------
+        :obj:`dict`
+        """     
         predictset = {
             'type': np.array('p'),
             'sgdml_version': np.array(self.sgdml_version),

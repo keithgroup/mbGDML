@@ -4,6 +4,8 @@
 # list see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
+
+
 # -- Path setup --------------------------------------------------------------
 
 # If extensions (or modules to document with autodoc) are in another directory,
@@ -15,12 +17,14 @@ import sys
 sys.path.insert(0, os.path.abspath('.'))
 sys.path.insert(0, os.path.abspath('../'))
 
-
 # -- Project information -----------------------------------------------------
 
 project = 'mbGDML'
 copyright = '2020-2022 Alex M. Maldonado'
 author = 'Alex M. Maldonado'
+
+
+
 
 
 # -- General configuration ---------------------------------------------------
@@ -36,8 +40,20 @@ extensions = [
     'sphinx.ext.autosectionlabel'
 ]
 
-# Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+# 
+suppress_warnings = ['autosectionlabel.*']
+
+
+
+# -- Options for autodoc ----------------------------------------------------
+# https://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html#configuration
+
+# Automatically extract typehints when specified and place them in
+# descriptions of the relevant function/method.
+autodoc_typehints = "description"
+
+# Include __init__ docstring for classes
+autoclass_content = 'both'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -57,6 +73,10 @@ intersphinx_mapping = {
     'ase': ('https://wiki.fysik.dtu.dk/ase/', None)
 }
 
+
+
+
+
 # -- Options for HTML output -------------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
@@ -64,7 +84,3 @@ intersphinx_mapping = {
 
 html_theme = 'furo'
 
-# Add any paths that contain custom static files (such as style sheets) here,
-# relative to this directory. They are copied after the builtin static files,
-# so a file named "default.css" will overwrite the builtin "default.css".
-# html_static_path = ['_static']

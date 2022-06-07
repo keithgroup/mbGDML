@@ -58,14 +58,8 @@ Curating a data set starts by sampling geometries from :ref:`structure sets<stru
 Energies and forces
 ^^^^^^^^^^^^^^^^^^^
 
-Currently, external calculations of energies and forces are required (i.e., ORCA calculations on the same geometries).
-See :ref:`quantum chemistry calculations<qc-calcs>` for more information on generating these data.
-The only way to add PES data is by loading calculation data from `qcjson <https://github.com/keithgroup/qcjson>`_ files using the following function.
-
-.. automethod:: mbgdml.data.dataset.dataSet.add_pes_data
-    :noindex:
-
-
+These data need to be computed using your program and then stored in the :obj:`mbgdml.data.dataSet` object using the :attr:`~mbgdml.data.dataset.dataSet.E` and :attr:`~mbgdml.data.dataset.dataSet.F` attributes.
+Units for energies and forces are normally kcal/mol and kcal/(mol A) for mbGDML models.
 
 Unit conversion
 ---------------
