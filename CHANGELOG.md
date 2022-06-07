@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Changed
 
+- Sort ``md5_data`` keys for consistency.
 - Renamed ``add_pes_data`` to ``add_pes_json``
 - `asdict` is now a method instead of a property.
 - Removed sGDML dependency.

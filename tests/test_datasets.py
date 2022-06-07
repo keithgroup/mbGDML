@@ -49,7 +49,7 @@ def trim_140h2o_rset():
     rset = data.structureSet(rset_path_140h2o)
 
     assert rset.type == 's'
-    assert rset.md5 == '8726c482c19cdf7889cd1e62b9e9c8e1'
+    assert rset.md5 == '3e5cf945f6b4e979373e7772410e3746'
 
     # Trims and checks z.
     rset.z = rset.z[:n_entities*molecule_size]
@@ -89,7 +89,7 @@ def trim_140h2o_rset():
     assert np.all(rset.comp_ids == comp_ids)
 
     # Confirms changes with MD5.
-    assert rset.md5 == 'da254c95956709d1a00512f1ac7c0bbb'
+    assert rset.md5 == 'e6a7a058b5fefb622fb3296e29a84150'
 
     return rset
 
@@ -152,7 +152,7 @@ def test_rset_sampling_all_2mers_normal():
     )
 
     # Checking properties.
-    assert dset.r_prov_ids == {0: 'da254c95956709d1a00512f1ac7c0bbb'}
+    assert dset.r_prov_ids == {0: 'e6a7a058b5fefb622fb3296e29a84150'}
     assert dset.r_prov_specs.shape == (30, 4)
     assert np.all(dset.r_prov_specs[:, :1] == np.zeros((30,)))
     assert np.all(
@@ -203,7 +203,7 @@ def test_rset_sampling_all_2mers_ignore_duplicate():
         dset, rset, 'all', 2, None,
         np.array([]), np.array([]), False, False
     )
-    assert dset_duplicate.r_prov_ids == {0: 'da254c95956709d1a00512f1ac7c0bbb'}
+    assert dset_duplicate.r_prov_ids == {0: 'e6a7a058b5fefb622fb3296e29a84150'}
     assert dset_duplicate.r_prov_specs.shape == (30, 4)
     assert np.all(dset.entity_ids == np.array([0, 0, 0, 1, 1, 1]))
     assert np.all(dset.comp_ids == np.array(['h2o', 'h2o']))
@@ -299,7 +299,7 @@ def test_rset_sampling_num_2mers_criteria():
     assert dset.E.shape == (5,)
     assert dset.F.shape == (5, 6, 3)
 
-    assert dset.r_prov_ids == {0: 'da254c95956709d1a00512f1ac7c0bbb'}
+    assert dset.r_prov_ids == {0: 'e6a7a058b5fefb622fb3296e29a84150'}
     assert np.array_equal(dset.entity_ids, np.array([0, 0, 0, 1, 1, 1]))
     assert np.array_equal(dset.comp_ids, np.array(['h2o', 'h2o']))
 
@@ -334,7 +334,7 @@ def test_rset_sampling_num_2mers_additional():
         np.array([]), np.array([6.0]), True, False
     )
 
-    assert dset.r_prov_ids == {0: 'da254c95956709d1a00512f1ac7c0bbb'}
+    assert dset.r_prov_ids == {0: 'e6a7a058b5fefb622fb3296e29a84150'}
     assert np.array_equal(dset.entity_ids, np.array([0, 0, 0, 1, 1, 1]))
     assert np.array_equal(dset.comp_ids, np.array(['h2o', 'h2o']))
 
@@ -367,7 +367,7 @@ def test_dset_sampling_all_2mers_after_3mers():
     assert np.array_equal(
         dset_from_dset.comp_ids, np.array(['h2o', 'h2o'])
     )
-    assert dset_from_dset.r_prov_ids == {0: 'da254c95956709d1a00512f1ac7c0bbb'}
+    assert dset_from_dset.r_prov_ids == {0: 'e6a7a058b5fefb622fb3296e29a84150'}
 
     assert dset_from_dset.r_prov_specs.shape == (12, 4)
     # Same as test_rset_sampling_all_2mers_criteria, but organized to match

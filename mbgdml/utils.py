@@ -318,7 +318,7 @@ def atoms_by_number(atom_list):
     """
     return [int(element_to_z[i]) for i in atom_list]
 
-def md5_data(data, info=['z', 'R']):
+def md5_data(data, keys):
     """Creates MD5 hash for a set of data.
 
     Parameters
@@ -326,19 +326,23 @@ def md5_data(data, info=['z', 'R']):
     data : :obj:`dict`
         Any supported mbGDML data type as a dictionary. Includes structure sets,
         data sets, and models.
-    info : :obj:`list`, optional
-        List of set keys to include in the MD5 hash. At minimum it defaults to
-        ``z`` (atomic numbers) and ``R`` (atomic coordinates). Other information
-        such as ``E`` (energies) and ``F`` (forces) are highly encouraged.
+    keys : :obj:`list` of :obj:`str`
+        List of keys in ``data`` to include in the MD5 hash.
     
     Returns
     -------
     :obj:`str`
         MD5 hash of the data.
+    
+    Notes
+    -----
+    We sort ``keys`` because the MD5 hash depends on the order we digest the
+    data.
     """
+    keys.sort()
     md5_hash = hashlib.md5()
-    for i in info:
-        d = data[i]
+    for key in keys:
+        d = data[key]
         if type(d) is np.ndarray:
             d = d.ravel()
         md5_hash.update(hashlib.md5(d).digest())

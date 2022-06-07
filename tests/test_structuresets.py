@@ -113,7 +113,7 @@ def example_10h2o(structureset):
     assert np.allclose(R_32, structureset.R[32])
 
     # MD5 hash
-    assert structureset.md5 == 'cd0cfdc29ebc52eb40d2a028124cfd18'
+    assert structureset.md5 == '11739684028b7714f114a5da2c761274'
 
 def example_6h2o_md(structureset):
     """
@@ -182,7 +182,7 @@ def example_6h2o_md(structureset):
     assert np.allclose(R_32, structureset.R[32])
     
     # MD5 hash
-    assert structureset.md5 == 'dd6d875868a04e3c3a5deb71e280371c'
+    assert structureset.md5 == 'e7f108f38f37050a1cd2b2f3b4367f54'
 
 def test_structureset_from_traj():
     traj_path = './tests/data/md/10h2o.abc0.iter1.gfn2-xtb.md-gfn2.300k-1.traj'
