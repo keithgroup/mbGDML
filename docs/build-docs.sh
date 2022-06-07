@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 cd "${0%/*}"
-sphinx-apidoc --force -o ./source/doc/ ../mbgdml/
+rm -rf ./source/doc/
+sphinx-apidoc --force --separate --private -o ./source/doc/ ../mbgdml/ ../mbgdml/_version.py
 sphinx-build -nT ./source/ ./html/
 touch ./html/.nojekyll

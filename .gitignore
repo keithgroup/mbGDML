@@ -109,3 +109,6 @@ docs/source/doc
 
 # psi4 timer
 timer.dat
+
+_bmark_cache.npz
+tests/tmp/

@@ -23,7 +23,7 @@
 import numpy as np
 from cclib.parser.utils import convertor
 from ase.calculators.calculator import Calculator as ASECalculator
-from mbgdml.predict import mbPredict
+from .predict import mbPredict
 
 
 class mbGDML_ASE_Calculator(ASECalculator):

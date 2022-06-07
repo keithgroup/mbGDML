@@ -20,13 +20,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-
-import os
-import numpy as np
 import cclib
-from natsort import natsorted, ns
 import hashlib
 import itertools
+import json
+import numpy as np
+import os
 
 element_to_z = {
     'H': 1, 'He': 2, 'Li': 3, 'Be': 4, 'B': 5, 'C': 6, 'N': 7, 'O': 8, 'F': 9,
@@ -94,15 +93,13 @@ def get_files(path, expression, recursive=True):
     """Returns paths to all files in a given directory that matches a provided
     expression in the file name.
     
-    Commonly used to find all files of a certain type, e.g. output or xyz files.
-    
     Parameters
     ----------
     path : :obj:`str`
         Specifies the directory to search.
     expression : :obj:`str`
         Expression to be tested against all file names in ``path``.
-    recursive :obj:`bool`, optional
+    recursive : :obj:`bool`, optional
         Recursively find all files in all subdirectories.
     
     Returns
@@ -166,6 +163,7 @@ def natsort_list(unsorted_list):
     list
         Sorted list of string.
     """
+    from natsort import natsorted, ns
     sorted_list = natsorted(unsorted_list, alg=ns.IGNORECASE)
 
     return sorted_list
@@ -258,7 +256,7 @@ def convert_forces(
     e_units : :obj:`str`
         Desired units of energy. Available units are ``'eV'``, ``'hartree'``,
         ``'kcal/mol'``, and ``'kJ/mol'``.
-    r_units : obj:`str`
+    r_units : :obj:`str`
         Desired units of distance. Available units are ``'Angstrom'`` and
         ``'bohr'``.
     
@@ -320,7 +318,7 @@ def atoms_by_number(atom_list):
     """
     return [int(element_to_z[i]) for i in atom_list]
 
-def md5_data(data, info=['z', 'R']):
+def md5_data(data, keys):
     """Creates MD5 hash for a set of data.
 
     Parameters
@@ -328,19 +326,23 @@ def md5_data(data, info=['z', 'R']):
     data : :obj:`dict`
         Any supported mbGDML data type as a dictionary. Includes structure sets,
         data sets, and models.
-    info : :obj:`list`, optional
-        List of set keys to include in the MD5 hash. At minimum it defaults to
-        ``z`` (atomic numbers) and ``R`` (atomic coordinates). Other information
-        such as ``E`` (energies) and ``F`` (forces) are highly encourged.
+    keys : :obj:`list` of :obj:`str`
+        List of keys in ``data`` to include in the MD5 hash.
     
     Returns
     -------
     :obj:`str`
         MD5 hash of the data.
+    
+    Notes
+    -----
+    We sort ``keys`` because the MD5 hash depends on the order we digest the
+    data.
     """
+    keys.sort()
     md5_hash = hashlib.md5()
-    for i in info:
-        d = data[i]
+    for key in keys:
+        d = data[key]
         if type(d) is np.ndarray:
             d = d.ravel()
         md5_hash.update(hashlib.md5(d).digest())
@@ -551,3 +553,19 @@ def center_structures(z, R):
         return R[0]
     else:
         return R
+
+def save_json(json_path, json_dict):
+    """Save JSON file.
+
+    Parameters
+    ----------
+    json_path : :obj:`str`
+        JSON file path to save.
+    json_dict : :obj:`dict`
+        JSON dictionary to be saved.
+    """ 
+    json_string = json.dumps(
+        json_dict, cls=cclib.io.cjsonwriter.JSONIndentEncoder, indent=4
+    )
+    with open(json_path, 'w') as f:
+        f.write(json_string)
