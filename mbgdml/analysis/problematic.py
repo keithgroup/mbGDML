@@ -27,10 +27,12 @@ Some code within this module is modified from https://github.com/fonsecag/MLFF.
 
 import logging
 import numpy as np
+import os
 from scipy.spatial.distance import pdist
 
 from . import clustering
 from ..predict import mbPredict
+from ..utils import save_json
 
 log = logging.getLogger(__name__)
 
@@ -184,7 +186,9 @@ class prob_structures:
         log.log_array(prob_idxs, level=10)
         return prob_idxs
     
-    def find(self, dset, n_find, dset_is_train=True):
+    def find(
+        self, dset, n_find, dset_is_train=True, write_json=True, save_dir='.'
+    ):
         """Find problematic structures in a dataset.
 
         Uses agglomerative and k-means clustering on a dataset. First, the
@@ -208,6 +212,10 @@ class prob_structures:
         dset_is_train : :obj:`bool`, default: ``True``
             If ``dset`` is the training dataset. Training indices will be
             dropped from the analyses.
+        write_json : :obj:`bool`, default: ``True``
+            Write JSON file detailing clustering and prediction errors.
+        save_dir : :obj:`str`, default: ``'.'``
+            Directory to save any files.
         """
         log.info(
             '---------------------------\n'
@@ -215,6 +223,9 @@ class prob_structures:
             '|       Structures        |\n'
             '---------------------------\n'
         )
+        if write_json:
+            self.json_dict = {}
+
         log.info('Loading dataset\n')
         Z, R, E, F = dset.z, dset.R, dset.E, dset.F
         entity_ids, comp_ids = dset.entity_ids, dset.comp_ids
@@ -227,6 +238,11 @@ class prob_structures:
         cl_idxs = clustering.cluster_structures(
             cl_data, cl_algos, cl_kwargs
         )
+        if write_json:
+            self.json_dict['clustering'] = {}
+            self.json_dict['clustering']['indices'] = cl_idxs
+            cl_pop = [len(i) for i in cl_idxs]
+            self.json_dict['clustering']['population'] = cl_pop
 
         log.info('\nPredicting structures')
         E_pred, F_pred = self.predict.predict(Z, R, entity_ids, comp_ids)
@@ -247,6 +263,10 @@ class prob_structures:
         cl_losses = clustering.get_cluster_losses(
             clustering.cluster_loss_F_mse, loss_kwargs
         )
+        if write_json:
+            self.json_dict['clustering']['loss_function'] = 'force_mse'
+            self.json_dict['clustering']['losses'] = cl_losses
+            
 
         prob_indices = self.prob_cl_indices(cl_idxs, cl_losses)
 
@@ -282,6 +302,12 @@ class prob_structures:
             np.array(prob_indices[idxs]) for idxs in cl_idxs_prob
         ]
 
+        if write_json:
+            self.json_dict['problematic_clustering'] = {}
+            self.json_dict['problematic_clustering']['indices'] = cl_idxs_prob
+            cl_pop_prob = [len(i) for i in cl_idxs_prob]
+            self.json_dict['problematic_clustering']['population'] = cl_pop_prob
+
         log.info('Aggregating errors for problematic structures')
         E_errors_cluster_prob = clustering.get_clustered_data(
             cl_idxs_prob, E_errors
@@ -297,9 +323,18 @@ class prob_structures:
         structure_loss_cl = clustering.get_clustered_data(
             cl_idxs_prob, structure_loss
         )
+        if write_json:
+            self.json_dict['problematic_clustering']['loss_function'] = 'force_mse'
+            self.json_dict['problematic_clustering']['losses'] = structure_loss_cl
 
         next_idxs = self.select_prob_indices(
             n_find, cl_idxs_prob, structure_loss_cl
         )
+        if write_json:
+            self.json_dict['add_training_indices'] = next_idxs
+            save_json(
+                os.path.join(save_dir, 'find_problematic_indices.json'),
+                self.json_dict
+            )
 
         return next_idxs

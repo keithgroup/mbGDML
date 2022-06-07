@@ -20,12 +20,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-
-import os
-import numpy as np
 import cclib
 import hashlib
 import itertools
+import json
+import numpy as np
+import os
 
 element_to_z = {
     'H': 1, 'He': 2, 'Li': 3, 'Be': 4, 'B': 5, 'C': 6, 'N': 7, 'O': 8, 'F': 9,
@@ -549,3 +549,19 @@ def center_structures(z, R):
         return R[0]
     else:
         return R
+
+def save_json(json_path, json_dict):
+    """Save JSON file.
+
+    Parameters
+    ----------
+    json_path : :obj:`str`
+        JSON file path to save.
+    json_dict : :obj:`dict`
+        JSON dictionary to be saved.
+    """ 
+    json_string = json.dumps(
+        json_dict, cls=cclib.io.cjsonwriter.JSONIndentEncoder, indent=4
+    )
+    with open(json_path, 'w') as f:
+        f.write(json_string)

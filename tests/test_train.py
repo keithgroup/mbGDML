@@ -36,6 +36,10 @@ train_dir = './tests/data/train'
 
 def test_train_results_1h2o():
     """Checks the results of a training task."""
+    global glob
+    if 'glob' in globals():
+        del glob
+    
     dset_path = os.path.join(
         dset_dir, '1h2o/140h2o.sphere.gfn2.md.500k.prod1.3h2o.dset.1h2o-dset.npz'
     )
@@ -104,6 +108,10 @@ def test_train_results_1h2o():
     )
 
 def test_1h2o_train_grid_search():
+    global glob
+    if 'glob' in globals():
+        del glob
+    
     dset_path = os.path.join(
         dset_dir, '1h2o/140h2o.sphere.gfn2.md.500k.prod1.3h2o.dset.1h2o-dset.npz'
     )
@@ -152,6 +160,10 @@ def test_1h2o_train_bayes_opt():
     except ImportError:
         return
     
+    global glob
+    if 'glob' in globals():
+        del glob
+    
     dset_path = os.path.join(
         dset_dir, '1h2o/140h2o.sphere.gfn2.md.500k.prod1.3h2o.dset.1h2o-dset.npz'
     )
@@ -194,6 +206,10 @@ def test_1h2o_train_bayes_opt():
     del train
 
 def test_1h2o_prob_indices():
+    global glob
+    if 'glob' in globals():
+        del glob
+    
     dset_path = os.path.join(
         dset_dir, '1h2o/140h2o.sphere.gfn2.md.500k.prod1.3h2o.dset.1h2o-dset.npz'
     )

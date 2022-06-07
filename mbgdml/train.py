@@ -28,6 +28,7 @@ from .data import mbModel, dataSet
 from .analysis.problematic import prob_structures
 from ._gdml.train import GDMLTrain, model_errors, add_valid_errors
 from ._gdml.train import save_model, get_test_idxs
+from .utils import save_json
 
 import logging
 log = logging.getLogger(__name__)
@@ -240,29 +241,6 @@ class mbGDMLTrain:
         test_idxs = get_test_idxs(model.model, dataset, n_test=n_test)
         np.save(os.path.join(save_dir, 'test_idxs'), test_idxs)
     
-    def save_json(self, json_dict, save_dir, json_name='log'):
-        """Save JSON file.
-
-        Parameters
-        ----------
-        json_dict : :obj:`dict`
-            JSON dictionary to be saved.
-        save_dir : :obj:`str`
-            Where to save the JSON file.
-        json_name : :obj:`str`
-            File name.
-        """
-        import json
-        from cclib.io.cjsonwriter import JSONIndentEncoder
-            
-        json_string = json.dumps(
-            json_dict, cls=JSONIndentEncoder, indent=4
-        )
-
-        json_path = os.path.join(save_dir, f'{json_name}.json')
-        with open(json_path, 'w') as f:
-            f.write(json_string)
-    
     def bayes_opt(
         self, dataset, model_name, n_train, n_valid,
         sigma_bounds=(2, 300), n_test=None, save_dir='.',
@@ -441,7 +419,7 @@ class mbGDMLTrain:
             job_json['model']['n_symm'] = len(model_best.model['perms'])
             job_json['validation'] = valid_json
 
-            self.save_json(job_json, save_dir)
+            save_json(os.path.join(save_dir, 'log.json'), job_json)
 
         if write_idxs:
             self.save_idxs(model_best, dset_dict, save_dir, n_test)
@@ -633,7 +611,7 @@ class mbGDMLTrain:
             job_json['model']['n_symm'] = len(model_best.model['perms'])
             job_json['validation'] = valid_json
 
-            self.save_json(job_json, save_dir)
+            save_json(os.path.join(save_dir, 'log.json'), job_json)
         
         if write_idxs:
             self.save_idxs(model_best, dset_dict, save_dir, n_test)
@@ -745,7 +723,7 @@ class mbGDMLTrain:
             model, _ = self.bayes_opt(
                 dataset, model_name+f'-train{n_train}', n_train, n_valid,
                 sigma_bounds=sigma_bounds, n_test=n_test, save_dir=save_dir_i,
-                gp_params=gp_params, loss=loss, train_idxs=train_idxs,
+                gp_params=gp_params, loss=loss, train_idxs=None,
                 valid_idxs=None, overwrite=overwrite,
                 write_json=write_json, write_idxs=write_idxs
             )
@@ -756,16 +734,16 @@ class mbGDMLTrain:
             upper_buffer = max(sigma_bounds) - buffer
             if (model['sig'] <= lower_buffer):
                 log.warning(
-                    f'WARNING: Optimal sigma is {model["sig"]-lower_buffer} from the lower sigma bound'
+                    f'WARNING: Optimal sigma is within {buffer} from the lower sigma bound'
                 )
             elif (model['sig'] >= upper_buffer):
                 log.warning(
-                    f'WARNING: Optimal sigma is {upper_buffer-model["sig"]} from the upper sigma bound'
+                    f'WARNING: Optimal sigma is within {buffer} from the upper sigma bound'
                 )
 
             train_idxs = model['idxs_train']
             prob_s = prob_structures([model])
-            prob_idxs = prob_s.find(dataset, n_train_step)
+            prob_idxs = prob_s.find(dataset, n_train_step, save_dir=save_dir_i)
             
             train_idxs = np.concatenate((train_idxs, prob_idxs))
             n_train = len(train_idxs)
