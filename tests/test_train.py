@@ -158,7 +158,7 @@ def test_1h2o_train_bayes_opt():
     try:
         import bayes_opt
     except ImportError:
-        return
+        pytest.skip("bayesian-optimization package not installed")
     
     global glob
     if 'glob' in globals():
@@ -220,7 +220,7 @@ def test_1h2o_prob_indices():
 
     prob_s = prob_structures([model_path])
     n_find = 100
-    prob_idxs = prob_s.find(dset, n_find)
+    prob_idxs = prob_s.find(dset, n_find, save_dir='./tests/tmp')
 
     ref = np.array(
         [
