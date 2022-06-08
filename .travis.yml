@@ -2,7 +2,7 @@ language: python
 python:
 - 3.9
 install:
-- pip install natsort mako umap-learn bayesian-optimization==1.2.0 matplotlib
+- pip install ase bayesian-optimization cclib>=1.7 matplotlib natsort numpy scipy<1.8 umap-learn
 - pip install pytest-cov codecov coverage bump2version
 - pip install sphinx==4.5.0 furo==2022.04.07
 script:

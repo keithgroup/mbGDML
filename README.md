@@ -60,19 +60,13 @@ Analyzing mbGDML models:
 
 # Installation
 
-At the moment, the only way to install mbGDML is directly from the [GitHub repository](https://github.com/keithgroup/mbGDML).
+You can install mbGDML by using `pip install mbgdml`.
+Or, the latest development version can be installed directly from the [GitHub repository](https://github.com/keithgroup/mbGDML).
 
 ```text
 git clone https://github.com/keithgroup/mbGDML
 cd mbGDML
 pip install .
-```
-
-There are additional dependencies that enable other features like Bayesian optimization for hyperparameters and plots.
-To automatically include these dependencies you can use the "Package Extras" feature of pip like so.
-
-```text
-pip install .[all]
 ```
 
 # License
