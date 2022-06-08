@@ -9,6 +9,9 @@
     <a href="https://codecov.io/gh/keithgroup/mbGDML">
         <img src="https://codecov.io/gh/keithgroup/mbGDML/branch/main/graph/badge.svg?token=P643JEUWZC" alt="Codecov">
     </a>
+    <a href="https://doi.org/10.5281/zenodo.6270373">
+        <img src="https://zenodo.org/badge/DOI/10.5281/zenodo.6270373.svg" alt="DOI">
+    </a>
     <a href="https://lgtm.com/projects/g/keithgroup/mbGDML/context:python">
         <img src="https://img.shields.io/lgtm/grade/python/g/keithgroup/mbGDML.svg?logo=lgtm&logoWidth=18" alt="Language grade: Python">
     </a>

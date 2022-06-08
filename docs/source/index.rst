@@ -10,6 +10,10 @@ mbGDML
    :target: https://codecov.io/gh/keithgroup/mbGDML
    :alt: Codecov test coverage
 
+.. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.6270373.svg
+   :target: https://doi.org/10.5281/zenodo.6270373
+   :alt: DOI
+
 .. image:: https://img.shields.io/lgtm/grade/python/g/keithgroup/mbGDML.svg?logo=lgtm&logoWidth=18
    :target: https://lgtm.com/projects/g/keithgroup/mbGDML/context:python
 
