@@ -1,23 +1,29 @@
 language: python
 python:
-  - 3.9
+- 3.9
 install:
-  - pip install natsort mako umap-learn bayesian-optimization==1.2.0 matplotlib
-  - pip install pytest-cov codecov coverage bump2version
-  - pip install sphinx==4.5.0 furo==2022.04.07
+- pip install natsort mako umap-learn bayesian-optimization==1.2.0 matplotlib
+- pip install pytest-cov codecov coverage bump2version
+- pip install sphinx==4.5.0 furo==2022.04.07
 script:
-  - pip install .
+- pip install .
 after_success:
-  - pytest --cov=./
-  - ./docs/build-docs.sh
-  - codecov
+- pytest --cov=./
+- "./docs/build-docs.sh"
+- codecov
 deploy:
-  provider: pages
-  skip-cleanup: true
-  local_dir: docs/html/
-  github-token: $GITHUB_TOKEN
-  keep-history: true
-  target_branch: gh-pages
-  on:
-    branch: main
-    repo: keithgroup/mbGDML
+  - provider: pages
+    skip-cleanup: true
+    local_dir: docs/html/
+    github-token: "$GITHUB_TOKEN"
+    keep-history: true
+    target_branch: gh-pages
+    on:
+      branch: main
+      repo: keithgroup/mbGDML
+  - provider: pypi
+    username: "__token__"
+    password:
+      secure: "vrgVXcnnTV+alpdT4YvT20BhKjaDBK4+uqVSAcjgYjaICGzSv9TCgH6aJlzZ0kHtwM+qByBYfVtoDIY4TfkrbM/WrN8mZorRMkribPbmMYuzQ5Pymot7RurBRzcp4NFiKzxPkF0NMZAbIDRxCCW9jQRHXlBt29LqCbEQ4Sfp06DmIgDUdAUfYOuQITGYhQgmnnpyGWDiu9Ir57MkLRorYr6zJneK1sAHpgJ3OmIE1zWfa5TxsIEqDWXCXhA8MaACrGMaLgFV2nvs2HLG1BcHC9f43LcMtUUgDeR1JeUsGk56yrixXwbMwT5qWCMQgHX0Jldnusml8ZSL+PRjT/YMI15ARaWZ+hyiFRC0sMBdswHDt8o9QqVbxMPKXCwYt8YjHsWt+LO9MppHATwAy+LsdoRwhRTE8kuzzs2xlBtlkkfCjY1JiHLapgNJbD8K7TcTpX5Jo4y2amZ/2JyFowdWj7AkUVwVYy6WIvknOmSqig7IsINrzRtHVT9PMiG5LRH/yq148VUWoi75haMPkBU41HLUyRFXaFOCjpjhydGwFXN9hAgETLPNTTanwKldrqrPOG7f3MDWEQzxfgGHBHny8FQz+31KfQJiBr6qfZXEut5ZkIrT7bCUqQZk+d2EGpcSTauP0Y4RAiIJG8w1FTtNvQayHDLyAkGNa00tzdKk0ks="
+    on:
+      tags: true
