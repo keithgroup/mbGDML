@@ -9,21 +9,14 @@ import versioneer
 # This is fixed in https://github.com/fmfn/BayesianOptimization/commit/35535c6312f365ead729de3d889d7b1fae1a8e0b
 # but not released yet.
 requirements = [
-    'ase', 'cclib>=1.7', 'numpy', 'scipy<1.8'
+    'ase', 'bayesian-optimization', 'cclib>=1.7', 'matplotlib', 'natsort',
+    'numpy', 'scipy<1.8', 'umap-learn'
 ]
-
 setup_requirements = [ ]
-
 test_requirements = requirements.append(['pytest'])
 
 setup(
     install_requires=requirements,
-    extras_require={
-        'all': [
-            'natsort', 'mako', 'umap-learn', 'bayesian-optimization==1.2.0',
-            'matplotlib'
-        ]
-    },
     include_package_data=True,
     packages=find_packages(include=['mbgdml', 'mbgdml.*']),
     setup_requires=setup_requirements,
