@@ -12,6 +12,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Changed
 
+- Do not include training set in any problematic clustering.
+Training structures are not included in dataset clustering or plots.
 - Training JSON to ``training.json`` instead of ``log.json``.
 - Iterative training task directory names to state the training set size.
 

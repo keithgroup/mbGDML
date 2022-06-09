@@ -94,7 +94,7 @@ class prob_structures:
         # TODO: Fix circumstance when cl_idxs_prob is less than n_find
         log.info('Finding problematic structures')
         mean_loss = np.mean(cl_losses)
-        cl_idxs_prob = np.concatenate(np.argwhere(cl_losses > mean_loss))
+        cl_idxs_prob = np.concatenate(np.argwhere(cl_losses >= mean_loss))
         clusters = np.array(cl_idxs, dtype=object)[cl_idxs_prob]
         idxs = np.concatenate(clusters)
         return idxs
@@ -245,7 +245,34 @@ class prob_structures:
         Z, R, E, F = dset.z, dset.R, dset.E, dset.F
         entity_ids, comp_ids = dset.entity_ids, dset.comp_ids
 
+        # Removing training indices.
+        R_idxs_orig = np.array(list(range(len(R))))
+        if dset_is_train:
+            log.info('Dropping indices already in training set')
+            if len(self.model_dicts) != 1:
+                log.warning(
+                    'Cannot drop training indices if there are multiple models'
+                )
+                log.warning('Not dropping any indices')
+            assert len(self.model_dicts) == 1
+
+            train_idxs = self.model_dicts[0]['idxs_train']
+            log.debug('Training indices')
+            log.log_array(train_idxs, level=10)
+
+            n_Ri = len(R_idxs_orig)
+            log.info(f'There are a total of {n_Ri} structures')
+            R_idxs = np.setdiff1d(R_idxs_orig, train_idxs)
+            n_Rf = len(R_idxs)
+            log.info(f'Removed {n_Ri-n_Rf} structures')
+        else: 
+            R_idxs = [np.array(range(n_structures))]
+        # Note: Indices from this point on do not directly map to their index
+        # in the dataset. We have to convert back to their original indices
+        # when necessary. We refer to R_idxs as no-training indices.
+
         # Perform clustering based on pairwise distances and energies
+        R, E, F = R[R_idxs], E[R_idxs], F[R_idxs]
         R_pd = self.get_pd(R)
         cl_data = (R_pd, E.reshape(-1, 1))
         cl_algos = (clustering.agglomerative, clustering.kmeans)
@@ -253,10 +280,15 @@ class prob_structures:
         cl_idxs = clustering.cluster_structures(
             cl_data, cl_algos, cl_kwargs
         )
+
         cl_pop = [len(i) for i in cl_idxs]
         if write_json:
+            # Convert back to dataset indices just to write.
+            # The no-train indices is still needed to compute errors and
+            # problematic clustering.
+            cl_idxs_write = [np.array(R_idxs[idxs]) for idxs in cl_idxs]
             self.json_dict['clustering'] = {}
-            self.json_dict['clustering']['indices'] = cl_idxs
+            self.json_dict['clustering']['indices'] = cl_idxs_write
             self.json_dict['clustering']['population'] = cl_pop
 
         log.info('\nPredicting structures')
@@ -285,26 +317,9 @@ class prob_structures:
 
         prob_indices = self.prob_cl_indices(cl_idxs, cl_losses)
 
-        if dset_is_train:
-            log.info('Dropping indices already in training set')
-            if len(self.model_dicts) != 1:
-                log.warning(
-                    'Cannot drop training indices if there are multiple models'
-                )
-                log.warning('Not dropping any indices')
-
-            assert len(self.model_dicts) == 1
-            train_idxs = self.model_dicts[0]['idxs_train']
-            log.debug('Training indices')
-            log.log_array(train_idxs, level=10)
-            n_prob_idxs0 = len(prob_indices)
-            prob_indices = np.setdiff1d(prob_indices, train_idxs)
-            n_prob_idxs1 = len(prob_indices)
-            log.debug(f'Removed {n_prob_idxs0-n_prob_idxs1} structures')
-
         # Problematic clustering
         log.info('Refine clustering of problematic structures')
-        # Switching to local idxs (not dataset indices) for clustering.
+        # Switching to problematic idxs for clustering.
         R_pd_prob = R_pd[prob_indices]
         cl_data_prob = (R_pd_prob,)
         cl_algos_prob = (clustering.agglomerative,)
@@ -312,15 +327,17 @@ class prob_structures:
         cl_idxs_prob = clustering.cluster_structures(
             cl_data_prob, cl_algos_prob, cl_kwargs_prob
         )
-        # switching back to dataset idxs
+        # switching back to no-training idxs
         cl_idxs_prob = [
             np.array(prob_indices[idxs]) for idxs in cl_idxs_prob
         ]
 
         cl_pop_prob = [len(i) for i in cl_idxs_prob]
         if write_json:
+            # Convert back to dataset indices just to write.
+            cl_idxs_prob_write = [np.array(R_idxs[idxs]) for idxs in cl_idxs_prob]
             self.json_dict['problematic_clustering'] = {}
-            self.json_dict['problematic_clustering']['indices'] = cl_idxs_prob
+            self.json_dict['problematic_clustering']['indices'] = cl_idxs_prob_write
             self.json_dict['problematic_clustering']['population'] = cl_pop_prob
 
         log.info('Aggregating errors for problematic structures')
@@ -345,6 +362,8 @@ class prob_structures:
         next_idxs = self.select_prob_indices(
             n_find, cl_idxs_prob, structure_loss_cl
         )
+        # Convert back to dataset indices.
+        next_idxs = R_idxs[next_idxs]
         if write_json:
             self.json_dict['add_training_indices'] = next_idxs
             save_json(
