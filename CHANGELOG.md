@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Changed
 
+- Training JSON to ``training.json`` instead of ``log.json``.
 - Iterative training task directory names to state the training set size.
 
 ### Fixed

@@ -425,7 +425,7 @@ class mbGDMLTrain:
             job_json['model']['n_symm'] = len(model_best.model['perms'])
             job_json['validation'] = valid_json
 
-            save_json(os.path.join(save_dir, 'log.json'), job_json)
+            save_json(os.path.join(save_dir, 'training.json'), job_json)
 
         if write_idxs:
             self.save_idxs(model_best, dset_dict, save_dir, n_test)
@@ -617,7 +617,7 @@ class mbGDMLTrain:
             job_json['model']['n_symm'] = len(model_best.model['perms'])
             job_json['validation'] = valid_json
 
-            save_json(os.path.join(save_dir, 'log.json'), job_json)
+            save_json(os.path.join(save_dir, 'training.json'), job_json)
         
         if write_idxs:
             self.save_idxs(model_best, dset_dict, save_dir, n_test)
