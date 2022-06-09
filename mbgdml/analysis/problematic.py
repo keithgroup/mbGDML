@@ -91,6 +91,7 @@ class prob_structures:
         :obj:`numpy.ndarray`
             Dataset indices from clusters with higher-than-average losses.
         """
+        # TODO: Fix circumstance when cl_idxs_prob is less than n_find
         log.info('Finding problematic structures')
         mean_loss = np.mean(cl_losses)
         cl_idxs_prob = np.concatenate(np.argwhere(cl_losses > mean_loss))
@@ -338,3 +339,5 @@ class prob_structures:
             )
 
         return next_idxs
+    
+    # TODO: Cluster losses and population plots.
