@@ -408,7 +408,6 @@ class GDMLPredict:
             if isinstance(self.torch_predict, torch.nn.DataParallel):
                 model = model.module
 
-            # TODO: E_cstr does not work on GPU!
             assert alphas_E is None
 
             model.set_alphas(R_d_desc, alphas_F)
@@ -439,7 +438,7 @@ class GDMLPredict:
 
     def _set_num_workers(
         self, num_workers=None
-    ):  # TODO: complain if chunk or worker parameters do not fit training data (this causes issues with the caching)!!
+    ):
         """
         Set number of processes to use during prediction.
 

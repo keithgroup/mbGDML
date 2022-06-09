@@ -56,7 +56,7 @@ def draw_strat_sample(T, n, excl_idxs=None):
     if n == 0:
         return np.array([], dtype=np.uint)
 
-    if T.size == n:  # TODO: this only works if excl_idxs=None
+    if T.size == n:
         assert excl_idxs is None
         return np.arange(n)
 

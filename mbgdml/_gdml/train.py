@@ -122,7 +122,7 @@ def _assemble_kernel_mat_wkr(
         blk_j = slice(j * dim_i, (j + 1) * dim_i)
         keep_idxs_3n = slice(None)  # same as [:]
 
-    # TODO: document this exception
+    
     if use_E_cstr and not (cols_m_limit is None or cols_m_limit == n_train):
         raise ValueError(
             '\'use_E_cstr\'- and \'cols_m_limit\'-parameters are mutually exclusive!'
@@ -955,10 +955,8 @@ class GDMLTrain(object):
             K_n_cols = len(range(*col_idxs.indices(K_n_rows)))
         else:  # indexed by list
 
-            # TODO: throw exception with description
             assert len(col_idxs) == len(set(col_idxs))  # assume no duplicate indices
 
-            # TODO: throw exception with description
             # Note: This function does not support unsorted (ascending) index arrays.
             assert np.array_equal(col_idxs, np.sort(col_idxs))
 
