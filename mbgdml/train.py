@@ -245,7 +245,7 @@ class mbGDMLTrain:
         self, dataset, model_name, n_train, n_valid,
         sigma_bounds=(2, 300), n_test=None, save_dir='.',
         gp_params={'init_points': 10, 'n_iter': 10, 'alpha': 0.001},
-        use_domain_opt=True, loss=loss_f_rmse, train_idxs=None, valid_idxs=None,
+        use_domain_opt=False, loss=loss_f_rmse, train_idxs=None, valid_idxs=None,
         overwrite=False, write_json=True, write_idxs=True
     ):
         """Train a GDML model using Bayesian optimization for sigma.
@@ -293,8 +293,9 @@ class mbGDMLTrain:
                 This parameters controls how much noise the GP can handle, so
                 increase it whenever you think that extra flexibility is needed.
                 Defaults to ``0.001``.
-        use_domain_opt : :obj:`bool`, default: ``True``
-            Whether to use a sequential reduction optimizer or not.
+        use_domain_opt : :obj:`bool`, default: ``False``
+            Whether to use a sequential reduction optimizer or not. This
+            sometimes crashes.
         loss : callable, default: :obj:`mbgdml.train.loss_f_rmse`
             Loss function for validation. The input of this function is the
             dictionary of :obj:`mbgdml._gdml.train.add_valid_errors` which

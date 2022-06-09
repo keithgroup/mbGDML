@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Added
 
+- Plot cluster losses and population histogram using matplotlib.
 - Option to use a sequential reduction optimizer for Bayesian optimization.
 - Specify Gaussian process keyword arguments for the final iterative training task.
 

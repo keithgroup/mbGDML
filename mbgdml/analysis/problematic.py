@@ -188,7 +188,11 @@ class prob_structures:
         return prob_idxs
     
     def find(
-        self, dset, n_find, dset_is_train=True, write_json=True, save_dir='.'
+        self, dset, n_find, dset_is_train=True, write_json=True,
+        save_cl_plot=True,
+        kwargs_subplot={'figsize': (5.5, 3), 'constrained_layout': True},
+        kwargs_plot={'lolli_color': '#223F4B', 'annotate_cl_idx': False},
+        image_format='png', image_dpi=600, save_dir='.'
     ):
         """Find problematic structures in a dataset.
 
@@ -215,6 +219,16 @@ class prob_structures:
             dropped from the analyses.
         write_json : :obj:`bool`, default: ``True``
             Write JSON file detailing clustering and prediction errors.
+        save_cl_plot : :obj:`bool`, default: ``True``
+            Plot cluster losses and histogram.
+        kwargs_subplot : :obj:`dict`, optional
+            Subplot keyword arguments.
+        kwargs_plot : :obj:`dict`, optional
+            ``self.plot_cl_losses`` keyword arguments.
+        image_format : :obj:`str`, default: ``png``
+            Format to save the image in.
+        image_dpi : :obj:`int`, default: ``600``
+            Dots per inch to save the image.
         save_dir : :obj:`str`, default: ``'.'``
             Directory to save any files.
         """
@@ -239,10 +253,10 @@ class prob_structures:
         cl_idxs = clustering.cluster_structures(
             cl_data, cl_algos, cl_kwargs
         )
+        cl_pop = [len(i) for i in cl_idxs]
         if write_json:
             self.json_dict['clustering'] = {}
             self.json_dict['clustering']['indices'] = cl_idxs
-            cl_pop = [len(i) for i in cl_idxs]
             self.json_dict['clustering']['population'] = cl_pop
 
         log.info('\nPredicting structures')
@@ -303,10 +317,10 @@ class prob_structures:
             np.array(prob_indices[idxs]) for idxs in cl_idxs_prob
         ]
 
+        cl_pop_prob = [len(i) for i in cl_idxs_prob]
         if write_json:
             self.json_dict['problematic_clustering'] = {}
             self.json_dict['problematic_clustering']['indices'] = cl_idxs_prob
-            cl_pop_prob = [len(i) for i in cl_idxs_prob]
             self.json_dict['problematic_clustering']['population'] = cl_pop_prob
 
         log.info('Aggregating errors for problematic structures')
@@ -337,7 +351,112 @@ class prob_structures:
                 os.path.join(save_dir, 'find_problematic_indices.json'),
                 self.json_dict
             )
+        
+        if save_cl_plot:
+            kwargs_subplot = {'figsize': (5.5, 3), 'constrained_layout': True}
+            fig = self.plot_cl_losses(
+                cl_pop, cl_losses, 'Force MSE', kwargs_subplot=kwargs_subplot,
+                **kwargs_plot
+            )
+            fig.savefig(
+                os.path.join(save_dir, f'cl_losses.{image_format}'),
+                dpi=image_dpi
+            )
 
         return next_idxs
     
-    # TODO: Cluster losses and population plots.
+    def plot_cl_losses(
+        self, cl_pop, cl_losses, loss_label, kwargs_subplot={},
+        lolli_color='#223F4B', annotate_cl_idx=False
+    ):
+        """Plot cluster losses and population histogram using matplotlib.
+
+        Parameters
+        ----------
+        cl_pop : :obj:`numpy.ndarray`
+            Cluster populations (unsorted).
+        cl_losses : :obj:`numpy.ndarray`
+            Cluster losses (unsorted).
+        kwargs_subplot : :obj:`dict`
+            Subplot keyword arguments.
+        lolli_color : :obj:`str`, default: ``#223F4B``
+            Lollipop color.
+        annotate_cl_idx : :obj:`bool`, default: ``False``
+            Add the cluster index above the cluster loss value.
+        
+        Returns
+        -------
+        ``object``
+            A matplotlib figure object.
+        """
+        import matplotlib.pyplot as plt
+        cl_width = 1
+
+        cl_losses = np.array(cl_losses)
+        cl_pop = np.array(cl_pop)
+
+        loss_sort = np.argsort(cl_losses)
+        cl_pop = cl_pop[loss_sort]
+        cl_losses = cl_losses[loss_sort]
+
+        n_cl = len(cl_pop)
+        cl_plot_x = np.array(range(n_cl))*cl_width
+
+        fig, ax_pop = plt.subplots(nrows=1, ncols=1, **kwargs_subplot)
+        ax_loss = ax_pop.twinx()
+
+        ax_loss.yaxis.set_ticks_position('left')
+        ax_loss.yaxis.set_label_position('left')
+        ax_pop.yaxis.set_ticks_position('right')
+        ax_pop.yaxis.set_label_position('right')
+
+        # Cluster losses
+        ax_loss.set_ylabel(loss_label)
+        ax_loss.vlines(
+            x=cl_plot_x, ymin=0, ymax=cl_losses, linewidth=0.8, color=lolli_color
+        )
+        ax_loss.scatter(cl_plot_x, cl_losses, s=2, color=lolli_color)
+
+        # Losses mean
+        ax_loss.axhline(
+            np.mean(cl_losses), color=lolli_color, alpha=1,
+            linewidth=1.0, linestyle=':'
+        )
+        ax_loss.text(
+            0.5, np.mean(cl_losses), 'Mean', fontsize=8
+        )
+
+        # population histogram (bar chart)
+        ax_pop.set_xlabel('Cluster')
+        ax_pop.set_ylabel('Size')
+        edge_shift = cl_width/2
+        edges = [i-edge_shift for i in cl_plot_x] + [cl_plot_x[-1] + edge_shift]
+        ax_pop.stairs(
+            values=cl_pop, edges=edges, fill=False, baseline=0.0, zorder=-1.0,
+            edgecolor='lightgrey', alpha=1.0
+        )
+
+        # Annotate with cluster index
+        if annotate_cl_idx:
+            for i in range(len(loss_sort)):
+                cl_idx = loss_sort[i]
+                cl_x = cl_plot_x[i]
+                if cl_idx < 10:
+                    x_disp = -1.5
+                else:
+                    x_disp = -2.7
+                ax_loss.annotate(
+                    str(cl_idx), (cl_x, cl_losses[i]), xytext=(x_disp, 3), xycoords='data',
+                    fontsize=4, fontweight='bold', textcoords='offset points',
+                    color=lolli_color
+                )
+
+        # Handle axes label
+        ax_pop.set_xticks([])
+
+        ax_loss.set_xlim(left=edges[0], right=edges[-1])
+
+        ax_loss.set_ylim(bottom=0)
+        ax_pop.set_ylim(bottom=0)
+
+        return fig
