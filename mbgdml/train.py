@@ -691,6 +691,7 @@ class mbGDMLTrain:
         write_idxs : :obj:`bool`, default: ``True``
             Write npy files for training, validation, and test indices.
         """
+        # TODO: gp_params for final evaluation.
         log.log_package()
 
         t_job = log.t_start()
@@ -705,25 +706,31 @@ class mbGDMLTrain:
             log.info('Initial model was provided')
             log.info('Taking training indices from model')
             train_idxs = model0['idxs_train']
+            n_train = len(train_idxs)
             log.log_array(train_idxs, level=10)
-            prob_idxs = prob_structures([model0])
+            
+
+            prob_s = prob_structures([model0])
+            save_dir_i = os.path.join(save_dir, f'train{n_train}')
+            os.makedirs(save_dir_i, exist_ok=overwrite)
+            prob_idxs = prob_s.find(dataset, n_train_step, save_dir=save_dir_i)
             train_idxs = np.concatenate((train_idxs, prob_idxs))
             log.info(f'Extended the training set to {len(train_idxs)}')
-            n_stages = int((n_train_final-len(train_idxs))/n_train_step)
             n_train = len(train_idxs)
         else:
             log.info('An initial model will be trained')
-            n_stages = int((n_train_final-n_train_init)/n_train_step)
             n_train = n_train_init
+            train_idxs = None
         
+        # TODO: Adjust upper sigma_bound based on previous values.
         i = 0
         while n_train <= n_train_final:
             
-            save_dir_i = os.path.join(save_dir, str(i))
+            save_dir_i = os.path.join(save_dir, f'train{n_train}')
             model, _ = self.bayes_opt(
                 dataset, model_name+f'-train{n_train}', n_train, n_valid,
                 sigma_bounds=sigma_bounds, n_test=n_test, save_dir=save_dir_i,
-                gp_params=gp_params, loss=loss, train_idxs=None,
+                gp_params=gp_params, loss=loss, train_idxs=train_idxs,
                 valid_idxs=None, overwrite=overwrite,
                 write_json=write_json, write_idxs=write_idxs
             )
