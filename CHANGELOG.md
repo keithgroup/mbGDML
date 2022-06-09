@@ -4,6 +4,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### Added
+
+- Specify Gaussian process keyword arguments for the final iterative training task.
+
 ### Changed
 
 - Iterative training task directory names to state the training set size.

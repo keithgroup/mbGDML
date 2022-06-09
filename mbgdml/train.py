@@ -628,7 +628,8 @@ class mbGDMLTrain:
         self, dataset, model_name, n_train_init, n_train_final, n_valid,
         model0=None, n_train_step=100, sigma_bounds=(2, 300), n_test=None,
         save_dir='.', gp_params={'init_points': 10, 'n_iter': 10, 'alpha': 0.001},
-        loss=loss_f_rmse, overwrite=False, write_json=True, write_idxs=True
+        gp_params_final=None, loss=loss_f_rmse, overwrite=False,
+        write_json=True, write_idxs=True
     ):
         """Iteratively trains a GDML model by using Bayesian optimization and
         adding problematic (high error) structures to the training set.
@@ -670,7 +671,7 @@ class mbGDMLTrain:
             ``init_points`` : (:obj:`int`, default: ``10``)
                 How many steps of random exploration you want to perform.
                 Random exploration can help by diversifying the exploration
-                space. Defaults to ``10``.
+                space.
             
             ``n_iter`` : (:obj:`int`, default: ``10``)
                 How many steps of bayesian optimization you want to perform.
@@ -680,7 +681,10 @@ class mbGDMLTrain:
                 This parameters controls how much noise the GP can handle, so
                 increase it whenever you think that extra flexibility is needed.
         
-        loss : callable, default: :obj:`mbgdml.train.loss_f_rmse`
+        gp_params_final : :obj:`dict`, default: ``None``
+            Gaussian process keyword arguments for the last training task.
+            This could be used to perform a more thorough hyperparameter search.
+        loss : ``callable``, default: :obj:`mbgdml.train.loss_f_rmse`
             Loss function for validation. The input of this function is the
             dictionary of :obj:`mbgdml._gdml.train.add_valid_errors` which
             contains force and energy MAEs and RMSEs.
@@ -691,7 +695,6 @@ class mbGDMLTrain:
         write_idxs : :obj:`bool`, default: ``True``
             Write npy files for training, validation, and test indices.
         """
-        # TODO: gp_params for final evaluation.
         log.log_package()
 
         t_job = log.t_start()
@@ -723,14 +726,16 @@ class mbGDMLTrain:
             train_idxs = None
         
         # TODO: Adjust upper sigma_bound based on previous values.
-        i = 0
+        gp_params_i = gp_params
         while n_train <= n_train_final:
+            if n_train == n_train_final and gp_params_final is not None:
+                gp_params_i = gp_params_final
             
             save_dir_i = os.path.join(save_dir, f'train{n_train}')
             model, _ = self.bayes_opt(
                 dataset, model_name+f'-train{n_train}', n_train, n_valid,
                 sigma_bounds=sigma_bounds, n_test=n_test, save_dir=save_dir_i,
-                gp_params=gp_params, loss=loss, train_idxs=train_idxs,
+                gp_params=gp_params_i, loss=loss, train_idxs=train_idxs,
                 valid_idxs=None, overwrite=overwrite,
                 write_json=write_json, write_idxs=write_idxs
             )
@@ -754,7 +759,5 @@ class mbGDMLTrain:
             
             train_idxs = np.concatenate((train_idxs, prob_idxs))
             n_train = len(train_idxs)
-            
-            i += 1
 
         return model
