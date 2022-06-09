@@ -1280,9 +1280,9 @@ class dataSet(mbGDMLData):
         if hasattr(self, 'mb') and self.mb != None:
             dataset['mb'] = np.array(self.mb)
         if len(self.mb_models_md5) > 0:
-            dataset['mb_models_md5'] = np.array(self.mb_models_md5, dtype='S32')
+            dataset['mb_models_md5'] = np.array(self.mb_models_md5)
         if len(self.mb_dsets_md5) > 0:
-            dataset['mb_dsets_md5'] = np.array(self.mb_dsets_md5, dtype='S32')
+            dataset['mb_dsets_md5'] = np.array(self.mb_dsets_md5)
 
         try:
             dataset['criteria'] = np.array(self.criteria)
@@ -1294,11 +1294,7 @@ class dataSet(mbGDMLData):
         if hasattr(self, 'centered'):
             dataset['centered'] = np.array(self.centered)
         
-        # sGDML only works with S32 type MD5 hashes, so during training the 
-        # data set MD5 must be the same type (as they do comparisons).
-        dataset['md5'] = np.array(
-            utils.md5_data(dataset, md5_properties), dtype='S32'
-        )
+        dataset['md5'] = np.array(utils.md5_data(dataset, md5_properties))
         return dataset
 
     def print(self):

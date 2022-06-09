@@ -124,4 +124,4 @@ class mbModel(mbGDMLData):
         for key in dset_keys:
             self.model[key] = dset[key]
         self.model['mbgdml_version'] = np.array(mbgdml_version)
-        self.model['md5'] = np.array(self.md5, dtype='S32')
+        self.model['md5'] = np.array(self.md5)

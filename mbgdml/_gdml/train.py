@@ -350,9 +350,9 @@ class GDMLTrain(object):
         md5_train_keys = ['z', 'R', 'F']
         md5_valid_keys = ['z', 'R', 'F']
         if 'E' in train_dataset.keys():
-            md5_train_keys.insert(2, 'E')
+            md5_train_keys.append('E')
         if 'E' in valid_dataset.keys():
-            md5_valid_keys.insert(2, 'E')
+            md5_valid_keys.append('E')
         md5_train = md5_data(train_dataset, md5_train_keys)
         md5_valid = md5_data(valid_dataset, md5_valid_keys)
         
@@ -1076,11 +1076,22 @@ def get_test_idxs(model, dataset, n_test=None):
     """
     # exclude training and/or test sets from validation set if necessary
     excl_idxs = np.empty((0,), dtype=np.uint)
-    if dataset['md5'] == model['md5_train']:
+
+    def convert_md5(md5_value):
+        if isinstance(md5_value, np.ndarray):
+            return str(md5_value.item())
+        else:
+            return str(md5_value)
+    
+    md5_dset = convert_md5(dataset['md5'])
+    md5_train = convert_md5(model['md5_train'])
+    md5_valid = convert_md5(model['md5_valid'])
+
+    if md5_dset == md5_train:
         excl_idxs = np.concatenate([excl_idxs, model['idxs_train']]).astype(
             np.uint
         )
-    if dataset['md5'] == model['md5_valid']:
+    if md5_dset == md5_valid:
         excl_idxs = np.concatenate([excl_idxs, model['idxs_valid']]).astype(
             np.uint
         )
