@@ -245,19 +245,20 @@ class mbGDMLTrain:
         self, dataset, model_name, n_train, n_valid,
         sigma_bounds=(2, 300), n_test=None, save_dir='.',
         gp_params={'init_points': 10, 'n_iter': 10, 'alpha': 0.001},
-        loss=loss_f_rmse, train_idxs=None, valid_idxs=None,
+        use_domain_opt=True, loss=loss_f_rmse, train_idxs=None, valid_idxs=None,
         overwrite=False, write_json=True, write_idxs=True
     ):
         """Train a GDML model using Bayesian optimization for sigma.
 
-        Notes
-        -----
         Uses the `Bayesian optimization <https://github.com/fmfn/BayesianOptimization>`_
         package to automatically find the optimal sigma. This will maximize
         the negative validation loss.
 
         ``gp_params`` can be used to specify options to
         ``BayesianOptimization.maximize()`` method.
+
+        A sequential domain reduction optimizer is used to accelerate the
+        convergence to an optimal sigma.
 
         Parameters
         ----------
@@ -292,6 +293,8 @@ class mbGDMLTrain:
                 This parameters controls how much noise the GP can handle, so
                 increase it whenever you think that extra flexibility is needed.
                 Defaults to ``0.001``.
+        use_domain_opt : :obj:`bool`, default: ``True``
+            Whether to use a sequential reduction optimizer or not.
         loss : callable, default: :obj:`mbgdml.train.loss_f_rmse`
             Loss function for validation. The input of this function is the
             dictionary of :obj:`mbgdml._gdml.train.add_valid_errors` which
@@ -317,6 +320,7 @@ class mbGDMLTrain:
             The Bayesian optimizer object.
         """
         from bayes_opt import BayesianOptimization
+        from bayes_opt import SequentialDomainReductionTransformer
 
         t_job = log.t_start()
 
@@ -390,11 +394,13 @@ class mbGDMLTrain:
 
             return -l
 
-        optimizer = BayesianOptimization(
-            f=opt_func,
-            pbounds={'sigma': sigma_bounds},
-            verbose=0,
-        )
+        opt_kwargs = {
+            'f': opt_func, 'pbounds': {'sigma': sigma_bounds}, 'verbose': 0
+        }
+        if use_domain_opt:
+            bounds_transformer = SequentialDomainReductionTransformer()
+            opt_kwargs['bounds_transformer'] = bounds_transformer
+        optimizer = BayesianOptimization(**opt_kwargs)
         optimizer.maximize(**gp_params)
         best_res = optimizer.max
         sigma_best = best_res['params']['sigma']
@@ -725,7 +731,6 @@ class mbGDMLTrain:
             n_train = n_train_init
             train_idxs = None
         
-        # TODO: Adjust upper sigma_bound based on previous values.
         gp_params_i = gp_params
         while n_train <= n_train_final:
             if n_train == n_train_final and gp_params_final is not None:
