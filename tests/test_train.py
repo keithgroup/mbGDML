@@ -27,7 +27,7 @@ import pytest
 import numpy as np
 import os
 from mbgdml.data import dataSet
-from mbgdml._gdml.train import GDMLTrain
+from mbgdml._gdml.train import GDMLTrain, get_test_idxs
 from mbgdml.train import mbGDMLTrain
 from mbgdml.analysis.problematic import prob_structures
 
@@ -243,3 +243,22 @@ def test_1h2o_prob_indices():
     assert len(prob_idxs) == 100
     # This is a very bad test, but will work for now?
     assert len(np.setdiff1d(prob_idxs, ref)) < 20
+
+def test_getting_test_idxs():
+    dset_path = os.path.join(
+        dset_dir, '1h2o/140h2o.sphere.gfn2.md.500k.prod1.3h2o.dset.1h2o-dset.npz'
+    )
+    model_path = os.path.join(
+        './tests/data/models', '1h2o-model.npz'
+    )
+    dset = dataSet(dset_path)
+    model = dict(np.load(model_path, allow_pickle=True))
+
+    n_R = dset.n_R
+    n_train = len(model['idxs_train'])
+    n_valid = len(model['idxs_valid'])
+    n_test = n_R - n_train - n_valid
+    
+    test_idxs = get_test_idxs(model, dset.asdict(), n_test=None)
+    
+    assert len(test_idxs) == n_test
