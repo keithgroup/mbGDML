@@ -373,7 +373,6 @@ class mbGDMLTrain:
             The Bayesian optimizer object.
         """
         from bayes_opt import BayesianOptimization
-        from bayes_opt import SequentialDomainReductionTransformer
 
         t_job = log.t_start()
 
@@ -451,6 +450,7 @@ class mbGDMLTrain:
             'f': opt_func, 'pbounds': {'sigma': sigma_bounds}, 'verbose': 0
         }
         if use_domain_opt:
+            from bayes_opt import SequentialDomainReductionTransformer
             bounds_transformer = SequentialDomainReductionTransformer()
             opt_kwargs['bounds_transformer'] = bounds_transformer
         optimizer = BayesianOptimization(**opt_kwargs)
