@@ -21,6 +21,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import matplotlib.pyplot as plt
 import numpy as np
 import os
 import shutil
@@ -241,12 +242,52 @@ class mbGDMLTrain:
         test_idxs = get_test_idxs(model.model, dataset, n_test=n_test)
         np.save(os.path.join(save_dir, 'test_idxs'), test_idxs)
     
+    def plot_bayes_opt_gp(self, optimizer):
+        """Prepare a plot of the Bayesian optimization Gaussian process.
+
+        Parameters
+        ----------
+        optimizer : ``bayes_opt.BayesianOptimization``
+
+        Returns
+        -------
+        ``object``
+            A matplotlib figure object.
+        """
+        sigma_bounds = optimizer._space.bounds[0]
+        x = np.linspace(sigma_bounds[0], sigma_bounds[1]+0.01, 10000)
+        mu, sigma = optimizer._gp.predict(x.reshape(-1, 1), return_std=True)
+        
+        fig, ax = plt.subplots(
+            nrows=1, ncols=1, figsize=(5.5, 4), constrained_layout=True
+        )
+        
+        ax.plot(x, -mu, label='Prediction')
+        ax.fill_between(
+            x, -mu - 1.9600*sigma, -mu + 1.9600 *sigma, alpha=0.1,
+            label=r'95% confidence'
+        )
+        ax.scatter(
+            optimizer.space.params.flatten(), -optimizer.space.target,
+            c="red", s=8, zorder=10, label='Observations'
+        )
+
+        ax.set_xlabel('Sigma')
+        ax.set_ylabel('Loss')
+
+        ax.set_xlim(left=sigma_bounds[0], right=sigma_bounds[1])
+
+        plt.legend()
+
+        return fig
+    
     def bayes_opt(
         self, dataset, model_name, n_train, n_valid,
         sigma_bounds=(2, 300), n_test=None, save_dir='.',
-        gp_params={'init_points': 10, 'n_iter': 10, 'alpha': 0.001},
-        use_domain_opt=False, loss=loss_f_rmse, train_idxs=None, valid_idxs=None,
-        overwrite=False, write_json=True, write_idxs=True
+        gp_params={'init_points': 5, 'n_iter': 10, 'alpha': 1e-7, 'acq': 'ucb', 'kappa': 0.1},
+        use_domain_opt=False, loss=loss_f_rmse, plot_bo=True,
+        train_idxs=None, valid_idxs=None, overwrite=False, write_json=True,
+        write_idxs=True
     ):
         """Train a GDML model using Bayesian optimization for sigma.
 
@@ -284,7 +325,7 @@ class mbGDMLTrain:
             ``init_points``
                 How many steps of random exploration you want to perform.
                 Random exploration can help by diversifying the exploration
-                space. Defaults to ``10``.
+                space. Defaults to ``5``.
             ``n_iter``
                 How many steps of bayesian optimization you want to perform.
                 The more steps the more likely to find a good maximum you are.
@@ -293,6 +334,15 @@ class mbGDMLTrain:
                 This parameters controls how much noise the GP can handle, so
                 increase it whenever you think that extra flexibility is needed.
                 Defaults to ``0.001``.
+            ``acq``
+                Acquisition function. Defaults to ``ucb`` which stands for
+                Upper Confidence Bounds method.
+            ``kappa`` 
+                Controls the balance between exploitation and exploration. The
+                higher the ``kappa`` the more exploratory it will be. Since
+                there is likely to be only one minimum (sometimes two or a
+                very flat loss function) we generally favor exploitation.
+                Default to ``0.1``.
         use_domain_opt : :obj:`bool`, default: ``False``
             Whether to use a sequential reduction optimizer or not. This
             sometimes crashes.
@@ -300,6 +350,8 @@ class mbGDMLTrain:
             Loss function for validation. The input of this function is the
             dictionary of :obj:`mbgdml._gdml.train.add_valid_errors` which
             contains force and energy MAEs and RMSEs.
+        plot_bo : :obj:`bool`, default: ``True``
+            Plot the Bayesian optimization Gaussian process.
         train_idxs : :obj:`numpy.ndarray`, default: ``None``
             The specific indices of structures to train the model on. If
             ``None`` will automatically sample the training data set.
@@ -435,6 +487,11 @@ class mbGDMLTrain:
 
         # Saving model.
         model_best.save(model_name, model_best.model, save_dir)
+
+        # Bayesian optimization plot
+        if plot_bo:
+            fig = self.plot_bayes_opt_gp(optimizer)
+            fig.savefig(os.path.join(save_dir, 'bayes_opt.png'), dpi=600)
 
         log.t_stop(t_job, message='\nJob duration : {time} s', precision=2)
         return model_best.model, optimizer
