@@ -1270,8 +1270,6 @@ def model_errors(
 
     if not use_torch:
         if num_workers == 0 or batch_size == 0:
-            log.info('Optimizing parallelism')
-
             gps, is_from_cache = gdml_predict.prepare_parallel(
                 n_bulk=b_size, return_is_from_cache=True
             )
@@ -1280,10 +1278,6 @@ def model_errors(
                 gdml_predict.chunk_size,
                 gdml_predict.bulk_mp,
             )
-
-            if is_from_cache:
-                log.info('Taken from cache')
-            log.info(f'Using {num_workers} workers with chunks of {batch_size}')
         else:
             gdml_predict._set_num_workers(num_workers)
             gdml_predict._set_batch_size(batch_size)

@@ -315,7 +315,7 @@ class GDMLPredict:
 
             if not _has_torch:
                 raise ImportError(
-                    'Optional PyTorch dependency not found! Please run \'pip install sgdml[torch]\' to install it or disable the PyTorch option.'
+                    'Optional PyTorch dependency not found!'
                 )
 
             from .torchtools import GDMLTorchPredict
@@ -439,8 +439,7 @@ class GDMLPredict:
     def _set_num_workers(
         self, num_workers=None
     ):
-        """
-        Set number of processes to use during prediction.
+        """Set number of processes to use during prediction.
 
         If bulk_mp == True, each worker handles the whole generation of single
         prediction (this if for querying multiple geometries at once)
@@ -474,6 +473,7 @@ class GDMLPredict:
             if num_workers is None or num_workers > 1:
                 self.pool = Pool(processes=num_workers)
                 self.num_workers = self.pool._processes
+        log.info(f'Set number of workers : {self.num_workers}')
 
         # Data ranges for processes
         if self.bulk_mp:
@@ -522,10 +522,10 @@ class GDMLPredict:
         chunk_size : int
             Chunk size (maximum value is set if `None`).
         """
-
         if chunk_size is None:
             chunk_size = self.n_train
 
+        log.info(f'Set chunk size : {chunk_size}')
         self.chunk_size = chunk_size
 
     def _set_bulk_mp(self, bulk_mp=False):
@@ -546,8 +546,11 @@ class GDMLPredict:
         bulk_mp : :obj:`bool`, optional
             Enable or disable bulk prediction mode.
         """
-
         bulk_mp = bool(bulk_mp)
+        if bulk_mp:
+            log.info('Using one worker per structure (i.e., bulk)')
+        else:
+            log.info('Using multiple workers per structure')
         if self.bulk_mp is not bulk_mp:
             self.bulk_mp = bulk_mp
 
@@ -602,18 +605,20 @@ class GDMLPredict:
         :obj:`bool`, optional
             Return, whether this function obtained the results from cache.
         """
+        t_parallel = log.t_start()
+        log.info('#   Optimizing parallelism   #')
 
         # No benchmarking necessary if prediction is running on GPUs.
         if self.use_torch:
-            self.log.info(
+            log.info(
                 'Skipping multi-CPU benchmark, since torch is enabled.'
             )
+            log.t_stop(t_parallel)
             return
 
         # Retrieve cached benchmark results, if available.
         bmark_result = self._load_cached_bmark_result(n_bulk)
         if bmark_result is not None:
-
             num_workers, chunk_size, bulk_mp, gps = bmark_result
 
             self._set_chunk_size(chunk_size)
@@ -622,10 +627,13 @@ class GDMLPredict:
 
             if return_is_from_cache:
                 is_from_cache = True
+                log.t_stop(t_parallel, message='Parallel optimization took {time} s\n')
                 return gps, is_from_cache
             else:
+                log.t_stop(t_parallel, message='Parallel optimization took {time} s\n')
                 return gps
 
+        log.info('Preparing benchmark runs')
         best_results = []
         last_i = None
 
@@ -653,6 +661,7 @@ class GDMLPredict:
             )
 
             for num_workers in num_workers_rng:
+                log.info('')
                 if not bulk_mp and self.n_train % num_workers != 0:
                     continue
 
@@ -685,7 +694,9 @@ class GDMLPredict:
 
                     i_done += 1
 
+                    log.info('Timing predictions')
                     gps = n_bulk * n_reps / timeit.timeit(_dummy_predict, number=n_reps)
+                    log.info(f'Geometries per second : {gps}')
 
                     gps_rng = (
                         min(gps_rng[0], gps),
@@ -714,12 +725,10 @@ class GDMLPredict:
                         best_gps = gps
                         best_params = num_workers, chunk_size, bulk_mp
 
-                    if (
-                        not bulk_mp and n_bulk > 1
-                    ):  # stop search early when multiple cpus are available and the 1 cpu case is tested
-                        if (
-                            gps < gps_min
-                        ):  # if the batch size run is lower than the lowest overall, stop right here
+                    # stop search early when multiple cpus are available and the 1 cpu case is tested
+                    if (not bulk_mp and n_bulk > 1):
+                        if (gps < gps_min):  
+                            # if the batch size run is lower than the lowest overall, stop right here
                             # print('breaking here')
                             break
 
@@ -744,6 +753,9 @@ class GDMLPredict:
 
         # Cache benchmark results.
         self._save_cached_bmark_result(n_bulk, num_workers, chunk_size, bulk_mp, gps)
+        log.info(
+            f'Best config : {num_workers} worker(s), {chunk_size} chunk size'
+        )
 
         self._set_chunk_size(chunk_size)
         self._set_num_workers(num_workers)
@@ -751,8 +763,10 @@ class GDMLPredict:
 
         if return_is_from_cache:
             is_from_cache = False
+            log.t_stop(t_parallel, message='Parallel optimization took {time} s\n')
             return gps, is_from_cache
         else:
+            log.t_stop(t_parallel, message='Parallel optimizationtook {time} s\n')
             return gps
 
     def _save_cached_bmark_result(self, n_bulk, num_workers, chunk_size, bulk_mp, gps):
@@ -766,6 +780,7 @@ class GDMLPredict:
         )
 
         if os.path.exists(bmark_path):
+            log.info('Appending benchmark results to existing cache')
 
             with np.load(bmark_path, allow_pickle=True) as bmark:
                 bmark = dict(bmark)
@@ -776,6 +791,7 @@ class GDMLPredict:
                 bmark['bulk_mp'] = np.append(bmark['bulk_mp'], bulk_mp)
                 bmark['gps'] = np.append(bmark['gps'], gps)
         else:
+            log.info('Caching new benchmark results')
             bmark = {
                 'code_version': __version__,
                 'runs': [bkey],
@@ -792,18 +808,21 @@ class GDMLPredict:
         pkg_dir = os.path.dirname(os.path.abspath(__file__))
         bmark_file = '_bmark_cache.npz'
         bmark_path = os.path.join(pkg_dir, bmark_file)
+        log.debug(f'Looking for benchmark file at {bmark_path}')
 
         bkey = '{}-{}-{}-{}'.format(
             self.n_atoms, self.n_train, n_bulk, self.max_processes
         )
 
         if not os.path.exists(bmark_path):
+            log.info('No benchmark cache found')
             return None
 
         with np.load(bmark_path, allow_pickle=True) as bmark:
-
+            log.info('Benchmark cache found')
             # Keep collecting benchmark runs, until we have at least three.
             run_idxs = np.where(bmark['runs'] == bkey)[0]
+            log.info(f'Found {len(run_idxs)} benchmark runs')
             if len(run_idxs) >= 3:
 
                 config_keys = []
@@ -836,7 +855,12 @@ class GDMLPredict:
                 chunk_size = bmark['batch_size'][best_idx]
                 bulk_mp = bmark['bulk_mp'][best_idx]
 
+                log.info(
+                    f'Best config : {num_workers} worker(s), {chunk_size} chunk size'
+                )
                 return num_workers, chunk_size, bulk_mp, best_gps
+            else:
+                log.info('Not enough runs (need at 3)')
 
         return None
 
