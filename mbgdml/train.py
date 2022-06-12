@@ -283,7 +283,7 @@ class mbGDMLTrain:
     
     def bayes_opt(
         self, dataset, model_name, n_train, n_valid,
-        sigma_bounds=(2, 300), n_test=None, save_dir='.',
+        sigma_bounds=(2, 300), n_test=None, save_dir='.', initial_grid=None,
         gp_params={'init_points': 5, 'n_iter': 10, 'alpha': 1e-7, 'acq': 'ucb', 'kappa': 0.1},
         use_domain_opt=False, loss=loss_f_rmse, plot_bo=True,
         train_idxs=None, valid_idxs=None, overwrite=False, write_json=True,
@@ -299,7 +299,7 @@ class mbGDMLTrain:
         ``BayesianOptimization.maximize()`` method.
 
         A sequential domain reduction optimizer is used to accelerate the
-        convergence to an optimal sigma.
+        convergence to an optimal sigma (when requested).
 
         Parameters
         ----------
@@ -319,13 +319,23 @@ class mbGDMLTrain:
         save_dir : :obj:`str`, default: ``'.'``
             Path to train and save the mbGDML model. Defaults to current
             directory.
+        initial_grid : :obj:`list`, default: ``None``
+            Determining reasonable ``sigma_bounds`` is difficult without some
+            prior experience with the system. Even then, the optimal ``sigma``
+            can drastically change depending on the training set size.
+
+            ``initial_grid`` will assist with determining optimal
+            ``sigma_bounds`` by first performing a course grid search. The
+            Bayesian optimization will start with the bounds of the grid-search
+            minimum. It is recommended to choose a large ``sigma_bounds`` as
+            large as your ``initial_grid``; it will be updated internally.
         gp_params : :obj:`dict`
             Gaussian process parameters. Others can be included.
 
             ``init_points``
                 How many steps of random exploration you want to perform.
                 Random exploration can help by diversifying the exploration
-                space. Defaults to ``5``.
+                space. Defaults to ``10``.
             ``n_iter``
                 How many steps of bayesian optimization you want to perform.
                 The more steps the more likely to find a good maximum you are.
@@ -384,15 +394,12 @@ class mbGDMLTrain:
         )
 
         if write_json:
-            write_json = True
             job_json = {
                 'model': {},
                 'testing': {},
                 'validation': {},
                 'training': {'idxs': []},
             }
-        else:
-            write_json = False
 
         if train_idxs is not None:
             assert n_train == len(train_idxs)
@@ -431,6 +438,7 @@ class mbGDMLTrain:
             )
 
             l = loss(valid_results)
+            losses.append(l)
 
             valid_json['sigmas'].append(model_trial['sig'])
             valid_json['energy']['mae'].append(valid_results['energy']['mae'])
@@ -454,7 +462,99 @@ class mbGDMLTrain:
             bounds_transformer = SequentialDomainReductionTransformer()
             opt_kwargs['bounds_transformer'] = bounds_transformer
         optimizer = BayesianOptimization(**opt_kwargs)
+
+        # Use optimizer.probe to run grid search and then update sigma_bounds
+        if initial_grid is not None:
+            log.info('#   Initial grid search   #')
+            initial_grid.sort()
+
+            n_sigmas = len(initial_grid)
+            def probe_sigma(sigma):
+                optimizer.probe({'sigma': sigma}, lazy=False)
+            
+            def check_loss_rising(valid_json, losses):
+                """
+
+                Returns
+                -------
+                :obj:`tuple`
+                    Optimized sigma bounds.
+                :obj:`bool`
+                    If the initial grid search is done or not.
+                """
+                sigmas = valid_json['sigmas']
+                min_loss = min(losses)
+                min_idx = losses.index(min(sigmas))
+
+                # TODO: Add check for energy RMSE is not None.
+                loss_falling = False
+                # Check if losses start falling after minimum. 
+                for i in range(min_idx+1, len(sigmas)):
+                    if losses[i] < losses[i-1]:
+                        loss_falling = True
+                        break
+                
+                if not loss_falling:
+                    sigma_bounds = (
+                        sigmas[min_idx-1], sigmas[min_idx+1]
+                    )
+                    return sigma_bounds, True
+                else:
+                    # Sometimes theres a small increase at low sigma values.
+                    # We run two more sigma values to confirm they
+                    # continue to rise.
+                    return None, False
+
+            DONE = False
+            loss_rising = False
+            do_extra = 2  # Extra sigmas to check after loss 
+            while not DONE:
+                sigma = initial_grid.pop(0)
+                probe_sigma(sigma)
+
+                # Check to see if losses have started to rise.
+                # Only check if loss_rising is False to avoid changing back
+                # to False if the losses start falling (for do_extra).
+                if len(losses) >= 2 and not loss_rising:
+                    if losses[-1] > losses[-2]:
+                        loss_rising = True
+                
+                if loss_rising:
+                    # We do two extra sigmas to ensure we did not have premature
+                    # error rising.
+                    if do_extra > 0:
+                        do_extra -= 1
+                        continue
+                    else:
+                        # Once do_extra is complete we check loss_rising.
+                        sigma_bounds, DONE = check_loss_rising(
+                            valid_json, losses
+                        )
+                        if sigma_bounds is None:
+                            # Losses started lowering again. Restart the grid
+                            # search.
+                            loss_rising = False
+
+
+                if len(initial_grid) == 0:
+                    # TODO: Find lowest value where energy RMSE is not None.
+                    # Use this as the minimum to find sigma_bounds.
+                    DONE = True
+                    pass
+
+            # We did not find a minimum.
+            else:
+                if len(sigmas) == len(initial_grid):
+                    # TODO: Exhausted grid search. What next?
+                    pass
+            
+            optimizer.set_bounds(
+                {'sigma': sigma_bounds}
+            )
+        
+        log.info('#   Bayesian optimization   #')
         optimizer.maximize(**gp_params)
+
         best_res = optimizer.max
         sigma_best = best_res['params']['sigma']
         model_best_path = os.path.join(
