@@ -285,7 +285,7 @@ class mbGDMLTrain:
         self, dataset, model_name, n_train, n_valid,
         sigma_bounds=(2, 300), n_test=None, save_dir='.', initial_grid=None,
         gp_params={'init_points': 5, 'n_iter': 10, 'alpha': 1e-7, 'acq': 'ucb', 'kappa': 0.1},
-        use_domain_opt=False, loss=loss_f_rmse, plot_bo=True,
+        use_domain_opt=False, loss=loss_f_rmse, plot_bo=True, keep_tasks=False,
         train_idxs=None, valid_idxs=None, overwrite=False, write_json=True,
         write_idxs=True
     ):
@@ -362,6 +362,9 @@ class mbGDMLTrain:
             contains force and energy MAEs and RMSEs.
         plot_bo : :obj:`bool`, default: ``True``
             Plot the Bayesian optimization Gaussian process.
+        keep_tasks : :obj:`bool`, default: ``False``
+            Keep all models trained during the train task if ``True``. They are
+            removed by default.
         train_idxs : :obj:`numpy.ndarray`, default: ``None``
             The specific indices of structures to train the model on. If
             ``None`` will automatically sample the training data set.
@@ -411,6 +414,11 @@ class mbGDMLTrain:
         dset_dict = dataset.asdict()
 
         task_dir = os.path.join(save_dir, 'tasks')
+        if os.path.exists(task_dir):
+            if overwrite:
+                shutil.rmtree(task_dir)
+            else:
+                raise FileExistsError('Task directory already exists')
         os.makedirs(task_dir, exist_ok=overwrite)
 
         task = self.create_task(
@@ -583,7 +591,8 @@ class mbGDMLTrain:
         if write_idxs:
             self.save_idxs(model_best, dset_dict, save_dir, n_test)
         
-        shutil.rmtree(task_dir)
+        if not keep_tasks:
+            shutil.rmtree(task_dir)
 
         # Saving model.
         model_best.save(model_name, model_best.model, save_dir)
@@ -600,7 +609,7 @@ class mbGDMLTrain:
     def grid_search(
         self, dataset, model_name, n_train, n_valid,
         sigmas=list(range(2, 400, 30)), n_test=None, save_dir='.',
-        loss=loss_f_rmse, train_idxs=None, valid_idxs=None,
+        loss=loss_f_rmse, keep_tasks=False, train_idxs=None, valid_idxs=None,
         overwrite=False, write_json=True, write_idxs=True,
     ):
         """Train a GDML model using a grid search for sigma.
@@ -642,6 +651,9 @@ class mbGDMLTrain:
             Loss function for validation. The input of this function is the
             dictionary of :obj:`mbgdml._gdml.train.add_valid_errors` which
             contains force and energy MAEs and RMSEs.
+        keep_tasks : :obj:`bool`, default: ``False``
+            Keep all models trained during the train task if ``True``. They are
+            removed by default.
         train_idxs : :obj:`numpy.ndarray`, default: ``None``
             The specific indices of structures to train the model on. If
             ``None`` will automatically sample the training data set.
@@ -688,6 +700,11 @@ class mbGDMLTrain:
         dset_dict = dataset.asdict()
         
         task_dir = os.path.join(save_dir, 'tasks')
+        if os.path.exists(task_dir):
+            if overwrite:
+                shutil.rmtree(task_dir)
+            else:
+                raise FileExistsError('Task directory already exists')
         os.makedirs(task_dir, exist_ok=overwrite)
 
         task = self.create_task(
@@ -780,7 +797,8 @@ class mbGDMLTrain:
         if write_idxs:
             self.save_idxs(model_best, dset_dict, save_dir, n_test)
         
-        shutil.rmtree(task_dir)
+        if not keep_tasks:
+            shutil.rmtree(task_dir)
 
         # Saving model.
         model_best.save(model_name, model_best.model, save_dir)

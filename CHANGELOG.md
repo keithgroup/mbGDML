@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Added
 
+- Ability to keep all trained models instead of just the best one.
 - Log parallel optimization.
 - Plot Gaussian process from hyperparameter Bayesian optimization.
 - Plot cluster losses and population histogram using matplotlib.
