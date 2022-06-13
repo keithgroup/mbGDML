@@ -287,7 +287,7 @@ class mbGDMLTrain:
     
     def bayes_opt(
         self, dataset, model_name, n_train, n_valid, check_energy_pred=True,
-        sigma_bounds=(2, 300), n_test=None, save_dir='.', initial_grid=None,
+        sigma_bounds=(2, 400), n_test=None, save_dir='.', initial_grid=None,
         gp_params={'init_points': 5, 'n_iter': 10, 'alpha': 1e-7, 'acq': 'ucb', 'kappa': 0.1},
         use_domain_opt=False, loss=loss_f_rmse, plot_bo=True, keep_tasks=False,
         train_idxs=None, valid_idxs=None, overwrite=False, write_json=True,
@@ -842,7 +842,7 @@ class mbGDMLTrain:
     
     def iterative_train(
         self, dataset, model_name, n_train_init, n_train_final, n_valid,
-        model0=None, n_train_step=100, sigma_bounds=(2, 300), n_test=None,
+        model0=None, n_train_step=100, sigma_bounds=(2, 400), n_test=None,
         save_dir='.', gp_params={'init_points': 10, 'n_iter': 10, 'alpha': 0.001},
         gp_params_final=None, loss=loss_f_rmse, overwrite=False,
         write_json=True, write_idxs=True
