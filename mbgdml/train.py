@@ -259,7 +259,7 @@ class mbGDMLTrain:
         sigma_bounds = optimizer._space.bounds[0]
         lower_bound = min(min(params), sigma_bounds[0])
         upper_bound = max(max(params), sigma_bounds[1])
-        
+
         x = np.linspace(lower_bound,upper_bound, 10000)
         mu, sigma = optimizer._gp.predict(x.reshape(-1, 1), return_std=True)
         
@@ -540,7 +540,8 @@ class mbGDMLTrain:
 
             loss_rising = False
             do_extra = 2  # Extra sigmas to check after losses rise.
-            for sigma in initial_grid:
+            for i in range(len(initial_grid)):
+                sigma = initial_grid[i]
                 probe_sigma(sigma)
                 init_points -= 1
 
@@ -555,25 +556,25 @@ class mbGDMLTrain:
                 if loss_rising:
                     # We do two extra sigmas to ensure we did not have premature
                     # rising loss.
-                    if do_extra > 0:
+                    if i != len(initial_grid)-1 and do_extra > 0:
                         do_extra -= 1
                         continue
+                
+                    # Once do_extra is complete we check losses.
+                    sigma_bounds_new = check_loss_rising(
+                        valid_json, min_idxs_orig
+                    )
+                    if sigma_bounds_new is None:
+                        # Losses started lowering again.
+                        # Or we checked for energy predictions and it failed.
+                        # Restart the grid search.
+                        loss_rising = False
                     else:
-                        # Once do_extra is complete we check losses.
-                        sigma_bounds_new = check_loss_rising(
-                            valid_json, min_idxs_orig
+                        # We found a minimum and will start the Bayesian optimization.
+                        optimizer.set_bounds(
+                            {'sigma': sigma_bounds_new}
                         )
-                        if sigma_bounds_new is None:
-                            # Losses started lowering again.
-                            # Or we checked for energy predictions and it failed.
-                            # Restart the grid search.
-                            loss_rising = False
-                        else:
-                            # We found a minimum and will start the Bayesian optimization.
-                            optimizer.set_bounds(
-                                {'sigma': sigma_bounds_new}
-                            )
-                            break
+                        break
         
         if init_points < 0:
             init_points = 0
@@ -638,7 +639,6 @@ class mbGDMLTrain:
 
         log.t_stop(t_job, message='\nJob duration : {time} s', precision=2)
         return model_best.model, optimizer
-
         
     def grid_search(
         self, dataset, model_name, n_train, n_valid,
@@ -844,8 +844,8 @@ class mbGDMLTrain:
         self, dataset, model_name, n_train_init, n_train_final, n_valid,
         model0=None, n_train_step=100, sigma_bounds=(2, 400), n_test=None,
         save_dir='.', gp_params={'init_points': 10, 'n_iter': 10, 'alpha': 0.001},
-        gp_params_final=None, loss=loss_f_rmse, overwrite=False,
-        write_json=True, write_idxs=True
+        gp_params_final=None, initial_grid=None, loss=loss_f_rmse, overwrite=False,
+        write_json=True, write_idxs=True, keep_tasks=False
     ):
         """Iteratively trains a GDML model by using Bayesian optimization and
         adding problematic (high error) structures to the training set.
@@ -900,6 +900,19 @@ class mbGDMLTrain:
         gp_params_final : :obj:`dict`, default: ``None``
             Gaussian process keyword arguments for the last training task.
             This could be used to perform a more thorough hyperparameter search.
+        initial_grid : :obj:`list`, default: ``None``
+            Determining reasonable ``sigma_bounds`` is difficult without some
+            prior experience with the system. Even then, the optimal ``sigma``
+            can drastically change depending on the training set size.
+
+            ``initial_grid`` will assist with determining optimal
+            ``sigma_bounds`` by first performing a course grid search. The
+            Bayesian optimization will start with the bounds of the grid-search
+            minimum. It is recommended to choose a large ``sigma_bounds`` as
+            large as your ``initial_grid``; it will be updated internally.
+
+            The number of probes done during the initial grid search will be
+            subtracted from the Bayesian optimization ``init_points``.
         loss : ``callable``, default: :obj:`mbgdml.train.loss_f_rmse`
             Loss function for validation. The input of this function is the
             dictionary of :obj:`mbgdml._gdml.train.add_valid_errors` which
@@ -910,6 +923,9 @@ class mbGDMLTrain:
             Write a JSON file containing information about the training job.
         write_idxs : :obj:`bool`, default: ``True``
             Write npy files for training, validation, and test indices.
+        keep_tasks : :obj:`bool`, default: ``False``
+            Keep all models trained during the train task if ``True``. They are
+            removed by default.
         """
         log.log_package()
 
@@ -950,9 +966,10 @@ class mbGDMLTrain:
             model, _ = self.bayes_opt(
                 dataset, model_name+f'-train{n_train}', n_train, n_valid,
                 sigma_bounds=sigma_bounds, n_test=n_test, save_dir=save_dir_i,
-                gp_params=gp_params_i, loss=loss, train_idxs=train_idxs,
-                valid_idxs=None, overwrite=overwrite,
-                write_json=write_json, write_idxs=write_idxs
+                initial_grid=initial_grid, gp_params=gp_params_i, loss=loss,
+                train_idxs=train_idxs, valid_idxs=None, overwrite=overwrite,
+                write_json=write_json, write_idxs=write_idxs,
+                keep_tasks=keep_tasks
             )
 
             # Check sigma bounds
