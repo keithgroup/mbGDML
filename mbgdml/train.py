@@ -843,7 +843,8 @@ class mbGDMLTrain:
     def iterative_train(
         self, dataset, model_name, n_train_init, n_train_final, n_valid,
         model0=None, n_train_step=100, sigma_bounds=(2, 400), n_test=None,
-        save_dir='.', gp_params={'init_points': 10, 'n_iter': 10, 'alpha': 0.001},
+        save_dir='.', check_energy_pred=True,
+        gp_params={'init_points': 10, 'n_iter': 10, 'alpha': 0.001},
         gp_params_final=None, initial_grid=None, loss=loss_f_rmse, overwrite=False,
         write_json=True, write_idxs=True, keep_tasks=False
     ):
@@ -881,6 +882,15 @@ class mbGDMLTrain:
             Defaults to testing all available structures.
         save_dir : :obj:`str`, default: ``'.'``
             Path to train and save the mbGDML model.
+        check_energy_pred : :obj:`bool`, default: ``True``
+            Will return the model with the lowest loss that predicts reasonable
+            energies. If ``False``, the model with the lowest loss is not
+            checked for reasonable energy predictions.
+
+            Sometimes, GDML kernels are unable to accurately reconstruct potential
+            energies even if the force predictions are accurate. This is
+            sometimes prevalent in many-body models with low and high sigmas
+            (i.e., sigmas less than 5 or greater than 500).
         gp_params : :obj:`dict`
             Gaussian process kwargs. Others can be provided.
 
@@ -969,7 +979,7 @@ class mbGDMLTrain:
                 initial_grid=initial_grid, gp_params=gp_params_i, loss=loss,
                 train_idxs=train_idxs, valid_idxs=None, overwrite=overwrite,
                 write_json=write_json, write_idxs=write_idxs,
-                keep_tasks=keep_tasks
+                keep_tasks=keep_tasks, check_energy_pred=check_energy_pred
             )
 
             # Check sigma bounds
