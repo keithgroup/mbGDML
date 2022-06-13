@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Changed
 
+- Elements logging in tasks and models are condensed (i.e., no spaces).
 - Default ``gp_params`` for Bayesian optimization.
 - MD5 hashes are no longer stored in bytes.
 - Do not include training set in any problematic clustering.
