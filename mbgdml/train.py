@@ -345,6 +345,10 @@ class mbGDMLTrain:
 
             The number of probes done during the initial grid search will be
             subtracted from the Bayesian optimization ``init_points``.
+
+            We recommend that the grid includes several lower sigmas (< 50), a
+            few medium sigmas (< 500), and several large sigmas that span up to
+            at least 1000 for higher-order models.
         gp_params : :obj:`dict`
             Gaussian process parameters. Others can be included.
 
@@ -539,7 +543,7 @@ class mbGDMLTrain:
                 return sigma_bounds
 
             loss_rising = False
-            do_extra = 2  # Extra sigmas to check after losses rise.
+            do_extra = 4  # Extra sigmas to check after losses rise.
             for i in range(len(initial_grid)):
                 sigma = initial_grid[i]
                 probe_sigma(sigma)
