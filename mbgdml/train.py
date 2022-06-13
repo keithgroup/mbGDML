@@ -579,12 +579,9 @@ class mbGDMLTrain:
             init_points = 0
             gp_params['init_points'] = init_points
             
-            log.info('#   Bayesian optimization   #')
-            optimizer.maximize(**gp_params)
-
-        # TODO: check check_energy_pred
-        # Change to get optimizer.res, then use argsort on losses, then check
-        # on energy RMSE in valid_json.
+        log.info('#   Bayesian optimization   #')
+        optimizer.maximize(**gp_params)
+        
         results = optimizer.res
         losses = np.array([-res['target'] for res in results])
         min_idxs = np.argsort(losses)
