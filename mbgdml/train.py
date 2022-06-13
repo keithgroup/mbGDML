@@ -254,8 +254,13 @@ class mbGDMLTrain:
         ``object``
             A matplotlib figure object.
         """
+        params = optimizer.space.params.flatten()
+        losses = -optimizer.space.target
         sigma_bounds = optimizer._space.bounds[0]
-        x = np.linspace(sigma_bounds[0], sigma_bounds[1]+0.01, 10000)
+        lower_bound = min(min(params), sigma_bounds[0])
+        upper_bound = max(max(params), sigma_bounds[1])
+        
+        x = np.linspace(lower_bound,upper_bound, 10000)
         mu, sigma = optimizer._gp.predict(x.reshape(-1, 1), return_std=True)
         
         fig, ax = plt.subplots(
@@ -268,21 +273,20 @@ class mbGDMLTrain:
             label=r'95% confidence'
         )
         ax.scatter(
-            optimizer.space.params.flatten(), -optimizer.space.target,
-            c="red", s=8, zorder=10, label='Observations'
+            params, losses, c="red", s=8, zorder=10, label='Observations'
         )
 
         ax.set_xlabel('Sigma')
         ax.set_ylabel('Loss')
 
-        ax.set_xlim(left=sigma_bounds[0], right=sigma_bounds[1])
+        ax.set_xlim(left=lower_bound, right=upper_bound)
 
         plt.legend()
 
         return fig
     
     def bayes_opt(
-        self, dataset, model_name, n_train, n_valid,
+        self, dataset, model_name, n_train, n_valid, check_energy_pred=True,
         sigma_bounds=(2, 300), n_test=None, save_dir='.', initial_grid=None,
         gp_params={'init_points': 5, 'n_iter': 10, 'alpha': 1e-7, 'acq': 'ucb', 'kappa': 0.1},
         use_domain_opt=False, loss=loss_f_rmse, plot_bo=True, keep_tasks=False,
@@ -311,6 +315,15 @@ class mbGDMLTrain:
             The number of training points to use.
         n_valid : :obj:`int`
             The number of validation points to use.
+        check_energy_pred : :obj:`bool`, default: ``True``
+            Will return the model with the lowest loss that predicts reasonable
+            energies. If ``False``, the model with the lowest loss is not
+            checked for reasonable energy predictions.
+
+            Sometimes, GDML kernels are unable to accurately reconstruct potential
+            energies even if the force predictions are accurate. This is
+            sometimes prevalent in many-body models with low and high sigmas
+            (i.e., sigmas less than 5 or greater than 500).
         sigma_bounds : :obj:`tuple`, default: ``(2, 300)``
             Kernel length scale bounds for the Bayesian optimization.
         n_test : :obj:`int`, default: ``None``
@@ -329,6 +342,9 @@ class mbGDMLTrain:
             Bayesian optimization will start with the bounds of the grid-search
             minimum. It is recommended to choose a large ``sigma_bounds`` as
             large as your ``initial_grid``; it will be updated internally.
+
+            The number of probes done during the initial grid search will be
+            subtracted from the Bayesian optimization ``init_points``.
         gp_params : :obj:`dict`
             Gaussian process parameters. Others can be included.
 
@@ -426,9 +442,9 @@ class mbGDMLTrain:
             train_idxs=train_idxs, valid_idxs=valid_idxs
         )
 
-        losses = []
         valid_json = {
             'sigmas': [],
+            'losses': [],
             'force': {'mae': [], 'rmse': []},
             'energy': {'mae': [], 'rmse': []},
             'idxs': [],
@@ -446,16 +462,24 @@ class mbGDMLTrain:
             )
 
             l = loss(valid_results)
-            losses.append(l)
+            valid_json['losses'].append(l)
 
-            valid_json['sigmas'].append(model_trial['sig'])
-            valid_json['energy']['mae'].append(valid_results['energy']['mae'])
-            valid_json['energy']['rmse'].append(valid_results['energy']['rmse'])
-            valid_json['force']['mae'].append(valid_results['force']['mae'])
-            valid_json['force']['rmse'].append(valid_results['force']['rmse'])
+            valid_json['sigmas'].append(float(model_trial['sig']))
+            valid_json['energy']['mae'].append(
+                valid_results['energy']['mae']
+            )
+            valid_json['energy']['rmse'].append(
+                valid_results['energy']['rmse']
+            )
+            valid_json['force']['mae'].append(
+                valid_results['force']['mae']
+            )
+            valid_json['force']['rmse'].append(
+                valid_results['force']['rmse']
+            )
 
             model_trail_path = os.path.join(
-                task_dir, f'model-{sigma}.npz'
+                task_dir, f'model-{float(sigma)}.npz'
             )
 
             save_model(model_trial, model_trail_path)
@@ -471,7 +495,14 @@ class mbGDMLTrain:
             opt_kwargs['bounds_transformer'] = bounds_transformer
         optimizer = BayesianOptimization(**opt_kwargs)
 
-        # Use optimizer.probe to run grid search and then update sigma_bounds
+        # Use optimizer.probe to run grid search and to update sigma_bounds.
+        # If no minimum is found, the provided sigma_bounds are used.
+        # For every probe we will reduce the number of initial points in the
+        # Bayesian optimization.
+        if gp_params is not None and 'init_points' in gp_params.keys():
+            init_points = gp_params['init_points']
+        else:
+            init_points = 5  # BayesianOptimization default.
         if initial_grid is not None:
             log.info('#   Initial grid search   #')
             initial_grid.sort()
@@ -480,91 +511,97 @@ class mbGDMLTrain:
             def probe_sigma(sigma):
                 optimizer.probe({'sigma': sigma}, lazy=False)
             
-            def check_loss_rising(valid_json, losses):
-                """
-
-                Returns
-                -------
-                :obj:`tuple`
-                    Optimized sigma bounds.
-                :obj:`bool`
-                    If the initial grid search is done or not.
-                """
-                sigmas = valid_json['sigmas']
-                min_loss = min(losses)
-                min_idx = losses.index(min(sigmas))
-
-                # TODO: Add check for energy RMSE is not None.
-                loss_falling = False
-                # Check if losses start falling after minimum. 
-                for i in range(min_idx+1, len(sigmas)):
-                    if losses[i] < losses[i-1]:
-                        loss_falling = True
-                        break
+            def check_loss_rising(valid_json, min_idxs_orig):
+                if check_energy_pred:
+                    if valid_json['energy']['rmse'][min_idxs_orig] is None:
+                        # Restart to find a better minimum that predicts energies.
+                        return None
                 
-                if not loss_falling:
-                    sigma_bounds = (
-                        sigmas[min_idx-1], sigmas[min_idx+1]
-                    )
-                    return sigma_bounds, True
-                else:
-                    # Sometimes theres a small increase at low sigma values.
-                    # We run two more sigma values to confirm they
-                    # continue to rise.
-                    return None, False
+                losses = valid_json['losses']
+                # Check if losses start falling after minimum. 
+                for i in range(min_idxs_orig+1, len(losses)):
+                    if losses[i] < losses[i-1]:
+                        # We will restart the grid search to find another minimum.
+                        return None
+                
+                # Check if minimum is at the lower bound.
+                sigmas = valid_json['sigmas']
+                lower_bound_idx = min_idxs_orig - 1
+                upper_bound_idx = min_idxs_orig + 1
+                if lower_bound_idx < 0:
+                    lower_bound_idx = 0
+                if upper_bound_idx >= len(sigmas):
+                    upper_bound_idx = len(sigmas)-1
+                
+                sigma_bounds = (
+                    sigmas[lower_bound_idx], sigmas[upper_bound_idx]
+                )
+                return sigma_bounds
 
-            DONE = False
             loss_rising = False
-            do_extra = 2  # Extra sigmas to check after loss 
-            while not DONE:
-                sigma = initial_grid.pop(0)
+            do_extra = 2  # Extra sigmas to check after losses rise.
+            for sigma in initial_grid:
                 probe_sigma(sigma)
+                init_points -= 1
 
                 # Check to see if losses have started to rise.
                 # Only check if loss_rising is False to avoid changing back
                 # to False if the losses start falling (for do_extra).
-                if len(losses) >= 2 and not loss_rising:
-                    if losses[-1] > losses[-2]:
+                if len(valid_json['sigmas']) >= 2 and not loss_rising:
+                    if valid_json['losses'][-1] > valid_json['losses'][-2]:
                         loss_rising = True
+                        min_idxs_orig = len(valid_json['sigmas'])-2
                 
                 if loss_rising:
                     # We do two extra sigmas to ensure we did not have premature
-                    # error rising.
+                    # rising loss.
                     if do_extra > 0:
                         do_extra -= 1
                         continue
                     else:
-                        # Once do_extra is complete we check loss_rising.
-                        sigma_bounds, DONE = check_loss_rising(
-                            valid_json, losses
+                        # Once do_extra is complete we check losses.
+                        sigma_bounds_new = check_loss_rising(
+                            valid_json, min_idxs_orig
                         )
-                        if sigma_bounds is None:
-                            # Losses started lowering again. Restart the grid
-                            # search.
+                        if sigma_bounds_new is None:
+                            # Losses started lowering again.
+                            # Or we checked for energy predictions and it failed.
+                            # Restart the grid search.
                             loss_rising = False
-
-
-                if len(initial_grid) == 0:
-                    # TODO: Find lowest value where energy RMSE is not None.
-                    # Use this as the minimum to find sigma_bounds.
-                    DONE = True
-                    pass
-
-            # We did not find a minimum.
-            else:
-                if len(sigmas) == len(initial_grid):
-                    # TODO: Exhausted grid search. What next?
-                    pass
-            
-            optimizer.set_bounds(
-                {'sigma': sigma_bounds}
-            )
+                        else:
+                            # We found a minimum and will start the Bayesian optimization.
+                            optimizer.set_bounds(
+                                {'sigma': sigma_bounds_new}
+                            )
+                            break
         
-        log.info('#   Bayesian optimization   #')
-        optimizer.maximize(**gp_params)
+        if init_points < 0:
+            init_points = 0
+            gp_params['init_points'] = init_points
+            
+            log.info('#   Bayesian optimization   #')
+            optimizer.maximize(**gp_params)
 
-        best_res = optimizer.max
-        sigma_best = best_res['params']['sigma']
+        # TODO: check check_energy_pred
+        # Change to get optimizer.res, then use argsort on losses, then check
+        # on energy RMSE in valid_json.
+        results = optimizer.res
+        losses = np.array([-res['target'] for res in results])
+        min_idxs = np.argsort(losses)
+
+        for idx in min_idxs:
+            sigma_best = results[idx]['params']['sigma']
+            if check_energy_pred:
+                e_rmse = valid_json['energy']['rmse'][idx]
+                if e_rmse is None:
+                    # Go to the next lowest loss.
+                    continue
+                else:
+                    # Found the lowest loss.
+                    break
+            else:
+                break
+        
         model_best_path = os.path.join(
             task_dir, f'model-{sigma_best}.npz'
         )
@@ -582,7 +619,7 @@ class mbGDMLTrain:
             job_json['testing']['energy'] = results_test['energy']
             job_json['testing']['force'] = results_test['force']
 
-            job_json['model']['sigma'] = model_best.model['sig'][()]
+            job_json['model']['sigma'] = float(model_best.model['sig'][()])
             job_json['model']['n_symm'] = len(model_best.model['perms'])
             job_json['validation'] = valid_json
 
