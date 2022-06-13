@@ -596,13 +596,15 @@ class GDMLTrain(object):
 
         return model
 
-    def train(self, task):
+    def train(self, task, require_E_eval=False):
         """Train a model based on a task.
 
         Parameters
         ----------
         task : :obj:`dict`
             Data structure of custom type ``task``.
+        require_E_eval : :obj:`bool`, default: ``False``
+            Require energy evaluation regardless even if they are terrible.
 
         Returns
         -------
@@ -703,12 +705,16 @@ class GDMLTrain(object):
         # (which was subtracted from the labels before training).
         if model['use_E']:
             c = (
-                self._recov_int_const(model, task, R_desc=R_desc, R_d_desc=R_d_desc)
+                self._recov_int_const(
+                    model, task, R_desc=R_desc, R_d_desc=R_d_desc,
+                    require_E_eval=require_E_eval
+                )
                 if E_train_mean is None
                 else E_train_mean
             )
             if c is None:
-                # Something does not seem right. Turn off energy predictions for this model, only output force predictions.
+                # Something does not seem right.
+                # Turn off energy predictions for this model, only output force predictions.
                 model['use_E'] = False
             else:
                 model['c'] = c
@@ -819,9 +825,10 @@ class GDMLTrain(object):
         
         return alphas
 
-    def _recov_int_const(self, model, task, R_desc=None, R_d_desc=None):
-        """
-        Estimate the integration constant for a force field model.
+    def _recov_int_const(
+        self, model, task, R_desc=None, R_d_desc=None, require_E_eval=False
+    ):
+        """Estimate the integration constant for a force field model.
 
         The offset between the energies predicted for the original training
         data and the true energy labels is computed in the least square sense.
@@ -842,10 +849,13 @@ class GDMLTrain(object):
             descriptor Jacobians for M molecules. The descriptor
             has dimension D with 3N partial derivatives with
             respect to the 3N Cartesian coordinates of each atom.
+        require_E_eval : :obj:`bool`, default: ``False``
+            Force the computation and return of the integration constant
+            regardless if there are significant errors.
 
         Returns
         -------
-        float
+        :obj:`float`
             Estimate for the integration constant.
 
         Raises
@@ -876,29 +886,30 @@ class GDMLTrain(object):
         )[0][0]
         corrcoef = np.corrcoef(E_ref, E_pred)[0, 1]
 
-        if np.sign(e_fact) == -1:
-            log.warning(
-                'The provided dataset contains gradients instead of force labels (flipped sign). Please correct!\n'
-                + 'Note: The energy prediction accuracy of the model will thus neither be validated nor tested in the following steps!'
-            )
-            return None
+        if not require_E_eval:
+            if np.sign(e_fact) == -1:
+                log.warning(
+                    'The provided dataset contains gradients instead of force labels (flipped sign). Please correct!\n'
+                    + 'Note: The energy prediction accuracy of the model will thus neither be validated nor tested in the following steps!'
+                )
+                return None
 
-        if corrcoef < 0.95:
-            log.warning(
-                'Inconsistent energy labels detected!'
-            )
-            log.warning(
-                'The predicted energies for the training data are only weakly\n'
-                f'correlated with the reference labels (correlation coefficient {corrcoef:.2f})\n'
-                'which indicates that the issue is most likely NOT just a unit conversion error.\n'
-            )
-            return None
+            if corrcoef < 0.95:
+                log.warning(
+                    'Inconsistent energy labels detected!'
+                )
+                log.warning(
+                    'The predicted energies for the training data are only weakly\n'
+                    f'correlated with the reference labels (correlation coefficient {corrcoef:.2f})\n'
+                    'which indicates that the issue is most likely NOT just a unit conversion error.\n'
+                )
+                return None
 
-        if np.abs(e_fact - 1) > 1e-1:
-            log.warning(
-                'Different scales in energy vs. force labels detected!\n'
-            )
-            return None
+            if np.abs(e_fact - 1) > 1e-1:
+                log.warning(
+                    'Different scales in energy vs. force labels detected!\n'
+                )
+                return None
 
         # Least squares estimate for integration constant.
         return np.sum(E_ref - E_pred) / E_ref.shape[0]

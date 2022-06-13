@@ -44,6 +44,34 @@ def loss_f_rmse(results):
     """
     return results['force']['rmse']
 
+def loss_f_e_rmse(results, e_weight):
+    """Computes a hybrid force and energy loss with an energy weight.
+
+    This loss function sums the force and energy RMSE with a weighted
+    factor for the energy RMSE, ``e_weight``.
+    
+    By including energy predictions in the loss function, the quality of the
+    forces typically degrades. A common application of this function is to guide
+    Bayesian optimizations away from models that have extremely high
+    energy errors (where ``require_E_eval`` is ``True``). By setting a small
+    ``e_weight`` (i.e., ``0.01``) we can penalize models with these
+    energy prediction difficulties without significantly sacrificing force
+    accuracy.
+
+    Parameters
+    ----------
+    results : :obj:`dict`
+        Validation results.
+    e_weight : :obj:`float`
+        Factor to multiply the energy RMSE by.
+    """
+    loss_F = results['force']['rmse']
+    loss_E = results['energy']['rmse']
+    if loss_E is None:
+        raise ValueError('Energy RMSE is None')
+    l = results['force']['rmse'] + e_weight * results['energy']['rmse']
+    return l
+
 class mbGDMLTrain:
     """Train many-body GDML models.
     """
@@ -168,7 +196,7 @@ class mbGDMLTrain:
         )
         return self.task
     
-    def train_model(self, task):
+    def train_model(self, task, require_E_eval=False):
         """Trains a GDML model from a task.
 
         Parameters
@@ -183,7 +211,7 @@ class mbGDMLTrain:
         :obj:`dict`
             Trained (not validated or tested) model.
         """
-        model = self.GDMLTrain.train(task)
+        model = self.GDMLTrain.train(task, require_E_eval=require_E_eval)
         return model
     
     def test_model(self, model, dataset, n_test=None):
@@ -287,11 +315,12 @@ class mbGDMLTrain:
     
     def bayes_opt(
         self, dataset, model_name, n_train, n_valid, check_energy_pred=True,
-        sigma_bounds=(2, 400), n_test=None, save_dir='.', initial_grid=None,
+        sigma_bounds=(2, 400), n_test=None, require_E_eval=False,
+        save_dir='.', initial_grid=None,
         gp_params={'init_points': 5, 'n_iter': 10, 'alpha': 1e-7, 'acq': 'ucb', 'kappa': 0.1},
-        use_domain_opt=False, loss=loss_f_rmse, plot_bo=True, keep_tasks=False,
-        train_idxs=None, valid_idxs=None, overwrite=False, write_json=True,
-        write_idxs=True
+        use_domain_opt=False, loss=loss_f_rmse, loss_kwargs={}, plot_bo=True,
+        keep_tasks=False, train_idxs=None, valid_idxs=None, overwrite=False,
+        write_json=True, write_idxs=True
     ):
         """Train a GDML model using Bayesian optimization for sigma.
 
@@ -329,6 +358,8 @@ class mbGDMLTrain:
         n_test : :obj:`int`, default: ``None``
             The number of test points to test the validated GDML model.
             Defaults to testing all available structures.
+        require_E_eval : :obj:`bool`, default: ``False``
+            Require energy evaluation regardless even if they are terrible.
         save_dir : :obj:`str`, default: ``'.'``
             Path to train and save the mbGDML model. Defaults to current
             directory.
@@ -380,6 +411,9 @@ class mbGDMLTrain:
             Loss function for validation. The input of this function is the
             dictionary of :obj:`mbgdml._gdml.train.add_valid_errors` which
             contains force and energy MAEs and RMSEs.
+        loss_kwargs : :obj:`dict`, default: ``{}``
+            Loss function kwargs with the exception of the validation
+            ``results`` dictionary.
         plot_bo : :obj:`bool`, default: ``True``
             Plot the Bayesian optimization Gaussian process.
         keep_tasks : :obj:`bool`, default: ``False``
@@ -455,7 +489,7 @@ class mbGDMLTrain:
         }
         def opt_func(sigma):
             task['sig'] = sigma
-            model_trial = self.train_model(task)
+            model_trial = self.train_model(task, require_E_eval=require_E_eval)
 
             if len(valid_json['idxs']) == 0:
                 valid_json['idxs'] = model_trial['idxs_valid'].tolist()
@@ -465,7 +499,7 @@ class mbGDMLTrain:
                 max_processes=self.max_processes, use_torch=self.use_torch
             )
 
-            l = loss(valid_results)
+            l = loss(valid_results, **loss_kwargs)
             valid_json['losses'].append(l)
 
             valid_json['sigmas'].append(float(model_trial['sig']))
@@ -646,9 +680,10 @@ class mbGDMLTrain:
         
     def grid_search(
         self, dataset, model_name, n_train, n_valid,
-        sigmas=list(range(2, 400, 30)), n_test=None, save_dir='.',
-        loss=loss_f_rmse, keep_tasks=False, train_idxs=None, valid_idxs=None,
-        overwrite=False, write_json=True, write_idxs=True,
+        sigmas=list(range(2, 400, 30)), n_test=None, require_E_eval=False,
+        save_dir='.', loss=loss_f_rmse, loss_kwargs={}, keep_tasks=False,
+        train_idxs=None, valid_idxs=None, overwrite=False, write_json=True,
+        write_idxs=True,
     ):
         """Train a GDML model using a grid search for sigma.
 
@@ -682,6 +717,8 @@ class mbGDMLTrain:
         n_test : :obj:`int`, default: ``None``
             The number of test points to test the validated GDML model.
             Defaults to testing all available structures.
+        require_E_eval : :obj:`bool`, default: ``False``
+            Require energy evaluation regardless even if they are terrible.
         save_dir : :obj:`str`, default: ``'.'``
             Path to train and save the mbGDML model. Defaults to current
             directory.
@@ -689,6 +726,9 @@ class mbGDMLTrain:
             Loss function for validation. The input of this function is the
             dictionary of :obj:`mbgdml._gdml.train.add_valid_errors` which
             contains force and energy MAEs and RMSEs.
+        loss_kwargs : :obj:`dict`, default: ``{}``
+            Loss function kwargs with the exception of the validation
+            ``results`` dictionary.
         keep_tasks : :obj:`bool`, default: ``False``
             Keep all models trained during the train task if ``True``. They are
             removed by default.
@@ -762,7 +802,7 @@ class mbGDMLTrain:
         }
         model_best_path = None
         for next_sigma in sigmas[1:]:
-            model_trial = self.train_model(task)
+            model_trial = self.train_model(task, require_E_eval=require_E_eval)
 
             if len(valid_json['idxs']) == 0:
                 valid_json['idxs'] = model_trial['idxs_valid'].tolist()
@@ -772,7 +812,7 @@ class mbGDMLTrain:
                 max_processes=self.max_processes, use_torch=self.use_torch
             )
 
-            losses.append(loss(valid_results))
+            losses.append(loss(valid_results, **loss_kwargs))
             valid_json['sigmas'].append(model_trial['sig'])
             valid_json['energy']['mae'].append(valid_results['energy']['mae'])
             valid_json['energy']['rmse'].append(valid_results['energy']['rmse'])
@@ -847,10 +887,11 @@ class mbGDMLTrain:
     def iterative_train(
         self, dataset, model_name, n_train_init, n_train_final, n_valid,
         model0=None, n_train_step=100, sigma_bounds=(2, 400), n_test=None,
-        save_dir='.', check_energy_pred=True,
+        require_E_eval=False, save_dir='.', check_energy_pred=True,
         gp_params={'init_points': 10, 'n_iter': 10, 'alpha': 0.001},
-        gp_params_final=None, initial_grid=None, loss=loss_f_rmse, overwrite=False,
-        write_json=True, write_idxs=True, keep_tasks=False
+        gp_params_final=None, initial_grid=None, loss=loss_f_rmse,
+        loss_kwargs={}, overwrite=False, write_json=True, write_idxs=True,
+        keep_tasks=False
     ):
         """Iteratively trains a GDML model by using Bayesian optimization and
         adding problematic (high error) structures to the training set.
@@ -884,6 +925,8 @@ class mbGDMLTrain:
         n_test : :obj:`int`, default: ``None``
             The number of test points to test the validated GDML model.
             Defaults to testing all available structures.
+        require_E_eval : :obj:`bool`, default: ``False``
+            Require energy evaluation regardless even if they are terrible.
         save_dir : :obj:`str`, default: ``'.'``
             Path to train and save the mbGDML model.
         check_energy_pred : :obj:`bool`, default: ``True``
@@ -931,6 +974,9 @@ class mbGDMLTrain:
             Loss function for validation. The input of this function is the
             dictionary of :obj:`mbgdml._gdml.train.add_valid_errors` which
             contains force and energy MAEs and RMSEs.
+        loss_kwargs : :obj:`dict`, default: ``{}``
+            Loss function kwargs with the exception of the validation
+            ``results`` dictionary.
         overwrite : :obj:`bool`, default: ``False``
             Overwrite existing files.
         write_json : :obj:`bool`, default: ``True``
@@ -981,8 +1027,8 @@ class mbGDMLTrain:
                 dataset, model_name+f'-train{n_train}', n_train, n_valid,
                 sigma_bounds=sigma_bounds, n_test=n_test, save_dir=save_dir_i,
                 initial_grid=initial_grid, gp_params=gp_params_i, loss=loss,
-                train_idxs=train_idxs, valid_idxs=None, overwrite=overwrite,
-                write_json=write_json, write_idxs=write_idxs,
+                loss_kwargs=loss_kwargs, train_idxs=train_idxs, valid_idxs=None,
+                overwrite=overwrite, write_json=write_json, write_idxs=write_idxs,
                 keep_tasks=keep_tasks, check_energy_pred=check_energy_pred
             )
 

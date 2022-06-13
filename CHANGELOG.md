@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Added
 
+- Training loss function that includes a weighted energy RMSE component.
+- Require integration constant evaluation option regardless of performance.
 - Initial grid for Bayesian optimization to guide ``sigma_bounds``.
 - Ability to keep all trained models instead of just the best one.
 - Log parallel optimization.
