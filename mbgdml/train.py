@@ -1029,7 +1029,8 @@ class mbGDMLTrain:
                 initial_grid=initial_grid, gp_params=gp_params_i, loss=loss,
                 loss_kwargs=loss_kwargs, train_idxs=train_idxs, valid_idxs=None,
                 overwrite=overwrite, write_json=write_json, write_idxs=write_idxs,
-                keep_tasks=keep_tasks, check_energy_pred=check_energy_pred
+                keep_tasks=keep_tasks, check_energy_pred=check_energy_pred,
+                require_E_eval=require_E_eval
             )
 
             # Check sigma bounds
