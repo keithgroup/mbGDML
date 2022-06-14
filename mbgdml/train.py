@@ -40,37 +40,42 @@ def loss_f_rmse(results):
     Parameters
     ----------
     results : :obj:`dict`
-        Validation results.
+        Validation results which contain force and energy MAEs and RMSEs.
     """
     return results['force']['rmse']
 
-def loss_f_e_rmse(results, e_weight):
-    """Computes a hybrid force and energy loss with an energy weight.
+def loss_f_e_weighted_mse(results, rho, n_atoms):
+    r"""Computes a combined energy and force loss function.
 
-    This loss function sums the force and energy RMSE with a weighted
-    factor for the energy RMSE, ``e_weight``.
+    .. math::
+
+        l = \frac{\rho}{Q} \left\Vert E - \hat{E} \right\Vert^2
+        + \frac{1}{n_{atoms} Q} \sum_{i=0}^{n_{atoms}}
+        \left\Vert \bf{F}_i - \widehat{\bf{F}}_i \right\Vert^2,
     
-    By including energy predictions in the loss function, the quality of the
-    forces typically degrades. A common application of this function is to guide
-    Bayesian optimizations away from models that have extremely high
-    energy errors (where ``require_E_eval`` is ``True``). By setting a small
-    ``e_weight`` (i.e., ``0.01``) we can penalize models with these
-    energy prediction difficulties without significantly sacrificing force
-    accuracy.
+    where :math:`\rho` is a trade-off between energy and force errors,
+    :math:`Q` is the number of validation structures, :math:`\Vert \ldots \Vert`
+    is the norm, and :math:`\widehat{\;}` is the model prediction of the
+    property.
 
     Parameters
     ----------
     results : :obj:`dict`
-        Validation results.
-    e_weight : :obj:`float`
-        Factor to multiply the energy RMSE by.
+        Validation results which contain force and energy MAEs and RMSEs.
+    rho : :obj:`float`
+        Energy and force trade-off. A recommended value would be in the range
+        of ``0.01`` to ``0.1``.
+    n_atoms : :obj:`int`
+        Number of atoms.
+    
+    Returns
+    -------
+    :obj:`float`
+        Validation loss.
     """
-    loss_F = results['force']['rmse']
-    loss_E = results['energy']['rmse']
-    if loss_E is None:
-        raise ValueError('Energy RMSE is None')
-    l = results['force']['rmse'] + e_weight * results['energy']['rmse']
-    return l
+    F_mse = results['force']['rmse']**2
+    E_mse = results['energy']['rmse']**2
+    return rho*E_mse + (1/n_atoms)*F_mse
 
 class mbGDMLTrain:
     """Train many-body GDML models.
@@ -104,10 +109,10 @@ class mbGDMLTrain:
         solver : :obj:`str`, default: ``'analytic'``
             The GDML solver to use. Currently the only option is
             ``'analytic'``.
-        lam : float, default: ``1e-15``
+        lam : :obj:`float`, default: ``1e-15``
             Hyper-parameter lambda (regularization strength). This generally
             does not need to change.
-        solver_tol : float, default: ``1e-4``
+        solver_tol : :obj:`float`, default: ``1e-4``
            Solver tolerance.
         interact_cut_off : :obj:`float`, default: ``None``
             Untested option. Not recommended and turned off.
@@ -132,8 +137,8 @@ class mbGDMLTrain:
             max_processes=max_processes, use_torch=use_torch
         )
     
-    def min_memory(self, n_train, n_atoms):
-        """Minimum memory recommendation for training.
+    def min_memory_analytic(self, n_train, n_atoms):
+        r"""Minimum memory recommendation for training analytically.
 
         GDML currently only supports closed form solutions (i.e., analytically).
         Thus, the entire kernel matrix must be in memory which requires
