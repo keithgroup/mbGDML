@@ -946,16 +946,16 @@ class mbGDMLTrain:
         gp_params : :obj:`dict`
             Gaussian process kwargs. Others can be provided.
 
-            ``init_points`` : (:obj:`int`, default: ``10``)
+            ``init_points`` (:obj:`int`, default: ``10``) - 
                 How many steps of random exploration you want to perform.
                 Random exploration can help by diversifying the exploration
                 space.
             
-            ``n_iter`` : (:obj:`int`, default: ``10``)
+            ``n_iter`` (:obj:`int`, default: ``10``) - 
                 How many steps of bayesian optimization you want to perform.
                 The more steps the more likely to find a good maximum you are.
 
-            ``alpha``  : (:obj:`float`, default: ``0.001``)
+            ``alpha`` (:obj:`float`, default: ``0.001``) - 
                 This parameters controls how much noise the GP can handle, so
                 increase it whenever you think that extra flexibility is needed.
         
