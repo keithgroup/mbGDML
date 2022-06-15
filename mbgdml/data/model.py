@@ -34,15 +34,19 @@ class mbModel(mbGDMLData):
 
     Attributes
     ----------
-    model_path : :obj:`str`
-        Path to the npz file.
-    model : `npz`
+    model : :obj:`dict`
         GDML model for predicting energies and forces.
     """
     
-    def __init__(self, *args):
-        if len(args) == 1:
-            self.load(args[0])
+    def __init__(self, model=None):
+        """
+        Parameters
+        ----------
+        model : :obj:`str` or :obj:`dict`, optional
+            GDML model path or dictionary.
+        """
+        if model is not None:
+            self.load(model)
 
     @property
     def code_version(self):
@@ -75,12 +79,12 @@ class mbModel(mbGDMLData):
         md5_string = md5_data(self.model, md5_properties)
         return md5_string
 
-    def load(self, model_path):
+    def load(self, model):
         """Loads GDML model.
         
         Parameters
         ----------
-        model_path : :obj:`str`
+        model_path : :obj:`str` or :obj:`dict`
             Path to mbGDML model.
 
         Raises
@@ -88,22 +92,25 @@ class mbModel(mbGDMLData):
         AttributeError
             If npz file is not a GDML model.
         """
-        self.path = model_path
-        self.name = os.path.splitext(os.path.basename(model_path))[0]
-        model = dict(np.load(model_path, allow_pickle=True))
+        if isinstance(model, str):
+            self.path = model
+            self.name = os.path.splitext(os.path.basename(model))[0]
+            model = dict(np.load(model, allow_pickle=True))
+        elif not isinstance(model, dict):
+            raise TypeError(f'{type(model)} is not supported')
 
-        if model['type'][()] != 'm':
-            raise AttributeError('This npz is not a mbGDML model.')
+        if model['type'].item() != 'm':
+            raise AttributeError('This npz is not a GDML model.')
 
         self.z = model['z']
-        self.r_unit = str(model['r_unit'][()])
-        self.e_unit = str(model['e_unit'][()])
+        self.r_unit = str(model['r_unit'].item())
+        self.e_unit = str(model['e_unit'].item())
         
         for key in ['criteria', 'z_slice', 'cutoff', 'entity_ids', 'comp_ids']:
             if key in model.keys():
                 data = model[key]
                 if key in ['criteria', 'z_slice', 'cutoff']:
-                    data = data[()]
+                    data = data.item()
                 if key == 'criteria':
                     data = str(data)
                 setattr(self, key, data)
@@ -123,5 +130,5 @@ class mbModel(mbGDMLData):
         dset_keys = ['entity_ids', 'comp_ids', 'criteria', 'z_slice', 'cutoff']
         for key in dset_keys:
             self.model[key] = dset[key]
-        self.model['mbgdml_version'] = np.array(mbgdml_version)
+        self.model['code_version'] = np.array(mbgdml_version)
         self.model['md5'] = np.array(self.md5)
