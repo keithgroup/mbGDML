@@ -33,9 +33,8 @@ class predictSet(mbGDMLData):
     """A predict set is a data set with mbGDML predicted energy and forces
     instead of training data.
 
-    When analyzing many structures using mbGDML it is easier (and faster) to
+    When analyzing many structures using mbGDML it is easier to
     predict all many-body contributions once and then analyze the stored data.
-    The predict set accomplishes just this.
 
     Attributes
     ----------
@@ -57,13 +56,20 @@ class predictSet(mbGDMLData):
         be ``['h2o', 'meoh']``.
     """
 
-    def __init__(self, *args):
+    def __init__(self, pset=None):
+        """
+        Parameters
+        ----------
+        pset : :obj:`str` or :obj:`dict`, optional
+            Predict set path or dictionary to initialize with.
+        """
         self.name = 'predictset'
         self.type = 'p'
+        self.mbgdml_version = mbgdml_version
         self._loaded = False
         self._predicted = False
-        for arg in args:
-            self.load(arg)  
+        if pset is not None:
+            self.load(pset)  
     
     def prepare(
         self, z, R, entity_ids, comp_ids, ignore_criteria=False
@@ -72,12 +78,10 @@ class predictSet(mbGDMLData):
         force contributions.
         """
 
-        self.E_decomp, self.F_decomp = self.mbgdml.predict_decomposed(
+        self.E_decomp, self.F_decomp = self.predict.predict_decomposed(
             z, R, entity_ids, comp_ids,
             ignore_criteria=ignore_criteria, store_each=True
         )
-        
-        self.mbgdml_version = mbgdml_version
         self._predicted = True
 
     def asdict(self):
@@ -87,10 +91,9 @@ class predictSet(mbGDMLData):
         -------
         :obj:`dict`
         """     
-        predictset = {
+        pset = {
             'type': np.array('p'),
-            'sgdml_version': np.array(self.sgdml_version),
-            'mbgdml_version': np.array(self.mbgdml_version),
+            'version': np.array(self.mbgdml_version),
             'name': np.array(self.name),
             'theory': np.array(self.theory),
             'z': self.z,
@@ -115,12 +118,12 @@ class predictSet(mbGDMLData):
             else: 
                 self.prepare(self.z, self.R, self.entity_ids, self.comp_ids)
         
-        return predictset
+        return pset
     
     @property
     def e_unit(self):
-        """Units of energy. Options are ``'eV'``, ``'hartree'``,
-        ``'kcal/mol'``, and ``'kJ/mol'``.
+        """Units of energy. Options are ``eV``, ``hartree``, ``kcal/mol``, and
+        ``kJ/mol``.
 
         :type: :obj:`str`
         """
@@ -137,6 +140,10 @@ class predictSet(mbGDMLData):
         :type: :obj:`numpy.ndarray`
         """
         return self._E_true
+    
+    @E_true.setter
+    def E_true(self, var):
+        self._E_true = var
 
     @property
     def F_true(self):
@@ -145,32 +152,39 @@ class predictSet(mbGDMLData):
         :type: :obj:`numpy.ndarray`
         """
         return self._F_true
+    
+    @F_true.setter
+    def F_true(self, var):
+        self._F_true = var
  
-    def load(self, predictset_path):
+    def load(self, pset):
         """Reads predict data set and loads data.
         
         Parameters
         ----------
-        predictset_path : :obj:`str`
-            Path to predict set ``.npz`` file.
+        pset : :obj:`str` or :obj:`dict`
+            Path to predict set ``.npz`` file or a dictionary.
         """
-        predictset = dict(np.load(predictset_path, allow_pickle=True))
-        self.name = str(predictset['name'][()])
-        self.theory = str(predictset['theory'][()])
-        self.sgdml_version = str(predictset['sgdml_version'][()])
-        self.mbgdml_version = str(predictset['mbgdml_version'][()])
-        self._z = predictset['z']
-        self._R = predictset['R']
-        self.E_decomp = predictset['E_decomp']
-        self.F_decomp = predictset['F_decomp']
-        self._r_unit = str(predictset['r_unit'][()])
-        self._e_unit = str(predictset['e_unit'][()])
-        self._E_true = predictset['E_true']
-        self._F_true = predictset['F_true']
-        self.entity_ids = predictset['entity_ids']
-        self.comp_ids = predictset['comp_ids']
-        self.models_order = predictset['models_order']
-        self.models_md5 = predictset['models_md5']
+        if isinstance(pset, str):
+            pset = dict(np.load(pset, allow_pickle=True))
+        elif not isinstance(pset, dict):
+            raise TypeError(f'{type(pset)} is not supported.')
+
+        self.name = str(pset['name'][()])
+        self.theory = str(pset['theory'][()])
+        self.version = str(pset['version'][()])
+        self.z = pset['z']
+        self.R = pset['R']
+        self.E_decomp = pset['E_decomp']
+        self.F_decomp = pset['F_decomp']
+        self.r_unit = str(pset['r_unit'][()])
+        self.e_unit = str(pset['e_unit'][()])
+        self.E_true = pset['E_true']
+        self.F_true = pset['F_true']
+        self.entity_ids = pset['entity_ids']
+        self.comp_ids = pset['comp_ids']
+        self.models_order = pset['models_order']
+        self.models_md5 = pset['models_md5']
 
         self._loaded = True
 
@@ -203,47 +217,84 @@ class predictSet(mbGDMLData):
             F = np.add(F, F_nbody)
         return E, F
 
-    def load_dataset(self, dataset_path):
+    def load_dataset(self, dset):
         """Loads data set in preparation to create a predict set.
 
         Parameters
         ----------
-        dataset_path : :obj:`str`
-            Path to data set.
+        dset : :obj:`str` or :obj:`dict`
+            Path to data set or :obj:`dict` with at least the following data:
+
+            ``z`` (:obj:`np.ndarray`, ndim: ``1``) - 
+                Atomic numbers.
+
+            ``R`` (:obj:`np.ndarray`, ndim: ``3``) - 
+                Cartesian coordinates.
+
+            ``E`` (:obj:`np.ndarray`, ndim: ``1``) - 
+                Reference, or true, energies of the structures we will predict.
+
+            ``F`` (:obj:`np.ndarray`, ndim: ``3``) - 
+                Reference, or true, forces of the structures we will predict.
+
+            ``entity_ids`` (:obj:`np.ndarray`, ndim: ``1``) - 
+                An array specifying which atoms belong to which entities.
+
+            ``comp_ids`` (:obj:`np.ndarray`, ndim: ``1``) - 
+                An array relating ``entity_id`` to a fragment label for chemical
+                components or species.
+
+            ``theory`` (:obj:`str`) - 
+                The level of theory used to compute energy and forces.
+
+            ``r_unit`` (:obj:`str`) - 
+                Units of distance.
+                
+            ``e_unit`` (:obj:`str`) - 
+                Units of energy.
         """
-        self.dataset_path = dataset_path
-        dataset = dict(np.load(dataset_path, allow_pickle=True))
-        self.dataset = dataset
-        self.theory = str(dataset['theory'][()])
-        self._z = dataset['z']
-        self._R = dataset['R']
-        self._r_unit = str(dataset['r_unit'][()])
-        self._e_unit = str(dataset['e_unit'][()])
-        self._E_true = dataset['E']
-        self._F_true = dataset['F']
-        self.entity_ids = dataset['entity_ids']
-        self.comp_ids = dataset['comp_ids']
+        if isinstance(dset, str):
+            dset = dict(np.load(dset, allow_pickle=True))
+        elif not isinstance(dset, dict):
+            raise TypeError(f'{type(dset)} is not supported')
+
+        self.z = dset['z']
+        self.R = dset['R']
+        self.E_true = dset['E']
+        self.F_true = dset['F']
+        self.entity_ids = dset['entity_ids']
+        self.comp_ids = dset['comp_ids']
+
+        if isinstance(dset['theory'], np.ndarray):
+            self.theory = str(dset['theory'].item())
+        else:
+            self.theory = dset['theory']
+        if isinstance(dset['r_unit'], np.ndarray):
+            self.r_unit = str(dset['r_unit'].item())
+        else:
+            self.e_unit = dset['e_unit']
+        if isinstance(dset['e_unit'], np.ndarray):
+            self.e_unit = str(dset['e_unit'].item())
+        else:
+            self.e_unit = dset['e_unit']
     
-    def load_models(self, model_paths):
+    def load_models(self, models):
         """Loads model(s) in preparation to create a predict set.
 
         Parameters
         ----------
-        model_paths : :obj:`list` [:obj:`str`]
-            Paths to GDML models in assending order of n-body corrections, e.g.,
-            ['/path/to/1body-model.npz', '/path/to/2body-model.npz'].
+        models : :obj:`list` of :obj:`str` or :obj:`dict`
+            GDML models in ascending order of n-body corrections (e.g., 1-, 2-
+            and 3-body models).
         """
-        self.model_paths = model_paths
-        self.mbgdml = mbPredict(model_paths)
+        self.predict = mbPredict(models)
 
         from mbgdml.data import mbModel
-        models_md5 = []
-        models_order = []
-        for model_path in model_paths:
-            model = mbModel(model_path)
-            models_order.append(len(set(model.entity_ids)))
+        models_md5, models_order = [], []
+        for model in self.predict.models:
+            models_order.append(len(set(model['entity_ids'])))
             try:
-                models_md5.append(model.md5)
+                models_md5.append(model['md5'])
             except AttributeError:
                 pass
         self.models_order = np.array(models_order)
