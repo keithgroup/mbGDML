@@ -272,7 +272,7 @@ class predictSet(mbGDMLData):
         if isinstance(dset['r_unit'], np.ndarray):
             self.r_unit = str(dset['r_unit'].item())
         else:
-            self.e_unit = dset['e_unit']
+            self.r_unit = dset['r_unit']
         if isinstance(dset['e_unit'], np.ndarray):
             self.e_unit = str(dset['e_unit'].item())
         else:
