@@ -225,22 +225,22 @@ class predictSet(mbGDMLData):
         dset : :obj:`str` or :obj:`dict`
             Path to data set or :obj:`dict` with at least the following data:
 
-            ``z`` (:obj:`np.ndarray`, ndim: ``1``) - 
+            ``z`` (:obj:`numpy.ndarray`, ndim: ``1``) - 
                 Atomic numbers.
 
-            ``R`` (:obj:`np.ndarray`, ndim: ``3``) - 
+            ``R`` (:obj:`numpy.ndarray`, ndim: ``3``) - 
                 Cartesian coordinates.
 
-            ``E`` (:obj:`np.ndarray`, ndim: ``1``) - 
+            ``E`` (:obj:`numpy.ndarray`, ndim: ``1``) - 
                 Reference, or true, energies of the structures we will predict.
 
-            ``F`` (:obj:`np.ndarray`, ndim: ``3``) - 
+            ``F`` (:obj:`numpy.ndarray`, ndim: ``3``) - 
                 Reference, or true, forces of the structures we will predict.
 
-            ``entity_ids`` (:obj:`np.ndarray`, ndim: ``1``) - 
+            ``entity_ids`` (:obj:`numpy.ndarray`, ndim: ``1``) - 
                 An array specifying which atoms belong to which entities.
 
-            ``comp_ids`` (:obj:`np.ndarray`, ndim: ``1``) - 
+            ``comp_ids`` (:obj:`numpy.ndarray`, ndim: ``1``) - 
                 An array relating ``entity_id`` to a fragment label for chemical
                 components or species.
 
