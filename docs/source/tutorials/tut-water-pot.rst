@@ -139,12 +139,12 @@ Creating structure sets
 =======================
 
 Sometimes data sets contain information from a variety of sources and we, as practitioners of reproducible research, need to keep a breadcrumb trail of our data.
-:ref:`Structure sets<structure-sets>` allow us to create a collection of structures derived from the same source (e.g., a MD simulation, global optimization, or article) along with a unique :attr:`~mbgdml.data.structureset.structureSet.md5` identifier.
+:ref:`Structure sets<structure-sets>` allow us to create a collection of structures derived from the same source (e.g., a MD simulation, global optimization, or article) along with a unique :attr:`~mbgdml.data.structureSet.md5` identifier.
 Fragment/molecule specification is also defined in this stage that lets mbGDML correctly identify which model to use for each fragment.
 All we need to start is a single XYZ file (our GFN2-xTB trajectory will serve this purpose).
 
-Besides the XYZ file, only three other pieces of information are required: :attr:`~mbgdml.data.basedata.mbGDMLData.r_unit`, :attr:`~mbgdml.data.structureset.structureSet.entity_ids`, :attr:`~mbgdml.data.structureset.structureSet.comp_ids`.
-For small systems you can manually generate the :attr:`~mbgdml.data.structureset.structureSet.entity_ids` and :attr:`~mbgdml.data.structureset.structureSet.comp_ids` manually.
+Besides the XYZ file, only three other pieces of information are required: :attr:`~mbgdml.data.structureSet.r_unit`, :attr:`~mbgdml.data.structureSet.entity_ids`, :attr:`~mbgdml.data.structureSet.comp_ids`.
+For small systems you can manually generate the :attr:`~mbgdml.data.structureSet.entity_ids` and :attr:`~mbgdml.data.structureSet.comp_ids` manually.
 Two water molecules would just be ``[0, 0, 0, 1, 1, 1]`` and ``['h2o', 'h2o']``, respectively.
 
 .. note::
@@ -152,7 +152,7 @@ Two water molecules would just be ``[0, 0, 0, 1, 1, 1]`` and ``['h2o', 'h2o']``,
     For simplicity we will just use ``h2o``.
 
 Larger systems become more tedious to manually prepare.
-We can use :func:`mbgdml.utils.get_entity_ids` and :func:`mbgdml.utils.get_comp_ids` to automatically generate :attr:`~mbgdml.data.structureset.structureSet.entity_ids` and :attr:`~mbgdml.data.structureset.structureSet.comp_ids` for systems containing only one species (e.g., all water molecules).
+We can use :func:`mbgdml.utils.get_entity_ids` and :func:`mbgdml.utils.get_comp_ids` to automatically generate :attr:`~mbgdml.data.structureSet.entity_ids` and :attr:`~mbgdml.data.structureSet.comp_ids` for systems containing only one species (e.g., all water molecules).
 The following code will generate a :ref:`structure set<structure-sets>` just like :download:`this one<../files/tut-water/140h2o.pm.gfn2.md.500k.prod1.npz>`.
 
 .. code-block:: python
@@ -353,8 +353,8 @@ Adding energies and forces
 
 After all energy+gradient calculations are complete we need to add the data to each data set.
 We decided to take the approach of converting ORCA log files into JSON files (using a custom `qcjson package <https://github.com/keithgroup/qcjson>`_).
-The :func:`~mbgdml.data.dataset.dataSet.add_pes_json` method is used to add energies and forces to the data set.
-Nothing precludes other custom methods as long as :attr:`~mbgdml.data.dataset.dataSet.E` and :attr:`~mbgdml.data.dataset.dataSet.F` data are added to the data set.
+The :func:`~mbgdml.data.dataSet.add_pes_json` method is used to add energies and forces to the data set.
+Nothing precludes other custom methods as long as :attr:`~mbgdml.data.dataSet.E` and :attr:`~mbgdml.data.dataSet.F` data are added to the data set.
 In the end we should be left with three data sets containing water monomers, dimers, and trimers along with MP2/def2-TZVP energies and forces:
 
 * :download:`1h2o (monomer) data set<../files/tut-water/dsets/1h2o/140h2o.pm.gfn2.md.500k.prod1.3h2o.cm10.dset.1h2o-dset-mp2.def2tzvp.npz>`,
@@ -372,7 +372,7 @@ For example, the 2-body energy, :math:`\Delta E_{ij}^{(2)}`, of a dimer containi
     \Delta E_{ij}^{(2)} = E_{ij}^{(2)} - E_{i}^{(1)} - E_{j}^{(1)};
 
 where :math:`E_{ij}^{(2)}` is the total energy of the system (from :download:`the 2h2o data set<../files/tut-water/dsets/2h2o/140h2o.pm.gfn2.md.500k.prod1.3h2o.cm10.dset.2h2o-dset-mp2.def2tzvp.npz>`), and :math:`E_{i}^{(1)}` and :math:`E_{j}^{(1)}` are the energies of the monomers (from :download:`the 1h2o data set<../files/tut-water/dsets/1h2o/140h2o.pm.gfn2.md.500k.prod1.3h2o.cm10.dset.1h2o-dset-mp2.def2tzvp.npz>`).
-Since we kept a breadcrumb trail of where each structure (and fragment) originated from we can use :func:`~mbgdml.data.dataset.dataSet.create_mb_from_dsets` to automatically find and remove lower order contributions.
+Since we kept a breadcrumb trail of where each structure (and fragment) originated from we can use :func:`~mbgdml.data.dataSet.create_mb_from_dsets` to automatically find and remove lower order contributions.
 The following script demonstrates how to create a 2-body data set from our dimer data set.
 
 .. code-block:: python

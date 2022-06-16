@@ -66,7 +66,7 @@ class forceComparison:
 
         Parameters
         ----------
-        predict_set : :obj:`mbgdml.data.predictset.predictSet`
+        predict_set : :obj:`mbgdml.data.predictSet`
             Object with loaded predict set.
         structure_index : :obj:`int`
             Index of the structure in the predict set arrays.
@@ -103,7 +103,7 @@ class forceComparison:
 
         Parameters
         ----------
-        predict_set : :obj:`mbgdml.data.predictset.predictSet`
+        predict_set : :obj:`mbgdml.data.predictSet`
             Object with loaded predict set.
         structure_list : :obj:`list`
             Indices of structures to include in the heatmap. To select all
@@ -202,7 +202,7 @@ class nbodyHeatMaps(forceComparison):
 
         Parameters
         ----------
-        predict_set : :obj:`mbgdml.data.predictset.predictSet`
+        predict_set : :obj:`mbgdml.data.predictSet`
             Object with loaded predict set.
         structure_list : :obj:`list`
             Indices of structures to include in the heatmap.

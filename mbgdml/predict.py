@@ -379,7 +379,7 @@ class mbPredict():
         return E, F
 
     def remove_nbody(self, ref_dataset, ignore_criteria=False, store_each=False):
-        """Removes mbGDML prediced energies and forces from a reference data
+        """Removes mbGDML predicted energies and forces from a reference data
         set.
 
         Parameters

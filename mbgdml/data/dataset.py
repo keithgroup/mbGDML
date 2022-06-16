@@ -306,10 +306,8 @@ class dataSet(mbGDMLData):
 
         Notes
         -----
-        :obj:`mbgdml.data.basedata.mbGDMLData.z` and
-        :obj:`mbgdml.data.basedata.mbGDMLData.R` are always used to generate the
-        MD5 hash. If available, :obj:`mbgdml.data.dataset.dataSet.E` and
-        :obj:`mbgdml.data.dataset.dataSet.F` are used.
+        ``z`` and ``R`` are always used to generate the MD5 hash. If available,
+        :obj:`mbgdml.data.dataSet.E` and :obj:`mbgdml.data.dataSet.F` are used.
 
         :type: :obj:`str`
         """
@@ -903,18 +901,18 @@ class dataSet(mbGDMLData):
         """Randomly samples a ``quantity`` of geometries of a specific
         ``size`` from data or structure sets.
 
-        When sampling from :class:`~mbgdml.data.structureset.structureSet`,
+        When sampling from :class:`~mbgdml.data.structureSet`,
         :obj:`numpy.nan` is added to ``E`` and ``F`` for each structure.
         PES data is added if available with ``copy_EF = True`` when sampling
-        from :class:`~mbgdml.data.dataset.dataSet` and the requested ``size``
-        is the same as the :class:`~mbgdml.data.dataset.dataSet`.
+        from :class:`~mbgdml.data.dataSet` and the requested ``size``
+        is the same as the :class:`~mbgdml.data.dataSet`.
 
         Currently, you have to set ``quantity = 'all'`` when sampling from
-        :class:`~mbgdml.data.dataset.dataSet`.
+        :class:`~mbgdml.data.dataSet`.
 
         Parameters
         ----------
-        data : :obj:`mbgdml.data`
+        data : ``mbgdml.data``
             A loaded structure or data set object to sample from.
         quantity : :obj:`str` or :obj:`int`
             Number of structures to sample from the data. For example,
@@ -924,7 +922,7 @@ class dataSet(mbGDMLData):
         consistent_entities : :obj:`list` [:obj:`int`], optional
             Molecule indices that will be in every selection. Not implemented
             yet.
-        criteria : :obj:`mbgdml.criteria`, optional
+        criteria : ``mbgdml.criteria``, optional
             Structure criteria during the sampling procedure. Defaults to
             ``None`` if no criteria should be used.
         z_slice : :obj:`numpy.ndarray`, optional
@@ -1062,7 +1060,7 @@ class dataSet(mbGDMLData):
         """Add potential energy surface (PES) data (i.e., energies and/or
         forces) to the data set (``E`` and ``F``) using a JSON format.
 
-        Assumes that ``mbgdml.data.basedata.mbGDMLData.r_unit`` of the
+        Assumes that ``mbgdml.data.dataSet.r_unit`` of the
         calculation is the same as the data set.
         `QCJSON <https://github.com/keithgroup/qcjson>`_ files are currently
         the only way to import energy and gradient data.
@@ -1329,7 +1327,7 @@ class dataSet(mbGDMLData):
 
         Parameters
         ----------
-        ref_dset : :obj:`~mbgdml.data.dataset.dataSet`
+        ref_dset : :obj:`~mbgdml.data.dataSet`
             Reference data set of structures, energies, and forces. This is the
             data where mbGDML predictions will be subtracted from.
         model_paths : :obj:`list` [:obj:`str`]
@@ -1351,7 +1349,7 @@ class dataSet(mbGDMLData):
 
         Parameters
         ----------
-        ref_dset : :obj:`~mbgdml.data.dataset.dataSet`
+        ref_dset : :obj:`~mbgdml.data.dataSet`
             Reference data set of structures, energies, and forces. This is the
             data where mbGDML predictions will be subtracted from.
         dset_lower_paths : :obj:`list` [:obj:`str`]

@@ -355,16 +355,16 @@ def e_f_contribution(dset, dsets_lower, operation):
 
     Parameters
     ----------
-    dset : :obj:`mbgdml.data.dataset.dataSet`
+    dset : :obj:`mbgdml.data.dataSet`
         The reference data set.
-    dsets_lower : :obj:`list` [:obj:`mbgdml.data.dataset.dataSet`]
+    dsets_lower : :obj:`list` [:obj:`mbgdml.data.dataSet`]
         Data set contributions to be added or removed from ``E`` and ``F``.
     operation : :obj:`str`
         ``'add'`` or ``'remove'`` the contributions.
     
     Returns
     -------
-    :obj:`mbgdml.data.dataset.dataSet`
+    :obj:`mbgdml.data.dataSet`
     """
     E = dset.E
     F = dset.F

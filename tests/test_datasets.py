@@ -111,9 +111,9 @@ def check_R_with_rset(dset, rset, centered):
 
     Parameters
     ----------
-    dset : :obj:`mbgdml.data.dataset.dataSet`
+    dset : :obj:`mbgdml.data.dataSet`
         The data set.
-    rset : :obj:`mbgdml.data.structureset.structureSet`
+    rset : :obj:`mbgdml.data.structureSet`
         The structure set.
     centered : :obj:`bool`
         If the dset coordinates were centered with respect to the cluster's

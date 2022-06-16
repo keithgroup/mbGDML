@@ -918,8 +918,7 @@ class GDMLTrain(object):
         self, R_desc, R_d_desc, tril_perms_lin, sig, desc, use_E_cstr=False,
         col_idxs=np.s_[:]
     ):
-        """
-        Compute force field kernel matrix.
+        """Compute force field kernel matrix.
 
         The Hessian of the Matern kernel is used with n = 2 (twice
         differentiable). Each row and column consists of matrix-valued blocks,
