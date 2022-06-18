@@ -29,6 +29,7 @@ Training structures are not included in dataset clustering or plots.
 
 ### Fixed
 
+- Added missed torchtools for GDML.
 - ``model0`` was not working with iterative training.
 - Iterative training would randomly sample every training set.
 

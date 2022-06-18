@@ -278,7 +278,7 @@ class predictSet(mbGDMLData):
         else:
             self.e_unit = dset['e_unit']
     
-    def load_models(self, models):
+    def load_models(self, models, use_torch=False):
         """Loads model(s) in preparation to create a predict set.
 
         Parameters
@@ -286,8 +286,10 @@ class predictSet(mbGDMLData):
         models : :obj:`list` of :obj:`str` or :obj:`dict`
             GDML models in ascending order of n-body corrections (e.g., 1-, 2-
             and 3-body models).
+        use_torch : :obj:`bool`, default: ``False``
+            Use PyTorch to make predictions.
         """
-        self.predict = mbPredict(models)
+        self.predict = mbPredict(models, use_torch=use_torch)
 
         from mbgdml.data import mbModel
         models_md5, models_order = [], []
