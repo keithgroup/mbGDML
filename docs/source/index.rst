@@ -72,5 +72,5 @@ Or, the latest development version can be installed directly from the `GitHub re
    Training <training>
    Predictions <predictions>
    Tutorials <tutorials/tutorials>
-   API <doc/modules>
+   API <api/modules>
    Contributing <contributing>

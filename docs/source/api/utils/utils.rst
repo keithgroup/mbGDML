@@ -1,5 +1,5 @@
-``mbgdml.criteria``
-===================
+``mbgdml.utils``
+================
 
 .. toctree::
 

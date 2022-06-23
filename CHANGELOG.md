@@ -18,6 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Changed
 
+- Included a many-body expansion, ``mbe``, module to handle *n*-body energy and force predictions.
 - Updated API documentation tree.
 - Elements logging in tasks and models are condensed (i.e., no spaces).
 - Default ``gp_params`` for Bayesian optimization.
@@ -32,6 +33,10 @@ Training structures are not included in dataset clustering or plots.
 - Added missed torchtools for GDML.
 - ``model0`` was not working with iterative training.
 - Iterative training would randomly sample every training set.
+
+### Removed
+
+- ``e_f_contributions`` was replaced by the ``mbe`` module.
 
 ## [0.0.2] - 2022-06-08
 

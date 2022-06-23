@@ -10,5 +10,6 @@ API
    Criteria <criteria/criteria_module>
    mbModel <mbModel/mbModel_module>
    Prediction <predict/predict_module>
+   MBE <mbe/mbe_module>
    Utilities <utils/utils>
    GDML <gdml/gdml>

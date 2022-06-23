@@ -1,4 +1,4 @@
-``mbgdml.data.dataSet``
+``mbgdml.data.mbModel``
 =======================
 
 .. toctree::
