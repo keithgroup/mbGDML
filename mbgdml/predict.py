@@ -50,14 +50,19 @@ class mlModel(object):
             enforced.
         """
         self.criteria_desc_func = criteria_desc_func
+        # Make sure cutoff is a single value (weird extraction from npz).
+        if isinstance(criteria_cutoff, np.ndarray):
+            if len(criteria_cutoff) == 0:
+                criteria_cutoff = None
+            elif len(criteria_cutoff) == 1:
+                criteria_cutoff = criteria_cutoff[0]
         self.criteria_cutoff = criteria_cutoff
 
 
 class gdmlModel(mlModel):
 
     def __init__(
-        self, model, criteria_desc_func=None, criteria_cutoff=None,
-        use_ray=False
+        self, model, criteria_desc_func=None, criteria_cutoff=None
     ):
         """
         Parameters
@@ -71,7 +76,6 @@ class gdmlModel(mlModel):
             Value of ``criteria_desc_func`` where the mlWorker will not predict
             the :math:`n`-body contribution of. If ``None``, no cutoff will be
             enforced.
-        use_ray : :obj:`bool`, default: ``False``
         """
         super().__init__(criteria_desc_func, criteria_cutoff)
 
@@ -79,11 +83,6 @@ class gdmlModel(mlModel):
             model = dict(np.load(model, allow_pickle=True))
         elif not isinstance(model, dict):
             raise TypeError(f'{type(model)} is not string or dict')
-        
-        self._pred_data_keys = [
-            'sig', 'n_perms', 'desc_func', 'R_desc_perms',
-            'R_d_desc_alpha_perms', 'alphas_E_lin'
-        ]
 
         self.z = model['z']
         self.comp_ids = model['comp_ids']
@@ -124,8 +123,6 @@ class gdmlModel(mlModel):
             ).ravel()
         else:
             self.alphas_E_lin = None
-
-        self.use_ray = use_ray
 
 
 
@@ -175,9 +172,9 @@ def _predict_gdml_wkr(
     dim_c = n_train * n_perms
 
     # Pre-allocate memory.
-    diff_ab_perms = np.empty((dim_c, dim_d))
-    a_x2 = np.empty((dim_c,))
-    mat52_base = np.empty((dim_c,))
+    diff_ab_perms = np.empty((dim_c, dim_d), dtype=np.double)
+    a_x2 = np.empty((dim_c,), dtype=np.double)
+    mat52_base = np.empty((dim_c,), dtype=np.double)
 
     # avoid divisions (slower)
     sig_inv = 1.0 / sig
@@ -185,7 +182,7 @@ def _predict_gdml_wkr(
     diag_scale_fact = 5.0 / sig
     sqrt5 = np.sqrt(5.0)
 
-    E_F = np.zeros((dim_d + 1,))
+    E_F = np.zeros((dim_d + 1,), dtype=np.double)
     F = E_F[1:]
 
     wkr_start *= n_perms
@@ -259,12 +256,8 @@ def _predict_gdml_wkr(
     out_F[:, i, j, :] = r_d_desc * F[..., None]
     out_F[:, j, i, :] = -out_F[:, i, j, :]
     out[1:] = out_F.sum(axis=1).reshape(n, -1)
-    
-    out *= stdev
-    E = out[0] + integ_c
-    F = out[1:].reshape((n_atoms), 3)
 
-    return E, F
+    return out
 
 # Possible ray task.
 def predict_gdml(z, r, entity_ids, nbody_gen, model):
@@ -272,8 +265,6 @@ def predict_gdml(z, r, entity_ids, nbody_gen, model):
 
     Parameters
     ----------
-    model : :obj:`mbgdml.predict.gdmlModel``
-        GDML model.
     z : :obj:`numpy.ndarray`, ndim: ``1``
         Atomic numbers of all atoms in ``r`` (in the same order).
     r : :obj:`numpy.ndarray`, ndim: ``2``
@@ -284,6 +275,8 @@ def predict_gdml(z, r, entity_ids, nbody_gen, model):
         Entity ID combinations (e.g., ``(53,)``, ``(0, 2)``,
         ``(32, 55, 293)``, etc.) to predict using this model. These are used
         to slice ``R``.
+    model : :obj:`mbgdml.predict.gdmlModel``
+        GDML model containing all information need to make predictions.
     
     Returns
     -------
@@ -325,7 +318,11 @@ def predict_gdml(z, r, entity_ids, nbody_gen, model):
             model.R_desc_perms, model.R_d_desc_alpha_perms,
             model.alphas_E_lin, model.stdev, model.integ_c
         ) 
-        e, f = _predict_gdml_wkr(*wkr_args)
+        out = _predict_gdml_wkr(*wkr_args)
+
+        out *= model.stdev
+        e = out[0] + model.integ_c
+        f = out[1:].reshape((len(z_comp), 3))
 
         # Adds contributions to total energy and forces.
         E += e

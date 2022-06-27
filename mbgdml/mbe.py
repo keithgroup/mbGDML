@@ -359,23 +359,31 @@ class mbePredict(object):
     many-body models.
     """
 
-    def __init__(self, models, predict_model, use_ray=False, n_cores=None, wkr_chunk_size=100):
+    def __init__(
+        self, models, predict_model, use_ray=False, n_cores=None,
+        wkr_chunk_size=100
+    ):
         """
         Parameters
         ----------
-        models : :obj:`tuple` of :obj:`mbgdml.predict.mlWorker`
+        models : :obj:`list` of :obj:`mbgdml.predict.mlWorker`
             Machine learning model objects that contain all information to make
-            predictions.
+            predictions using ``predict_model``.
+        predict_model : ``callable``
+            A function that takes ``z, r, entity_ids, nbody_gen, model`` and
+            computes energies and forces. This will be turned into a ray remote
+            function if ``use_ray = True``.
         use_ray : :obj:`bool`, default: ``False``
             Parallelize predictions using ray. Note that initializing ray tasks
-            comes with some overhead. Thus, this is only recommended with
-            medium to large amount of entities (around 20 or more).
+            comes with some overhead and can make smaller computations much
+            slower. Thus, this is only recommended with more than 15 or so
+            entities.
         n_cores : :obj:`int`, default: ``None``
-            Total number of cores available for predictions. If ``None``, then
-            this is determined by ``os.cpu_count()``.
+            Total number of cores available for predictions when using ray. If
+            ``None``, then this is determined by ``os.cpu_count()``.
         wkr_chunk_size : :obj:`int`, default: ``100``
             Number of :math:`n`-body structures to assign to each spawned
-            worker.
+            worker with ray.
         """
         self.models = models
         self.predict_model = predict_model
@@ -390,7 +398,7 @@ class mbePredict(object):
             import ray
             assert ray.is_initialized()
             self.models = [ray.put(model) for model in models]
-            self.predict_model = ray.put(ray.remote(predict_model))
+            self.predict_model = ray.remote(predict_model)
 
     def get_avail_entities(self, comp_ids_r, comp_ids_model):
         """Determines available ``entity_ids`` for each ``comp_id`` in a
@@ -460,7 +468,7 @@ class mbePredict(object):
         Yields
         ------
         :obj:`tuple`
-            ``n`` iterable objects.
+            ``n`` objects.
         """
         iterator = iter(iterable)
         for first in iterator:
@@ -468,20 +476,28 @@ class mbePredict(object):
                 itertools.chain([first], itertools.islice(iterator, n - 1))
             )
     
-    def compute_nbody(
-        self, z, r, entity_ids, comp_ids, model
-    ):
+    def compute_nbody(self, z, r, entity_ids, comp_ids, model):
         """Compute all :math:`n`-body contributions of a single structure
-        using a ``mlWorker``.
+        using a :obj:`mbgdml.predict.mlModel`` object.
 
-        When ``use_ray = True``, this acts as a driver that spawns ray tasks to
+        When ``use_ray = True``, this acts as a driver that spawns ray tasks of
         the ``predict_model`` function.
 
         Parameters
         ----------
-        r : :obj:`numpy.ndarray`, ndim: ``2``
+        z : :obj:`numpy.ndarray`, ndim: ``1``
+            Atomic numbers of all atoms in the system with respect to ``r``.
+        r : :obj:`numpy.ndarray`, shape: ``(len(z), 3)``
             Cartesian coordinates of a single structure.
+        entity_ids : :obj:`numpy.ndarray`, shape: ``(N,)``
+            Integers specifying which atoms belong to which entities.
+        comp_ids : :obj:`numpy.ndarray`, shape: ``(N,)``
+            Relates each ``entity_id`` to a fragment label. Each item's index
+            is the label's ``entity_id``.
+        model : ``callable``
 
+        Returns
+        -------
         """
         # Unify r shape.
         if r.ndim == 3:
@@ -495,8 +511,10 @@ class mbePredict(object):
                 )
         
         E = 0.
-        F = np.zeros(r.shape)
+        F = np.zeros(r.shape, dtype=np.double)
 
+        # Creates a generator for all possible n-body combinations regardless
+        # of cutoffs.
         if self.use_ray:
             model_comp_ids = ray.get(model).comp_ids
         else:
@@ -504,17 +522,24 @@ class mbePredict(object):
         avail_entity_ids = self.get_avail_entities(comp_ids, model_comp_ids)
         nbody_gen = self.gen_entity_combinations(avail_entity_ids)
         
+        # Runs the predict_model function to calculate all n-body energies
+        # with this model.
         if not self.use_ray:
             E, F = self.predict_model(
                 z, r, entity_ids, nbody_gen, model
             )
         else:
-            predict_model = ray.get(self.predict_model)
+            # Put all common data into the ray object store.
+            z = ray.put(z)
+            r = ray.put(r)
+            entity_ids = ray.put(entity_ids)
 
             nbody_gen = tuple(nbody_gen)
             nbody_chunker = self.chunk(nbody_gen, self.wkr_chunk_size)
             workers = []
 
+            # Initialize workers 
+            predict_model = self.predict_model
             def add_worker(workers, chunk):
                 workers.append(
                     predict_model.remote(
@@ -525,9 +550,10 @@ class mbePredict(object):
                 try:
                     chunk = next(nbody_chunker)
                     add_worker(workers, chunk)
-                except:
+                except StopIteration:
                     break
             
+            # Start workers and collect results.
             while len(workers) != 0:
                 done_id, workers = ray.wait(workers)
                 E_wkr, F_wkr = ray.get(done_id)[0]
@@ -536,19 +562,41 @@ class mbePredict(object):
                 try:
                     chunk = next(nbody_chunker)
                     add_worker(workers, chunk)
-                except Exception:
+                except StopIteration:
                     pass
         
         return E, F
     
-    def predict(
-        self, z, R, entity_ids, comp_ids
-    ):
+    def predict(self, z, R, entity_ids, comp_ids):
+        """Predict the energies and forces of one or multiple structures.
+
+        Parameters
+        ----------
+        z : :obj:`numpy.ndarray`, ndim: ``1``
+            Atomic numbers of all atoms in the system with respect to ``R``.
+        R : :obj:`numpy.ndarray`, shape: ``(N, len(z), 3)``
+            Cartesian coordinates of ``N`` structures to predict.
+        entity_ids : :obj:`numpy.ndarray`, shape: ``(N,)``
+            Integers specifying which atoms belong to which entities.
+        comp_ids : :obj:`numpy.ndarray`, shape: ``(N,)``
+            Relates each ``entity_id`` to a fragment label. Each item's index
+            is the label's ``entity_id``.
+        
+        Returns
+        -------
+        :obj:`numpy.ndarray`, shape: ``(N,)``
+            Predicted many-body energy
+        :obj:`numpy.ndarray`, shape: ``(N, len(z), 3)``
+            Predicted atomic forces.
+        """
         if R.ndim == 2:
             R = np.array([R])
-        E = np.zeros((R.shape[0],))
-        F = np.zeros(R.shape)
+        
+        # Preallocate memory for energies and forces.
+        E = np.zeros((R.shape[0],), dtype=np.double)
+        F = np.zeros(R.shape, dtype=np.double)
 
+        # Compute all energies and forces with every model.
         for i in range(len(E)):
             for model in self.models:
                 E_nbody, F_nbody = self.compute_nbody(
