@@ -23,8 +23,12 @@
 """Many-body utilities."""
 
 import itertools
+import logging
 import math
 import numpy as np
+import os
+
+log = logging.getLogger(__name__)
 
 def gen_r_entity_combs(r_prov_spec, entity_ids_lower):
     """Generate ``entity_id`` combinations of a specific size for a single
@@ -350,3 +354,207 @@ def mbe_contrib(
     
     return E, Deriv
 
+class mbePredict(object):
+    """Predict energies and forces of structures using machine learning
+    many-body models.
+    """
+
+    def __init__(self, models, predict_model, use_ray=False, n_cores=None, wkr_chunk_size=100):
+        """
+        Parameters
+        ----------
+        models : :obj:`tuple` of :obj:`mbgdml.predict.mlWorker`
+            Machine learning model objects that contain all information to make
+            predictions.
+        use_ray : :obj:`bool`, default: ``False``
+            Parallelize predictions using ray. Note that initializing ray tasks
+            comes with some overhead. Thus, this is only recommended with
+            medium to large amount of entities (around 20 or more).
+        n_cores : :obj:`int`, default: ``None``
+            Total number of cores available for predictions. If ``None``, then
+            this is determined by ``os.cpu_count()``.
+        wkr_chunk_size : :obj:`int`, default: ``100``
+            Number of :math:`n`-body structures to assign to each spawned
+            worker.
+        """
+        self.models = models
+        self.predict_model = predict_model
+
+        self.use_ray = use_ray
+        if n_cores is None:
+            n_cores = os.cpu_count()
+        self.n_cores = n_cores
+        self.wkr_chunk_size = wkr_chunk_size
+        if use_ray:
+            global ray
+            import ray
+            assert ray.is_initialized()
+            self.models = [ray.put(model) for model in models]
+            self.predict_model = ray.put(ray.remote(predict_model))
+
+    def get_avail_entities(self, comp_ids_r, comp_ids_model):
+        """Determines available ``entity_ids`` for each ``comp_id`` in a
+        structure.
+
+        Parameters
+        ----------
+        comp_ids_r : :obj:`numpy.ndarray`, ndim: ``1``
+            Component IDs of the structure to predict.
+        comp_ids_model : :obj:`numpy.ndarray`, ndim: ``1``
+            Component IDs of the model.
+        
+        Returns
+        -------
+        :obj:`list`, length: ``len(comp_ids_r)``
+
+        """
+        # Models have a specific entity order that needs to be conserved in the
+        # predictions. Here, we create a ``avail_entity_ids`` list where each item
+        # is a list of all entities in ``r`` that match the model entity.
+        avail_entity_ids = []
+        for comp_id in comp_ids_model:
+            matching_entity_ids = np.where(comp_id == comp_ids_r)[0]
+            avail_entity_ids.append(matching_entity_ids)
+        return avail_entity_ids
+    
+    def gen_entity_combinations(self, avail_entity_ids):
+        """Generator for entity combinations where each entity comes from a
+        specified list (i.e., from ``get_avail_entities``).
+
+        Parameters
+        ----------
+        avail_entity_ids : :obj:`list` of :obj:`numpy.ndarray`
+            A list of ``entity_ids`` that match the ``comp_id`` of each
+            model ``entity_id``. Note that the index of the
+            :obj:`numpy.ndarray` is equal to the model ``entity_id`` and the
+            values are ``entity_ids`` that match the ``comp_id``.
+        
+        Yields
+        ------
+        :obj:`tuple`
+            Entity IDs to retrieve cartesian coordinates for ML prediction.
+        """
+        nbody_combinations = itertools.product(*avail_entity_ids)
+        # Excludes combinations that have repeats (e.g., (0, 0) and (1, 1. 2)).
+        nbody_combinations = itertools.filterfalse(
+            lambda x: len(set(x)) <  len(x), nbody_combinations
+        )
+        # At this point, there are still duplicates in this iterator.
+        # For example, (0, 1) and (1, 0) are still included.
+        for combination in nbody_combinations:
+            # Sorts entity is to avoid duplicate structures.
+            # For example, if combination is (1, 0) the sorted version is not
+            # equal and will not be included.
+            if sorted(combination) == list(combination):
+                yield combination
+    
+    def chunk(self, iterable, n):
+        """Chunk an iterable into ``n`` objects.
+
+        Parameters
+        ----------
+        iterable : ``iterable``
+        n : :obj:`int`
+            Size of each chunk.
+        
+        Yields
+        ------
+        :obj:`tuple`
+            ``n`` iterable objects.
+        """
+        iterator = iter(iterable)
+        for first in iterator:
+            yield tuple(
+                itertools.chain([first], itertools.islice(iterator, n - 1))
+            )
+    
+    def compute_nbody(
+        self, z, r, entity_ids, comp_ids, model
+    ):
+        """Compute all :math:`n`-body contributions of a single structure
+        using a ``mlWorker``.
+
+        When ``use_ray = True``, this acts as a driver that spawns ray tasks to
+        the ``predict_model`` function.
+
+        Parameters
+        ----------
+        r : :obj:`numpy.ndarray`, ndim: ``2``
+            Cartesian coordinates of a single structure.
+
+        """
+        # Unify r shape.
+        if r.ndim == 3:
+            log.debug('r has three dimensions (instead of two)')
+            if r.shape[0] == 1:
+                log.debug('r[0] was selected to proceed')
+                r = r[0]
+            else:
+                raise ValueError(
+                    'r.ndim is not 2 (only one structure is allowed)'
+                )
+        
+        E = 0.
+        F = np.zeros(r.shape)
+
+        if self.use_ray:
+            model_comp_ids = ray.get(model).comp_ids
+        else:
+            model_comp_ids = model.comp_ids
+        avail_entity_ids = self.get_avail_entities(comp_ids, model_comp_ids)
+        nbody_gen = self.gen_entity_combinations(avail_entity_ids)
+        
+        if not self.use_ray:
+            E, F = self.predict_model(
+                z, r, entity_ids, nbody_gen, model
+            )
+        else:
+            predict_model = ray.get(self.predict_model)
+
+            nbody_gen = tuple(nbody_gen)
+            nbody_chunker = self.chunk(nbody_gen, self.wkr_chunk_size)
+            workers = []
+
+            def add_worker(workers, chunk):
+                workers.append(
+                    predict_model.remote(
+                        z, r, entity_ids, chunk, model
+                    )
+                )
+            for _ in range(self.n_cores):
+                try:
+                    chunk = next(nbody_chunker)
+                    add_worker(workers, chunk)
+                except:
+                    break
+            
+            while len(workers) != 0:
+                done_id, workers = ray.wait(workers)
+                E_wkr, F_wkr = ray.get(done_id)[0]
+                E += E_wkr
+                F += F_wkr
+                try:
+                    chunk = next(nbody_chunker)
+                    add_worker(workers, chunk)
+                except Exception:
+                    pass
+        
+        return E, F
+    
+    def predict(
+        self, z, R, entity_ids, comp_ids
+    ):
+        if R.ndim == 2:
+            R = np.array([R])
+        E = np.zeros((R.shape[0],))
+        F = np.zeros(R.shape)
+
+        for i in range(len(E)):
+            for model in self.models:
+                E_nbody, F_nbody = self.compute_nbody(
+                    z, R[i], entity_ids, comp_ids, model
+                )
+                E[i] += E_nbody
+                F[i] += F_nbody
+            
+        return E, F
