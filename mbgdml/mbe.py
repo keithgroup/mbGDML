@@ -372,11 +372,12 @@ class mbePredict(object):
         predict_model : ``callable``
             A function that takes ``z, r, entity_ids, nbody_gen, model`` and
             computes energies and forces. This will be turned into a ray remote
-            function if ``use_ray = True``.
+            function if ``use_ray = True``. This can return total properties
+            or all individual :math:`n`-body energies and forces.
         use_ray : :obj:`bool`, default: ``False``
             Parallelize predictions using ray. Note that initializing ray tasks
             comes with some overhead and can make smaller computations much
-            slower. Thus, this is only recommended with more than 15 or so
+            slower. Thus, this is only recommended with more than 10 or so
             entities.
         n_cores : :obj:`int`, default: ``None``
             Total number of cores available for predictions when using ray. If
@@ -489,15 +490,20 @@ class mbePredict(object):
             Atomic numbers of all atoms in the system with respect to ``r``.
         r : :obj:`numpy.ndarray`, shape: ``(len(z), 3)``
             Cartesian coordinates of a single structure.
-        entity_ids : :obj:`numpy.ndarray`, shape: ``(N,)``
+        entity_ids : :obj:`numpy.ndarray`, shape: ``(len(z),)``
             Integers specifying which atoms belong to which entities.
-        comp_ids : :obj:`numpy.ndarray`, shape: ``(N,)``
+        comp_ids : :obj:`numpy.ndarray`, shape: ``(len(entity_ids),)``
             Relates each ``entity_id`` to a fragment label. Each item's index
             is the label's ``entity_id``.
-        model : ``callable``
+        model : :obj:`mbgdml.predict.mlModel`
+            Model that contains all information needed by ``model_predict``.
 
         Returns
         -------
+        :obj:`float`
+            Total :math:`n`-body energy of ``r``.
+        :obj:`numpy.ndarray`, shape: ``(len(z), 3)``
+            Total :math:`n`-body atomic forces of ``r``.
         """
         # Unify r shape.
         if r.ndim == 3:
@@ -526,6 +532,120 @@ class mbePredict(object):
         # with this model.
         if not self.use_ray:
             E, F = self.predict_model(
+                z, r, entity_ids, nbody_gen, model
+            )
+        else:
+            # Put all common data into the ray object store.
+            z = ray.put(z)
+            r = ray.put(r)
+            entity_ids = ray.put(entity_ids)
+
+            nbody_gen = tuple(nbody_gen)
+            nbody_chunker = self.chunk(nbody_gen, self.wkr_chunk_size)
+            workers = []
+
+            # Initialize workers 
+            predict_model = self.predict_model
+            def add_worker(workers, chunk):
+                workers.append(
+                    predict_model.remote(
+                        z, r, entity_ids, chunk, model
+                    )
+                )
+            for _ in range(self.n_cores):
+                try:
+                    chunk = next(nbody_chunker)
+                    add_worker(workers, chunk)
+                except StopIteration:
+                    break
+            
+            # Start workers and collect results.
+            while len(workers) != 0:
+                done_id, workers = ray.wait(workers)
+                E_wkr, F_wkr = ray.get(done_id)[0]
+                E += E_wkr
+                F += F_wkr
+                try:
+                    chunk = next(nbody_chunker)
+                    add_worker(workers, chunk)
+                except StopIteration:
+                    pass
+        
+        return E, F
+    
+    def compute_nbody_decomp(self, z, r, entity_ids, comp_ids, model):
+        """Compute all :math:`n`-body contributions of a single structure
+        using a :obj:`mbgdml.predict.mlModel` object.
+        
+        Stores all individual entity ID combinations, energies and forces.
+        This is more memory intensive. Structures that fall outside the criteria
+        cutoff will have :obj:`numpy.nan` as their energy and forces.
+
+        When ``use_ray = True``, this acts as a driver that spawns ray tasks of
+        the ``predict_model`` function.
+
+        Parameters
+        ----------
+        z : :obj:`numpy.ndarray`, ndim: ``1``
+            Atomic numbers of all atoms in the system with respect to ``r``.
+        r : :obj:`numpy.ndarray`, shape: ``(len(z), 3)``
+            Cartesian coordinates of a single structure.
+        entity_ids : :obj:`numpy.ndarray`, shape: ``(len(z),)``
+            Integers specifying which atoms belong to which entities.
+        comp_ids : :obj:`numpy.ndarray`, shape: ``(len(entity_ids),)``
+            Relates each ``entity_id`` to a fragment label. Each item's index
+            is the label's ``entity_id``.
+        model : :obj:`mbgdml.predict.mlModel`
+            Model that contains all information needed by ``model_predict``.
+
+        Returns
+        -------
+        :obj:`numpy.ndarray`, ndim: ``1``
+            Energies of all possible :math:`n`-body structures. Some elements
+            can be :obj:`numpy.nan` if they are beyond the criteria cutoff.
+        :obj:`numpy.ndarray`, ndim: ``3``
+            Atomic forces of all possible :math:`n`-body structure. Some
+            elements can be :obj:`numpy.nan` if they are beyond the criteria
+            cutoff.
+        :obj:`numpy.ndarray`, ndim: ``2``
+            All possible entity IDs.
+        """
+        # Unify r shape.
+        if r.ndim == 3:
+            log.debug('r has three dimensions (instead of two)')
+            if r.shape[0] == 1:
+                log.debug('r[0] was selected to proceed')
+                r = r[0]
+            else:
+                raise ValueError(
+                    'r.ndim is not 2 (only one structure is allowed)'
+                )
+
+        # Creates a generator for all possible n-body combinations regardless
+        # of cutoffs.
+        if self.use_ray:
+            model_comp_ids = ray.get(model).comp_ids
+        else:
+            model_comp_ids = model.comp_ids
+        avail_entity_ids = self.get_avail_entities(comp_ids, model_comp_ids)
+        nbody_gen = self.gen_entity_combinations(avail_entity_ids)
+
+        # explicitly evaluate n-body generator and store.
+        comb0 = next(nbody_gen)
+        n_entities = len(comb0)
+        nbody_combs = np.fromiter(
+            itertools.chain.from_iterable(nbody_gen), np.int64
+        )
+        if len(comb0) == 1:
+            nbody_combs = np.hstack((np.array(comb0), nbody_combs))
+        else:
+            nbody_combs.shape = int(len(nbody_combs)/n_entities), n_entities
+            nbody_combs = np.vstack((np.array(comb0), nbody_combs))
+        
+        # Runs the predict_model function to calculate all n-body energies
+        # with this model.
+        if not self.use_ray:
+            E, F, nbody_combs = self.predict_model(
                 z, r, entity_ids, nbody_gen, model
             )
         else:
@@ -606,3 +726,42 @@ class mbePredict(object):
                 F[i] += F_nbody
             
         return E, F
+    
+    def predict_decomp(self, z, R, entity_ids, comp_ids):
+        """Predict the energies and forces of one or multiple structures.
+
+        Parameters
+        ----------
+        z : :obj:`numpy.ndarray`, ndim: ``1``
+            Atomic numbers of all atoms in the system with respect to ``R``.
+        R : :obj:`numpy.ndarray`, shape: ``(N, len(z), 3)``
+            Cartesian coordinates of ``N`` structures to predict.
+        entity_ids : :obj:`numpy.ndarray`, shape: ``(N,)``
+            Integers specifying which atoms belong to which entities.
+        comp_ids : :obj:`numpy.ndarray`, shape: ``(N,)``
+            Relates each ``entity_id`` to a fragment label. Each item's index
+            is the label's ``entity_id``.
+        
+        Returns
+        -------
+        :obj:`list`
+            
+        """
+        if R.ndim == 2:
+            R = np.array([R])
+
+        model_data = []
+
+        # Compute all energies and forces with every model.
+        for i in range(len(E)):
+            for model in self.models:
+                model_data.append(
+                    self.compute_nbody_decomp(
+                        z, R[i], entity_ids, comp_ids, model
+                    )
+                )
+        
+        # TODO: combine model_data that have the same size nbody combinations.
+
+            
+        # return data

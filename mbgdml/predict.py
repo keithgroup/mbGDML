@@ -20,6 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import itertools
 import logging
 import numpy as np
 import scipy as sp
@@ -261,7 +262,7 @@ def _predict_gdml_wkr(
 
 # Possible ray task.
 def predict_gdml(z, r, entity_ids, nbody_gen, model):
-    """Predict energies and forces of a single structures.
+    """Predict total :math:`n`-body energy and forces of a single structure.
 
     Parameters
     ----------
@@ -274,7 +275,7 @@ def predict_gdml(z, r, entity_ids, nbody_gen, model):
     nbody_gen : ``iterable``
         Entity ID combinations (e.g., ``(53,)``, ``(0, 2)``,
         ``(32, 55, 293)``, etc.) to predict using this model. These are used
-        to slice ``R``.
+        to slice ``r`` with ``entity_ids``.
     model : :obj:`mbgdml.predict.gdmlModel``
         GDML model containing all information need to make predictions.
     
@@ -290,12 +291,87 @@ def predict_gdml(z, r, entity_ids, nbody_gen, model):
     F = np.zeros(r.shape)
 
     # Getting all contributions for each molecule combination (comb).
-    for comb_entity_ids in nbody_gen:
+    for entity_id_comb in nbody_gen:
 
         # Gets indices of all atoms in the combination of molecules.
         # r_slice is a list of the atoms for the entity_id combination.
         r_slice = []
-        for entity_id in comb_entity_ids:
+        for entity_id in entity_id_comb:
+            r_slice.extend(np.where(entity_ids == entity_id)[0])
+        
+        # Checks criteria cutoff if present and desired.
+        if model.criteria_cutoff is not None:
+            _, crit_val = model.criteria_desc_func(
+                model.z, r[r_slice], None, entity_ids[r_slice]
+            )
+            if crit_val >= model.criteria_cutoff:
+                # Do not include this contribution.
+                continue
+        
+        # Predicts energies and forces.
+        z_comp = z[r_slice]
+        r_comp = r[r_slice]
+        r_desc, r_d_desc = model.desc_func(
+            r_comp.flatten(), model.lat_and_inv
+        )
+        wkr_args = (
+            r_desc, r_d_desc, len(z_comp), model.sig, model.n_perms,
+            model.R_desc_perms, model.R_d_desc_alpha_perms,
+            model.alphas_E_lin, model.stdev, model.integ_c
+        ) 
+        out = _predict_gdml_wkr(*wkr_args)
+
+        out *= model.stdev
+        e = out[0] + model.integ_c
+        f = out[1:].reshape((len(z_comp), 3))
+
+        # Adds contributions to total energy and forces.
+        E += e
+        F[r_slice] += f
+    
+    return E, F
+
+def predict_gdml_decomp(z, r, entity_ids, nbody_gen, model):
+    """Predict all :math:`n`-body energies and forces of a single structure.
+
+    Parameters
+    ----------
+    z : :obj:`numpy.ndarray`, ndim: ``1``
+        Atomic numbers of all atoms in ``r`` (in the same order).
+    r : :obj:`numpy.ndarray`, ndim: ``2``
+        Cartesian coordinates of a single structure to predict.
+    entity_ids : :obj:`numpy.ndarray`, ndim: ``1``
+        1D array specifying which atoms belong to which entities.
+    nbody_gen : ``iterable``
+        Entity ID combinations (e.g., ``(53,)``, ``(0, 2)``,
+        ``(32, 55, 293)``, etc.) to predict using this model. These are used
+        to slice ``r`` with ``entity_ids``.
+    model : :obj:`mbgdml.predict.gdmlModel``
+        GDML model containing all information need to make predictions.
+    
+    Returns
+    -------
+    :obj:`numpy.ndarray`, ndim: ``1``
+        Energies of all possible :math:`n`-body structures. Some elements
+        can be :obj:`numpy.nan` if they are beyond the criteria cutoff.
+    :obj:`numpy.ndarray`, ndim: ``3``
+        Atomic forces of all possible :math:`n`-body structure. Some
+        elements can be :obj:`numpy.nan` if they are beyond the criteria
+        cutoff.
+    :obj:`numpy.ndarray`, ndim: ``2``
+        All possible entity IDs.
+    """
+    assert r.ndim == 2
+    
+    return None, None, None
+
+    # Getting all contributions for each molecule combination (comb).
+    for entity_id_comb in nbody_gen:
+
+        # Gets indices of all atoms in the combination of molecules.
+        # r_slice is a list of the atoms for the entity_id combination.
+        r_slice = []
+        for entity_id in entity_id_comb:
             r_slice.extend(np.where(entity_ids == entity_id)[0])
         
         # Checks criteria cutoff if present and desired.
