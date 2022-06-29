@@ -18,6 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Changed
 
+- Redesigned predict methods and parallelized with ray.
 - Included a many-body expansion, ``mbe``, module to handle *n*-body energy and force predictions.
 - Updated API documentation tree.
 - Elements logging in tasks and models are condensed (i.e., no spaces).

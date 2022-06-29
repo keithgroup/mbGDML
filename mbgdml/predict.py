@@ -331,7 +331,7 @@ def predict_gdml(z, r, entity_ids, nbody_gen, model):
     
     return E, F
 
-def predict_gdml_decomp(z, r, entity_ids, nbody_gen, model):
+def predict_gdml_decomp(z, r, entity_ids, nbody_combs, model):
     """Predict all :math:`n`-body energies and forces of a single structure.
 
     Parameters
@@ -342,7 +342,7 @@ def predict_gdml_decomp(z, r, entity_ids, nbody_gen, model):
         Cartesian coordinates of a single structure to predict.
     entity_ids : :obj:`numpy.ndarray`, ndim: ``1``
         1D array specifying which atoms belong to which entities.
-    nbody_gen : ``iterable``
+    nbody_combs : ``iterable``
         Entity ID combinations (e.g., ``(53,)``, ``(0, 2)``,
         ``(32, 55, 293)``, etc.) to predict using this model. These are used
         to slice ``r`` with ``entity_ids``.
@@ -358,16 +358,24 @@ def predict_gdml_decomp(z, r, entity_ids, nbody_gen, model):
         Atomic forces of all possible :math:`n`-body structure. Some
         elements can be :obj:`numpy.nan` if they are beyond the criteria
         cutoff.
-    :obj:`numpy.ndarray`, ndim: ``2``
-        All possible entity IDs.
     """
     assert r.ndim == 2
     
-    return None, None, None
+    if nbody_combs.ndim == 1:
+        n_atoms = np.count_nonzero(entity_ids == nbody_combs[0])
+    else:
+        n_atoms = 0
+        for i in nbody_combs[0]:
+            n_atoms += np.count_nonzero(entity_ids == i)
+    
+    E = np.empty(len(nbody_combs), dtype=np.float64)
+    F = np.empty((len(nbody_combs), n_atoms, 3), dtype=np.float64)
+    E[:] = np.nan
+    F[:] = np.nan
 
     # Getting all contributions for each molecule combination (comb).
-    for entity_id_comb in nbody_gen:
-
+    for i in range(len(nbody_combs)):
+        entity_id_comb = nbody_combs[i]
         # Gets indices of all atoms in the combination of molecules.
         # r_slice is a list of the atoms for the entity_id combination.
         r_slice = []
@@ -389,19 +397,14 @@ def predict_gdml_decomp(z, r, entity_ids, nbody_gen, model):
         r_desc, r_d_desc = model.desc_func(
             r_comp.flatten(), model.lat_and_inv
         )
-        wkr_args = (
-            r_desc, r_d_desc, len(z_comp), model.sig, model.n_perms,
+        out = _predict_gdml_wkr(
+            r_desc, r_d_desc, n_atoms, model.sig, model.n_perms,
             model.R_desc_perms, model.R_d_desc_alpha_perms,
             model.alphas_E_lin, model.stdev, model.integ_c
-        ) 
-        out = _predict_gdml_wkr(*wkr_args)
+        )
 
         out *= model.stdev
-        e = out[0] + model.integ_c
-        f = out[1:].reshape((len(z_comp), 3))
-
-        # Adds contributions to total energy and forces.
-        E += e
-        F[r_slice] += f
+        E[i] = out[0] + model.integ_c
+        F[i] = out[1:].reshape((n_atoms, 3))
     
-    return E, F
+    return E, F, nbody_combs

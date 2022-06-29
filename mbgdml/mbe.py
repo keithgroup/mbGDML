@@ -477,6 +477,11 @@ class mbePredict(object):
                 itertools.chain([first], itertools.islice(iterator, n - 1))
             )
     
+    def chunk_array(self, array, n):
+        for i in range(0, len(array), n):
+            array_worker = array[i:i + n]
+            yield array_worker
+    
     def compute_nbody(self, z, r, entity_ids, comp_ids, model):
         """Compute all :math:`n`-body contributions of a single structure
         using a :obj:`mbgdml.predict.mlModel`` object.
@@ -630,32 +635,45 @@ class mbePredict(object):
         avail_entity_ids = self.get_avail_entities(comp_ids, model_comp_ids)
         nbody_gen = self.gen_entity_combinations(avail_entity_ids)
 
-        # explicitly evaluate n-body generator and store.
+        # Explicitly evaluate n-body generator.
         comb0 = next(nbody_gen)
         n_entities = len(comb0)
         nbody_combs = np.fromiter(
             itertools.chain.from_iterable(nbody_gen), np.int64
         )
+        # Reshape and add initial combination back.
         if len(comb0) == 1:
-            nbody_combs = np.hstack((np.array(comb0), nbody_combs))
+            nbody_combs.shape = len(nbody_combs), 1
         else:
             nbody_combs.shape = int(len(nbody_combs)/n_entities), n_entities
-            nbody_combs = np.vstack((np.array(comb0), nbody_combs))
+        nbody_combs = np.vstack((np.array(comb0), nbody_combs))
         
         # Runs the predict_model function to calculate all n-body energies
         # with this model.
         if not self.use_ray:
             E, F, nbody_combs = self.predict_model(
-                z, r, entity_ids, nbody_gen, model
+                z, r, entity_ids, nbody_combs, model
             )
         else:
+            if nbody_combs.ndim == 1:
+                n_atoms = np.count_nonzero(entity_ids == nbody_combs[0])
+            else:
+                n_atoms = 0
+                for i in nbody_combs[0]:
+                    n_atoms += np.count_nonzero(entity_ids == i)
+            
             # Put all common data into the ray object store.
             z = ray.put(z)
             r = ray.put(r)
             entity_ids = ray.put(entity_ids)
-
-            nbody_gen = tuple(nbody_gen)
-            nbody_chunker = self.chunk(nbody_gen, self.wkr_chunk_size)
+            
+            # Allocate memory for energies and forces.
+            E = np.empty(len(nbody_combs), dtype=np.float64)
+            F = np.empty((len(nbody_combs), n_atoms, 3), dtype=np.float64)
+            E[:] = np.nan
+            F[:] = np.nan
+            
+            nbody_chunker = self.chunk_array(nbody_combs, self.wkr_chunk_size)
             workers = []
 
             # Initialize workers 
@@ -676,16 +694,20 @@ class mbePredict(object):
             # Start workers and collect results.
             while len(workers) != 0:
                 done_id, workers = ray.wait(workers)
-                E_wkr, F_wkr = ray.get(done_id)[0]
-                E += E_wkr
-                F += F_wkr
+                E_wkr, F_wkr, nbody_combs_wkr = ray.get(done_id)[0]
+                
+                i_start = np.where((nbody_combs_wkr[0] == nbody_combs).all(1))[0][0]
+                i_end = i_start + len(nbody_combs_wkr)
+                E[i_start:i_end] = E_wkr
+                F[i_start:i_end] = F_wkr
+                
                 try:
                     chunk = next(nbody_chunker)
                     add_worker(workers, chunk)
                 except StopIteration:
                     pass
         
-        return E, F
+        return E, F, nbody_combs
     
     def predict(self, z, R, entity_ids, comp_ids):
         """Predict the energies and forces of one or multiple structures.
@@ -745,23 +767,50 @@ class mbePredict(object):
         Returns
         -------
         :obj:`list`
-            
+            :math:`n`-body energies of all structures in increasing order of
+            :math:`n`.
+        :obj:`list`
+            :math:`n`-body forces of all structures in increasing order of
+            :math:`n`.
+        :obj:`list`
+            Entity IDs of all structures in increasing order of :math:`n`.
         """
         if R.ndim == 2:
             R = np.array([R])
 
-        model_data = []
+        E_data_raw, F_data_raw, nbody_data_raw = [], [], []
+        nbody_sizes = []
 
         # Compute all energies and forces with every model.
-        for i in range(len(E)):
+        for i in range(len(R)):
             for model in self.models:
-                model_data.append(
-                    self.compute_nbody_decomp(
-                        z, R[i], entity_ids, comp_ids, model
-                    )
+                data = self.compute_nbody_decomp(
+                    z, R[i], entity_ids, comp_ids, model
                 )
+                E_data_raw.append(data[0])
+                F_data_raw.append(data[1])
+                nbody_data_raw.append(data[2])
+                nbody_sizes.append(data[2].shape[1])
         
         # TODO: combine model_data that have the same size nbody combinations.
-
+        # sort by size.
+        E_data, F_data, nbody_data = [], [], []
+        nbody_orders = sorted(set(nbody_sizes))
+        
+        for order in nbody_orders:
+            model_idxs = [i for i, x in enumerate(nbody_orders) if x == order]
             
-        # return data
+            E_nbody = E_data_raw[model_idxs[0]]
+            F_nbody = F_data_raw[model_idxs[0]]
+            nbody = nbody_data_raw[model_idxs[0]]
+
+            for i in model_idxs[1:]:
+                E_nbody = np.vstack((E_nbody, E_data_raw[model_idxs[i]]))
+                F_nbody = np.vstack((F_nbody, F_data_raw[model_idxs[i]]))
+                nbody = np.vstack((nbody, nbody_data_raw[model_idxs[i]]))
+            
+            E_data.append(E_nbody)
+            F_data.append(F_nbody)
+            nbody_data.append(nbody)
+            
+        return E_data, F_data, nbody_data
