@@ -773,7 +773,9 @@ class mbePredict(object):
             :math:`n`-body forces of all structures in increasing order of
             :math:`n`.
         :obj:`list`
-            Entity IDs of all structures in increasing order of :math:`n`.
+            Structure indices and Entity IDs of all structures in increasing
+            order of :math:`n`. Column 0 is the structure index in ``R``, and
+            the remainder of the columns are entity IDs.
         """
         if R.ndim == 2:
             R = np.array([R])
@@ -789,7 +791,11 @@ class mbePredict(object):
                 )
                 E_data_raw.append(data[0])
                 F_data_raw.append(data[1])
-                nbody_data_raw.append(data[2])
+                nbody_data_raw.append(
+                    np.hstack(
+                        (np.array([[i] for _ in range(len(data[2]))]), data[2])
+                    )
+                )
                 nbody_sizes.append(data[2].shape[1])
         
         # TODO: combine model_data that have the same size nbody combinations.
