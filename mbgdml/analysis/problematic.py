@@ -36,6 +36,8 @@ from ..utils import save_json
 
 log = logging.getLogger(__name__)
 
+# TODO: Change mbPredict to mbePredict
+
 class prob_structures:
     """Find problematic structures for models in datasets.
     

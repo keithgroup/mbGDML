@@ -7,7 +7,6 @@
     atoms_by_number
     center_structures
     convert_forces
-    e_f_contribution
     get_comp_ids
     get_filename
     get_files

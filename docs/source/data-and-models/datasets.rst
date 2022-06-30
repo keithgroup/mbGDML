@@ -97,16 +97,7 @@ We indicate that a data set contains many-body data with the following attribute
 Removing *n*-body contributions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-We provide two options 
-
 - :meth:`~mbgdml.data.dataSet.create_mb_from_dsets`
-- :meth:`~mbgdml.data.dataSet.create_mb_from_models`
-
-.. warning::
-    Using models to predict *n*-body energies and forces for many-body data sets can save on PES calculations.
-    However, they are typically less accurate and can cause error accumulation in higher-order models.
-    For example, errors in 2-body predictions will lead to significant 3-body errors, and so on.
-    We recommend using :func:`~mbgdml.data.dataSet.create_mb_from_dsets` when possible for most accurate many-body GDML models.
     
 
 Contents

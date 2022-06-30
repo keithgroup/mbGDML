@@ -4,7 +4,6 @@
 .. toctree::
 
     create_mb_from_dsets
-    create_mb_from_models
     data
     dataSet
     conversions

@@ -24,6 +24,7 @@ import itertools
 import logging
 import numpy as np
 import scipy as sp
+from .utils import md5_data
 
 log = logging.getLogger(__name__)
 
@@ -36,7 +37,18 @@ passed into prediction functions in this module.
 """
 
 class mlModel(object):
-    """"""
+    """A parent class for machine learning model objects.
+    
+    Attributes
+    ----------
+    md5 : :obj:`str`
+        A property that creates a unique MD5 hash for the model. This is
+        primarily only used in the creation of predict sets.
+    nbody_order : :obj:`int`
+        What order of :math:`n`-body contributions does this model predict?
+        This is easily determined by taking the length of component IDs for the
+        model.
+    """
 
     def __init__(self, criteria_desc_func=None, criteria_cutoff=None):
         """
@@ -46,7 +58,7 @@ class mlModel(object):
             A descriptor used to filter :math:`n`-body structures from being
             predicted.
         criteria_cutoff : :obj:`float`, default: ``None``
-            Value of ``criteria_desc`` where the mlWorker will not predict the
+            Value of ``criteria_desc`` where the mlModel will not predict the
             :math:`n`-body contribution of. If ``None``, no cutoff will be
             enforced.
         """
@@ -74,7 +86,7 @@ class gdmlModel(mlModel):
             A descriptor used to filter :math:`n`-body structures from being
             predicted.
         criteria_cutoff : :obj:`float`, default: ``None``
-            Value of ``criteria_desc_func`` where the mlWorker will not predict
+            Value of ``criteria_desc_func`` where the mlModel will not predict
             the :math:`n`-body contribution of. If ``None``, no cutoff will be
             enforced.
         """
@@ -84,9 +96,11 @@ class gdmlModel(mlModel):
             model = dict(np.load(model, allow_pickle=True))
         elif not isinstance(model, dict):
             raise TypeError(f'{type(model)} is not string or dict')
+        self._model_dict = model
 
         self.z = model['z']
         self.comp_ids = model['comp_ids']
+        self.nbody_order = len(self.comp_ids)
 
         self.sig = model['sig']
         self.n_atoms = self.z.shape[0]
@@ -124,6 +138,22 @@ class gdmlModel(mlModel):
             ).ravel()
         else:
             self.alphas_E_lin = None
+    
+    @property
+    def md5(self):
+        """Unique MD5 hash of model.
+
+        :type: :obj:`bytes`
+        """
+        md5_properties_all = [
+            'md5_train', 'z', 'R_desc', 'R_d_desc_alpha', 'sig', 'alphas_F'
+        ]
+        md5_properties = []
+        for key in md5_properties_all:
+            if key in self._model_dict.keys():
+                md5_properties.append(key)
+        md5_string = md5_data(self._model_dict, md5_properties)
+        return md5_string
 
 
 
@@ -155,9 +185,6 @@ def _predict_gdml_wkr(
     ----
     It is sufficient to provide either the parameter ``r`` or ``r_desc_d_desc``.
     The other one can be set to ``None``.
-
-    Parameters
-    ----------
 
     Returns
     -------
@@ -276,7 +303,7 @@ def predict_gdml(z, r, entity_ids, nbody_gen, model):
         Entity ID combinations (e.g., ``(53,)``, ``(0, 2)``,
         ``(32, 55, 293)``, etc.) to predict using this model. These are used
         to slice ``r`` with ``entity_ids``.
-    model : :obj:`mbgdml.predict.gdmlModel``
+    model : :obj:`mbgdml.predict.gdmlModel`
         GDML model containing all information need to make predictions.
     
     Returns
@@ -346,7 +373,7 @@ def predict_gdml_decomp(z, r, entity_ids, nbody_combs, model):
         Entity ID combinations (e.g., ``(53,)``, ``(0, 2)``,
         ``(32, 55, 293)``, etc.) to predict using this model. These are used
         to slice ``r`` with ``entity_ids``.
-    model : :obj:`mbgdml.predict.gdmlModel``
+    model : :obj:`mbgdml.predict.gdmlModel`
         GDML model containing all information need to make predictions.
     
     Returns
@@ -358,6 +385,9 @@ def predict_gdml_decomp(z, r, entity_ids, nbody_combs, model):
         Atomic forces of all possible :math:`n`-body structure. Some
         elements can be :obj:`numpy.nan` if they are beyond the criteria
         cutoff.
+    :obj:`numpy.ndarray`, ndim: ``2``
+        All possible :math:`n`-body combinations of ``r`` (i.e., entity ID
+        combinations).
     """
     assert r.ndim == 2
     

@@ -30,7 +30,7 @@ from .basedata import mbGDMLData
 from .. import __version__ as mbgdml_version
 from ..parse import parse_stringfile
 from .. import utils
-from ..predict import mbPredict
+from ..mbe import mbePredict
   
 
 class dataSet(mbGDMLData):
@@ -1318,25 +1318,6 @@ class dataSet(mbGDMLData):
         """
         xyz_path = os.path.join(save_dir, self.name)
         utils.write_xyz(xyz_path, self.z, self.R)
-    
-    def create_mb_from_models(self, ref_dset, model_paths):
-        """Creates a many-body data set using mbGDML predictions.
-
-        Removes energy and force predictions from the reference data set using
-        GDML models in ``model_paths``.
-
-        Parameters
-        ----------
-        ref_dset : :obj:`~mbgdml.data.dataSet`
-            Reference data set of structures, energies, and forces. This is the
-            data where mbGDML predictions will be subtracted from.
-        model_paths : :obj:`list` [:obj:`str`]
-            Paths to saved many-body GDML models in the form of
-            `npz`.
-        """
-        predict = mbPredict(model_paths)
-        dataset = predict.remove_nbody(ref_dset.asdict())
-        self._update(dataset)
     
     def create_mb_from_dsets(self, ref_dset, dset_lower_paths):
         """Creates a many-body data set from lower-order data sets.

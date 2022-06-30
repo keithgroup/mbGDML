@@ -18,6 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Changed
 
+- Storage of *n*-body energies and forces in predict sets.
 - Redesigned predict methods and parallelized with ray.
 - Included a many-body expansion, ``mbe``, module to handle *n*-body energy and force predictions.
 - Updated API documentation tree.
@@ -37,6 +38,7 @@ Training structures are not included in dataset clustering or plots.
 
 ### Removed
 
+- No longer can make many-body dataset with model predictions (with ``create_mb_from_models``).
 - ``e_f_contributions`` was replaced by the ``mbe`` module.
 
 ## [0.0.2] - 2022-06-08
