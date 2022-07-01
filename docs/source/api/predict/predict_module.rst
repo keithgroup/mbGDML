@@ -4,7 +4,7 @@
 .. toctree::
 
     gdmlModel
-    mlModel
+    model
     predict_gdml
     predict_gdml_decomp
     _predict_gdml_wkr

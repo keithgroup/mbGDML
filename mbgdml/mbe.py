@@ -426,7 +426,7 @@ class mbePredict(object):
         """
         Parameters
         ----------
-        models : :obj:`list` of :obj:`mbgdml.predict.mlModel`
+        models : :obj:`list` of :obj:`mbgdml.predict.model`
             Machine learning model objects that contain all information to make
             predictions using ``predict_model``.
         predict_model : ``callable``
@@ -556,7 +556,7 @@ class mbePredict(object):
         self, z, r, entity_ids, comp_ids, model, ignore_criteria=False
     ):
         """Compute all :math:`n`-body contributions of a single structure
-        using a :obj:`mbgdml.predict.mlModel` object.
+        using a :obj:`mbgdml.predict.model` object.
 
         When ``use_ray = True``, this acts as a driver that spawns ray tasks of
         the ``predict_model`` function.
@@ -572,7 +572,7 @@ class mbePredict(object):
         comp_ids : :obj:`numpy.ndarray`, shape: ``(len(entity_ids),)``
             Relates each ``entity_id`` to a fragment label. Each item's index
             is the label's ``entity_id``.
-        model : :obj:`mbgdml.predict.mlModel`
+        model : :obj:`mbgdml.predict.model`
             Model that contains all information needed by ``model_predict``.
         ignore_criteria : :obj:`bool`, default: ``False``
             Ignore any criteria for predictions; i.e., all :math:`n`-body
@@ -657,7 +657,7 @@ class mbePredict(object):
         self, z, r, entity_ids, comp_ids, model, ignore_criteria=False
     ):
         """Compute all :math:`n`-body contributions of a single structure
-        using a :obj:`mbgdml.predict.mlModel` object.
+        using a :obj:`mbgdml.predict.model` object.
         
         Stores all individual entity ID combinations, energies and forces.
         This is more memory intensive. Structures that fall outside the criteria
@@ -677,7 +677,7 @@ class mbePredict(object):
         comp_ids : :obj:`numpy.ndarray`, shape: ``(len(entity_ids),)``
             Relates each ``entity_id`` to a fragment label. Each item's index
             is the label's ``entity_id``.
-        model : :obj:`mbgdml.predict.mlModel`
+        model : :obj:`mbgdml.predict.model`
             Model that contains all information needed by ``model_predict``.
         ignore_criteria : :obj:`bool`, default: ``False``
             Ignore any criteria for predictions; i.e., all :math:`n`-body

@@ -50,7 +50,7 @@ class prob_structures:
         """
         Parameters
         ----------
-        models : :obj:`list` of :obj:`mbgdml.predict.mlModel`
+        models : :obj:`list` of :obj:`mbgdml.predict.model`
             Machine learning model objects that contain all information to make
             predictions using ``predict_model``.
         predict_model : ``callable``

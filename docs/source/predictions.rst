@@ -2,19 +2,46 @@
 Predictions
 ===========
 
-Now it is time to put mbGDML models to work!
-The class :class:`~mbgdml.predict.mbPredict` is used to calculate predictions of all loaded *n*-body GDML models.
+The mbGDML package was originally designed for GDML models.
+However, other ML models or even QC methods can be used to make many-body predictions.
+We designed an extensible, modular framework for many-body predictions using :class:`~mbgdml.mbe.mbePredict`.
 
-Once we have loaded our models we can compute predictions of systems involving any number of entities or species using :meth:`~mbgdml.predict.mbPredict.predict`.
+:class:`~mbgdml.mbe.mbePredict` requires two components: a model and predict function.
+
+Model
+=====
+
+Information needed to make quantum chemistry or machine learning predictions are contained in objects that inherit the :class:`~mbgdml.predict.model` class.
+For example, :class:`~mbgdml.predict.gdmlModel` stores GDML parameters for use in its predict function.
+
+Predict
+=======
+
+Predict functions perform the actual predictions from the respective model object along with
+
+- ``z``: atomic numbers,
+- ``r``: cartesian coordinates of a single structure,
+- ``entity_ids``: integers specifying atoms that make up individual entities or fragments,
+- ``entity_combs``: unique combinations of entity IDs to predict. 
+
+For example, :func:`~mbgdml.predict.predict_gdml` will sum up all :math:`n`-body combinations for its contribution to ``r``'s energy and forces.
+You can also have decomposed predict functions (i.e., :func:`~mbgdml.predict.predict_gdml_decomp`) that returns all individual :math:`n`-body energies and forces.
+
+``mbePredict``
+==============
+
+:class:`~mbgdml.mbe.mbePredict` handles generating all entity combinations and summing up all :math:`n`-body contributions.
 
 .. warning::
-    Predictions are made by iterating through models and including predictions of all entities compatible with it.
-    If you have a system containing an entity not compatible with any model, its contributions are not included and no error is thrown.
+    Predictions are made by iterating through models and accounting for all compatible entities.
+    If the model component IDs are different, no entity combinations are used.
 
-:meth:`~mbgdml.predict.mbPredict.predict` is a driver of :meth:`~mbgdml.predict.mbPredict.predict_decomposed` which actually computes and keeps track of all predictions.
+Parallel predictions
+--------------------
 
-.. note::
-    Use :meth:`~mbgdml.predict.mbPredict.predict` if you are interested only in the total energy and forces predictions.
+Many-body expansions are known for their curse of dimensionality: as the supersystem grows in size so does the number of entity combinations.
+These can be easily parallelized by assigning workers with specified batch sizes.
+At the moment, only a `ray <https://docs.ray.io/en/latest/>`_ implementation is provided by specifying ``use_ray = True`` and setting ``n_cores`` and ``wkr_chunk_size``.
 
 Examples
 ========
@@ -23,15 +50,26 @@ Examples
     :caption: Prediction of (H2O)6 using mbGDML
     
     import numpy as np
-    from mbgdml.predict import mbPredict
+    from mbgdml.mbe import mbePredict
+    from mbgdml.predict import gdmlModel, predict_gdml
+    from mbgdml.criteria import cm_distance_sum
 
     # Loading mbGDML models.
     model_paths = [
-        './1h2o-model-iterativetrain1000.npz',
-        './2h2o-model.mb-iterativetrain1000.npz',
-        './3h2o-model.mb-iterativetrain1000.npz'
+        './1h2o-model-train1000.npz',
+        './2h2o-model.mb-train1000.npz',
+        './3h2o-model.mb-train1000.npz'
     ]
-    mbgdml = mbPredict(model_paths)
+    models = (
+        dict(np.load(model_path, allow_pickle=True)) for model_path in model_paths
+    )
+    models = [
+        gdmlModel(
+            model, criteria_desc_func=cm_distance_sum,
+            criteria_cutoff=model['cutoff']
+        ) for model in models
+    ]
+    mbe_pred = mbePredict(models, predict_gdml)
     
     # Structure information. This often comes from structure or data sets.
     z = np.array([8, 1, 1, 8, 1, 1, 8, 1, 1, 8, 1, 1, 8, 1, 1, 8, 1, 1])
@@ -59,11 +97,11 @@ Examples
     comp_ids = np.array(['h2o', 'h2o', 'h2o', 'h2o', 'h2o', 'h2o'])
     
     # Predict total energies and forces.
-    E, F = mbgdml.predict(z, R, entity_ids, comp_ids)
+    E, F = mbe_pred.predict(z, R, entity_ids, comp_ids)
 
     print(E)  # kcal/mol; shape: (1,)
     # [-287373.68561825]
-    print(F)  # kcal/(mol A); shape: (1,18,3)
+    print(F)  # kcal/(mol A); shape: (1, 18, 3)
     """
     [[[ 1.88852751,  4.27617405, -3.10879603],
       [-1.1754238,  -0.56810535,  2.3096842 ],

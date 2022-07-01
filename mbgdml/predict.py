@@ -36,7 +36,7 @@ Classes that are used to stores information from ML models. These objects are
 passed into prediction functions in this module.
 """
 
-class mlModel(object):
+class model(object):
     """A parent class for machine learning model objects.
     
     Attributes
@@ -72,7 +72,7 @@ class mlModel(object):
         self.criteria_cutoff = criteria_cutoff
 
 
-class gdmlModel(mlModel):
+class gdmlModel(model):
 
     def __init__(
         self, model, criteria_desc_func=None, criteria_cutoff=None
@@ -288,7 +288,7 @@ def _predict_gdml_wkr(
     return out
 
 # Possible ray task.
-def predict_gdml(z, r, entity_ids, nbody_gen, model, ignore_criteria=False):
+def predict_gdml(z, r, entity_ids, entity_combs, model, ignore_criteria=False):
     """Predict total :math:`n`-body energy and forces of a single structure.
 
     Parameters
@@ -299,7 +299,7 @@ def predict_gdml(z, r, entity_ids, nbody_gen, model, ignore_criteria=False):
         Cartesian coordinates of a single structure to predict.
     entity_ids : :obj:`numpy.ndarray`, ndim: ``1``
         1D array specifying which atoms belong to which entities.
-    nbody_gen : ``iterable``
+    entity_combs : ``iterable``
         Entity ID combinations (e.g., ``(53,)``, ``(0, 2)``,
         ``(32, 55, 293)``, etc.) to predict using this model. These are used
         to slice ``r`` with ``entity_ids``.
@@ -321,7 +321,7 @@ def predict_gdml(z, r, entity_ids, nbody_gen, model, ignore_criteria=False):
     F = np.zeros(r.shape)
 
     # Getting all contributions for each molecule combination (comb).
-    for entity_id_comb in nbody_gen:
+    for entity_id_comb in entity_combs:
 
         # Gets indices of all atoms in the combination of molecules.
         # r_slice is a list of the atoms for the entity_id combination.
@@ -362,7 +362,7 @@ def predict_gdml(z, r, entity_ids, nbody_gen, model, ignore_criteria=False):
     return E, F
 
 def predict_gdml_decomp(
-    z, r, entity_ids, nbody_combs, model, ignore_criteria=False
+    z, r, entity_ids, entity_combs, model, ignore_criteria=False
 ):
     """Predict all :math:`n`-body energies and forces of a single structure.
 
@@ -374,7 +374,7 @@ def predict_gdml_decomp(
         Cartesian coordinates of a single structure to predict.
     entity_ids : :obj:`numpy.ndarray`, ndim: ``1``
         1D array specifying which atoms belong to which entities.
-    nbody_combs : ``iterable``
+    entity_combs : ``iterable``
         Entity ID combinations (e.g., ``(53,)``, ``(0, 2)``,
         ``(32, 55, 293)``, etc.) to predict using this model. These are used
         to slice ``r`` with ``entity_ids``.
@@ -396,21 +396,21 @@ def predict_gdml_decomp(
     """
     assert r.ndim == 2
     
-    if nbody_combs.ndim == 1:
-        n_atoms = np.count_nonzero(entity_ids == nbody_combs[0])
+    if entity_combs.ndim == 1:
+        n_atoms = np.count_nonzero(entity_ids == entity_combs[0])
     else:
         n_atoms = 0
-        for i in nbody_combs[0]:
+        for i in entity_combs[0]:
             n_atoms += np.count_nonzero(entity_ids == i)
     
-    E = np.empty(len(nbody_combs), dtype=np.float64)
-    F = np.empty((len(nbody_combs), n_atoms, 3), dtype=np.float64)
+    E = np.empty(len(entity_combs), dtype=np.float64)
+    F = np.empty((len(entity_combs), n_atoms, 3), dtype=np.float64)
     E[:] = np.nan
     F[:] = np.nan
 
     # Getting all contributions for each molecule combination (comb).
-    for i in range(len(nbody_combs)):
-        entity_id_comb = nbody_combs[i]
+    for i in range(len(entity_combs)):
+        entity_id_comb = entity_combs[i]
         # Gets indices of all atoms in the combination of molecules.
         # r_slice is a list of the atoms for the entity_id combination.
         r_slice = []
@@ -442,4 +442,4 @@ def predict_gdml_decomp(
         E[i] = out[0] + model.integ_c
         F[i] = out[1:].reshape((n_atoms, 3))
     
-    return E, F, nbody_combs
+    return E, F, entity_combs

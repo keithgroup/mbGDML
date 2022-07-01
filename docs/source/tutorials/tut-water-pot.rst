@@ -469,14 +469,16 @@ Making predictions
 
 Once trained, many-body GDML can begin making predictions on arbitrarily sized clusters.
 It is common to predict energies and forces of curated data sets, but at minimum we just need Cartesian coordinates (along with component and entity IDs).
-For example, the script below makes predictions of :download:`clusters containing six water molecules <../files/tut-water/dsets/6h2o/6h2o.temelso.etal-dset-mp2.def2tzvp.npz>` from `Temelso et al. <https://doi.org/10.1021/jp2069489>`_ using :func:`~mbgdml.predict.mbPredict.predict`.
+For example, the script below makes predictions of :download:`clusters containing six water molecules <../files/tut-water/dsets/6h2o/6h2o.temelso.etal-dset-mp2.def2tzvp.npz>` from `Temelso et al. <https://doi.org/10.1021/jp2069489>`_ using :meth:`~mbgdml.mbe.mbePredict.predict`.
 
 .. code-block:: python
 
     import os
     import numpy as np
     from mbgdml.data import dataSet
-    from mbgdml.predict import mbPredict
+    from mbgdml.mbe import mbePredict
+    from mbgdml.predict import gdmlModel, predict_gdml
+    from mbgdml.criteria import cm_distance_sum
     from mbgdml.utils import get_comp_ids, get_entity_ids
 
     dset_path = './dsets/6h2o/6h2o.temelso.etal-dset-mp2.def2tzvp.npz'
@@ -485,10 +487,19 @@ For example, the script below makes predictions of :download:`clusters containin
         './models/140h2o.pm.gfn2.md.500k.prod1.3h2o.cm10.dset.2h2o.cm6.mp2.def2tzvp-model.mb-train500.npz',
         './models/140h2o.pm.gfn2.md.500k.prod1.3h2o.cm10.mp2.def2tzvp-model.mb-train500.npz',
     ]
+    models = (
+        dict(np.load(model_path, allow_pickle=True)) for model_path in model_paths
+    )
+    models = [
+        gdmlModel(
+            model, criteria_desc_func=cm_distance_sum,
+            criteria_cutoff=model['cutoff']
+        ) for model in models
+    ]
+    mbe_pred = mbePredict(models, predict_gdml)
 
     atoms_per_mol = 3
     ignore_criteria = False
-    use_torch = False
 
     # Ensures we execute from script directory (for relative paths).
     os.chdir(os.path.dirname(os.path.realpath(__file__)))
@@ -502,9 +513,9 @@ For example, the script below makes predictions of :download:`clusters containin
     entity_ids = get_entity_ids(atoms_per_mol, num_entities)
     comp_ids = get_comp_ids('h2o', num_entities, entity_ids)
 
-    predict = mbPredict(model_paths, use_torch=use_torch)
+    mbe_pred = mbePredict(models, predict_gdml)
 
-    E_pred, F_pred = predict.predict(
+    E_pred, F_pred = mbe_pred.predict(
         z, R, entity_ids, comp_ids,
         ignore_criteria=ignore_criteria
     )

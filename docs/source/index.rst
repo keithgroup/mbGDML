@@ -56,7 +56,7 @@ To circumvent this limitation, we developed a many-body approach where GDML lear
 Installation
 ============
 
-You can install mbGDML by using `pip install mbgdml`.
+You can install mbGDML by using ``pip install mbgdml``.
 Or, the latest development version can be installed directly from the `GitHub repository <https://github.com/keithgroup/mbGDML>`_.
 
 .. code-block:: bash
