@@ -288,7 +288,7 @@ def _predict_gdml_wkr(
     return out
 
 # Possible ray task.
-def predict_gdml(z, r, entity_ids, nbody_gen, model):
+def predict_gdml(z, r, entity_ids, nbody_gen, model, ignore_criteria=False):
     """Predict total :math:`n`-body energy and forces of a single structure.
 
     Parameters
@@ -305,6 +305,9 @@ def predict_gdml(z, r, entity_ids, nbody_gen, model):
         to slice ``r`` with ``entity_ids``.
     model : :obj:`mbgdml.predict.gdmlModel`
         GDML model containing all information need to make predictions.
+    ignore_criteria : :obj:`bool`, default: ``False``
+        Ignore any criteria for predictions; i.e., all :math:`n`-body
+        structures will be predicted.
     
     Returns
     -------
@@ -327,7 +330,7 @@ def predict_gdml(z, r, entity_ids, nbody_gen, model):
             r_slice.extend(np.where(entity_ids == entity_id)[0])
         
         # Checks criteria cutoff if present and desired.
-        if model.criteria_cutoff is not None:
+        if model.criteria_cutoff is not None and not ignore_criteria:
             _, crit_val = model.criteria_desc_func(
                 model.z, r[r_slice], None, entity_ids[r_slice]
             )
@@ -358,7 +361,9 @@ def predict_gdml(z, r, entity_ids, nbody_gen, model):
     
     return E, F
 
-def predict_gdml_decomp(z, r, entity_ids, nbody_combs, model):
+def predict_gdml_decomp(
+    z, r, entity_ids, nbody_combs, model, ignore_criteria=False
+):
     """Predict all :math:`n`-body energies and forces of a single structure.
 
     Parameters
@@ -413,7 +418,7 @@ def predict_gdml_decomp(z, r, entity_ids, nbody_combs, model):
             r_slice.extend(np.where(entity_ids == entity_id)[0])
         
         # Checks criteria cutoff if present and desired.
-        if model.criteria_cutoff is not None:
+        if model.criteria_cutoff is not None and not ignore_criteria:
             _, crit_val = model.criteria_desc_func(
                 model.z, r[r_slice], None, entity_ids[r_slice]
             )

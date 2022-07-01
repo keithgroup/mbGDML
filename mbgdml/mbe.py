@@ -552,9 +552,11 @@ class mbePredict(object):
             array_worker = array[i:i + n]
             yield array_worker
     
-    def compute_nbody(self, z, r, entity_ids, comp_ids, model):
+    def compute_nbody(
+        self, z, r, entity_ids, comp_ids, model, ignore_criteria=False
+    ):
         """Compute all :math:`n`-body contributions of a single structure
-        using a :obj:`mbgdml.predict.mlModel`` object.
+        using a :obj:`mbgdml.predict.mlModel` object.
 
         When ``use_ray = True``, this acts as a driver that spawns ray tasks of
         the ``predict_model`` function.
@@ -572,6 +574,9 @@ class mbePredict(object):
             is the label's ``entity_id``.
         model : :obj:`mbgdml.predict.mlModel`
             Model that contains all information needed by ``model_predict``.
+        ignore_criteria : :obj:`bool`, default: ``False``
+            Ignore any criteria for predictions; i.e., all :math:`n`-body
+            structures will be predicted.
 
         Returns
         -------
@@ -607,7 +612,7 @@ class mbePredict(object):
         # with this model.
         if not self.use_ray:
             E, F = self.predict_model(
-                z, r, entity_ids, nbody_gen, model
+                z, r, entity_ids, nbody_gen, model, ignore_criteria
             )
         else:
             # Put all common data into the ray object store.
@@ -624,7 +629,7 @@ class mbePredict(object):
             def add_worker(workers, chunk):
                 workers.append(
                     predict_model.remote(
-                        z, r, entity_ids, chunk, model
+                        z, r, entity_ids, chunk, model, ignore_criteria
                     )
                 )
             for _ in range(self.n_cores):
@@ -648,7 +653,9 @@ class mbePredict(object):
         
         return E, F
     
-    def compute_nbody_decomp(self, z, r, entity_ids, comp_ids, model):
+    def compute_nbody_decomp(
+        self, z, r, entity_ids, comp_ids, model, ignore_criteria=False
+    ):
         """Compute all :math:`n`-body contributions of a single structure
         using a :obj:`mbgdml.predict.mlModel` object.
         
@@ -672,6 +679,9 @@ class mbePredict(object):
             is the label's ``entity_id``.
         model : :obj:`mbgdml.predict.mlModel`
             Model that contains all information needed by ``model_predict``.
+        ignore_criteria : :obj:`bool`, default: ``False``
+            Ignore any criteria for predictions; i.e., all :math:`n`-body
+            structures will be predicted.
 
         Returns
         -------
@@ -722,7 +732,7 @@ class mbePredict(object):
         # with this model.
         if not self.use_ray:
             E, F, entity_combs = self.predict_model(
-                z, r, entity_ids, entity_combs, model
+                z, r, entity_ids, entity_combs, model, ignore_criteria
             )
         else:
             if entity_combs.ndim == 1:
@@ -751,7 +761,7 @@ class mbePredict(object):
             def add_worker(workers, chunk):
                 workers.append(
                     predict_model.remote(
-                        z, r, entity_ids, chunk, model
+                        z, r, entity_ids, chunk, model, ignore_criteria
                     )
                 )
             for _ in range(self.n_cores):
@@ -779,7 +789,7 @@ class mbePredict(object):
         
         return E, F, entity_combs
     
-    def predict(self, z, R, entity_ids, comp_ids):
+    def predict(self, z, R, entity_ids, comp_ids, ignore_criteria=False):
         """Predict the energies and forces of one or multiple structures.
 
         Parameters
@@ -793,6 +803,9 @@ class mbePredict(object):
         comp_ids : :obj:`numpy.ndarray`, shape: ``(N,)``
             Relates each ``entity_id`` to a fragment label. Each item's index
             is the label's ``entity_id``.
+        ignore_criteria : :obj:`bool`, default: ``False``
+            Ignore any criteria for predictions; i.e., all :math:`n`-body
+            structures will be predicted.
         
         Returns
         -------
@@ -812,14 +825,14 @@ class mbePredict(object):
         for i in range(len(E)):
             for model in self.models:
                 E_nbody, F_nbody = self.compute_nbody(
-                    z, R[i], entity_ids, comp_ids, model
+                    z, R[i], entity_ids, comp_ids, model, ignore_criteria
                 )
                 E[i] += E_nbody
                 F[i] += F_nbody
             
         return E, F
     
-    def predict_decomp(self, z, R, entity_ids, comp_ids):
+    def predict_decomp(self, z, R, entity_ids, comp_ids, ignore_criteria=False):
         """Predict the energies and forces of one or multiple structures.
 
         Parameters
@@ -833,6 +846,9 @@ class mbePredict(object):
         comp_ids : :obj:`numpy.ndarray`, shape: ``(N,)``
             Relates each ``entity_id`` to a fragment label. Each item's index
             is the label's ``entity_id``.
+        ignore_criteria : :obj:`bool`, default: ``False``
+            Ignore any criteria for predictions; i.e., all :math:`n`-body
+            structures will be predicted.
         
         Returns
         -------
@@ -852,43 +868,32 @@ class mbePredict(object):
         if R.ndim == 2:
             R = np.array([R])
 
-        E_data_raw, F_data_raw, nbody_data_raw = [], [], []
-        nbody_sizes = []
+        E_data, F_data, entity_comb_data = [], [], []
 
-        # Compute all energies and forces with every model.
-        for i in range(len(R)):
-            for model in self.models:
-                data = self.compute_nbody_decomp(
-                    z, R[i], entity_ids, comp_ids, model
-                )
-                E_data_raw.append(data[0])
-                F_data_raw.append(data[1])
-                nbody_data_raw.append(
-                    np.hstack(
-                        (np.array([[i] for _ in range(len(data[2]))]), data[2])
+        # We want to perform all same order n-body contributions.
+        model_nbody_orders = [
+            model.nbody_order for model in self.models
+        ]
+        nbody_orders = sorted(set(model_nbody_orders))
+        for nbody_order in nbody_orders:
+            E_nbody, F_nbody, entity_comb_nbody = [], [], []
+            nbody_models = [
+                model for model in self.models if model.nbody_order == nbody_order
+            ]
+            for model in nbody_models:
+                for i in range(len(R)):
+                    E, F, entity_combs = self.compute_nbody_decomp(
+                        z, R[i], entity_ids, comp_ids, model, ignore_criteria
                     )
-                )
-                nbody_sizes.append(data[2].shape[1])
+                    entity_combs = np.hstack(
+                        (np.array([[i] for _ in range(len(entity_combs))]), entity_combs)
+                    )
+                    E_nbody.extend(E)
+                    F_nbody.extend(F)
+                    entity_comb_nbody.extend(entity_combs)
+            
+            E_data.append(np.array(E_nbody))
+            F_data.append(np.array(F_nbody))
+            entity_comb_data.append(np.array(entity_comb_nbody))
         
-        # TODO: combine model_data that have the same size nbody combinations.
-        # sort by size.
-        E_data, F_data, nbody_data = [], [], []
-        nbody_orders = sorted(set(nbody_sizes))
-        
-        for order in nbody_orders:
-            model_idxs = [i for i, x in enumerate(nbody_orders) if x == order]
-            
-            E_nbody = E_data_raw[model_idxs[0]]
-            F_nbody = F_data_raw[model_idxs[0]]
-            nbody = nbody_data_raw[model_idxs[0]]
-
-            for i in model_idxs[1:]:
-                E_nbody = np.vstack((E_nbody, E_data_raw[model_idxs[i]]))
-                F_nbody = np.vstack((F_nbody, F_data_raw[model_idxs[i]]))
-                nbody = np.vstack((nbody, nbody_data_raw[model_idxs[i]]))
-            
-            E_data.append(E_nbody)
-            F_data.append(F_nbody)
-            nbody_data.append(nbody)
-            
-        return E_data, F_data, nbody_data, nbody_orders
+        return E_data, F_data, entity_comb_data, nbody_orders

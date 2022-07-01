@@ -26,7 +26,9 @@
 import pytest
 import numpy as np
 import mbgdml.data as data
-from mbgdml.predict import mbPredict
+from mbgdml.mbe import mbePredict
+from mbgdml.predict import gdmlModel, predict_gdml
+from mbgdml.criteria import cm_distance_sum
 
 dset_dir = './tests/data/datasets'
 model_dir = './tests/data/models'
@@ -45,10 +47,19 @@ def test_predict_single_16mer():
         f'{model_dir}/140h2o.sphere.gfn2.md.500k.prod1.3h2o.dset.2h2o.cm.6-model.mb-train500.npz',
         f'{model_dir}/140h2o.sphere.gfn2.md.500k.prod1.3h2o-model.mb-train500.npz',
     ]
+    models = (
+        dict(np.load(model_path, allow_pickle=True)) for model_path in model_h2o_paths
+    )
+    models = [
+        gdmlModel(
+            model, criteria_desc_func=cm_distance_sum,
+            criteria_cutoff=model['cutoff']
+        ) for model in models
+    ]
 
     dset_16h2o = data.dataSet(dset_16h2o_path)
-    predict = mbPredict(model_h2o_paths)
-    E_predict, F_predict = predict.predict(
+    mbe_pred = mbePredict(models, predict_gdml, use_ray=False)
+    E_predict, F_predict = mbe_pred.predict(
         dset_16h2o.z, dset_16h2o.R, dset_16h2o.entity_ids, dset_16h2o.comp_ids,
         ignore_criteria=False
     )

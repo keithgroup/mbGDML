@@ -30,6 +30,7 @@ from mbgdml.data import dataSet
 from mbgdml._gdml.train import GDMLTrain, get_test_idxs
 from mbgdml.train import mbGDMLTrain
 from mbgdml.analysis.problematic import prob_structures
+from mbgdml.predict import gdmlModel, predict_gdml
 
 dset_dir = './tests/data/datasets'
 train_dir = './tests/data/train'
@@ -216,9 +217,14 @@ def test_1h2o_prob_indices():
     model_path = os.path.join(
         './tests/data/models', '1h2o-model.npz'
     )
+    model = dict(np.load(model_path, allow_pickle=True))
+    model = gdmlModel(
+        model, criteria_desc_func=None,
+        criteria_cutoff=None
+    )
     dset = dataSet(dset_path)
 
-    prob_s = prob_structures([model_path])
+    prob_s = prob_structures([model], predict_gdml)
     n_find = 100
     prob_idxs = prob_s.find(dset, n_find, save_dir='./tests/tmp')
     prob_idxs = np.sort(prob_idxs)

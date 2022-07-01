@@ -27,6 +27,8 @@ import os
 import shutil
 from .data import mbModel, dataSet
 from .analysis.problematic import prob_structures
+from .mbe import mbePredict
+from .predict import gdmlModel, predict_gdml
 from ._gdml.train import GDMLTrain, model_errors, add_valid_errors
 from ._gdml.train import save_model, get_test_idxs
 from .utils import save_json
@@ -1009,8 +1011,9 @@ class mbGDMLTrain:
             n_train = len(train_idxs)
             log.log_array(train_idxs, level=10)
             
-
-            prob_s = prob_structures([model0])
+            prob_s = prob_structures(
+                [gdmlModel(model0)], predict_gdml
+            )
             save_dir_i = os.path.join(save_dir, f'train{n_train}')
             os.makedirs(save_dir_i, exist_ok=overwrite)
             prob_idxs = prob_s.find(dataset, n_train_step, save_dir=save_dir_i)
@@ -1052,7 +1055,7 @@ class mbGDMLTrain:
                 )
 
             train_idxs = model['idxs_train']
-            prob_s = prob_structures([model])
+            prob_s = prob_structures([gdmlModel(model)])
             prob_idxs = prob_s.find(dataset, n_train_step, save_dir=save_dir_i)
             
             train_idxs = np.concatenate((train_idxs, prob_idxs))

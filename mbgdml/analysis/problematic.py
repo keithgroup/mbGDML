@@ -31,12 +31,10 @@ import os
 from scipy.spatial.distance import pdist
 
 from . import clustering
-from ..predict import mbPredict
+from ..mbe import mbePredict
 from ..utils import save_json
 
 log = logging.getLogger(__name__)
-
-# TODO: Change mbPredict to mbePredict
 
 class prob_structures:
     """Find problematic structures for models in datasets.
@@ -45,15 +43,37 @@ class prob_structures:
     algorithms using a structural descriptor and energies.
     """
 
-    def __init__(self, models):
+    def __init__(
+        self, models, predict_model, use_ray=False, n_cores=None,
+        wkr_chunk_size=100
+    ):
         """
         Parameters
         ----------
-        models : :obj:`list` of :obj:`str` or :obj:`dict`
-            Contains paths or dictionaries of many-body GDML models.
+        models : :obj:`list` of :obj:`mbgdml.predict.mlModel`
+            Machine learning model objects that contain all information to make
+            predictions using ``predict_model``.
+        predict_model : ``callable``
+            A function that takes ``z, r, entity_ids, nbody_gen, model`` and
+            computes energies and forces. This will be turned into a ray remote
+            function if ``use_ray = True``. This can return total properties
+            or all individual :math:`n`-body energies and forces.
+        use_ray : :obj:`bool`, default: ``False``
+            Parallelize predictions using ray. Note that initializing ray tasks
+            comes with some overhead and can make smaller computations much
+            slower. Thus, this is only recommended with more than 10 or so
+            entities.
+        n_cores : :obj:`int`, default: ``None``
+            Total number of cores available for predictions when using ray. If
+            ``None``, then this is determined by ``os.cpu_count()``.
+        wkr_chunk_size : :obj:`int`, default: ``100``
+            Number of :math:`n`-body structures to assign to each spawned
+            worker with ray.
         """
-        self.predict = mbPredict(models)
-        self.model_dicts = self.predict.models
+        self.models = models
+        self.mbe_pred = mbePredict(
+            models, predict_model, use_ray, n_cores, wkr_chunk_size
+        )
     
     def get_pd(self, R):
         """Computes pairwise distances from atomic positions.
@@ -246,19 +266,19 @@ class prob_structures:
         log.info('Loading dataset\n')
         Z, R, E, F = dset.z, dset.R, dset.E, dset.F
         entity_ids, comp_ids = dset.entity_ids, dset.comp_ids
-
+        
         # Removing training indices.
         R_idxs_orig = np.array(list(range(len(R))))
         if dset_is_train:
             log.info('Dropping indices already in training set')
-            if len(self.model_dicts) != 1:
+            if len(self.models) != 1:
                 log.warning(
                     'Cannot drop training indices if there are multiple models'
                 )
                 log.warning('Not dropping any indices')
-            assert len(self.model_dicts) == 1
+            assert len(self.models) == 1
 
-            train_idxs = self.model_dicts[0]['idxs_train']
+            train_idxs = self.models[0]._model_dict['idxs_train']
             log.debug('Training indices')
             log.log_array(train_idxs, level=10)
 
@@ -294,7 +314,7 @@ class prob_structures:
             self.json_dict['clustering']['population'] = cl_pop
 
         log.info('\nPredicting structures')
-        E_pred, F_pred = self.predict.predict(Z, R, entity_ids, comp_ids)
+        E_pred, F_pred = self.mbe_pred.predict(Z, R, entity_ids, comp_ids)
         log.info('Computing prediction errors')
         E_errors = E_pred - E
         F_errors = F_pred - F
