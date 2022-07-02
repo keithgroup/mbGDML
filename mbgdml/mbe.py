@@ -876,15 +876,22 @@ class mbePredict(object):
         E_data, F_data, entity_comb_data = [], [], []
 
         # We want to perform all same order n-body contributions.
+        if self.use_ray:
+            models_ = [ray.get(model) for model in self.models]
+        else:
+            models_ = self.models
+
         model_nbody_orders = [
-            model.nbody_order for model in self.models
+            model.nbody_order for model in models_
         ]
         nbody_orders = sorted(set(model_nbody_orders))
         for nbody_order in nbody_orders:
             E_nbody, F_nbody, entity_comb_nbody = [], [], []
-            nbody_models = [
-                model for model in self.models if model.nbody_order == nbody_order
-            ]
+            nbody_models = []
+            for i in range(len(model_nbody_orders)):
+                if models_[i].nbody_order == nbody_order:
+                    nbody_models.append(self.models[i])
+            
             for model in nbody_models:
                 for i in range(len(R)):
                     E, F, entity_combs = self.compute_nbody_decomp(
