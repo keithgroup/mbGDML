@@ -116,6 +116,10 @@ class predictSet(mbGDMLData):
         }
         for nbody_order in self.nbody_orders:
             pset[f'E_{nbody_order}'] = getattr(self, f'E_{nbody_order}')
+            pset[f'F_{nbody_order}'] = getattr(self, f'F_{nbody_order}')
+            pset[f'entity_combs_{nbody_order}'] = getattr(
+                self, f'entity_combs_{nbody_order}'
+            )
 
         if self._loaded == False and self._predicted == False:
             if not hasattr(self, 'dataset') or not hasattr(self, 'mbgdml'):
