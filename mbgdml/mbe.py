@@ -449,6 +449,9 @@ class mbePredict(object):
         self.models = models
         self.predict_model = predict_model
 
+        if models[0].type == 'gap':
+            assert use_ray == False
+
         self.use_ray = use_ray
         if n_cores is None:
             n_cores = os.cpu_count()
@@ -606,11 +609,13 @@ class mbePredict(object):
         else:
             model_comp_ids = model.comp_ids
         avail_entity_ids = self.get_avail_entities(comp_ids, model_comp_ids)
+        log.debug(f'Available entity IDs: {avail_entity_ids}')
         nbody_gen = self.gen_entity_combinations(avail_entity_ids)
         
         # Runs the predict_model function to calculate all n-body energies
         # with this model.
         if not self.use_ray:
+            log.info('Using serial operation')
             E, F = self.predict_model(
                 z, r, entity_ids, nbody_gen, model, ignore_criteria
             )

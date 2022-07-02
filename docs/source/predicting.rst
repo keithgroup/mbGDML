@@ -1,6 +1,6 @@
-===========
-Predictions
-===========
+==========
+Predicting
+==========
 
 The mbGDML package was originally designed for GDML models.
 However, other ML models or even QC methods can be used to make many-body predictions.
@@ -41,7 +41,15 @@ Parallel predictions
 
 Many-body expansions are known for their curse of dimensionality: as the supersystem grows in size so does the number of entity combinations.
 These can be easily parallelized by assigning workers with specified batch sizes.
-At the moment, only a `ray <https://docs.ray.io/en/latest/>`_ implementation is provided by specifying ``use_ray = True`` and setting ``n_cores`` and ``wkr_chunk_size``.
+At the moment, only a `ray <https://docs.ray.io/en/latest/>`_ implementation for GDML is provided by specifying ``use_ray = True`` and setting ``n_cores`` and ``wkr_chunk_size``.
+
+Supported potentials
+--------------------
+
+mbGDML already provides support for the following potentials: 
+
+- Gradient-Domain Machine Learning (GDML) with :class:`~mbgdml.predict.gdmlModel` and :func:`~mbgdml.predict.predict_gdml`
+- Gaussian Approximation Potential (GAP) with :class:`~mbgdml.predict.gapModel` and :func:`~mbgdml.predict.predict_gap`
 
 Examples
 ========

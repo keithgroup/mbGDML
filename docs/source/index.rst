@@ -70,7 +70,7 @@ Or, the latest development version can be installed directly from the `GitHub re
 
    Data and Models <data-and-models/data-formats>
    Training <training>
-   Predictions <predictions>
+   Predicting <predicting>
    Tutorials <tutorials/tutorials>
    API <api/modules>
    Contributing <contributing>

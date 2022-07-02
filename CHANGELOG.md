@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Added
 
+- [GAP](https://libatoms.github.io/GAP/index.html) prediction capabilities.
 - Training loss function that includes a weighted energy RMSE component.
 - Require integration constant evaluation option regardless of performance.
 - Initial grid for Bayesian optimization to guide ``sigma_bounds``.

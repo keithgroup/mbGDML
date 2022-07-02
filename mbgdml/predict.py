@@ -92,6 +92,8 @@ class gdmlModel(model):
         """
         super().__init__(criteria_desc_func, criteria_cutoff)
 
+        self.type = 'gdml'
+
         if isinstance(model, str):
             model = dict(np.load(model, allow_pickle=True))
         elif not isinstance(model, dict):
@@ -155,7 +157,52 @@ class gdmlModel(model):
         md5_string = md5_data(self._model_dict, md5_properties)
         return md5_string
 
+class gapModel(model):
 
+    def __init__(
+        self, model_path, comp_ids, criteria_desc_func=None,
+        criteria_cutoff=None
+    ):
+        """
+        Parameters
+        ----------
+        model_path : :obj:`str`
+            Path to GAP xml file.
+        comp_ids : ``iterable``
+            Model component IDs that relate entity IDs of a structure to a
+            fragment label.
+        criteria_desc_func : ``callable``, default: ``None``
+            A descriptor used to filter :math:`n`-body structures from being
+            predicted.
+        criteria_cutoff : :obj:`float`, default: ``None``
+            Value of ``criteria_desc_func`` where the mlModel will not predict
+            the :math:`n`-body contribution of. If ``None``, no cutoff will be
+            enforced.
+        """
+        global quippy
+        import quippy
+
+        super().__init__(criteria_desc_func, criteria_cutoff)
+        self.type = 'gap'
+        self.gap = quippy.potential.Potential(
+            param_filename=model_path
+        )
+        if isinstance(comp_ids, list) or isinstance(comp_ids, tuple):
+            comp_ids = np.array(comp_ids)
+        self.comp_ids = comp_ids
+        self.nbody_order = len(comp_ids)
+
+        # GAP MD5
+        with open(model_path, 'r') as f:
+            gap_lines = f.readlines()
+        import hashlib
+        md5_hash = hashlib.md5()
+        for i in range(len(gap_lines)):
+            md5_hash.update(
+                hashlib.md5(repr(gap_lines[i]).encode()).digest()
+            )
+        self.md5 = md5_hash.hexdigest()
+        
 
 
 
@@ -166,6 +213,10 @@ Prediction workers
 Functions that make or support ML predictions. Used in
 :obj:`mbgdml.mbe.mbePredict``.
 """
+
+################
+###   GDML   ###
+################
 
 from ._gdml.desc import _pdist, _r_to_desc, _r_to_d_desc, _from_r
 
@@ -441,5 +492,162 @@ def predict_gdml_decomp(
         out *= model.stdev
         E[i] = out[0] + model.integ_c
         F[i] = out[1:].reshape((n_atoms, 3))
+    
+    return E, F, entity_combs
+
+################
+###    GAP   ###
+################
+
+import ase
+
+# Possible ray task.
+def predict_gap(z, r, entity_ids, entity_combs, model, ignore_criteria=False):
+    """Predict total :math:`n`-body energy and forces of a single structure.
+
+    Parameters
+    ----------
+    z : :obj:`numpy.ndarray`, ndim: ``1``
+        Atomic numbers of all atoms in ``r`` (in the same order).
+    r : :obj:`numpy.ndarray`, ndim: ``2``
+        Cartesian coordinates of a single structure to predict.
+    entity_ids : :obj:`numpy.ndarray`, ndim: ``1``
+        1D array specifying which atoms belong to which entities.
+    entity_combs : ``iterable``
+        Entity ID combinations (e.g., ``(53,)``, ``(0, 2)``,
+        ``(32, 55, 293)``, etc.) to predict using this model. These are used
+        to slice ``r`` with ``entity_ids``.
+    model : :obj:`mbgdml.predict.gapModel`
+        GAP model containing all information need to make predictions.
+    ignore_criteria : :obj:`bool`, default: ``False``
+        Ignore any criteria for predictions; i.e., all :math:`n`-body
+        structures will be predicted.
+    
+    Returns
+    -------
+    :obj:`float`
+        Predicted :math:`n`-body energy.
+    :obj:`numpy.ndarray`
+        Predicted :math:`n`-body forces.
+    """
+    assert r.ndim == 2
+    E = 0.
+    F = np.zeros(r.shape)
+
+    # Getting all contributions for each molecule combination (comb).
+    first_r = True
+    for entity_id_comb in entity_combs:
+        log.debug(f'Entity combination: {entity_id_comb}')
+
+        # Gets indices of all atoms in the combination of molecules.
+        # r_slice is a list of the atoms for the entity_id combination.
+        r_slice = []
+        for entity_id in entity_id_comb:
+            r_slice.extend(np.where(entity_ids == entity_id)[0])
+        
+        z_comp = z[r_slice]
+        r_comp = r[r_slice]
+        if first_r:
+            atoms = ase.Atoms(z_comp)
+            atoms.set_calculator(model.gap)
+            first_r = False
+        
+        # Checks criteria cutoff if present and desired.
+        if model.criteria_cutoff is not None and not ignore_criteria:
+            _, crit_val = model.criteria_desc_func(
+                z_comp, r_comp, None, entity_ids[r_slice]
+            )
+            if crit_val >= model.criteria_cutoff:
+                # Do not include this contribution.
+                continue
+        
+        # Predicts energies and forces.
+        atoms.set_positions(r_comp)
+        e = atoms.get_potential_energy()
+        f = atoms.get_forces()
+
+        # Adds contributions to total energy and forces.
+        E += e
+        F[r_slice] += f
+    
+    return E, F
+
+def predict_gap_decomp(
+    z, r, entity_ids, entity_combs, model, ignore_criteria=False
+):
+    """Predict all :math:`n`-body energies and forces of a single structure.
+
+    Parameters
+    ----------
+    z : :obj:`numpy.ndarray`, ndim: ``1``
+        Atomic numbers of all atoms in ``r`` (in the same order).
+    r : :obj:`numpy.ndarray`, ndim: ``2``
+        Cartesian coordinates of a single structure to predict.
+    entity_ids : :obj:`numpy.ndarray`, ndim: ``1``
+        1D array specifying which atoms belong to which entities.
+    entity_combs : ``iterable``
+        Entity ID combinations (e.g., ``(53,)``, ``(0, 2)``,
+        ``(32, 55, 293)``, etc.) to predict using this model. These are used
+        to slice ``r`` with ``entity_ids``.
+    model : :obj:`mbgdml.predict.gdmlModel`
+        GDML model containing all information need to make predictions.
+    
+    Returns
+    -------
+    :obj:`numpy.ndarray`, ndim: ``1``
+        Energies of all possible :math:`n`-body structures. Some elements
+        can be :obj:`numpy.nan` if they are beyond the criteria cutoff.
+    :obj:`numpy.ndarray`, ndim: ``3``
+        Atomic forces of all possible :math:`n`-body structure. Some
+        elements can be :obj:`numpy.nan` if they are beyond the criteria
+        cutoff.
+    :obj:`numpy.ndarray`, ndim: ``2``
+        All possible :math:`n`-body combinations of ``r`` (i.e., entity ID
+        combinations).
+    """
+    assert r.ndim == 2
+    
+    if entity_combs.ndim == 1:
+        n_atoms = np.count_nonzero(entity_ids == entity_combs[0])
+    else:
+        n_atoms = 0
+        for i in entity_combs[0]:
+            n_atoms += np.count_nonzero(entity_ids == i)
+    
+    E = np.empty(len(entity_combs), dtype=np.float64)
+    F = np.empty((len(entity_combs), n_atoms, 3), dtype=np.float64)
+    E[:] = np.nan
+    F[:] = np.nan
+
+    # Getting all contributions for each molecule combination (comb).
+    first_r = True
+    for i in range(len(entity_combs)):
+        entity_id_comb = entity_combs[i]
+        # Gets indices of all atoms in the combination of molecules.
+        # r_slice is a list of the atoms for the entity_id combination.
+        r_slice = []
+        for entity_id in entity_id_comb:
+            r_slice.extend(np.where(entity_ids == entity_id)[0])
+        
+        z_comp = z[r_slice]
+        r_comp = r[r_slice]
+        if first_r:
+            atoms = ase.Atoms(z_comp)
+            atoms.set_calculator(model.gap)
+            first_r = False
+        
+        # Checks criteria cutoff if present and desired.
+        if model.criteria_cutoff is not None and not ignore_criteria:
+            _, crit_val = model.criteria_desc_func(
+                z_comp, r_comp, None, entity_ids[r_slice]
+            )
+            if crit_val >= model.criteria_cutoff:
+                # Do not include this contribution.
+                continue
+        
+        # Predicts energies and forces.
+        atoms.set_positions(r_comp)
+        E[i] = atoms.get_potential_energy()
+        F[i] = atoms.get_forces()
     
     return E, F, entity_combs
