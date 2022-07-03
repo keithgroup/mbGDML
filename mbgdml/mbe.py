@@ -819,6 +819,7 @@ class mbePredict(object):
         :obj:`numpy.ndarray`, shape: ``(N, len(z), 3)``
             Predicted atomic forces.
         """
+        t_predict = log.t_start()
         if R.ndim == 2:
             R = np.array([R])
         
@@ -834,7 +835,7 @@ class mbePredict(object):
                 )
                 E[i] += E_nbody
                 F[i] += F_nbody
-            
+        log.t_stop(t_predict, message='Predictions took {time} s', precision=3)
         return E, F
     
     def predict_decomp(self, z, R, entity_ids, comp_ids, ignore_criteria=False):
@@ -870,6 +871,7 @@ class mbePredict(object):
         :obj:`list`
             :math:`n`-body orders of each returned item.
         """
+        t_predict = log.t_start()
         if R.ndim == 2:
             R = np.array([R])
 
@@ -907,5 +909,8 @@ class mbePredict(object):
             E_data.append(np.array(E_nbody))
             F_data.append(np.array(F_nbody))
             entity_comb_data.append(np.array(entity_comb_nbody))
-        
+        log.t_stop(
+            t_predict, message='Decomposed predictions took {time} s',
+            precision=3
+        )
         return E_data, F_data, entity_comb_data, nbody_orders

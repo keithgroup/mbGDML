@@ -729,7 +729,6 @@ class GDMLPredict:
                     if (not bulk_mp and n_bulk > 1):
                         if (gps < gps_min):  
                             # if the batch size run is lower than the lowest overall, stop right here
-                            # print('breaking here')
                             break
 
                     i += 1 * i_dir

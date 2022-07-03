@@ -235,6 +235,8 @@ class predictSet(mbGDMLData):
             E_decomp = getattr(self, f'E_{nbody_order}')
             F_decomp = getattr(self, f'F_{nbody_order}')
             entity_combs = getattr(self, f'entity_combs_{nbody_order}')
+            if len(nbody_orders) == 1:
+                return E_decomp, F_decomp
             E_nbody, F_nbody = decomp_to_total(
                 E_decomp, F_decomp, self.entity_ids, entity_combs
             )
@@ -285,10 +287,12 @@ class predictSet(mbGDMLData):
 
         self.z = dset['z']
         self.R = dset['R']
-        if isinstance(dset['E'], float):
-            self.E_true = np.array([dset['E']])
-        else:
-            self.E_true = dset['E']
+        E = dset['E']
+        if not isinstance(dset['E'], np.ndarray):
+            E = np.array(E)
+        if E.ndim == 0:
+            E = np.array([E])
+        self.E_true = E
         self.F_true = dset['F']
         self.entity_ids = dset['entity_ids']
         self.comp_ids = dset['comp_ids']
