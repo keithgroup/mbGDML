@@ -733,6 +733,8 @@ def predict_schnet(z, r, entity_ids, entity_combs, model, ignore_criteria=False)
         Predicted :math:`n`-body forces.
     """
     assert r.ndim == 2
+    E = 0.
+    F = np.zeros(r.shape)
 
     atom_conv = schnetpack.data.atoms.AtomsConverter(
         device=torch.device(model.device)
