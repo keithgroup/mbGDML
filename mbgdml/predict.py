@@ -203,7 +203,55 @@ class gapModel(model):
             )
         self.md5 = md5_hash.hexdigest()
         
+class schnetModel(model):
 
+    def __init__(
+        self, model_path, comp_ids, device, criteria_desc_func=None,
+        criteria_cutoff=None
+    ):
+        """
+        Parameters
+        ----------
+        model_path : :obj:`str`
+            Path to GAP xml file.
+        comp_ids : ``iterable``
+            Model component IDs that relate entity IDs of a structure to a
+            fragment label.
+        device : :obj:`str`
+            The device where the model and tensors will be stored. For example,
+            ``'cpu'`` and ``'cuda'``.
+        criteria_desc_func : ``callable``, default: ``None``
+            A descriptor used to filter :math:`n`-body structures from being
+            predicted.
+        criteria_cutoff : :obj:`float`, default: ``None``
+            Value of ``criteria_desc_func`` where the mlModel will not predict
+            the :math:`n`-body contribution of. If ``None``, no cutoff will be
+            enforced.
+        """
+        global schnetpack, torch, ase
+        import schnetpack, torch, ase
+
+        super().__init__(criteria_desc_func, criteria_cutoff)
+        self.type = 'schnet'
+        self.spk_model = torch.load(
+            model_path, map_location=torch.device(device)
+        )
+        self.device = device
+        if isinstance(comp_ids, list) or isinstance(comp_ids, tuple):
+            comp_ids = np.array(comp_ids)
+        self.comp_ids = comp_ids
+        self.nbody_order = len(comp_ids)
+
+        # SchNet MD5
+        import hashlib
+        md5_hash = hashlib.md5()
+        for param in self.spk_model.parameters():
+            md5_hash.update(
+                hashlib.md5(
+                    param.cpu().detach().numpy().flatten()
+                ).digest()
+            )
+        self.md5 = md5_hash.hexdigest()
 
 
 """
@@ -649,5 +697,150 @@ def predict_gap_decomp(
         atoms.set_positions(r_comp)
         E[i] = atoms.get_potential_energy()
         F[i] = atoms.get_forces()
+    
+    return E, F, entity_combs
+
+######################
+###   SchNetPack   ###
+######################
+
+def predict_schnet(z, r, entity_ids, entity_combs, model, ignore_criteria=False):
+    """Predict total :math:`n`-body energy and forces of a single structure.
+
+    Parameters
+    ----------
+    z : :obj:`numpy.ndarray`, ndim: ``1``
+        Atomic numbers of all atoms in ``r`` (in the same order).
+    r : :obj:`numpy.ndarray`, ndim: ``2``
+        Cartesian coordinates of a single structure to predict.
+    entity_ids : :obj:`numpy.ndarray`, ndim: ``1``
+        1D array specifying which atoms belong to which entities.
+    entity_combs : ``iterable``
+        Entity ID combinations (e.g., ``(53,)``, ``(0, 2)``,
+        ``(32, 55, 293)``, etc.) to predict using this model. These are used
+        to slice ``r`` with ``entity_ids``.
+    model : :obj:`mbgdml.predict.gapModel`
+        GAP model containing all information need to make predictions.
+    ignore_criteria : :obj:`bool`, default: ``False``
+        Ignore any criteria for predictions; i.e., all :math:`n`-body
+        structures will be predicted.
+    
+    Returns
+    -------
+    :obj:`float`
+        Predicted :math:`n`-body energy.
+    :obj:`numpy.ndarray`
+        Predicted :math:`n`-body forces.
+    """
+    assert r.ndim == 2
+
+    atom_conv = schnetpack.data.atoms.AtomsConverter(
+        device=torch.device(model.device)
+    )
+
+    for entity_id_comb in entity_combs:
+        log.debug(f'Entity combination: {entity_id_comb}')
+
+        # Gets indices of all atoms in the combination of molecules.
+        # r_slice is a list of the atoms for the entity_id combination.
+        r_slice = []
+        for entity_id in entity_id_comb:
+            r_slice.extend(np.where(entity_ids == entity_id)[0])
+        
+        z_comb = z[r_slice]
+        r_comb = r[r_slice]
+
+        # Checks criteria cutoff if present and desired.
+        if model.criteria_cutoff is not None and not ignore_criteria:
+            _, crit_val = model.criteria_desc_func(
+                z_comb, r_comb, None, entity_ids[r_slice]
+            )
+            if crit_val >= model.criteria_cutoff:
+                continue
+        
+        # Making predictions
+        pred = model.spk_model(atom_conv(ase.Atoms(z_comb, r_comb)))
+        E += pred['energy'].cpu().detach().numpy()[0][0]
+        F[r_slice] += pred['forces'].cpu().detach().numpy()[0]
+    
+    return E, F
+
+def predict_schnet_decomp(
+    z, r, entity_ids, entity_combs, model, ignore_criteria=False
+):
+    """Predict total :math:`n`-body energy and forces of a single structure.
+
+    Parameters
+    ----------
+    z : :obj:`numpy.ndarray`, ndim: ``1``
+        Atomic numbers of all atoms in ``r`` (in the same order).
+    r : :obj:`numpy.ndarray`, ndim: ``2``
+        Cartesian coordinates of a single structure to predict.
+    entity_ids : :obj:`numpy.ndarray`, ndim: ``1``
+        1D array specifying which atoms belong to which entities.
+    entity_combs : ``iterable``
+        Entity ID combinations (e.g., ``(53,)``, ``(0, 2)``,
+        ``(32, 55, 293)``, etc.) to predict using this model. These are used
+        to slice ``r`` with ``entity_ids``.
+    model : :obj:`mbgdml.predict.gapModel`
+        GAP model containing all information need to make predictions.
+    ignore_criteria : :obj:`bool`, default: ``False``
+        Ignore any criteria for predictions; i.e., all :math:`n`-body
+        structures will be predicted.
+    
+    Returns
+    -------
+    :obj:`float`
+        Predicted :math:`n`-body energy.
+    :obj:`numpy.ndarray`
+        Predicted :math:`n`-body forces.
+    :obj:`numpy.ndarray`, ndim: ``2``
+        All possible :math:`n`-body combinations of ``r`` (i.e., entity ID
+        combinations).
+    """
+    assert r.ndim == 2
+
+    if entity_combs.ndim == 1:
+        n_atoms = np.count_nonzero(entity_ids == entity_combs[0])
+    else:
+        n_atoms = 0
+        for i in entity_combs[0]:
+            n_atoms += np.count_nonzero(entity_ids == i)
+    
+    E = np.empty(len(entity_combs), dtype=np.float64)
+    F = np.empty((len(entity_combs), n_atoms, 3), dtype=np.float64)
+    E[:] = np.nan
+    F[:] = np.nan
+
+    atom_conv = schnetpack.data.atoms.AtomsConverter(
+        device=torch.device(model.device)
+    )
+
+    for i in range(len(entity_combs)):
+        entity_id_comb = entity_combs[i]
+
+        log.debug(f'Entity combination: {entity_id_comb}')
+
+        # Gets indices of all atoms in the combination of molecules.
+        # r_slice is a list of the atoms for the entity_id combination.
+        r_slice = []
+        for entity_id in entity_id_comb:
+            r_slice.extend(np.where(entity_ids == entity_id)[0])
+        
+        z_comb = z[r_slice]
+        r_comb = r[r_slice]
+
+        # Checks criteria cutoff if present and desired.
+        if model.criteria_cutoff is not None and not ignore_criteria:
+            _, crit_val = model.criteria_desc_func(
+                z_comb, r_comb, None, entity_ids[r_slice]
+            )
+            if crit_val >= model.criteria_cutoff:
+                continue
+        
+        # Making predictions
+        pred = model.spk_model(atom_conv(ase.Atoms(z_comb, r_comb)))
+        E[i] = pred['energy'].cpu().detach().numpy()[0][0]
+        F[i] = pred['forces'].cpu().detach().numpy()[0]
     
     return E, F, entity_combs

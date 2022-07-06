@@ -50,6 +50,7 @@ mbGDML already provides support for the following potentials:
 
 - Gradient-Domain Machine Learning (GDML) with :class:`~mbgdml.predict.gdmlModel` and :func:`~mbgdml.predict.predict_gdml`
 - Gaussian Approximation Potential (GAP) with :class:`~mbgdml.predict.gapModel` and :func:`~mbgdml.predict.predict_gap`
+- SchNetPack with :class:`~mbgdml.predict.schnetModel` and :func:`~mbgdml.predict.predict_schnet`
 
 Examples
 ========

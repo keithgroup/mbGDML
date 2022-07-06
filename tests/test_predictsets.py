@@ -101,6 +101,7 @@ def test_predictset_nan_for_failed_criteria():
     ]
     for i in range(len(E_pset)):
         if i in r_isnan:
-            assert E_pset[i] == 0.0
+            print(E_pset[i])
+            assert np.isnan(E_pset[i])
         else:
-            assert E_pset[i] != 0.0
+            assert not np.isnan(E_pset[i])
