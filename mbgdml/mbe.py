@@ -615,7 +615,6 @@ class mbePredict(object):
         # Runs the predict_model function to calculate all n-body energies
         # with this model.
         if not self.use_ray:
-            log.info('Using serial operation')
             E, F = self.predict_model(
                 z, r, entity_ids, nbody_gen, model, ignore_criteria
             )
