@@ -210,8 +210,8 @@ class prob_structures:
         return prob_idxs
     
     def find(
-        self, dset, n_find, dset_is_train=True, write_json=True,
-        save_cl_plot=True,
+        self, dset, n_find, dset_is_train=True, train_idxs=None,
+        write_json=True, save_cl_plot=True,
         kwargs_subplot={'figsize': (5.5, 3), 'constrained_layout': True},
         kwargs_plot={'lolli_color': '#223F4B', 'annotate_cl_idx': False},
         image_format='png', image_dpi=600, save_dir='.'
@@ -239,6 +239,10 @@ class prob_structures:
         dset_is_train : :obj:`bool`, default: ``True``
             If ``dset`` is the training dataset. Training indices will be
             dropped from the analyses.
+        train_idxs : :obj:`numpy.ndarray`, ndim: ``1``, default: ``None``
+            Training indices that will be dropped if ``dset_is_train`` is
+            ``True``. These do not need to be provided for GDML models (as they
+            are already stored in the model).
         write_json : :obj:`bool`, default: ``True``
             Write JSON file detailing clustering and prediction errors.
         save_cl_plot : :obj:`bool`, default: ``True``
@@ -278,7 +282,13 @@ class prob_structures:
                 log.warning('Not dropping any indices')
             assert len(self.models) == 1
 
-            train_idxs = self.models[0]._model_dict['idxs_train']
+            if train_idxs is None:
+                try:
+                    train_idxs = self.models[0]._model_dict['idxs_train']
+                except Exception:
+                    raise AttributeError('Training indices were not provided')
+            else:
+                assert isinstance(train_idxs, np.ndarray)
             log.debug('Training indices')
             log.log_array(train_idxs, level=10)
 

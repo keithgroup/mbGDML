@@ -1055,7 +1055,7 @@ class mbGDMLTrain:
                 )
 
             train_idxs = model['idxs_train']
-            prob_s = prob_structures([gdmlModel(model)])
+            prob_s = prob_structures([gdmlModel(model)], predict_gdml)
             prob_idxs = prob_s.find(dataset, n_train_step, save_dir=save_dir_i)
             
             train_idxs = np.concatenate((train_idxs, prob_idxs))
