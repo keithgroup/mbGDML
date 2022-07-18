@@ -20,11 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from .mbe import mbePredict
-
 from ase.calculators.calculator import Calculator
-from cclib.parser.utils import convertor
-import numpy as np
 
 class mbeCalculator(Calculator):
     """ASE calculator using the many-body expansion predictor in mbGDML.
@@ -47,7 +43,9 @@ class mbeCalculator(Calculator):
         f_conv : :obj:`float`, default: ``1.0``
             Model forces conversion factor to eV/A (required by ASE).
         """
-        Calculator.__init__(kwargs)
+        self.atoms = None
+        self.name = 'mbGDML'
+        self.results = {}
 
         self.mbe_pred = mbe_pred
 
