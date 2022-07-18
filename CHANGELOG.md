@@ -20,6 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Changed
 
+- Removing `md` module in favor of having an `interfaces` module.
 - Storage of *n*-body energies and forces in predict sets.
 - Redesigned predict methods and parallelized with ray.
 - Included a many-body expansion, ``mbe``, module to handle *n*-body energy and force predictions.
