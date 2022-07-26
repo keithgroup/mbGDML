@@ -213,7 +213,7 @@ class schnetModel(model):
         Parameters
         ----------
         model_path : :obj:`str`
-            Path to GAP xml file.
+            Path to SchNet PyTorch model.
         comp_ids : ``iterable``
             Model component IDs that relate entity IDs of a structure to a
             fragment label.
@@ -719,7 +719,7 @@ def predict_schnet(z, r, entity_ids, entity_combs, model, ignore_criteria=False)
         Entity ID combinations (e.g., ``(53,)``, ``(0, 2)``,
         ``(32, 55, 293)``, etc.) to predict using this model. These are used
         to slice ``r`` with ``entity_ids``.
-    model : :obj:`mbgdml.predict.gapModel`
+    model : :obj:`mbgdml.predict.schnetModel`
         GAP model containing all information need to make predictions.
     ignore_criteria : :obj:`bool`, default: ``False``
         Ignore any criteria for predictions; i.e., all :math:`n`-body
@@ -784,7 +784,7 @@ def predict_schnet_decomp(
         Entity ID combinations (e.g., ``(53,)``, ``(0, 2)``,
         ``(32, 55, 293)``, etc.) to predict using this model. These are used
         to slice ``r`` with ``entity_ids``.
-    model : :obj:`mbgdml.predict.gapModel`
+    model : :obj:`mbgdml.predict.schnetModel`
         GAP model containing all information need to make predictions.
     ignore_criteria : :obj:`bool`, default: ``False``
         Ignore any criteria for predictions; i.e., all :math:`n`-body
