@@ -12,30 +12,23 @@ Loading and saving
 ------------------
 
 Models are stored as NumPy ``.npz`` files.
-To load a data set, you can pass the path to a ``dataset.npz`` file or explicitly use the :func:`~mbgdml.data.model.mbModel.load` function.
+To load a data set, you can pass the path to a ``model.npz`` file or explicitly use the :meth:`~mbgdml.data.mbModel.load` function.
 
 .. code-block:: python
 
     from mbgdml.data import mbModel
 
-    model = mbModel('./path/to/dataset.npz')
+    model = mbModel('./path/to/model.npz')
     # Or
     model = mbModel()
-    model.load('./path/to/dataset.npz')
+    model.load('./path/to/model.npz')
 
-
-.. automethod:: mbgdml.data.model.mbModel.load
-    :noindex:
-
-Saving a model can be done using the :func:`mbgdml.data.basedata.mbGDMLData.save` function.
+Saving a model can be done using the :meth:`~mbgdml.data.mbModel.save` function.
 The required ``model`` dictionary for ``save`` is provided as the ``model`` attribute which creates a dictionary of all data to save in the ``npz`` file.
 
 .. code-block:: python
 
     model.save('model', model.model, './path/to')
-
-.. automethod:: mbgdml.data.model.mbModel.save
-    :noindex:
 
 
 

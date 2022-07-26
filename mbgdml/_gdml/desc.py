@@ -79,7 +79,7 @@ def _pbc_diff(diffs, lat_and_inv, use_torch=False):
     return diffs
 
 
-def _pdist(r, lat_and_inv=None):  # TODO: update return (no squareform anymore)
+def _pdist(r, lat_and_inv=None):
     """
     Compute pairwise Euclidean distance matrix between all atoms.
 
@@ -146,7 +146,7 @@ def _r_to_desc(r, pdist, coff=None):
         return cutoff_factor / pdist
 
 
-def _r_to_d_desc(r, pdist, lat_and_inv=None, coff=None):  # TODO: fix documentation!
+def _r_to_d_desc(r, pdist, lat_and_inv=None, coff=None):
     """
     Generate descriptor Jacobian for a set of atom positions in
     Cartesian coordinates.
@@ -287,7 +287,7 @@ class Desc(object):
             interact_cut_off
             if not hasattr(interact_cut_off, '__iter__')
             else interact_cut_off.item()
-        )  # TODO: that's a hack :(
+        )
         self.coff_slope = 10
         # NEW
 

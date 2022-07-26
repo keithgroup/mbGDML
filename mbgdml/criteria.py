@@ -21,8 +21,11 @@
 # SOFTWARE.
 
 import itertools
+import logging
 import numpy as np
 from .utils import z_to_mass
+
+log = logging.getLogger(__name__)
 
 def _calc_distance(r1, r2):
     """Calculates the Euclidean distance between two points.
@@ -35,6 +38,30 @@ def _calc_distance(r1, r2):
         Cartesian coordinates of a point with shape ``(3,)``.
     """
     return np.linalg.norm(r1 - r2)
+
+def get_center_of_mass(z, R):
+    """Compute the center of mass.
+
+    Parameters
+    ----------
+    z : :obj:`numpy.ndarray`, ndim: ``1``
+        Atomic numbers of all atoms in the system.
+    R : :obj:`numpy.ndarray`, ndim: ``3``
+        Cartesian coordinates.
+    
+    Returns
+    -------
+    :obj:`float`
+        The center of mass cartesian coordinates.
+    """
+    if R.ndim == 2:
+        R = np.array([R])
+    masses = np.empty(R[0].shape)
+    for i in range(len(masses)):
+        masses[i,:] = z_to_mass[z[i]]
+    R_masses = np.full(R.shape, masses)
+    cm_structure = np.average(R, axis=1, weights=R_masses)
+    return cm_structure
 
 def get_z_slice(entity_ids, comp_ids, criteria_molecule_index):
     """
@@ -168,25 +195,20 @@ def cm_distance_sum(z, R, z_slice, entity_ids, cutoff=None):
     # Will error out if entity_ids is not an array.
     assert isinstance(entity_ids, np.ndarray)
 
-    accept_r = None
-    masses = np.empty(R.shape)  # Masses of each atom in the same shape of R.
-    for i in range(len(masses)):
-        masses[i,:] = z_to_mass[z[i]]
+    accept_r = True
 
-    cm_cluster = np.average(R, axis=0, weights=masses)
+    cm_cluster = get_center_of_mass(z, R)
 
     d_sum = 0.0
     # Calculates distance of entity center of mass to the cluster center of mass.
     for entity_id in set(entity_ids):
         atom_idxs = np.where(entity_ids == entity_id)[0]
-        cm_entity = np.average(R[atom_idxs], axis=0, weights=masses[atom_idxs])
+        cm_entity = get_center_of_mass(z, R[atom_idxs])
         d_sum += _calc_distance(cm_cluster, cm_entity)
 
     if cutoff is not None:
         if d_sum > cutoff[0]:
             accept_r = False
-        else:
-            accept_r = True
     
     return accept_r, d_sum
 

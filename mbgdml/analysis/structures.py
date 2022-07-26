@@ -408,7 +408,7 @@ class mbExpansion:
             Initial energy. Can be zero or nonzero.
         F : :obj:`numpy.ndarray`
             Initial forces. Can be zero or nonzero.
-        dsets : :obj:`list` [:obj:`mbgdml.data.dataset.dataSet`]
+        dsets : :obj:`list` [:obj:`mbgdml.data.dataSet`]
             Data set contributions to be added or removed from ``E`` and ``F``.
         operation : :obj:`str`
             ``'add'`` or ``'remove'`` the contributions.
@@ -465,14 +465,14 @@ class mbExpansion:
 
         Parameters
         ----------
-        dset : :obj:`mbgdml.data.dataset.dataSet`
+        dset : :obj:`mbgdml.data.dataSet`
             The n-body data set with total energies and forces.
-        nbody_dsets : :obj:`list` [:obj:`mbgdml.data.dataset.dataSet`]
+        nbody_dsets : :obj:`list` [:obj:`mbgdml.data.dataSet`]
             A list of lower order n-body data sets.
         
         Returns
         -------
-        :obj:`mbgdml.data.dataset.dataSet`
+        :obj:`mbgdml.data.dataSet`
             The same data set with the energies and forces being the n-body
             contributions.
         """
@@ -498,7 +498,7 @@ class mbExpansion:
 
         Parameters
         ----------
-        dset : :obj:`mbgdml.data.dataset.dataSet`
+        dset : :obj:`mbgdml.data.dataSet`
 
         n_molecules : :obj:`int`
             The total number of molecules in the parent structure.
@@ -526,7 +526,7 @@ class mbExpansion:
 
         Parameters
         ----------
-        nmer_dsets : :obj:`list` [:obj:`mbgdml.data.dataset.dataSet`]
+        nmer_dsets : :obj:`list` [:obj:`mbgdml.data.dataSet`]
             All data sets of nmer clusters from a single structure. At the very
             least, a 1mer data set must be provided.
         
