@@ -121,7 +121,7 @@ class GDMLLogger(logging.Logger, timeTracker):
         else:
             raise ValueError(f'log_model does not support {d_type} type')
         z = model["z"]
-        atom_string = ' '.join(
+        atom_string = ''.join(
             z_to_element[i] for i in z
         )
         self.info(f'Atoms : {len(z)}')

@@ -115,6 +115,7 @@ class mbGDMLData():
         save_dir : :obj:`str`
             Directory to save the file (with or without the ``'/'`` suffix).
         """
+        # TODO: Just accept path and data.
         save_dir = utils.norm_path(save_dir)
         save_path = save_dir + name + '.npz'
         np.savez_compressed(save_path, **data)

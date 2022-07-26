@@ -122,7 +122,7 @@ def _assemble_kernel_mat_wkr(
         blk_j = slice(j * dim_i, (j + 1) * dim_i)
         keep_idxs_3n = slice(None)  # same as [:]
 
-    # TODO: document this exception
+    
     if use_E_cstr and not (cols_m_limit is None or cols_m_limit == n_train):
         raise ValueError(
             '\'use_E_cstr\'- and \'cols_m_limit\'-parameters are mutually exclusive!'
@@ -350,9 +350,9 @@ class GDMLTrain(object):
         md5_train_keys = ['z', 'R', 'F']
         md5_valid_keys = ['z', 'R', 'F']
         if 'E' in train_dataset.keys():
-            md5_train_keys.insert(2, 'E')
+            md5_train_keys.append('E')
         if 'E' in valid_dataset.keys():
-            md5_valid_keys.insert(2, 'E')
+            md5_valid_keys.append('E')
         md5_train = md5_data(train_dataset, md5_train_keys)
         md5_valid = md5_data(valid_dataset, md5_valid_keys)
         
@@ -596,13 +596,15 @@ class GDMLTrain(object):
 
         return model
 
-    def train(self, task):
+    def train(self, task, require_E_eval=False):
         """Train a model based on a task.
 
         Parameters
         ----------
         task : :obj:`dict`
             Data structure of custom type ``task``.
+        require_E_eval : :obj:`bool`, default: ``False``
+            Require energy evaluation regardless even if they are terrible.
 
         Returns
         -------
@@ -703,12 +705,16 @@ class GDMLTrain(object):
         # (which was subtracted from the labels before training).
         if model['use_E']:
             c = (
-                self._recov_int_const(model, task, R_desc=R_desc, R_d_desc=R_d_desc)
+                self._recov_int_const(
+                    model, task, R_desc=R_desc, R_d_desc=R_d_desc,
+                    require_E_eval=require_E_eval
+                )
                 if E_train_mean is None
                 else E_train_mean
             )
             if c is None:
-                # Something does not seem right. Turn off energy predictions for this model, only output force predictions.
+                # Something does not seem right.
+                # Turn off energy predictions for this model, only output force predictions.
                 model['use_E'] = False
             else:
                 model['c'] = c
@@ -819,9 +825,10 @@ class GDMLTrain(object):
         
         return alphas
 
-    def _recov_int_const(self, model, task, R_desc=None, R_d_desc=None):
-        """
-        Estimate the integration constant for a force field model.
+    def _recov_int_const(
+        self, model, task, R_desc=None, R_d_desc=None, require_E_eval=False
+    ):
+        """Estimate the integration constant for a force field model.
 
         The offset between the energies predicted for the original training
         data and the true energy labels is computed in the least square sense.
@@ -842,10 +849,13 @@ class GDMLTrain(object):
             descriptor Jacobians for M molecules. The descriptor
             has dimension D with 3N partial derivatives with
             respect to the 3N Cartesian coordinates of each atom.
+        require_E_eval : :obj:`bool`, default: ``False``
+            Force the computation and return of the integration constant
+            regardless if there are significant errors.
 
         Returns
         -------
-        float
+        :obj:`float`
             Estimate for the integration constant.
 
         Raises
@@ -876,29 +886,30 @@ class GDMLTrain(object):
         )[0][0]
         corrcoef = np.corrcoef(E_ref, E_pred)[0, 1]
 
-        if np.sign(e_fact) == -1:
-            log.warning(
-                'The provided dataset contains gradients instead of force labels (flipped sign). Please correct!\n'
-                + 'Note: The energy prediction accuracy of the model will thus neither be validated nor tested in the following steps!'
-            )
-            return None
+        if not require_E_eval:
+            if np.sign(e_fact) == -1:
+                log.warning(
+                    'The provided dataset contains gradients instead of force labels (flipped sign). Please correct!\n'
+                    + 'Note: The energy prediction accuracy of the model will thus neither be validated nor tested in the following steps!'
+                )
+                return None
 
-        if corrcoef < 0.95:
-            log.warning(
-                'Inconsistent energy labels detected!'
-            )
-            log.warning(
-                'The predicted energies for the training data are only weakly\n'
-                f'correlated with the reference labels (correlation coefficient {corrcoef:.2f})\n'
-                'which indicates that the issue is most likely NOT just a unit conversion error.\n'
-            )
-            return None
+            if corrcoef < 0.95:
+                log.warning(
+                    'Inconsistent energy labels detected!'
+                )
+                log.warning(
+                    'The predicted energies for the training data are only weakly\n'
+                    f'correlated with the reference labels (correlation coefficient {corrcoef:.2f})\n'
+                    'which indicates that the issue is most likely NOT just a unit conversion error.\n'
+                )
+                return None
 
-        if np.abs(e_fact - 1) > 1e-1:
-            log.warning(
-                'Different scales in energy vs. force labels detected!\n'
-            )
-            return None
+            if np.abs(e_fact - 1) > 1e-1:
+                log.warning(
+                    'Different scales in energy vs. force labels detected!\n'
+                )
+                return None
 
         # Least squares estimate for integration constant.
         return np.sum(E_ref - E_pred) / E_ref.shape[0]
@@ -907,8 +918,7 @@ class GDMLTrain(object):
         self, R_desc, R_d_desc, tril_perms_lin, sig, desc, use_E_cstr=False,
         col_idxs=np.s_[:]
     ):
-        """
-        Compute force field kernel matrix.
+        """Compute force field kernel matrix.
 
         The Hessian of the Matern kernel is used with n = 2 (twice
         differentiable). Each row and column consists of matrix-valued blocks,
@@ -955,10 +965,8 @@ class GDMLTrain(object):
             K_n_cols = len(range(*col_idxs.indices(K_n_rows)))
         else:  # indexed by list
 
-            # TODO: throw exception with description
             assert len(col_idxs) == len(set(col_idxs))  # assume no duplicate indices
 
-            # TODO: throw exception with description
             # Note: This function does not support unsorted (ascending) index arrays.
             assert np.array_equal(col_idxs, np.sort(col_idxs))
 
@@ -1078,11 +1086,22 @@ def get_test_idxs(model, dataset, n_test=None):
     """
     # exclude training and/or test sets from validation set if necessary
     excl_idxs = np.empty((0,), dtype=np.uint)
-    if dataset['md5'] == model['md5_train']:
+
+    def convert_md5(md5_value):
+        if isinstance(md5_value, np.ndarray):
+            return str(md5_value.item())
+        else:
+            return str(md5_value)
+    
+    md5_dset = convert_md5(dataset['md5'])
+    md5_train = convert_md5(model['md5_train'])
+    md5_valid = convert_md5(model['md5_valid'])
+
+    if md5_dset == md5_train:
         excl_idxs = np.concatenate([excl_idxs, model['idxs_train']]).astype(
             np.uint
         )
-    if dataset['md5'] == model['md5_valid']:
+    if md5_dset == md5_valid:
         excl_idxs = np.concatenate([excl_idxs, model['idxs_valid']]).astype(
             np.uint
         )
@@ -1261,8 +1280,6 @@ def model_errors(
 
     if not use_torch:
         if num_workers == 0 or batch_size == 0:
-            log.info('Optimizing parallelism')
-
             gps, is_from_cache = gdml_predict.prepare_parallel(
                 n_bulk=b_size, return_is_from_cache=True
             )
@@ -1271,10 +1288,6 @@ def model_errors(
                 gdml_predict.chunk_size,
                 gdml_predict.bulk_mp,
             )
-
-            if is_from_cache:
-                log.info('Taken from cache')
-            log.info(f'Using {num_workers} workers with chunks of {batch_size}')
         else:
             gdml_predict._set_num_workers(num_workers)
             gdml_predict._set_batch_size(batch_size)

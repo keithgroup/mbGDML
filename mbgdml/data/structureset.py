@@ -110,9 +110,7 @@ class structureSet(mbGDMLData):
 
         Notes
         -----
-        :obj:`mbgdml.data.basedata.mbGDMLData.z` and
-        :obj:`mbgdml.data.basedata.mbGDMLData.R` are used to generate the MD5
-        hash.
+        ``z`` and ``R`` are always used to generate the MD5 hash.
 
         :type: :obj:`str`
         """

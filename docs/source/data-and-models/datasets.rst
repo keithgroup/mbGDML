@@ -15,7 +15,7 @@ Loading and saving
 ------------------
 
 Data sets are stored as NumPy ``.npz`` files.
-To load a data set, you can pass the path to a ``dataset.npz`` file or explicitly use the :func:`~mbgdml.data.dataset.dataSet.load` function.
+To load a data set, you can pass the path to a ``dataset.npz`` file or explicitly use the :meth:`~mbgdml.data.dataSet.load` function.
 
 .. code-block:: python
 
@@ -27,18 +27,13 @@ To load a data set, you can pass the path to a ``dataset.npz`` file or explicitl
     dset.load('./path/to/dataset.npz')
 
 
-.. automethod:: mbgdml.data.dataset.dataSet.load
-    :noindex:
-
-Saving a data set can be done using the :meth:`~mbgdml.data.basedata.mbGDMLData.save` function.
+Saving a data set can be done using the :meth:`~mbgdml.data.dataSet.save` function.
 The required ``data`` dictionary for ``save`` is provided as the ``asdict`` attribute which creates a dictionary of all data to save in the ``npz`` file.
 
 .. code-block:: python
 
     dset.save('dataset', dset.dataset, './path/to')
 
-.. automethod:: mbgdml.data.dataset.dataSet.save
-    :noindex:
 
 
 
@@ -50,15 +45,12 @@ Data sets are created in two stages: structural sampling and calculating energy 
 Structure sampling
 ^^^^^^^^^^^^^^^^^^
 
-Curating a data set starts by sampling geometries from :ref:`structure sets<structure-sets>` or even data sets.
-
-.. automethod:: mbgdml.data.dataset.dataSet.sample_structures
-    :noindex:
+Curating a data set starts by sampling geometries from :ref:`structure sets<structure-sets>` or even data sets with :meth:`~mbgdml.data.dataSet.sample_structures`.
 
 Energies and forces
 ^^^^^^^^^^^^^^^^^^^
 
-These data need to be computed using your program and then stored in the :obj:`mbgdml.data.dataSet` object using the :attr:`~mbgdml.data.dataset.dataSet.E` and :attr:`~mbgdml.data.dataset.dataSet.F` attributes.
+These data need to be computed using your program and then stored in the :obj:`mbgdml.data.dataSet` object using the :attr:`~mbgdml.data.dataSet.E` and :attr:`~mbgdml.data.dataSet.F` attributes.
 Units for energies and forces are normally kcal/mol and kcal/(mol A) for mbGDML models.
 
 Unit conversion
@@ -66,14 +58,9 @@ Unit conversion
 
 We provide a simple way to convert Cartesian coordinates, energies, or forces to a variety of units.
 
-.. automethod:: mbgdml.data.dataset.dataSet.convertR
-    :noindex:
-
-.. automethod:: mbgdml.data.dataset.dataSet.convertE
-    :noindex:
-
-.. automethod:: mbgdml.data.dataset.dataSet.convertF
-    :noindex:
+- :meth:`~mbgdml.data.dataSet.convertR`
+- :meth:`~mbgdml.data.dataSet.convertE`
+- :meth:`~mbgdml.data.dataSet.convertF`
 
 So, say we wanted to convert ``dset`` energies and forces from hartree and hartree/A to kcal/mol and kcal/(mol A).
 The coordinates are already in Angstroms, so we just need to convert the energies and forces.
@@ -88,9 +75,9 @@ The coordinates are already in Angstroms, so we just need to convert the energie
     ``convertF`` does not change any unit specifications (i.e., ``r_unit`` and ``e_unit``), but **needs** to match both coordinate and energy units.
 
 
+
+
 .. _mb-data-sets:
-
-
 
 Many-body data
 --------------
@@ -98,66 +85,54 @@ Many-body data
 GDML models for the many-body expansion require energies and forces where the lower-order contributions (i.e., 1-body) are removed (i.e., dimers).
 We indicate that a data set contains many-body data with the following attributes.
 
-.. autoattribute:: mbgdml.data.dataset.dataSet.mb
+.. autoattribute:: mbgdml.data.dataSet.mb
     :noindex:
 
-.. autoattribute:: mbgdml.data.dataset.dataSet.mb_dsets_md5
+.. autoattribute:: mbgdml.data.dataSet.mb_dsets_md5
     :noindex:
 
-.. autoattribute:: mbgdml.data.dataset.dataSet.mb_models_md5
+.. autoattribute:: mbgdml.data.dataSet.mb_models_md5
     :noindex:
 
 Removing *n*-body contributions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-We provide two options 
-
-.. automethod:: mbgdml.data.dataset.dataSet.create_mb_from_dsets
-    :noindex:
-
-.. automethod:: mbgdml.data.dataset.dataSet.create_mb_from_models
-    :noindex:
-
-.. warning::
-    Using models to predict *n*-body energies and forces for many-body data sets can save on PES calculations.
-    However, they are typically less accurate and can cause error accumulation in higher-order models.
-    For example, errors in 2-body predictions will lead to significant 3-body errors, and so on.
-    We recommend using :func:`~mbgdml.data.dataset.dataSet.create_mb_from_dsets` when possible for most accurate many-body GDML models.
+- :meth:`~mbgdml.data.dataSet.create_mb_from_dsets`
     
 
 Contents
 --------
 
-Data set objects contain the following information.
+Data set objects contain the following information .
 
-.. autoattribute:: mbgdml.data.dataset.dataSet.name
+.. autoattribute:: mbgdml.data.dataSet.name
     :noindex:
 
 Atomic numbers
 ^^^^^^^^^^^^^^
 
-.. autoattribute:: mbgdml.data.dataset.dataSet.z
+.. autoattribute:: mbgdml.data.dataSet.z
     :noindex:
 
-.. autoattribute:: mbgdml.data.dataset.dataSet.n_z
+.. autoattribute:: mbgdml.data.dataSet.n_z
     :noindex:
 
 Cartesian Coordinates
 ^^^^^^^^^^^^^^^^^^^^^
 
-.. autoattribute:: mbgdml.data.dataset.dataSet.R
+.. autoattribute:: mbgdml.data.dataSet.R
     :noindex:
 
-.. autoattribute:: mbgdml.data.dataset.dataSet.n_R
+.. autoattribute:: mbgdml.data.dataSet.n_R
     :noindex:
 
-.. autoattribute:: mbgdml.data.dataset.dataSet.r_unit
+.. autoattribute:: mbgdml.data.dataSet.r_unit
     :noindex:
 
 MD5 hash
 ^^^^^^^^
 
-.. autoattribute:: mbgdml.data.dataset.dataSet.md5
+.. autoattribute:: mbgdml.data.dataSet.md5
     :noindex:
 
 .. note::
@@ -167,57 +142,57 @@ MD5 hash
 Structure set identification
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. autoattribute:: mbgdml.data.dataset.dataSet.r_prov_ids
+.. autoattribute:: mbgdml.data.dataSet.r_prov_ids
     :noindex:
 
-.. autoattribute:: mbgdml.data.dataset.dataSet.r_prov_specs
+.. autoattribute:: mbgdml.data.dataSet.r_prov_specs
     :noindex:
 
 Structure sampling
 ^^^^^^^^^^^^^^^^^^
 
-.. autoattribute:: mbgdml.data.dataset.dataSet.criteria
+.. autoattribute:: mbgdml.data.dataSet.criteria
     :noindex:
 
-.. autoattribute:: mbgdml.data.dataset.dataSet.z_slice
+.. autoattribute:: mbgdml.data.dataSet.z_slice
     :noindex:
 
-.. autoattribute:: mbgdml.data.dataset.dataSet.cutoff
+.. autoattribute:: mbgdml.data.dataSet.cutoff
     :noindex:
 
 Structure properties
 ^^^^^^^^^^^^^^^^^^^^
 
-.. autoattribute:: mbgdml.data.dataset.dataSet.E
+.. autoattribute:: mbgdml.data.dataSet.E
     :noindex:
 
-.. autoattribute:: mbgdml.data.dataset.dataSet.e_unit
+.. autoattribute:: mbgdml.data.dataSet.e_unit
     :noindex:
 
-.. autoattribute:: mbgdml.data.dataset.dataSet.E_mean
+.. autoattribute:: mbgdml.data.dataSet.E_mean
     :noindex:
 
-.. autoattribute:: mbgdml.data.dataset.dataSet.E_min
+.. autoattribute:: mbgdml.data.dataSet.E_min
     :noindex:
 
-.. autoattribute:: mbgdml.data.dataset.dataSet.E_max
+.. autoattribute:: mbgdml.data.dataSet.E_max
     :noindex:
 
-.. autoattribute:: mbgdml.data.dataset.dataSet.F
+.. autoattribute:: mbgdml.data.dataSet.F
     :noindex:
 
 .. note::
     There is no explicit force unit attribute in a data set.
     It is assumed to be ``e_unit`` ``r_unit``:sup:`-1`.
 
-.. autoattribute:: mbgdml.data.dataset.dataSet.F_mean
+.. autoattribute:: mbgdml.data.dataSet.F_mean
     :noindex:
 
-.. autoattribute:: mbgdml.data.dataset.dataSet.F_min
+.. autoattribute:: mbgdml.data.dataSet.F_min
     :noindex:
 
-.. autoattribute:: mbgdml.data.dataset.dataSet.F_max
+.. autoattribute:: mbgdml.data.dataSet.F_max
     :noindex:
 
-.. autoattribute:: mbgdml.data.dataset.dataSet.theory
+.. autoattribute:: mbgdml.data.dataSet.theory
     :noindex:

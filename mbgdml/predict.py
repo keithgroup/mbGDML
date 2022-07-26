@@ -21,426 +21,828 @@
 # SOFTWARE.
 
 import itertools
-
+import logging
 import numpy as np
-from ._gdml.predict import GDMLPredict
-from . import criteria
+import scipy as sp
+from .utils import md5_data
 
-try:
-    import torch
-except ImportError:
-    _has_torch = False
-else:
-    _has_torch = True
+log = logging.getLogger(__name__)
 
-class mbPredict():
-    """Predict energies and forces of structures using many-body GDML models.
+"""
+Models
+------
+
+Classes that are used to stores information from ML models. These objects are
+passed into prediction functions in this module.
+"""
+
+class model(object):
+    """A parent class for machine learning model objects.
+    
+    Attributes
+    ----------
+    md5 : :obj:`str`
+        A property that creates a unique MD5 hash for the model. This is
+        primarily only used in the creation of predict sets.
+    nbody_order : :obj:`int`
+        What order of :math:`n`-body contributions does this model predict?
+        This is easily determined by taking the length of component IDs for the
+        model.
     """
 
-    def __init__(self, models, use_torch=False):
-        """ 
+    def __init__(self, criteria_desc_func=None, criteria_cutoff=None):
+        """
         Parameters
         ----------
-        models : :obj:`list` of :obj:`str` or :obj:`dict`
-            Contains paths or dictionaries of many-body GDML models.
-        use_torch : :obj:`bool`, default: ``False``
-            Use PyTorch to make predictions.
+        criteria_desc : ``callable``, default: ``None``
+            A descriptor used to filter :math:`n`-body structures from being
+            predicted.
+        criteria_cutoff : :obj:`float`, default: ``None``
+            Value of ``criteria_desc`` where the mlModel will not predict the
+            :math:`n`-body contribution of. If ``None``, no cutoff will be
+            enforced.
         """
-        self._load_models(models, use_torch)
-    
-
-    def _load_models(self, models, use_torch):
-        """Loads models and prepares GDMLPredict.
-        
-        Parameters
-        ----------
-        models : :obj:`list` [:obj:`str`]
-            Contains paths to either standard or many-body GDML models.
-        """
-        self.gdmls, self.models, self.entity_ids, self.comp_ids = [], [], [], []
-        self.criteria, self.z_slice, self.cutoff = [], [], []
-        for model in models:
-            if isinstance(model, str):
-                loaded = np.load(model, allow_pickle=True)
-                model = dict(loaded)
-            self.models.append(model)
-            gdml = GDMLPredict(model, use_torch=use_torch)
-            self.gdmls.append(gdml)
-
-            if model['criteria'] == '':
-                self.criteria.append(None)
-            else:
-                # Stores that actual criteria function from the criteria module.
-                self.criteria.append(getattr(criteria, str(model['criteria'])))
-            self.z_slice.append(model['z_slice'])
-            self.cutoff.append(model['cutoff'])
-            self.entity_ids.append(model['entity_ids'])
-            self.comp_ids.append(model['comp_ids'])
-    
-    def _generate_entity_combinations(self, r_entity_ids_per_model_entity):
-        """Generator for entity combinations where each entity comes from a
-        specified list.
-
-        Parameters
-        ----------
-        r_entity_ids_per_model_entity : :obj:`list` [:obj:`numpy.ndarray`]
-            A list of ``entity_ids`` that match the ``comp_id`` of each
-            model ``entity_id``. Note that the index of the
-            :obj:`numpy.ndarray` is equal to the model ``entity_id`` and the
-            values are ``r`` ``entity_ids`` that match the ``comp_id``.
-        """
-        nbody_combinations = itertools.product(*r_entity_ids_per_model_entity)
-        # Excludes combinations that have repeats (e.g., (0, 0) and (1, 1. 2)).
-        nbody_combinations = itertools.filterfalse(
-            lambda x: len(set(x)) <  len(x), nbody_combinations
-        )
-        # At this point, there are still duplicates in this iterator.
-        # For example, (0, 1) and (1, 0) are still included.
-        for combination in nbody_combinations:
-            if sorted(combination) == list(combination):
-                yield combination
+        self.criteria_desc_func = criteria_desc_func
+        # Make sure cutoff is a single value (weird extraction from npz).
+        if isinstance(criteria_cutoff, np.ndarray):
+            if len(criteria_cutoff) == 0:
+                criteria_cutoff = None
+            elif len(criteria_cutoff) == 1:
+                criteria_cutoff = criteria_cutoff[0]
+        self.criteria_cutoff = criteria_cutoff
 
 
-    def _calculate(
-        self, r, entity_ids, comp_ids, model, gdml, ignore_criteria=False, 
-        store_each=True
+class gdmlModel(model):
+
+    def __init__(
+        self, model, criteria_desc_func=None, criteria_cutoff=None
     ):
-        """The actual calculate/predict function for a single GDML model.
-
-        Predicts the energy and force contribution from a single many-body
-        GDML model.
-        
+        """
         Parameters
         ----------
-        r : :obj:`numpy.ndarray`
-            Cartesian coordinates of all atoms of the structure specified in 
-            the same order as z. The array should have shape (n, 3) where n is 
-            the number of atoms. This is a single structure.
-        entity_ids : :obj:`numpy.ndarray`
-            A uniquely identifying integer specifying what atoms belong to
-            which entities. Entities can be a related set of atoms, molecules,
-            or functional group. For example, a water and methanol molecule
-            could be ``[0, 0, 0, 1, 1, 1, 1, 1, 1]``.
-        comp_ids : :obj:`numpy.ndarray`
-            Relates ``entity_id`` to a fragment label for chemical components
-            or species. Labels could be ``WAT`` or ``h2o`` for water, ``MeOH``
-            for methanol, ``bz`` for benzene, etc. There are no standardized
-            labels for species. The index of the label is the respective
-            ``entity_id``. For example, a water and methanol molecule could
-            be ``['h2o', 'meoh']``.
-        model : :obj:`dict`
-            The dictionary of the loaded npz file. Stored in ``self.models``.
-        gdml : :obj:`mbgdml._gdml.predict.GDMLPredict`
-            Object used to predict energies and forces of the structure defined 
-            in ``r``.
-        ignore_criteria : :obj:`bool`, optional
-            Whether to take into account structure criteria and their cutoffs
-            for each model. Defaults to ``False``.
-        store_each : :obj:`bool`, optional
-            Store each n-body combination's contribution in the :obj:`dict`.
-            Defaults to ``True``. Changing to ``False`` often speeds up
-            predictions.
-        
-        Returns
-        -------
-        :obj:`dict`
-            Energy contributions of the structure. Dictionary keys specify the
-            molecule combination. For example, ``'0,2'`` contains the
-            predictions of two-body energy of the dimer containing molecules
-            ``0`` and ``2``. Also contains a ``'T'`` key representing the total
-            n-body contribution for the whole system.
-        :obj:`dict`
-            Force contributions of the structure. Dictionary keys specify the
-            molecule combination. For example, ``'1,2,5'`` contains the
-            predictions of three-body energy of the trimer containing molecules
-            ``1``, ``2``, and ``5``. Also contains a ``'T'`` key representing
-            the total n-body contribution for the whole system.
+        model : :obj:`str` or :obj:`dict`
+            Path to GDML npz model or :obj:`dict`.
+        criteria_desc_func : ``callable``, default: ``None``
+            A descriptor used to filter :math:`n`-body structures from being
+            predicted.
+        criteria_cutoff : :obj:`float`, default: ``None``
+            Value of ``criteria_desc_func`` where the mlModel will not predict
+            the :math:`n`-body contribution of. If ``None``, no cutoff will be
+            enforced.
         """
-        r_dim = r.ndim
+        super().__init__(criteria_desc_func, criteria_cutoff)
 
-        # 'T' is for total
-        E_contributions = {'T': 0.0}
-        F_contributions = {'T': np.zeros(r.shape)}
+        self.type = 'gdml'
 
-        # Models have a specific entity order that needs to be conserved in the
-        # predictions. Here, we create a ``entity_idxs`` list where each item
-        # is a list of all entities in ``r`` that match the model entity.
-        r_entity_ids_per_model_entity = []
-        for model_comp_id in model['comp_ids']:
-            matching_entity_ids = np.where(model_comp_id == comp_ids)[0]
-            r_entity_ids_per_model_entity.append(matching_entity_ids)
+        if isinstance(model, str):
+            model = dict(np.load(model, allow_pickle=True))
+        elif not isinstance(model, dict):
+            raise TypeError(f'{type(model)} is not string or dict')
+        self._model_dict = model
 
-        nbody_combinations = self._generate_entity_combinations(
-            r_entity_ids_per_model_entity
+        self.z = model['z']
+        self.comp_ids = model['comp_ids']
+        self.nbody_order = len(self.comp_ids)
+
+        self.sig = model['sig']
+        self.n_atoms = self.z.shape[0]
+        interact_cut_off = (
+            model['interact_cut_off'] if 'interact_cut_off' in model else None
+        )
+        self.desc_func = _from_r
+
+        self.lat_and_inv = (
+            (model['lattice'], np.linalg.inv(model['lattice']))
+            if 'lattice' in model
+            else None
+        )
+        self.n_train = model['R_desc'].shape[1]
+        self.stdev = model['std'] if 'std' in model else 1.0
+        self.integ_c = model['c']
+        self.n_perms = model['perms'].shape[0]
+        self.tril_perms_lin = model['tril_perms_lin']
+
+        self.use_torch = False
+        self.R_desc_perms = (
+            np.tile(model['R_desc'].T, self.n_perms)[:, self.tril_perms_lin]
+            .reshape(self.n_train, self.n_perms, -1, order='F')
+            .reshape(self.n_train * self.n_perms, -1)
+        )
+        self.R_d_desc_alpha_perms = (
+            np.tile(model['R_d_desc_alpha'], self.n_perms)[:, self.tril_perms_lin]
+            .reshape(self.n_train, self.n_perms, -1, order='F')
+            .reshape(self.n_train * self.n_perms, -1)
         )
 
-        # Getting all contributions for each molecule combination (comb).
-        for comb_entity_ids in nbody_combinations:
+        if 'alphas_E' in model.keys():
+            self.alphas_E_lin = np.tile(
+                model['alphas_E'][:, None], (1, n_perms)
+            ).ravel()
+        else:
+            self.alphas_E_lin = None
+    
+    @property
+    def md5(self):
+        """Unique MD5 hash of model.
 
-            # Gets indices of all atoms in the combination of molecules.
-            # r_idx is a list of the atoms for the entity_id combination.
-            r_idx = []
-            for entity_id in comb_entity_ids:
-                r_idx.extend(np.where(entity_ids == entity_id)[0])
-            
-            # Checks criteria if present and desired.
-            if not ignore_criteria:
-                # If there is a cutoff specified.
-                if model['cutoff'].shape != (0,):
-                    r_criteria = getattr(criteria, str(model['criteria']))
-                    valid_r, _ = r_criteria(
-                        model['z'], r[r_idx], model['z_slice'],
-                        entity_ids[r_idx], cutoff=model['cutoff']
-                    )
-                    if not valid_r:
-                        # Do not include this contribution.
-                        continue
-            
-            # Predicts energies and forces.
-            if r_dim == 2:  # A single structure.
-                r_comp = r[r_idx]
-                e, f = gdml.predict(r_comp.flatten())
-                e = e[0]
-            elif r_dim == 3:  # Multiple structures.
-                raise ValueError('Dimensions of R should be 2')
+        :type: :obj:`bytes`
+        """
+        md5_properties_all = [
+            'md5_train', 'z', 'R_desc', 'R_d_desc_alpha', 'sig', 'alphas_F'
+        ]
+        md5_properties = []
+        for key in md5_properties_all:
+            if key in self._model_dict.keys():
+                md5_properties.append(key)
+        md5_string = md5_data(self._model_dict, md5_properties)
+        return md5_string
 
-            # Adds contributions prediced from model.
-            if store_each:
-                entity_label = ','.join(
-                    str(entity_id) for entity_id in comb_entity_ids
-                )
-                E_contributions[entity_label] = e
-                F_contributions[entity_label] = f.reshape(len(r_idx), 3)
+class gapModel(model):
 
-            # Adds contributions to total energy and forces.
-            E_contributions['T'] += e
-            F_contributions['T'][r_idx] += f.reshape(len(r_idx), 3)
-        
-        return E_contributions, F_contributions
-
-
-    def predict_decomposed(
-        self, z, R, entity_ids, comp_ids, ignore_criteria=False,
-        store_each=True
+    def __init__(
+        self, model_path, comp_ids, criteria_desc_func=None,
+        criteria_cutoff=None
     ):
-        """Computes predicted total energy and atomic forces decomposed by
-        many-body order.
-        
+        """
         Parameters
         ----------
-        z : :obj:`numpy.ndarray`
-            A ``(n,)`` shape array of type :obj:`numpy.int32` containing atomic
-            numbers of atoms in the structures in order as they appear.
-        R : :obj:`numpy.ndarray`
-            Cartesian coordinates of all atoms of the structure specified in 
-            the same order as ``z``. The array can be two or three dimensional.
-        entity_ids : :obj:`numpy.ndarray`
-            A uniquely identifying integer specifying what atoms belong to
-            which entities. Entities can be a related set of atoms, molecules,
-            or functional group. For example, a water and methanol molecule
-            could be ``[0, 0, 0, 1, 1, 1, 1, 1, 1]``.
-        comp_ids : :obj:`numpy.ndarray`
-            Relates ``entity_id`` to a fragment label for chemical components
-            or species. Labels could be ``WAT`` or ``h2o`` for water, ``MeOH``
-            for methanol, ``bz`` for benzene, etc. There are no standardized
-            labels for species. The index of the label is the respective
-            ``entity_id``. For example, a water and methanol molecule could
-            be ``['h2o', 'meoh']``.
-        ignore_criteria : :obj:`bool`, optional
-            Whether to take into account structure criteria and their cutoffs
-            for each model. Defaults to ``False``.
-        store_each : :obj:`bool`, optional
-            Store each n-body combination's contribution in the :obj:`dict`.
-            Defaults to ``True``. Changing to ``False`` often speeds up
-            predictions.
-        
-        Returns
-        -------
-        :obj:`numpy.ndarray`
-            A 1D array where each element is a :obj:`dict` for each structure.
-            Each :obj:`dict` contains the total energy and its breakdown by
-            total n-body order, and by entity combination. For example,
-            if interested in the contribution of entities ``0`` and ``1``
-            (``2``-body contribution) of the 5th structure, we would access
-            this information with ``[4][2]['0,1']``. Getting the
-            total energy of all contributions for that structure would be
-            ``[4]['T']`` and for all 1-body contributions would be
-            ``[4][1]['T']``. Each element's dictionary could have the following
-            keys.
-
-            ``'T'``
-                Total energy of all n-body orders and contributions.
-            ``1``
-                All 1-body energy contributions. Usually there is no criteria
-                for 1-body models so all entities are typically included.
-
-                ``'T'``
-                    Total 1-body contributions for the structure.
-                
-                ``'0'``
-                    The 1-body contribution for entity ``'0'``.
-
-            ``2``
-                All 2-body energy contributions. Not all combination are
-                included.
-
-                ``'T'``
-                    Total 2-body contributions for the structure.
-
-                ``'0,1'``
-                    The 2-body contribution for the dimer containing the ``0``
-                    and ``1`` entities.
-        :obj:`numpy.ndarray`
-            Same as the energies array above but for atomic forces.
+        model_path : :obj:`str`
+            Path to GAP xml file.
+        comp_ids : ``iterable``
+            Model component IDs that relate entity IDs of a structure to a
+            fragment label.
+        criteria_desc_func : ``callable``, default: ``None``
+            A descriptor used to filter :math:`n`-body structures from being
+            predicted.
+        criteria_cutoff : :obj:`float`, default: ``None``
+            Value of ``criteria_desc_func`` where the mlModel will not predict
+            the :math:`n`-body contribution of. If ``None``, no cutoff will be
+            enforced.
         """
-        # Ensures R has three dimensions.
-        if R.ndim == 2:
-            R = np.array([R])
+        global quippy
+        import quippy
 
-        E = np.empty(R.shape[0], dtype='object')
-        F = np.empty(R.shape[0], dtype='object')
-
-        # Adds contributions from all models.
-        for i_r in range(len(R)):
-            e = {'T': 0.0}
-            f = {'T': np.zeros(R[i_r].shape)}
-            for j in range(len(self.gdmls)):
-                gdml = self.gdmls[j]
-                model = self.models[j]
-                nbody_order = int(len(set(self.entity_ids[j])))
-
-                e[nbody_order], f[nbody_order] = \
-                    self._calculate(
-                        R[i_r], entity_ids, comp_ids, model, gdml,
-                        ignore_criteria=ignore_criteria, store_each=store_each
-                    )
-
-                # Adds contributions to total energy and forces.
-                if e[nbody_order]['T'] == 0.0:
-                    e[nbody_order]['T'] = np.nan
-                    f[nbody_order]['T'][:] = np.nan
-                else:
-                    e['T'] += e[nbody_order]['T']
-                    f['T'] += f[nbody_order]['T']
-            
-            # If the total energy after all model predictions is zero we assume
-            # that the structure falls outside all model criteria. This usually
-            # only occurs with only one model. We replace the zero with NaN to 
-            if e['T'] == 0.0:
-                e['T'] = np.nan
-                f['T'][:] = np.nan
-            
-            E[i_r] = e
-            F[i_r] = f
-        
-        return E, F
-
-    def predict(self, z, R, entity_ids, comp_ids, ignore_criteria=False):
-        """Predicts total energy and atomic forces using many-body GDML models.
-        
-        Parameters
-        ----------
-        z : :obj:`numpy.ndarray`
-            Atomic numbers of all atoms in the system.
-        R : :obj:`numpy.ndarray`
-            Cartesian coordinates of all atoms of the structure specified in 
-            the same order as ``z``. The array can be two or three dimensional.
-        entity_ids : :obj:`numpy.ndarray`
-            A uniquely identifying integer specifying what atoms belong to
-            which entities. Entities can be a related set of atoms, molecules,
-            or functional group. For example, a water and methanol molecule
-            could be ``[0, 0, 0, 1, 1, 1, 1, 1, 1]``.
-        comp_ids : :obj:`numpy.ndarray`
-            Relates ``entity_id`` to a fragment label for chemical components
-            or species. Labels could be ``WAT`` or ``h2o`` for water, ``MeOH``
-            for methanol, ``bz`` for benzene, etc. There are no standardized
-            labels for species. The index of the label is the respective
-            ``entity_id``. For example, a water and methanol molecule could
-            be ``['h2o', 'meoh']``.
-        ignore_criteria : :obj:`bool`, optional
-            Whether to take into account structure criteria and their cutoffs
-            for each model. Defaults to ``False``.
-        
-        Returns
-        -------
-        :obj:`numpy.ndarray`
-            Total energy of the system.
-        :obj:`numpy.ndarray`
-            Atomic forces of the system in the same shape as ``R``.
-        """
-        E_decomp, F_decomp = self.predict_decomposed(
-            z, R, entity_ids, comp_ids, ignore_criteria=ignore_criteria,
-            store_each=False
+        super().__init__(criteria_desc_func, criteria_cutoff)
+        self.type = 'gap'
+        self.gap = quippy.potential.Potential(
+            param_filename=model_path
         )
+        if isinstance(comp_ids, list) or isinstance(comp_ids, tuple):
+            comp_ids = np.array(comp_ids)
+        self.comp_ids = comp_ids
+        self.nbody_order = len(comp_ids)
 
-        E = np.array([e['T'] for e in E_decomp])
-        F = np.array([f['T'] for f in F_decomp])
-
-        return E, F
-
-    def remove_nbody(self, ref_dataset, ignore_criteria=False, store_each=False):
-        """Removes mbGDML prediced energies and forces from a reference data
-        set.
-
-        Parameters
-        ----------
-        ref_dataset : :obj:`dict`
-            Contains all data as :obj:`numpy.ndarray` objects.
-        ignore_criteria : :obj:`bool`, optional
-            Whether to take into account structure criteria and their cutoffs
-            for each model. Defaults to ``False``.
-        store_each : :obj:`bool`, optional
-            Store each n-body combination's contribution in the :obj:`dict`.
-            Defaults to ``False``.
-        """
-        nbody_dataset = ref_dataset
-        z = nbody_dataset['z']
-        R = nbody_dataset['R']
-        E = nbody_dataset['E']
-        F = nbody_dataset['F']
-        num_config = R.shape[0]
-        entity_num = len(set(nbody_dataset['entity_ids']))
-        
-        # Removing all n-body contributions for every configuration.
-        for config in range(num_config):
-            if (config+1)%500 == 0:
-                print(f'Predicted {config+1} out of {num_config}')
-            if z.ndim == 1:
-                z_predict = z
-            else:
-                z_predict = z[config]
-            e, f = self.predict_decomposed(
-                z_predict, R[config], nbody_dataset['entity_ids'],
-                nbody_dataset['comp_ids'], ignore_criteria=ignore_criteria,
-                store_each=store_each
+        # GAP MD5
+        with open(model_path, 'r') as f:
+            gap_lines = f.readlines()
+        import hashlib
+        md5_hash = hashlib.md5()
+        for i in range(len(gap_lines)):
+            md5_hash.update(
+                hashlib.md5(repr(gap_lines[i]).encode()).digest()
             )
-            F[config] -= f
-            E[config] -= e
-
-        # Updates dataset.
-        nbody_dataset['E'] = np.array(E)
-        nbody_dataset['E_min'] = np.array(np.min(E.ravel()))
-        nbody_dataset['E_max'] = np.array(np.max(E.ravel()))
-        nbody_dataset['E_mean'] = np.array(np.mean(E.ravel()))
-        nbody_dataset['E_var'] = np.array(np.var(E.ravel()))
-        nbody_dataset['F'] = np.array(F)
-        nbody_dataset['F_min'] = np.array(np.min(F.ravel()))
-        nbody_dataset['F_max'] = np.array(np.max(F.ravel()))
-        nbody_dataset['F_mean'] = np.array(np.mean(F.ravel()))
-        nbody_dataset['F_var'] = np.array(np.var(F.ravel()))
-        nbody_dataset['mb'] = np.array(entity_num)
-
-        # Tries to add model md5 hashes to data set
-        mb_models_md5 = []
-        for model in self.models:
-            if 'md5' in model.keys():
-                mb_models_md5.append(model['md5'][()])
-        nbody_dataset['mb_models_md5'] = mb_models_md5
+        self.md5 = md5_hash.hexdigest()
         
-        # Generating new data set name
-        name_old = str(nbody_dataset['name'][()])
-        nbody_label = str(entity_num) + 'body'
-        name = '-'.join([name_old, nbody_label])
-        nbody_dataset['name'] = np.array(name)
+class schnetModel(model):
 
-        return nbody_dataset
+    def __init__(
+        self, model_path, comp_ids, device, criteria_desc_func=None,
+        criteria_cutoff=None
+    ):
+        """
+        Parameters
+        ----------
+        model_path : :obj:`str`
+            Path to GAP xml file.
+        comp_ids : ``iterable``
+            Model component IDs that relate entity IDs of a structure to a
+            fragment label.
+        device : :obj:`str`
+            The device where the model and tensors will be stored. For example,
+            ``'cpu'`` and ``'cuda'``.
+        criteria_desc_func : ``callable``, default: ``None``
+            A descriptor used to filter :math:`n`-body structures from being
+            predicted.
+        criteria_cutoff : :obj:`float`, default: ``None``
+            Value of ``criteria_desc_func`` where the mlModel will not predict
+            the :math:`n`-body contribution of. If ``None``, no cutoff will be
+            enforced.
+        """
+        global schnetpack, torch, ase
+        import schnetpack, torch, ase
+
+        super().__init__(criteria_desc_func, criteria_cutoff)
+        self.type = 'schnet'
+        self.spk_model = torch.load(
+            model_path, map_location=torch.device(device)
+        )
+        self.device = device
+        if isinstance(comp_ids, list) or isinstance(comp_ids, tuple):
+            comp_ids = np.array(comp_ids)
+        self.comp_ids = comp_ids
+        self.nbody_order = len(comp_ids)
+
+        # SchNet MD5
+        import hashlib
+        md5_hash = hashlib.md5()
+        for param in self.spk_model.parameters():
+            md5_hash.update(
+                hashlib.md5(
+                    param.cpu().detach().numpy().flatten()
+                ).digest()
+            )
+        self.md5 = md5_hash.hexdigest()
+
+
+"""
+Prediction workers
+------------------
+
+Functions that make or support ML predictions. Used in
+:obj:`mbgdml.mbe.mbePredict``.
+"""
+
+################
+###   GDML   ###
+################
+
+from ._gdml.desc import _pdist, _r_to_desc, _r_to_d_desc, _from_r
+
+# This calculation is too fast to be a ray task.
+def _predict_gdml_wkr(
+    r_desc, r_d_desc, n_atoms, sig, n_perms, R_desc_perms,
+    R_d_desc_alpha_perms, alphas_E_lin, stdev, integ_c, wkr_start_stop=None
+):
+    """Compute (part) of a GDML prediction.
+
+    Every prediction is a linear combination involving the training points used for
+    this model. This function evaluates that combination for the range specified by
+    `wkr_start_stop`. This workload can optionally be processed in chunks,
+    which can be faster as it requires less memory to be allocated.
+
+    Note
+    ----
+    It is sufficient to provide either the parameter ``r`` or ``r_desc_d_desc``.
+    The other one can be set to ``None``.
+
+    Returns
+    -------
+    :obj:`numpy.ndarray`
+        Partial prediction of all force components and energy (appended to
+        array as last element).
+    """
+    n_train = int(R_desc_perms.shape[0] / n_perms)
+    wkr_start, wkr_stop = (0, n_train)
+
+    dim_d = (n_atoms * (n_atoms - 1)) // 2
+    dim_i = 3 * n_atoms
+    dim_c = n_train * n_perms
+
+    # Pre-allocate memory.
+    diff_ab_perms = np.empty((dim_c, dim_d), dtype=np.double)
+    a_x2 = np.empty((dim_c,), dtype=np.double)
+    mat52_base = np.empty((dim_c,), dtype=np.double)
+
+    # avoid divisions (slower)
+    sig_inv = 1.0 / sig
+    mat52_base_fact = 5.0 / (3 * sig ** 3)
+    diag_scale_fact = 5.0 / sig
+    sqrt5 = np.sqrt(5.0)
+
+    E_F = np.zeros((dim_d + 1,), dtype=np.double)
+    F = E_F[1:]
+
+    wkr_start *= n_perms
+    wkr_stop *= n_perms
+
+    b_start = wkr_start
+    for b_stop in list(range(wkr_start + dim_c, wkr_stop, dim_c)) + [wkr_stop]:
+
+        rj_desc_perms = R_desc_perms[b_start:b_stop, :]
+        rj_d_desc_alpha_perms = R_d_desc_alpha_perms[b_start:b_stop, :]
+
+        # Resize pre-allocated memory for last iteration,
+        # if chunk_size is not a divisor of the training set size.
+        # Note: It's faster to process equally sized chunks.
+        c_size = b_stop - b_start
+        if c_size < dim_c:
+            diff_ab_perms = diff_ab_perms[:c_size, :]
+            a_x2 = a_x2[:c_size]
+            mat52_base = mat52_base[:c_size]
+
+        np.subtract(
+            np.broadcast_to(r_desc, rj_desc_perms.shape),
+            rj_desc_perms,
+            out=diff_ab_perms,
+        )
+        norm_ab_perms = sqrt5 * np.linalg.norm(diff_ab_perms, axis=1)
+
+        np.exp(-norm_ab_perms * sig_inv, out=mat52_base)
+        mat52_base *= mat52_base_fact
+        np.einsum(
+            'ji,ji->j', diff_ab_perms, rj_d_desc_alpha_perms, out=a_x2
+        )  # colum wise dot product
+
+        F += (a_x2 * mat52_base).dot(diff_ab_perms) * diag_scale_fact
+        mat52_base *= norm_ab_perms + sig
+        F -= mat52_base.dot(rj_d_desc_alpha_perms)
+
+        # Energies are automatically predicted with a flipped sign here
+        # (because -E are trained, instead of E)
+        E_F[0] += a_x2.dot(mat52_base)
+
+        # Energies are automatically predicted with a flipped sign here
+        # (because -E are trained, instead of E)
+        if alphas_E_lin is not None:
+
+            K_fe = diff_ab_perms * mat52_base[:, None]
+            F += alphas_E_lin[b_start:b_stop].dot(K_fe)
+
+            K_ee = (
+                1 + (norm_ab_perms * sig_inv) * (1 + norm_ab_perms / (3 * sig))
+            ) * np.exp(-norm_ab_perms * sig_inv)
+            E_F[0] += K_ee.dot(alphas_E_lin[b_start:b_stop])
+
+        b_start = b_stop
+
+    out = E_F[: dim_i + 1]
+
+    # Descriptor has less entries than 3N, need to extend size of the 'E_F' array.
+    if dim_d < dim_i:
+        out = np.empty((dim_i + 1,))
+        out[0] = E_F[0]
+
+    # 'r_d_desc.T.dot(F)' for our special representation of 'r_d_desc'
+    r_d_desc = r_d_desc[None, ...]
+    F = F[None, ...]
+
+    n = np.max((r_d_desc.shape[0], F.shape[0]))
+    i, j = np.tril_indices(n_atoms, k=-1)
+
+    out_F = np.zeros((n, n_atoms, n_atoms, 3))
+    out_F[:, i, j, :] = r_d_desc * F[..., None]
+    out_F[:, j, i, :] = -out_F[:, i, j, :]
+    out[1:] = out_F.sum(axis=1).reshape(n, -1)
+
+    return out
+
+# Possible ray task.
+def predict_gdml(z, r, entity_ids, entity_combs, model, ignore_criteria=False):
+    """Predict total :math:`n`-body energy and forces of a single structure.
+
+    Parameters
+    ----------
+    z : :obj:`numpy.ndarray`, ndim: ``1``
+        Atomic numbers of all atoms in ``r`` (in the same order).
+    r : :obj:`numpy.ndarray`, ndim: ``2``
+        Cartesian coordinates of a single structure to predict.
+    entity_ids : :obj:`numpy.ndarray`, ndim: ``1``
+        1D array specifying which atoms belong to which entities.
+    entity_combs : ``iterable``
+        Entity ID combinations (e.g., ``(53,)``, ``(0, 2)``,
+        ``(32, 55, 293)``, etc.) to predict using this model. These are used
+        to slice ``r`` with ``entity_ids``.
+    model : :obj:`mbgdml.predict.gdmlModel`
+        GDML model containing all information need to make predictions.
+    ignore_criteria : :obj:`bool`, default: ``False``
+        Ignore any criteria for predictions; i.e., all :math:`n`-body
+        structures will be predicted.
+    
+    Returns
+    -------
+    :obj:`float`
+        Predicted :math:`n`-body energy.
+    :obj:`numpy.ndarray`
+        Predicted :math:`n`-body forces.
+    """
+    assert r.ndim == 2
+    E = 0.
+    F = np.zeros(r.shape)
+
+    # Getting all contributions for each molecule combination (comb).
+    for entity_id_comb in entity_combs:
+
+        # Gets indices of all atoms in the combination of molecules.
+        # r_slice is a list of the atoms for the entity_id combination.
+        r_slice = []
+        for entity_id in entity_id_comb:
+            r_slice.extend(np.where(entity_ids == entity_id)[0])
+        
+        # Checks criteria cutoff if present and desired.
+        if model.criteria_cutoff is not None and not ignore_criteria:
+            _, crit_val = model.criteria_desc_func(
+                model.z, r[r_slice], None, entity_ids[r_slice]
+            )
+            if crit_val >= model.criteria_cutoff:
+                # Do not include this contribution.
+                continue
+        
+        # Predicts energies and forces.
+        z_comp = z[r_slice]
+        r_comp = r[r_slice]
+        r_desc, r_d_desc = model.desc_func(
+            r_comp.flatten(), model.lat_and_inv
+        )
+        wkr_args = (
+            r_desc, r_d_desc, len(z_comp), model.sig, model.n_perms,
+            model.R_desc_perms, model.R_d_desc_alpha_perms,
+            model.alphas_E_lin, model.stdev, model.integ_c
+        ) 
+        out = _predict_gdml_wkr(*wkr_args)
+
+        out *= model.stdev
+        e = out[0] + model.integ_c
+        f = out[1:].reshape((len(z_comp), 3))
+
+        # Adds contributions to total energy and forces.
+        E += e
+        F[r_slice] += f
+    
+    return E, F
+
+def predict_gdml_decomp(
+    z, r, entity_ids, entity_combs, model, ignore_criteria=False
+):
+    """Predict all :math:`n`-body energies and forces of a single structure.
+
+    Parameters
+    ----------
+    z : :obj:`numpy.ndarray`, ndim: ``1``
+        Atomic numbers of all atoms in ``r`` (in the same order).
+    r : :obj:`numpy.ndarray`, ndim: ``2``
+        Cartesian coordinates of a single structure to predict.
+    entity_ids : :obj:`numpy.ndarray`, ndim: ``1``
+        1D array specifying which atoms belong to which entities.
+    entity_combs : ``iterable``
+        Entity ID combinations (e.g., ``(53,)``, ``(0, 2)``,
+        ``(32, 55, 293)``, etc.) to predict using this model. These are used
+        to slice ``r`` with ``entity_ids``.
+    model : :obj:`mbgdml.predict.gdmlModel`
+        GDML model containing all information need to make predictions.
+    
+    Returns
+    -------
+    :obj:`numpy.ndarray`, ndim: ``1``
+        Energies of all possible :math:`n`-body structures. Some elements
+        can be :obj:`numpy.nan` if they are beyond the criteria cutoff.
+    :obj:`numpy.ndarray`, ndim: ``3``
+        Atomic forces of all possible :math:`n`-body structure. Some
+        elements can be :obj:`numpy.nan` if they are beyond the criteria
+        cutoff.
+    :obj:`numpy.ndarray`, ndim: ``2``
+        All possible :math:`n`-body combinations of ``r`` (i.e., entity ID
+        combinations).
+    """
+    assert r.ndim == 2
+    
+    if entity_combs.ndim == 1:
+        n_atoms = np.count_nonzero(entity_ids == entity_combs[0])
+    else:
+        n_atoms = 0
+        for i in entity_combs[0]:
+            n_atoms += np.count_nonzero(entity_ids == i)
+    
+    E = np.empty(len(entity_combs), dtype=np.float64)
+    F = np.empty((len(entity_combs), n_atoms, 3), dtype=np.float64)
+    E[:] = np.nan
+    F[:] = np.nan
+
+    # Getting all contributions for each molecule combination (comb).
+    for i in range(len(entity_combs)):
+        entity_id_comb = entity_combs[i]
+        # Gets indices of all atoms in the combination of molecules.
+        # r_slice is a list of the atoms for the entity_id combination.
+        r_slice = []
+        for entity_id in entity_id_comb:
+            r_slice.extend(np.where(entity_ids == entity_id)[0])
+        
+        # Checks criteria cutoff if present and desired.
+        if model.criteria_cutoff is not None and not ignore_criteria:
+            _, crit_val = model.criteria_desc_func(
+                model.z, r[r_slice], None, entity_ids[r_slice]
+            )
+            if crit_val >= model.criteria_cutoff:
+                # Do not include this contribution.
+                continue
+        
+        # Predicts energies and forces.
+        z_comp = z[r_slice]
+        r_comp = r[r_slice]
+        r_desc, r_d_desc = model.desc_func(
+            r_comp.flatten(), model.lat_and_inv
+        )
+        out = _predict_gdml_wkr(
+            r_desc, r_d_desc, n_atoms, model.sig, model.n_perms,
+            model.R_desc_perms, model.R_d_desc_alpha_perms,
+            model.alphas_E_lin, model.stdev, model.integ_c
+        )
+
+        out *= model.stdev
+        E[i] = out[0] + model.integ_c
+        F[i] = out[1:].reshape((n_atoms, 3))
+    
+    return E, F, entity_combs
+
+################
+###    GAP   ###
+################
+
+import ase
+
+# Possible ray task.
+def predict_gap(z, r, entity_ids, entity_combs, model, ignore_criteria=False):
+    """Predict total :math:`n`-body energy and forces of a single structure.
+
+    Parameters
+    ----------
+    z : :obj:`numpy.ndarray`, ndim: ``1``
+        Atomic numbers of all atoms in ``r`` (in the same order).
+    r : :obj:`numpy.ndarray`, ndim: ``2``
+        Cartesian coordinates of a single structure to predict.
+    entity_ids : :obj:`numpy.ndarray`, ndim: ``1``
+        1D array specifying which atoms belong to which entities.
+    entity_combs : ``iterable``
+        Entity ID combinations (e.g., ``(53,)``, ``(0, 2)``,
+        ``(32, 55, 293)``, etc.) to predict using this model. These are used
+        to slice ``r`` with ``entity_ids``.
+    model : :obj:`mbgdml.predict.gapModel`
+        GAP model containing all information need to make predictions.
+    ignore_criteria : :obj:`bool`, default: ``False``
+        Ignore any criteria for predictions; i.e., all :math:`n`-body
+        structures will be predicted.
+    
+    Returns
+    -------
+    :obj:`float`
+        Predicted :math:`n`-body energy.
+    :obj:`numpy.ndarray`
+        Predicted :math:`n`-body forces.
+    """
+    assert r.ndim == 2
+    E = 0.
+    F = np.zeros(r.shape)
+
+    # Getting all contributions for each molecule combination (comb).
+    first_r = True
+    for entity_id_comb in entity_combs:
+        log.debug(f'Entity combination: {entity_id_comb}')
+
+        # Gets indices of all atoms in the combination of molecules.
+        # r_slice is a list of the atoms for the entity_id combination.
+        r_slice = []
+        for entity_id in entity_id_comb:
+            r_slice.extend(np.where(entity_ids == entity_id)[0])
+        
+        z_comp = z[r_slice]
+        r_comp = r[r_slice]
+        if first_r:
+            atoms = ase.Atoms(z_comp)
+            atoms.set_calculator(model.gap)
+            first_r = False
+        
+        # Checks criteria cutoff if present and desired.
+        if model.criteria_cutoff is not None and not ignore_criteria:
+            _, crit_val = model.criteria_desc_func(
+                z_comp, r_comp, None, entity_ids[r_slice]
+            )
+            if crit_val >= model.criteria_cutoff:
+                # Do not include this contribution.
+                continue
+        
+        # Predicts energies and forces.
+        atoms.set_positions(r_comp)
+        e = atoms.get_potential_energy()
+        f = atoms.get_forces()
+
+        # Adds contributions to total energy and forces.
+        E += e
+        F[r_slice] += f
+    
+    return E, F
+
+def predict_gap_decomp(
+    z, r, entity_ids, entity_combs, model, ignore_criteria=False
+):
+    """Predict all :math:`n`-body energies and forces of a single structure.
+
+    Parameters
+    ----------
+    z : :obj:`numpy.ndarray`, ndim: ``1``
+        Atomic numbers of all atoms in ``r`` (in the same order).
+    r : :obj:`numpy.ndarray`, ndim: ``2``
+        Cartesian coordinates of a single structure to predict.
+    entity_ids : :obj:`numpy.ndarray`, ndim: ``1``
+        1D array specifying which atoms belong to which entities.
+    entity_combs : ``iterable``
+        Entity ID combinations (e.g., ``(53,)``, ``(0, 2)``,
+        ``(32, 55, 293)``, etc.) to predict using this model. These are used
+        to slice ``r`` with ``entity_ids``.
+    model : :obj:`mbgdml.predict.gdmlModel`
+        GDML model containing all information need to make predictions.
+    
+    Returns
+    -------
+    :obj:`numpy.ndarray`, ndim: ``1``
+        Energies of all possible :math:`n`-body structures. Some elements
+        can be :obj:`numpy.nan` if they are beyond the criteria cutoff.
+    :obj:`numpy.ndarray`, ndim: ``3``
+        Atomic forces of all possible :math:`n`-body structure. Some
+        elements can be :obj:`numpy.nan` if they are beyond the criteria
+        cutoff.
+    :obj:`numpy.ndarray`, ndim: ``2``
+        All possible :math:`n`-body combinations of ``r`` (i.e., entity ID
+        combinations).
+    """
+    assert r.ndim == 2
+    
+    if entity_combs.ndim == 1:
+        n_atoms = np.count_nonzero(entity_ids == entity_combs[0])
+    else:
+        n_atoms = 0
+        for i in entity_combs[0]:
+            n_atoms += np.count_nonzero(entity_ids == i)
+    
+    E = np.empty(len(entity_combs), dtype=np.float64)
+    F = np.empty((len(entity_combs), n_atoms, 3), dtype=np.float64)
+    E[:] = np.nan
+    F[:] = np.nan
+
+    # Getting all contributions for each molecule combination (comb).
+    first_r = True
+    for i in range(len(entity_combs)):
+        entity_id_comb = entity_combs[i]
+        # Gets indices of all atoms in the combination of molecules.
+        # r_slice is a list of the atoms for the entity_id combination.
+        r_slice = []
+        for entity_id in entity_id_comb:
+            r_slice.extend(np.where(entity_ids == entity_id)[0])
+        
+        z_comp = z[r_slice]
+        r_comp = r[r_slice]
+        if first_r:
+            atoms = ase.Atoms(z_comp)
+            atoms.set_calculator(model.gap)
+            first_r = False
+        
+        # Checks criteria cutoff if present and desired.
+        if model.criteria_cutoff is not None and not ignore_criteria:
+            _, crit_val = model.criteria_desc_func(
+                z_comp, r_comp, None, entity_ids[r_slice]
+            )
+            if crit_val >= model.criteria_cutoff:
+                # Do not include this contribution.
+                continue
+        
+        # Predicts energies and forces.
+        atoms.set_positions(r_comp)
+        E[i] = atoms.get_potential_energy()
+        F[i] = atoms.get_forces()
+    
+    return E, F, entity_combs
+
+######################
+###   SchNetPack   ###
+######################
+
+def predict_schnet(z, r, entity_ids, entity_combs, model, ignore_criteria=False):
+    """Predict total :math:`n`-body energy and forces of a single structure.
+
+    Parameters
+    ----------
+    z : :obj:`numpy.ndarray`, ndim: ``1``
+        Atomic numbers of all atoms in ``r`` (in the same order).
+    r : :obj:`numpy.ndarray`, ndim: ``2``
+        Cartesian coordinates of a single structure to predict.
+    entity_ids : :obj:`numpy.ndarray`, ndim: ``1``
+        1D array specifying which atoms belong to which entities.
+    entity_combs : ``iterable``
+        Entity ID combinations (e.g., ``(53,)``, ``(0, 2)``,
+        ``(32, 55, 293)``, etc.) to predict using this model. These are used
+        to slice ``r`` with ``entity_ids``.
+    model : :obj:`mbgdml.predict.gapModel`
+        GAP model containing all information need to make predictions.
+    ignore_criteria : :obj:`bool`, default: ``False``
+        Ignore any criteria for predictions; i.e., all :math:`n`-body
+        structures will be predicted.
+    
+    Returns
+    -------
+    :obj:`float`
+        Predicted :math:`n`-body energy.
+    :obj:`numpy.ndarray`
+        Predicted :math:`n`-body forces.
+    """
+    assert r.ndim == 2
+    E = 0.
+    F = np.zeros(r.shape)
+
+    atom_conv = schnetpack.data.atoms.AtomsConverter(
+        device=torch.device(model.device)
+    )
+
+    for entity_id_comb in entity_combs:
+        log.debug(f'Entity combination: {entity_id_comb}')
+
+        # Gets indices of all atoms in the combination of molecules.
+        # r_slice is a list of the atoms for the entity_id combination.
+        r_slice = []
+        for entity_id in entity_id_comb:
+            r_slice.extend(np.where(entity_ids == entity_id)[0])
+        
+        z_comb = z[r_slice]
+        r_comb = r[r_slice]
+
+        # Checks criteria cutoff if present and desired.
+        if model.criteria_cutoff is not None and not ignore_criteria:
+            _, crit_val = model.criteria_desc_func(
+                z_comb, r_comb, None, entity_ids[r_slice]
+            )
+            if crit_val >= model.criteria_cutoff:
+                continue
+        
+        # Making predictions
+        pred = model.spk_model(atom_conv(ase.Atoms(z_comb, r_comb)))
+        E += pred['energy'].cpu().detach().numpy()[0][0]
+        F[r_slice] += pred['forces'].cpu().detach().numpy()[0]
+    
+    return E, F
+
+def predict_schnet_decomp(
+    z, r, entity_ids, entity_combs, model, ignore_criteria=False
+):
+    """Predict total :math:`n`-body energy and forces of a single structure.
+
+    Parameters
+    ----------
+    z : :obj:`numpy.ndarray`, ndim: ``1``
+        Atomic numbers of all atoms in ``r`` (in the same order).
+    r : :obj:`numpy.ndarray`, ndim: ``2``
+        Cartesian coordinates of a single structure to predict.
+    entity_ids : :obj:`numpy.ndarray`, ndim: ``1``
+        1D array specifying which atoms belong to which entities.
+    entity_combs : ``iterable``
+        Entity ID combinations (e.g., ``(53,)``, ``(0, 2)``,
+        ``(32, 55, 293)``, etc.) to predict using this model. These are used
+        to slice ``r`` with ``entity_ids``.
+    model : :obj:`mbgdml.predict.gapModel`
+        GAP model containing all information need to make predictions.
+    ignore_criteria : :obj:`bool`, default: ``False``
+        Ignore any criteria for predictions; i.e., all :math:`n`-body
+        structures will be predicted.
+    
+    Returns
+    -------
+    :obj:`float`
+        Predicted :math:`n`-body energy.
+    :obj:`numpy.ndarray`
+        Predicted :math:`n`-body forces.
+    :obj:`numpy.ndarray`, ndim: ``2``
+        All possible :math:`n`-body combinations of ``r`` (i.e., entity ID
+        combinations).
+    """
+    assert r.ndim == 2
+
+    if entity_combs.ndim == 1:
+        n_atoms = np.count_nonzero(entity_ids == entity_combs[0])
+    else:
+        n_atoms = 0
+        for i in entity_combs[0]:
+            n_atoms += np.count_nonzero(entity_ids == i)
+    
+    E = np.empty(len(entity_combs), dtype=np.float64)
+    F = np.empty((len(entity_combs), n_atoms, 3), dtype=np.float64)
+    E[:] = np.nan
+    F[:] = np.nan
+
+    atom_conv = schnetpack.data.atoms.AtomsConverter(
+        device=torch.device(model.device)
+    )
+
+    for i in range(len(entity_combs)):
+        entity_id_comb = entity_combs[i]
+
+        log.debug(f'Entity combination: {entity_id_comb}')
+
+        # Gets indices of all atoms in the combination of molecules.
+        # r_slice is a list of the atoms for the entity_id combination.
+        r_slice = []
+        for entity_id in entity_id_comb:
+            r_slice.extend(np.where(entity_ids == entity_id)[0])
+        
+        z_comb = z[r_slice]
+        r_comb = r[r_slice]
+
+        # Checks criteria cutoff if present and desired.
+        if model.criteria_cutoff is not None and not ignore_criteria:
+            _, crit_val = model.criteria_desc_func(
+                z_comb, r_comb, None, entity_ids[r_slice]
+            )
+            if crit_val >= model.criteria_cutoff:
+                continue
+        
+        # Making predictions
+        pred = model.spk_model(atom_conv(ase.Atoms(z_comb, r_comb)))
+        E[i] = pred['energy'].cpu().detach().numpy()[0][0]
+        F[i] = pred['forces'].cpu().detach().numpy()[0]
+    
+    return E, F, entity_combs
