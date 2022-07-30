@@ -421,7 +421,7 @@ class mbePredict(object):
 
     def __init__(
         self, models, predict_model, use_ray=False, n_cores=None,
-        wkr_chunk_size=100
+        wkr_chunk_size=100, alchemy_scalers=None
     ):
         """
         Parameters
@@ -445,6 +445,9 @@ class mbePredict(object):
         wkr_chunk_size : :obj:`int`, default: ``100``
             Number of :math:`n`-body structures to assign to each spawned
             worker with ray.
+        alchemical_scaling : :obj:`list` of ``mbgdml.alchemy.mbeAlchemyScale``, default: ``None``
+            Alchemical scaling of :math:`n`-body interactions of entities.
+            Each key is an ``entity_id`` with a 
         """
         self.models = models
         self.predict_model = predict_model
@@ -457,11 +460,16 @@ class mbePredict(object):
             n_cores = os.cpu_count()
         self.n_cores = n_cores
         self.wkr_chunk_size = wkr_chunk_size
+        self.alchemy_scalers = alchemy_scalers
         if use_ray:
             global ray
             import ray
             assert ray.is_initialized()
             self.models = [ray.put(model) for model in models]
+            #if alchemy_scalers is not None:
+            #    self.alchemy_scalers = [
+            #        ray.put(scaler) for scaler in alchemy_scalers
+            #    ]
             self.predict_model = ray.remote(predict_model)
 
     def get_avail_entities(self, comp_ids_r, comp_ids_model):
@@ -611,12 +619,21 @@ class mbePredict(object):
         avail_entity_ids = self.get_avail_entities(comp_ids, model_comp_ids)
         log.debug(f'Available entity IDs: {avail_entity_ids}')
         nbody_gen = self.gen_entity_combinations(avail_entity_ids)
+
+        kwargs_pred = {}
+        if self.alchemy_scalers is not None:
+            nbody_order = len(model_comp_ids)
+            kwargs_pred['alchemy_scalers'] = [
+                alchemy_scaler for alchemy_scaler in self.alchemy_scalers \
+                if alchemy_scaler.order == nbody_order
+            ]
         
         # Runs the predict_model function to calculate all n-body energies
         # with this model.
         if not self.use_ray:
             E, F = self.predict_model(
-                z, r, entity_ids, nbody_gen, model, ignore_criteria
+                z, r, entity_ids, nbody_gen, model, ignore_criteria,
+                **kwargs_pred
             )
         else:
             # Put all common data into the ray object store.
@@ -633,7 +650,8 @@ class mbePredict(object):
             def add_worker(workers, chunk):
                 workers.append(
                     predict_model.remote(
-                        z, r, entity_ids, chunk, model, ignore_criteria
+                        z, r, entity_ids, chunk, model, ignore_criteria,
+                        **kwargs_pred
                     )
                 )
             for _ in range(self.n_cores):

@@ -4,6 +4,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Unreleased
 
+### Added
+
+- Many-body alchemical parameter.
+
 ### Fixed
 
 - Doc references to respective SchNet functions.

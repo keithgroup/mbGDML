@@ -387,7 +387,9 @@ def _predict_gdml_wkr(
     return out
 
 # Possible ray task.
-def predict_gdml(z, r, entity_ids, entity_combs, model, ignore_criteria=False):
+def predict_gdml(
+    z, r, entity_ids, entity_combs, model, ignore_criteria=False, **kwargs
+):
     """Predict total :math:`n`-body energy and forces of a single structure.
 
     Parameters
@@ -418,6 +420,10 @@ def predict_gdml(z, r, entity_ids, entity_combs, model, ignore_criteria=False):
     assert r.ndim == 2
     E = 0.
     F = np.zeros(r.shape)
+    if 'alchemy_scalers' in kwargs.keys():
+        alchemy_scalers = kwargs['alchemy_scalers']
+    else:
+        alchemy_scalers = None
 
     # Getting all contributions for each molecule combination (comb).
     for entity_id_comb in entity_combs:
@@ -427,7 +433,9 @@ def predict_gdml(z, r, entity_ids, entity_combs, model, ignore_criteria=False):
         r_slice = []
         for entity_id in entity_id_comb:
             r_slice.extend(np.where(entity_ids == entity_id)[0])
-        
+
+        # TODO: Check if we can avoid prediction if we have a factor of zero.
+
         # Checks criteria cutoff if present and desired.
         if model.criteria_cutoff is not None and not ignore_criteria:
             _, crit_val = model.criteria_desc_func(
@@ -436,6 +444,8 @@ def predict_gdml(z, r, entity_ids, entity_combs, model, ignore_criteria=False):
             if crit_val >= model.criteria_cutoff:
                 # Do not include this contribution.
                 continue
+        
+
         
         # Predicts energies and forces.
         z_comp = z[r_slice]
@@ -454,6 +464,14 @@ def predict_gdml(z, r, entity_ids, entity_combs, model, ignore_criteria=False):
         e = out[0] + model.integ_c
         f = out[1:].reshape((len(z_comp), 3))
 
+        # Scale contribution if entity is included.
+        if alchemy_scalers is not None or alchemy_scalers != list():
+            for i in range(len(alchemy_scalers)):
+                alchemy_scaler = alchemy_scalers[i]
+                if alchemy_scaler.entity_id in entity_id_comb:
+                    E = alchemy_scaler.scale(E)
+                    F = alchemy_scaler.scale(F)
+
         # Adds contributions to total energy and forces.
         E += e
         F[r_slice] += f
@@ -461,7 +479,7 @@ def predict_gdml(z, r, entity_ids, entity_combs, model, ignore_criteria=False):
     return E, F
 
 def predict_gdml_decomp(
-    z, r, entity_ids, entity_combs, model, ignore_criteria=False
+    z, r, entity_ids, entity_combs, model, ignore_criteria=False, **kwargs
 ):
     """Predict all :math:`n`-body energies and forces of a single structure.
 
@@ -550,7 +568,9 @@ def predict_gdml_decomp(
 import ase
 
 # Possible ray task.
-def predict_gap(z, r, entity_ids, entity_combs, model, ignore_criteria=False):
+def predict_gap(
+    z, r, entity_ids, entity_combs, model, ignore_criteria=False, **kwargs
+):
     """Predict total :math:`n`-body energy and forces of a single structure.
 
     Parameters
@@ -621,7 +641,7 @@ def predict_gap(z, r, entity_ids, entity_combs, model, ignore_criteria=False):
     return E, F
 
 def predict_gap_decomp(
-    z, r, entity_ids, entity_combs, model, ignore_criteria=False
+    z, r, entity_ids, entity_combs, model, ignore_criteria=False, **kwargs
 ):
     """Predict all :math:`n`-body energies and forces of a single structure.
 
@@ -704,7 +724,9 @@ def predict_gap_decomp(
 ###   SchNetPack   ###
 ######################
 
-def predict_schnet(z, r, entity_ids, entity_combs, model, ignore_criteria=False):
+def predict_schnet(
+    z, r, entity_ids, entity_combs, model, ignore_criteria=False, **kwargs
+):
     """Predict total :math:`n`-body energy and forces of a single structure.
 
     Parameters
@@ -768,7 +790,7 @@ def predict_schnet(z, r, entity_ids, entity_combs, model, ignore_criteria=False)
     return E, F
 
 def predict_schnet_decomp(
-    z, r, entity_ids, entity_combs, model, ignore_criteria=False
+    z, r, entity_ids, entity_combs, model, ignore_criteria=False, **kwargs
 ):
     """Predict total :math:`n`-body energy and forces of a single structure.
 
