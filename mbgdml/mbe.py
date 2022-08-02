@@ -421,7 +421,7 @@ class mbePredict(object):
 
     def __init__(
         self, models, predict_model, use_ray=False, n_cores=None,
-        wkr_chunk_size=100, alchemy_scalers=None
+        wkr_chunk_size=None, alchemy_scalers=None
     ):
         """
         Parameters
@@ -442,9 +442,10 @@ class mbePredict(object):
         n_cores : :obj:`int`, default: ``None``
             Total number of cores available for predictions when using ray. If
             ``None``, then this is determined by ``os.cpu_count()``.
-        wkr_chunk_size : :obj:`int`, default: ``100``
+        wkr_chunk_size : :obj:`int`, default: ``None``
             Number of :math:`n`-body structures to assign to each spawned
-            worker with ray.
+            worker with ray. If ``None``, it will divide up the number of
+            predictions by ``n_cores``.
         alchemical_scaling : :obj:`list` of ``mbgdml.alchemy.mbeAlchemyScale``, default: ``None``
             Alchemical scaling of :math:`n`-body interactions of entities.
             Each key is an ``entity_id`` with a 
@@ -460,6 +461,8 @@ class mbePredict(object):
             n_cores = os.cpu_count()
         self.n_cores = n_cores
         self.wkr_chunk_size = wkr_chunk_size
+        if alchemy_scalers is None:
+            alchemy_scalers = []
         self.alchemy_scalers = alchemy_scalers
         if use_ray:
             global ray
@@ -642,7 +645,11 @@ class mbePredict(object):
             entity_ids = ray.put(entity_ids)
 
             nbody_gen = tuple(nbody_gen)
-            nbody_chunker = self.chunk(nbody_gen, self.wkr_chunk_size)
+            if self.wkr_chunk_size is None:
+                wkr_chunk_size = math.ceil(len(nbody_gen)/self.n_cores)
+            else:
+                wkr_chunk_size = self.wkr_chunk_size
+            nbody_chunker = self.chunk(nbody_gen, wkr_chunk_size)
             workers = []
 
             # Initialize workers 
@@ -775,7 +782,11 @@ class mbePredict(object):
             E[:] = np.nan
             F[:] = np.nan
             
-            nbody_chunker = self.chunk_array(entity_combs, self.wkr_chunk_size)
+            if self.wkr_chunk_size is None:
+                wkr_chunk_size = math.ceil(len(entity_combs)/self.n_cores)
+            else:
+                wkr_chunk_size = self.wkr_chunk_size
+            nbody_chunker = self.chunk_array(entity_combs, wkr_chunk_size)
             workers = []
 
             # Initialize workers 

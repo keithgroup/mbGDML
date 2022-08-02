@@ -332,8 +332,7 @@ def _predict_gdml_wkr(
 
         np.subtract(
             np.broadcast_to(r_desc, rj_desc_perms.shape),
-            rj_desc_perms,
-            out=diff_ab_perms,
+            rj_desc_perms, out=diff_ab_perms
         )
         norm_ab_perms = sqrt5 * np.linalg.norm(diff_ab_perms, axis=1)
 
