@@ -29,7 +29,8 @@ class mbeCalculator(Calculator):
     implemented_properties = ['energy', 'forces']
 
     def __init__(
-        self, mbe_pred, parameters=None, e_conv=1.0, f_conv=1.0, *args, **kwargs
+        self, mbe_pred, parameters=None, e_conv=1.0, f_conv=1.0, atoms=None,
+        **kwargs
     ):
         """
         Parameters
@@ -43,9 +44,10 @@ class mbeCalculator(Calculator):
         f_conv : :obj:`float`, default: ``1.0``
             Model forces conversion factor to eV/A (required by ASE).
         """
-        self.atoms = None
         self.name = 'mbGDML'
-        self.results = {}
+        Calculator.__init__(
+            self, restart=None, label=None, atoms=atoms, **kwargs
+        )
 
         self.mbe_pred = mbe_pred
 
@@ -59,6 +61,9 @@ class mbeCalculator(Calculator):
     def calculate(self, atoms=None, *args, **kwargs):
         """Predicts energy and forces using many-body GDML models.
         """
+        if atoms is not None:
+            self.atoms = atoms.copy()
+        
         parameters = self.parameters
         entity_ids = parameters['entity_ids']
         comp_ids = parameters['comp_ids']
