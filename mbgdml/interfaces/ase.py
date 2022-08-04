@@ -21,6 +21,7 @@
 # SOFTWARE.
 
 from ase.calculators.calculator import Calculator
+import numpy as np
 
 class mbeCalculator(Calculator):
     """ASE calculator using the many-body expansion predictor in mbGDML.
@@ -79,3 +80,20 @@ class mbeCalculator(Calculator):
         f *= self.f_conv
 
         self.results = {'energy': e, 'forces': f.reshape(-1, 3)}
+    
+    def todict(self, skip_default=True):
+        defaults = self.get_default_parameters()
+        dct = {}
+        for key, value in self.parameters.items():
+            if hasattr(value, 'todict'):
+                value = value.todict()
+            if skip_default:
+                default = defaults.get(key, '_no_default_')
+                if default != '_no_default_' and equal(value, default):
+                    continue
+            if isinstance(value, np.ndarray):
+                if value.dtype == '<U3':
+                    value = value.tolist()
+            dct[key] = value
+        return dct
+
