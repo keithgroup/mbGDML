@@ -44,7 +44,7 @@ class prob_structures:
     """
 
     def __init__(
-        self, models, predict_model, use_ray=False, n_cores=None,
+        self, models, predict_model, use_ray=False, n_workers=None,
         wkr_chunk_size=100
     ):
         """
@@ -63,16 +63,15 @@ class prob_structures:
             comes with some overhead and can make smaller computations much
             slower. Thus, this is only recommended with more than 10 or so
             entities.
-        n_cores : :obj:`int`, default: ``None``
-            Total number of cores available for predictions when using ray. If
-            ``None``, then this is determined by ``os.cpu_count()``.
+        n_workers : :obj:`int`, default: ``None``
+            Total number of workers available for predictions when using ray.
         wkr_chunk_size : :obj:`int`, default: ``100``
             Number of :math:`n`-body structures to assign to each spawned
             worker with ray.
         """
         self.models = models
         self.mbe_pred = mbePredict(
-            models, predict_model, use_ray, n_cores, wkr_chunk_size
+            models, predict_model, use_ray, n_workers, wkr_chunk_size
         )
     
     def get_pd(self, R):

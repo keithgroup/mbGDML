@@ -41,7 +41,7 @@ Parallel predictions
 
 Many-body expansions are known for their curse of dimensionality: as the supersystem grows in size so does the number of entity combinations.
 These can be easily parallelized by assigning workers with specified batch sizes.
-At the moment, only a `ray <https://docs.ray.io/en/latest/>`_ implementation for GDML is provided by specifying ``use_ray = True`` and setting ``n_cores`` and ``wkr_chunk_size``.
+At the moment, only a `ray <https://docs.ray.io/en/latest/>`_ implementation for GDML is provided by specifying ``use_ray = True`` and setting ``n_workers``.
 
 Supported potentials
 --------------------

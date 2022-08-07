@@ -417,10 +417,15 @@ def decomp_to_total(
 class mbePredict(object):
     """Predict energies and forces of structures using machine learning
     many-body models.
+
+    This can be parallelized with ray but needs to be initialized with
+    the ray cli or a script using this class. Note that initializing ray tasks
+    comes with some overhead and can make smaller computations much slower.
+    Only GDML models can run in parallel.
     """
 
     def __init__(
-        self, models, predict_model, use_ray=False, n_cores=None,
+        self, models, predict_model, use_ray=False, n_workers=None,
         wkr_chunk_size=None, alchemy_scalers=None, periodic_cell=None
     ):
         """
@@ -435,17 +440,13 @@ class mbePredict(object):
             function if ``use_ray = True``. This can return total properties
             or all individual :math:`n`-body energies and forces.
         use_ray : :obj:`bool`, default: ``False``
-            Parallelize predictions using ray. Note that initializing ray tasks
-            comes with some overhead and can make smaller computations much
-            slower. Thus, this is only recommended with more than 10 or so
-            entities.
-        n_cores : :obj:`int`, default: ``None``
-            Total number of cores available for predictions when using ray. If
-            ``None``, then this is determined by ``os.cpu_count()``.
+            Parallelize predictions using ray.
+        n_workers : :obj:`int`, default: ``None``
+            Total number of workers available for predictions when using ray.
         wkr_chunk_size : :obj:`int`, default: ``None``
             Number of :math:`n`-body structures to assign to each spawned
             worker with ray. If ``None``, it will divide up the number of
-            predictions by ``n_cores``.
+            predictions by ``n_workers``.
         alchemical_scaling : :obj:`list` of ``mbgdml.alchemy.mbeAlchemyScale``, default: ``None``
             Alchemical scaling of :math:`n`-body interactions of entities.
         periodic_cell : :obj:`mbgdml.periodic.Cell`, default: ``None``
@@ -461,9 +462,7 @@ class mbePredict(object):
             assert use_ray == False
 
         self.use_ray = use_ray
-        if n_cores is None:
-            n_cores = os.cpu_count()
-        self.n_cores = n_cores
+        self.n_workers = n_workers
         self.wkr_chunk_size = wkr_chunk_size
         if alchemy_scalers is None:
             alchemy_scalers = []
@@ -472,7 +471,10 @@ class mbePredict(object):
         if use_ray:
             global ray
             import ray
+            if not ray.is_initialized():
+                ray.init(address='auto')
             assert ray.is_initialized()
+
             self.models = [ray.put(model) for model in models]
             #if alchemy_scalers is not None:
             #    self.alchemy_scalers = [
@@ -653,7 +655,7 @@ class mbePredict(object):
 
             nbody_gen = tuple(nbody_gen)
             if self.wkr_chunk_size is None:
-                wkr_chunk_size = math.ceil(len(nbody_gen)/self.n_cores)
+                wkr_chunk_size = math.ceil(len(nbody_gen)/self.n_workers)
             else:
                 wkr_chunk_size = self.wkr_chunk_size
             nbody_chunker = self.chunk(nbody_gen, wkr_chunk_size)
@@ -668,7 +670,7 @@ class mbePredict(object):
                         ignore_criteria, **kwargs_pred
                     )
                 )
-            for _ in range(self.n_cores):
+            for _ in range(self.n_workers):
                 try:
                     chunk = next(nbody_chunker)
                     add_worker(workers, chunk)
@@ -793,7 +795,7 @@ class mbePredict(object):
             F[:] = np.nan
             
             if self.wkr_chunk_size is None:
-                wkr_chunk_size = math.ceil(len(entity_combs)/self.n_cores)
+                wkr_chunk_size = math.ceil(len(entity_combs)/self.n_workers)
             else:
                 wkr_chunk_size = self.wkr_chunk_size
             nbody_chunker = self.chunk_array(entity_combs, wkr_chunk_size)
@@ -807,7 +809,7 @@ class mbePredict(object):
                         z, r, entity_ids, chunk, model, ignore_criteria
                     )
                 )
-            for _ in range(self.n_cores):
+            for _ in range(self.n_workers):
                 try:
                     chunk = next(nbody_chunker)
                     add_worker(workers, chunk)

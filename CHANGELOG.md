@@ -9,6 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Periodic many-body expansions with the minimum image convention.
 - Many-body alchemical parameter.
 
+### Changed
+
+- Ray must be initialized outside of ``mbePredict`` class.
+- Use ``n_workers`` instead of ``n_cores`` in mbePredict.
+
 ### Fixed
 
 - Custom ``todict`` method for ASE calculator.
