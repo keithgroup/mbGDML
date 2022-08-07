@@ -686,6 +686,9 @@ class mbePredict(object):
                     add_worker(workers, chunk)
                 except StopIteration:
                     pass
+            
+            # Cleanup object store
+            del z, r, entity_ids
         
         return E, F
     
