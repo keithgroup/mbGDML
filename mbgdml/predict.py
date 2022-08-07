@@ -387,7 +387,8 @@ def _predict_gdml_wkr(
 
 # Possible ray task.
 def predict_gdml(
-    z, r, entity_ids, entity_combs, model, ignore_criteria=False, **kwargs
+    z, r, entity_ids, entity_combs, model, periodic_cell, ignore_criteria=False,
+    **kwargs
 ):
     """Predict total :math:`n`-body energy and forces of a single structure.
 
@@ -405,6 +406,8 @@ def predict_gdml(
         to slice ``r`` with ``entity_ids``.
     model : :obj:`mbgdml.predict.gdmlModel`
         GDML model containing all information need to make predictions.
+    periodic_cell : :obj:`mbgdml.periodic.Cell`, default: ``None``
+        Use periodic boundary conditions defined by this object.
     ignore_criteria : :obj:`bool`, default: ``False``
         Ignore any criteria for predictions; i.e., all :math:`n`-body
         structures will be predicted.
@@ -423,6 +426,11 @@ def predict_gdml(
         alchemy_scalers = kwargs['alchemy_scalers']
     else:
         alchemy_scalers = None
+    
+    if periodic_cell is not None:
+        periodic = True
+    else:
+        periodic = False
 
     # Getting all contributions for each molecule combination (comb).
     for entity_id_comb in entity_combs:
@@ -432,23 +440,30 @@ def predict_gdml(
         r_slice = []
         for entity_id in entity_id_comb:
             r_slice.extend(np.where(entity_ids == entity_id)[0])
+        
+        z_comp = z[r_slice]
+        r_comp = r[r_slice]
 
-        # TODO: Check if we can avoid prediction if we have a factor of zero.
+        # If we are using a periodic cell we convert r_comp into coordinates
+        # we can use in many-body expansions.
+        if periodic:
+            r_comp = periodic_cell.r_mic(r_comp)
+            if r_comp is None:
+                # Any atomic pairwise distance was larger than cutoff.
+                continue
+        
+        # TODO: Check if we can avoid prediction if we have an alchemical factor of zero?
 
         # Checks criteria cutoff if present and desired.
         if model.criteria_cutoff is not None and not ignore_criteria:
             _, crit_val = model.criteria_desc_func(
-                model.z, r[r_slice], None, entity_ids[r_slice]
+                z_comp, r_comp, None, entity_ids[r_slice]
             )
             if crit_val >= model.criteria_cutoff:
                 # Do not include this contribution.
                 continue
         
-
-        
         # Predicts energies and forces.
-        z_comp = z[r_slice]
-        r_comp = r[r_slice]
         r_desc, r_d_desc = model.desc_func(
             r_comp.flatten(), model.lat_and_inv
         )
@@ -568,7 +583,8 @@ import ase
 
 # Possible ray task.
 def predict_gap(
-    z, r, entity_ids, entity_combs, model, ignore_criteria=False, **kwargs
+    z, r, entity_ids, entity_combs, model, periodic_cell, ignore_criteria=False,
+    **kwargs
 ):
     """Predict total :math:`n`-body energy and forces of a single structure.
 
@@ -586,6 +602,8 @@ def predict_gap(
         to slice ``r`` with ``entity_ids``.
     model : :obj:`mbgdml.predict.gapModel`
         GAP model containing all information need to make predictions.
+    periodic_cell : :obj:`mbgdml.periodic.Cell`, default: ``None``
+        Use periodic boundary conditions defined by this object.
     ignore_criteria : :obj:`bool`, default: ``False``
         Ignore any criteria for predictions; i.e., all :math:`n`-body
         structures will be predicted.
@@ -601,6 +619,11 @@ def predict_gap(
     E = 0.
     F = np.zeros(r.shape)
 
+    if periodic_cell is not None:
+        periodic = True
+    else:
+        periodic = False
+
     # Getting all contributions for each molecule combination (comb).
     first_r = True
     for entity_id_comb in entity_combs:
@@ -614,10 +637,19 @@ def predict_gap(
         
         z_comp = z[r_slice]
         r_comp = r[r_slice]
+
         if first_r:
             atoms = ase.Atoms(z_comp)
             atoms.set_calculator(model.gap)
             first_r = False
+        
+        # If we are using a periodic cell we convert r_comp into coordinates
+        # we can use in many-body expansions.
+        if periodic:
+            r_comp = periodic_cell.r_mic(r_comp)
+            if r_comp is None:
+                # Any atomic pairwise distance was larger than cutoff.
+                continue
         
         # Checks criteria cutoff if present and desired.
         if model.criteria_cutoff is not None and not ignore_criteria:
@@ -724,7 +756,8 @@ def predict_gap_decomp(
 ######################
 
 def predict_schnet(
-    z, r, entity_ids, entity_combs, model, ignore_criteria=False, **kwargs
+    z, r, entity_ids, entity_combs, model, periodic_cell, ignore_criteria=False,
+    **kwargs
 ):
     """Predict total :math:`n`-body energy and forces of a single structure.
 
@@ -742,6 +775,8 @@ def predict_schnet(
         to slice ``r`` with ``entity_ids``.
     model : :obj:`mbgdml.predict.schnetModel`
         GAP model containing all information need to make predictions.
+    periodic_cell : :obj:`mbgdml.periodic.Cell`, default: ``None``
+        Use periodic boundary conditions defined by this object.
     ignore_criteria : :obj:`bool`, default: ``False``
         Ignore any criteria for predictions; i.e., all :math:`n`-body
         structures will be predicted.
@@ -761,6 +796,11 @@ def predict_schnet(
         device=torch.device(model.device)
     )
 
+    if periodic_cell is not None:
+        periodic = True
+    else:
+        periodic = False
+
     for entity_id_comb in entity_combs:
         log.debug(f'Entity combination: {entity_id_comb}')
 
@@ -772,6 +812,14 @@ def predict_schnet(
         
         z_comb = z[r_slice]
         r_comb = r[r_slice]
+
+        # If we are using a periodic cell we convert r_comp into coordinates
+        # we can use in many-body expansions.
+        if periodic:
+            r_comp = periodic_cell.r_mic(r_comp)
+            if r_comp is None:
+                # Any atomic pairwise distance was larger than cutoff.
+                continue
 
         # Checks criteria cutoff if present and desired.
         if model.criteria_cutoff is not None and not ignore_criteria:

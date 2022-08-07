@@ -421,7 +421,7 @@ class mbePredict(object):
 
     def __init__(
         self, models, predict_model, use_ray=False, n_cores=None,
-        wkr_chunk_size=None, alchemy_scalers=None
+        wkr_chunk_size=None, alchemy_scalers=None, periodic_cell=None
     ):
         """
         Parameters
@@ -448,12 +448,16 @@ class mbePredict(object):
             predictions by ``n_cores``.
         alchemical_scaling : :obj:`list` of ``mbgdml.alchemy.mbeAlchemyScale``, default: ``None``
             Alchemical scaling of :math:`n`-body interactions of entities.
-            Each key is an ``entity_id`` with a 
+        periodic_cell : :obj:`mbgdml.periodic.Cell`, default: ``None``
+            Use periodic boundary conditions defined by this object. If this
+            is not ``None`` only ``mbePredict.predict()`` can be used.
         """
         self.models = models
         self.predict_model = predict_model
 
         if models[0].type == 'gap':
+            assert use_ray == False
+        elif models[0].type == 'schnet':
             assert use_ray == False
 
         self.use_ray = use_ray
@@ -464,6 +468,7 @@ class mbePredict(object):
         if alchemy_scalers is None:
             alchemy_scalers = []
         self.alchemy_scalers = alchemy_scalers
+        self.periodic_cell = periodic_cell
         if use_ray:
             global ray
             import ray
@@ -474,6 +479,8 @@ class mbePredict(object):
             #        ray.put(scaler) for scaler in alchemy_scalers
             #    ]
             self.predict_model = ray.remote(predict_model)
+            if periodic_cell is not None:
+                self.periodic_cell = ray.put(periodic_cell)
 
     def get_avail_entities(self, comp_ids_r, comp_ids_model):
         """Determines available ``entity_ids`` for each ``comp_id`` in a
@@ -635,8 +642,8 @@ class mbePredict(object):
         # with this model.
         if not self.use_ray:
             E, F = self.predict_model(
-                z, r, entity_ids, nbody_gen, model, ignore_criteria,
-                **kwargs_pred
+                z, r, entity_ids, nbody_gen, model, self.periodic_cell,
+                ignore_criteria, **kwargs_pred
             )
         else:
             # Put all common data into the ray object store.
@@ -657,8 +664,8 @@ class mbePredict(object):
             def add_worker(workers, chunk):
                 workers.append(
                     predict_model.remote(
-                        z, r, entity_ids, chunk, model, ignore_criteria,
-                        **kwargs_pred
+                        z, r, entity_ids, chunk, model, self.periodic_cell, 
+                        ignore_criteria, **kwargs_pred
                     )
                 )
             for _ in range(self.n_cores):

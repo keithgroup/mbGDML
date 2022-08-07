@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Added
 
+- Periodic many-body expansions with the minimum image convention.
 - Many-body alchemical parameter.
 
 ### Fixed
