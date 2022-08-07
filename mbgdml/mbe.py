@@ -875,7 +875,10 @@ class mbePredict(object):
                 )
                 E[i] += E_nbody
                 F[i] += F_nbody
-        log.t_stop(t_predict, message='Predictions took {time} s', precision=3)
+        log.t_stop(
+            t_predict, message='Predictions took {time} s', precision=3,
+            level=10
+        )
         return E, F
     
     def predict_decomp(self, z, R, entity_ids, comp_ids, ignore_criteria=False):
@@ -951,6 +954,6 @@ class mbePredict(object):
             entity_comb_data.append(np.array(entity_comb_nbody))
         log.t_stop(
             t_predict, message='Decomposed predictions took {time} s',
-            precision=3
+            precision=3, level=10
         )
         return E_data, F_data, entity_comb_data, nbody_orders

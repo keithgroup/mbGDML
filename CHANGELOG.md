@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Changed
 
+- Predict times are logged at debug level.
 - Ray must be initialized outside of ``mbePredict`` class.
 - Use ``n_workers`` instead of ``n_cores`` in mbePredict.
 
