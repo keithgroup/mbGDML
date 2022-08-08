@@ -63,6 +63,8 @@ class mbeCalculator(Calculator):
         """Predicts energy and forces using many-body GDML models.
         """
         if atoms is not None:
+            if self.mbe_pred.periodic_cell is not None:
+                atoms.wrap()
             self.atoms = atoms.copy()
         
         parameters = self.parameters
