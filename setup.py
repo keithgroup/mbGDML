@@ -10,7 +10,7 @@ import versioneer
 # but not released yet.
 requirements = [
     'ase', 'bayesian-optimization', 'cclib>=1.7', 'matplotlib', 'natsort',
-    'numpy', 'scipy<=1.7.3', 'umap-learn'
+    'numpy', 'scipy<=1.7.3', 'psutil'
 ]
 setup_requirements = [ ]
 test_requirements = requirements.append(['pytest'])

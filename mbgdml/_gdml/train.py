@@ -1,7 +1,7 @@
 # MIT License
 # 
-# Copyright (c) 2018-2020, Stefan Chmiela
-# Copyright (c) 2020-2022, Alex M. Maldonado
+# Copyright (c) 2018-2022, Stefan Chmiela
+# Copyright (c) 2022, Alex M. Maldonado
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -23,8 +23,9 @@
 
 import numpy as np
 import scipy as sp
+import psutil
 from .sample import draw_strat_sample
-from .perm import find_perms
+from .perm import find_perms, find_extra_perms, find_frag_perms
 from .desc import Desc
 from .predict import GDMLPredict
 from ..utils import md5_data
@@ -113,28 +114,32 @@ def _assemble_kernel_mat_wkr(
     dim_i = 3 * n_atoms
     n_perms = int(len(tril_perms_lin) / dim_d)
 
-    if type(j) is tuple:  # selective/"fancy" indexing
-        # (block index in final K, block index global, indices of partials within block)
-        (K_j, j,keep_idxs_3n,) = j
+    if type(j) is tuple:  # Selective/"fancy" indexing
+        (
+            K_j,
+            j,
+            keep_idxs_3n,
+        ) = j  # (block index in final K, block index global, indices of partials within block)
         blk_j = slice(K_j, K_j + len(keep_idxs_3n))
-
-    else:  # sequential indexing
-        blk_j = slice(j * dim_i, (j + 1) * dim_i)
+    else:  # Sequential indexing
+        K_j = j * dim_i if j < n_train else n_train * dim_i + (j % n_train)
+        blk_j = slice(K_j, K_j + dim_i) if j < n_train else slice(K_j, K_j+1) ######
         keep_idxs_3n = slice(None)  # same as [:]
 
-    
-    if use_E_cstr and not (cols_m_limit is None or cols_m_limit == n_train):
-        raise ValueError(
-            '\'use_E_cstr\'- and \'cols_m_limit\'-parameters are mutually exclusive!'
-        )
+    # Note: The modulo-operator wraps around the index pointer on the training points when
+    # energy constraints are used in the kernel. In that case each point is accessed twice.
 
     # Create permutated variants of 'rj_desc' and 'rj_d_desc'.
     rj_desc_perms = np.reshape(
-        np.tile(R_desc[j, :], n_perms)[tril_perms_lin], (n_perms, -1), order='F'
+        np.tile(R_desc[j % n_train, :], n_perms)[tril_perms_lin],
+        (n_perms, -1),
+        order='F',
     )
 
-    # convert descriptor back to full representation
-    rj_d_desc = desc_func.d_desc_from_comp(R_d_desc[j,:,:])[0][:,keep_idxs_3n]
+    rj_d_desc = desc_func.d_desc_from_comp(R_d_desc[j % n_train, :, :])[0][
+        :, keep_idxs_3n
+    ]  # convert descriptor back to full representation
+
     rj_d_desc_perms = np.reshape(
         np.tile(rj_d_desc.T, n_perms)[:, tril_perms_lin], (-1, dim_d, n_perms)
     )
@@ -149,62 +154,115 @@ def _assemble_kernel_mat_wkr(
     ri_d_desc = np.zeros((1, dim_d, dim_i)) # must be zeros!
     k = np.empty((dim_i, dim_i_keep))
 
-    for i in range(j if exploit_sym else 0, n_train):
+    if (
+        j < n_train
+    ):  # This column only contains second and first derivative constraints.
 
-        blk_i = slice(i * dim_i, (i + 1) * dim_i)
+        #for i in range(j if exploit_sym else 0, n_train):
+        for i in range(0, n_train):
 
-        np.subtract(R_desc[i, :], rj_desc_perms, out=diff_ab_perms)
+            blk_i = slice(i * dim_i, (i + 1) * dim_i)
 
-        norm_ab_perms = sqrt5 * np.linalg.norm(diff_ab_perms, axis=1)
-        mat52_base_perms = np.exp(-norm_ab_perms / sig) / mat52_base_div * 5
+            # diff_ab_perms = R_desc[i, :] - rj_desc_perms
+            np.subtract(R_desc[i, :], rj_desc_perms, out=diff_ab_perms)
 
-        np.einsum(
-            'ki,kj->ij',
-            diff_ab_perms * mat52_base_perms[:, None] * 5,
-            np.einsum('ki,jik -> kj', diff_ab_perms, rj_d_desc_perms),
-            out=diff_ab_outer_perms
-        )
-
-        diff_ab_outer_perms -= np.einsum(
-            'ikj,j->ki',
-            rj_d_desc_perms,
-            (sig_pow2 + sig * norm_ab_perms) * mat52_base_perms,
-        )
-
-        #ri_d_desc = desc_func.d_desc_from_comp(R_d_desc[i, :, :])[0]
-        desc_func.d_desc_from_comp(R_d_desc[i, :, :], out=ri_d_desc)
-
-        #K[blk_i, blk_j] = ri_d_desc[0].T.dot(diff_ab_outer_perms)
-        np.dot(ri_d_desc[0].T, diff_ab_outer_perms, out=k)
-        K[blk_i, blk_j] = k
-
-        # this will never be called with 'keep_idxs_3n' set to anything else than [:]
-        if exploit_sym and (cols_m_limit is None or i < cols_m_limit):
-            K[blk_j, blk_i] = K[blk_i, blk_j].T
-
-    if use_E_cstr:
-
-        E_off = K.shape[0] - n_train, K.shape[1] - n_train
-        blk_j_full = slice(j * dim_i, (j + 1) * dim_i)
-        for i in range(n_train):
-
-            diff_ab_perms = R_desc[i, :] - rj_desc_perms
             norm_ab_perms = sqrt5 * np.linalg.norm(diff_ab_perms, axis=1)
+            mat52_base_perms = np.exp(-norm_ab_perms / sig) / mat52_base_div * 5
 
-            K_fe = (
-                5
-                * diff_ab_perms
-                / (3 * sig ** 3)
-                * (norm_ab_perms[:, None] + sig)
-                * np.exp(-norm_ab_perms / sig)[:, None]
+            # diff_ab_outer_perms = 5 * np.einsum(
+            #    'ki,kj->ij',
+            #    diff_ab_perms * mat52_base_perms[:, None],
+            #    np.einsum('ik,jki -> ij', diff_ab_perms, rj_d_desc_perms)
+            # )
+            np.einsum(
+                'ki,kj->ij',
+                diff_ab_perms * mat52_base_perms[:, None] * 5,
+                np.einsum('ki,jik -> kj', diff_ab_perms, rj_d_desc_perms),
+                out=diff_ab_outer_perms,
             )
-            K_fe = -np.einsum('ik,jki -> j', K_fe, rj_d_desc_perms)
-            K[blk_j_full, E_off[1] + i] = K_fe  # vertical
-            K[E_off[0] + i, blk_j] = K_fe[keep_idxs_3n]  # lower horizontal
 
-            K[E_off[0] + i, E_off[1] + j] = K[E_off[0] + j, E_off[1] + i] = -(
-                1 + (norm_ab_perms / sig) * (1 + norm_ab_perms / (3 * sig))
-            ).dot(np.exp(-norm_ab_perms / sig))
+            diff_ab_outer_perms -= np.einsum(
+                'ikj,j->ki',
+                rj_d_desc_perms,
+                (sig_pow2 + sig * norm_ab_perms) * mat52_base_perms,
+            )
+
+            # ri_d_desc = desc_func.d_desc_from_comp(R_d_desc[i, :, :])[0]
+            desc_func.d_desc_from_comp(R_d_desc[i, :, :], out=ri_d_desc)
+
+            # K[blk_i, blk_j] = ri_d_desc[0].T.dot(diff_ab_outer_perms)
+            np.dot(ri_d_desc[0].T, diff_ab_outer_perms, out=k)
+            K[blk_i, blk_j] = k
+
+            if exploit_sym and (
+                cols_m_limit is None or i < cols_m_limit
+            ):  # this will never be called with 'keep_idxs_3n' set to anything else than [:]
+                K[blk_j, blk_i] = K[blk_i, blk_j].T
+
+            # First derivative constraints
+            if use_E_cstr:
+
+                K_fe = (
+                    5
+                    * diff_ab_perms
+                    / (3 * sig ** 3)
+                    * (norm_ab_perms[:, None] + sig)
+                    * np.exp(-norm_ab_perms / sig)[:, None]
+                )
+
+                K_fe = -np.einsum('ik,jki -> j', K_fe, rj_d_desc_perms)
+
+                E_off_i = n_train * dim_i#, K.shape[1] - n_train
+                K[E_off_i + i, blk_j] = K_fe
+
+    else:
+
+        if use_E_cstr:
+
+            #rj_d_desc = desc_func.d_desc_from_comp(R_d_desc[j % n_train, :, :])[0][
+            #    :, :
+            #]  # convert descriptor back to full representation
+
+            #rj_d_desc_perms = np.reshape(
+            #    np.tile(rj_d_desc.T, n_perms)[:, tril_perms_lin], (-1, dim_d, n_perms)
+            #)
+
+            E_off_i = n_train * dim_i # Account for 'alloc_extra_rows'!.
+            #blk_j_full = slice((j % n_train) * dim_i, ((j % n_train) + 1) * dim_i)
+            # for i in range((j % n_train) if exploit_sym else 0, n_train):
+            for i in range(0, n_train):
+
+                ri_desc_perms = np.reshape(
+                    np.tile(R_desc[i, :], n_perms)[tril_perms_lin],
+                    (n_perms, -1),
+                    order='F',
+                )
+
+                ri_d_desc = desc_func.d_desc_from_comp(R_d_desc[i, :, :])[0] # convert descriptor back to full representation
+                ri_d_desc_perms = np.reshape(
+                    np.tile(ri_d_desc.T, n_perms)[:, tril_perms_lin], (-1, dim_d, n_perms)
+                )
+
+                diff_ab_perms = R_desc[j % n_train, :] - ri_desc_perms
+
+                norm_ab_perms = sqrt5 * np.linalg.norm(diff_ab_perms, axis=1)
+
+                K_fe = (
+                    5
+                    * diff_ab_perms
+                    / (3 * sig ** 3)
+                    * (norm_ab_perms[:, None] + sig)
+                    * np.exp(-norm_ab_perms / sig)[:, None]
+                )
+
+                K_fe = -np.einsum('ik,jki -> j', K_fe, ri_d_desc_perms)
+
+                blk_i_full = slice(i * dim_i, (i + 1) * dim_i)
+                K[blk_i_full, K_j] = K_fe  # vertical
+
+                K[E_off_i + i, K_j] = -(
+                    1 + (norm_ab_perms / sig) * (1 + norm_ab_perms / (3 * sig))
+                ).dot(np.exp(-norm_ab_perms / sig))
 
     return blk_j.stop - blk_j.start
 
@@ -217,10 +275,13 @@ class GDMLTrain(object):
     through PyTorch (requires optional `torch` dependency to be
     installed) for some solvers.
     """
-    def __init__(self, max_processes=None, use_torch=False):
+    def __init__(self, max_memory=None, max_processes=None, use_torch=False):
         """
         Parameters
         ----------
+        max_memory : :obj:`int`, default: ``None``
+            Limit the maximum memory usage. This is a soft limit that cannot
+            always be enforced.
         max_processes : :obj:`int`, default: ``None``
             Limit the max. number of processes. Otherwise all CPU cores are
             used. This parameters has no effect if `use_torch=True`
@@ -244,12 +305,21 @@ class GDMLTrain(object):
                 'Please reuse your first one.'
             )
         
-        self._max_processes = max_processes
+        total_memory = psutil.virtual_memory().total // 2 ** 30  # bytes to GB)
+        self._max_memory = (
+            min(max_memory, total_memory) if max_memory is not None else total_memory
+        )
+
+        total_cpus = mp.cpu_count()
+        self._max_processes = (
+            min(max_processes, total_cpus) if max_processes is not None else total_cpus
+        )
+
         self._use_torch = use_torch
 
         if use_torch and not _has_torch:
             raise ImportError(
-                'Optional PyTorch dependency not found!'
+                'Optional PyTorch dependency not found! Please run \'pip install sgdml[torch]\' to install it or disable the PyTorch option.'
             )
 
     def __del__(self):
@@ -260,10 +330,22 @@ class GDMLTrain(object):
             del glob
 
     def create_task(
-        self, train_dataset, n_train, valid_dataset, n_valid, sig, lam=1e-15,
-        use_sym=True, use_E=True, use_E_cstr=False, use_cprsn=False,
-        solver='analytic', solver_tol=1e-4, interact_cut_off=None,
-        idxs_train=None, idxs_valid=None,
+        self,
+        train_dataset,
+        n_train,
+        valid_dataset,
+        n_valid,
+        sig,
+        lam=1e-10,
+        perms=None,
+        use_sym=True,
+        use_E=True,
+        use_E_cstr=False,
+        use_cprsn=False,
+        solver=None,
+        solver_tol=1e-4,
+        idxs_train=None,
+        idxs_valid=None,
     ):
         """Create a data structure of custom type ``task``.
 
@@ -290,8 +372,13 @@ class GDMLTrain(object):
             Number of validation points to sample.
         sig : :obj:`int`
             Hyperparameter sigma (kernel length scale).
-        lam : :obj:`float`, default: ``1e-15``
+        lam : :obj:`float`, default: ``1e-10``
             Hyper-parameter lambda (regularization strength).
+        perms : :obj:`numpy.ndarray`, optional
+            An 2D array of size P x N containing P possible permutations
+            of the N atoms in the system. This argument takes priority over the ones
+            provided in the training dataset. No automatic discovery is run
+            when this argument is provided.
         use_sym : bool, default: ``True``
             True: include symmetries (sGDML), False: GDML.
         use_E : :obj:`bool`, optional
@@ -307,7 +394,10 @@ class GDMLTrain(object):
         use_cprsn : bool, default: ``False``
             True: compress kernel matrix along symmetric degrees of
             freedom,
-            False: train using full kernel matrix
+            False: train using full kernel matrix.
+        solver : :obj:`str`, default: ``None``
+            Type of solver to use for training. ``'analytic'`` is currently the
+            only option and defaults to this.
 
         Returns
         -------
@@ -320,6 +410,7 @@ class GDMLTrain(object):
             If a reconstruction of the potential energy surface is requested,
             but the energy labels are missing in the dataset.
         """
+        ###   mbGDML ADD   ###
         t_create_task = log.t_start()
         log.info(
             '-----------------------------------\n'
@@ -332,6 +423,7 @@ class GDMLTrain(object):
             'sig': sig, 'lam': lam, 'use_sym': use_sym, 'use_E': use_E,
             'use_E_cstr': use_E_cstr, 'use_cprsn': use_cprsn, 'type': 't'}
         )
+        ###   mbGDML ADD END   ###
 
         if use_E and 'E' not in train_dataset:
             raise ValueError(
@@ -342,7 +434,11 @@ class GDMLTrain(object):
             )
 
         use_E_cstr = use_E and use_E_cstr
+
+        # Is not needed in this function (mbGDML CHANGED)
+        # n_atoms = train_dataset['R'].shape[1]
         
+        ###   mbGDML CHANGE   ###
         log.info(
             '\nDataset splitting\n'
             '-----------------'
@@ -378,7 +474,7 @@ class GDMLTrain(object):
                 )
                 idxs_train = np.random.choice(
                     np.arange(train_dataset['F'].shape[0]),
-                    size=n_train,
+                    n_train,
                     replace=False,
                 )
         else:
@@ -406,16 +502,17 @@ class GDMLTrain(object):
 
             if 'E' in valid_dataset:
                 idxs_valid = draw_strat_sample(
-                    valid_dataset['E'], n_valid, excl_idxs=excl_idxs,
+                    valid_dataset['E'],
+                    n_valid,
+                    excl_idxs=excl_idxs,
                 )
             else:
                 idxs_valid_cands = np.setdiff1d(
                     np.arange(valid_dataset['F'].shape[0]), excl_idxs,
                     assume_unique=True
                 )
-                idxs_valid = np.random.choice(
-                    idxs_valid_cands, size=n_valid, replace=False
-                )
+                idxs_valid = np.random.choice(idxs_valid_cands, n_valid, replace=False)
+        ###   mbGDML CHANGE END   ###
 
         R_train = train_dataset['R'][idxs_train, :, :]
         task = {
@@ -438,7 +535,6 @@ class GDMLTrain(object):
             'use_cprsn': use_cprsn,
             'solver_name': solver,
             'solver_tol': solver_tol,
-            'interact_cut_off': interact_cut_off,
         }
 
         if use_E:
@@ -464,81 +560,161 @@ class GDMLTrain(object):
             task['e_unit'] = train_dataset['e_unit']
 
         if use_sym:
-            n_train = R_train.shape[0]
-            R_train_sync_mat = R_train
-            if n_train > 1000:
-                log.info(
-                    'Symmetry search has been restricted to a random subset\n'
-                    'of 1000 training points for faster convergence.'
-                )
-                R_train_sync_mat = R_train[
-                    np.random.choice(n_train, 1000, replace=False), :, :
-                ]
 
-            task['perms'] = find_perms(
-                R_train_sync_mat,
-                train_dataset['z'],
-                lat_and_inv=None,
-                max_processes=self._max_processes,
-            )
+            # No permutations provided externally.
+            if perms is None:
+
+                if (
+                    'perms' in train_dataset
+                ):  # take perms from training dataset, if available
+
+                    n_perms = train_dataset['perms'].shape[0]
+                    log.info(
+                        'Using {:d} permutations included in dataset.'.format(n_perms)
+                    )
+
+                    task['perms'] = train_dataset['perms']
+
+                else:  # find perms from scratch
+
+                    n_train = R_train.shape[0]
+                    R_train_sync_mat = R_train
+                    if n_train > 1000:
+                        R_train_sync_mat = R_train[
+                            np.random.choice(n_train, 1000, replace=False), :, :
+                        ]
+                        log.info(
+                            'Symmetry search has been restricted to a random subset of 1000/{:d} training points for faster convergence.'.format(
+                                n_train
+                            )
+                        )
+
+                    # TOOD: PBCs disabled when matching (for now).
+                    # task['perms'] = find_perms(
+                    #    R_train_sync_mat, train_dataset['z'], lat_and_inv=lat_and_inv, max_processes=self._max_processes,
+                    # )
+                    task['perms'] = find_perms(
+                        R_train_sync_mat,
+                        train_dataset['z'],
+                        # lat_and_inv=None,
+                        lat_and_inv=lat_and_inv,
+                        max_processes=self._max_processes,
+                    )
+
+                    # NEW
+
+                    USE_EXTRA_PERMS = False
+
+                    if USE_EXTRA_PERMS:
+                        task['perms'] = find_extra_perms(
+                            R_train_sync_mat,
+                            train_dataset['z'],
+                            # lat_and_inv=None,
+                            lat_and_inv=lat_and_inv,
+                            max_processes=self._max_processes,
+                        )
+
+                    # NEW
+
+                    # NEW
+
+                    USE_FRAG_PERMS = False
+
+                    if USE_FRAG_PERMS:
+                        frag_perms = find_frag_perms(
+                            R_train_sync_mat,
+                            train_dataset['z'],
+                            lat_and_inv=lat_and_inv,
+                            max_processes=self._max_processes,
+                        )
+                        task['perms'] = np.vstack((task['perms'], frag_perms))
+                        task['perms'] = np.unique(task['perms'], axis=0)
+
+                        print(
+                            '| Keeping '
+                            + str(task['perms'].shape[0])
+                            + ' unique permutations.'
+                        )
+
+                    # NEW
+
+            else:  # use provided perms
+
+                n_atoms = len(task['z'])
+                n_perms, perms_len = perms.shape
+
+                if perms_len != n_atoms:
+                    raise ValueError(  # TODO: Document me
+                        'Provided permutations do not match the number of atoms in dataset.'
+                    )
+                else:
+
+                    log.info(
+                        'Using {:d} externally provided permutations.'.format(n_perms)
+                    )
+
+                    task['perms'] = perms
 
         else:
             task['perms'] = np.arange(train_dataset['R'].shape[1])[
                 None, :
             ]  # no symmetries
 
-        # Which atoms can we keep, if we exclude all symmetric ones?
-        n_perms = task['perms'].shape[0]
-        if use_cprsn and n_perms > 1:
-
-            _, cprsn_keep_idxs = np.unique(
-                np.sort(task['perms'], axis=0), axis=1, return_index=True
-            )
-
-            task['cprsn_keep_atoms_idxs'] = cprsn_keep_idxs
-        
-        log.t_stop(
-            t_create_task, message='\nCreating task took {time} s'
-        )
         return task
 
     def create_model(
         self, task, solver, R_desc, R_d_desc, tril_perms_lin, std, alphas_F,
-        alphas_E=None, solver_resid=None, solver_iters=None, norm_y_train=None,
-        inducing_pts_idxs=None,
+        alphas_E=None
     ):
         """Create a data structure of custom type ``model``.
+
+        These data structures contain the trained model are everything
+        that is needed to generate predictions for new inputs.
+        Each task also contains the MD5 fingerprints of the used datasets.
+
+        Parameters
+        ----------
+        task : :obj:`dict`
+            Data structure of custom type ``task`` from which the model emerged.
+        solver : :obj:`str`
+            Identifier string for the solver that has been used to
+            train this model.
+        R_desc : :obj:`numpy.ndarray`, optional
+            An 2D array of size M x D containing the descriptors of dimension D
+            for M molecules.
+        R_d_desc : :obj:`numpy.ndarray`, optional
+            A 2D array of size M x D x 3N containing of the descriptor Jacobians
+            for M molecules. The descriptor has dimension D with 3N partial
+            derivatives with respect to the 3N Cartesian coordinates of each
+            atom.
+        tril_perms_lin : :obj:`numpy.ndarray`
+            1D array containing all recovered permutations expanded as one large
+            permutation to be applied to a tiled copy of the object to be
+            permuted.
+        std : float
+            Standard deviation of the training labels.
+        alphas_F : :obj:`numpy.ndarray`
+            A 1D array of size 3NM containing of the linear coefficients that
+            correspond to the force constraints.
+        alphas_E : :obj:`numpy.ndarray`, optional
+            A 1D array of size N containing of the linear coefficients that
+            correspond to the energy constraints.
+        
+        Returns
+        -------
+        :obj:`dict`
+            Data structure of custom type :obj:`model`.
         """
         n_train, dim_d = R_d_desc.shape[:2]
         n_atoms = int((1 + np.sqrt(8 * dim_d + 1)) / 2)
 
-        if 'cprsn_keep_atoms_idxs' in task:
-            cprsn_keep_idxs = task['cprsn_keep_atoms_idxs']
+        desc = Desc(
+            n_atoms,
+            max_processes=self._max_processes,
+        )
 
-            desc = Desc(
-                n_atoms,
-                interact_cut_off=task['interact_cut_off'],
-                max_processes=self._max_processes,
-            )
-
-            R_d_desc_full = desc.d_desc_from_comp(R_d_desc).reshape(
-                n_train, dim_d, n_atoms, 3
-            )
-            R_d_desc_full = R_d_desc_full[:, :, cprsn_keep_idxs, :].reshape(
-                n_train, dim_d, -1
-            )
-
-            r_d_desc_alpha = np.einsum(
-                'kji,ki->kj', R_d_desc_full, alphas_F.reshape(n_train, -1)
-            )
-
-        else:
-            i, j = np.tril_indices(n_atoms, k=-1)
-            alphas_F_exp = alphas_F.reshape(-1, n_atoms, 3)
-
-            r_d_desc_alpha = np.einsum(
-                'kji,kji->kj', R_d_desc, alphas_F_exp[:, j, :] - alphas_F_exp[:, i, :]
-            )
+        dim_i = desc.dim_i
+        R_d_desc_alpha = desc.d_desc_dot_vec(R_d_desc, alphas_F.reshape(-1, dim_i))
 
         model = {
             'type': 'm',
@@ -546,8 +722,6 @@ class GDMLTrain(object):
             'dataset_name': task['dataset_name'],
             'dataset_theory': task['dataset_theory'],
             'solver_name': solver,
-            'solver_tol': task['solver_tol'],
-            'norm_y_train': norm_y_train,
             'z': task['z'],
             'idxs_train': task['idxs_train'],
             'md5_train': task['md5_train'],
@@ -557,8 +731,7 @@ class GDMLTrain(object):
             'md5_test': None,
             'f_err': {'mae': np.nan, 'rmse': np.nan},
             'R_desc': R_desc.T,
-            'R_d_desc_alpha': r_d_desc_alpha,
-            'interact_cut_off': task['interact_cut_off'],
+            'R_d_desc_alpha': R_d_desc_alpha,
             'c': 0.0,
             'std': std,
             'sig': task['sig'],
@@ -569,17 +742,6 @@ class GDMLTrain(object):
             'use_E': task['use_E'],
             'use_cprsn': task['use_cprsn'],
         }
-
-        if solver_resid is not None:
-            model['solver_resid'] = solver_resid  # residual of solution (cg solver)
-
-        if solver_iters is not None:
-            model[
-                'solver_iters'
-            ] = solver_iters  # number of iterations performed to obtain solution (cg solver)
-
-        if inducing_pts_idxs is not None:
-            model['inducing_pts_idxs'] = inducing_pts_idxs
 
         if task['use_E']:
             model['e_err'] = {'mae': np.nan, 'rmse': np.nan}
@@ -619,14 +781,10 @@ class GDMLTrain(object):
 
         task = dict(task)  # make mutable
 
-        solver = task['solver_name']
-        assert solver == 'analytic' or solver == 'cg'  # or solver == 'fk'
-
         n_train, n_atoms = task['R_train'].shape[:2]
 
         desc = Desc(
             n_atoms,
-            interact_cut_off=task['interact_cut_off'],
             max_processes=self._max_processes,
         )
 
@@ -663,20 +821,107 @@ class GDMLTrain(object):
             E_train_mean = np.mean(E_train)
 
             y = np.hstack((y, -E_train + E_train_mean))
-            # y = np.hstack((n*Ft, (1-n)*Et))
+            
         y_std = np.std(y)
         y /= y_std
 
-        num_iters = None  # number of iterations performed (cg solver)
-        resid = None  # residual of solution
-        if solver == 'analytic':
+        max_memory_bytes = self._max_memory * 1024 ** 3
 
-            alphas = self.solve_analytic(
-                task, desc, R_desc, R_d_desc, tril_perms_lin, y,
+        # Memory cost of analytic solver
+        est_bytes_analytic = self.analytic_est_memory_requirement(
+            n_train, n_atoms
+        )
+
+        # Memory overhead (solver independent)
+        est_bytes_overhead = y.nbytes
+        est_bytes_overhead += R.nbytes
+        est_bytes_overhead += R_desc.nbytes
+        est_bytes_overhead += R_d_desc.nbytes
+
+        solver_keys = {}
+
+        use_analytic_solver = (
+            est_bytes_analytic + est_bytes_overhead
+        ) < max_memory_bytes
+
+        ###   mbGDML CHANGE START   ###
+        if task['solver_name'] is None:
+            # Fall back to analytic solver, if iterative solver file is missing.
+            # Force analytic solver because iterative solver is not released yet.
+            use_analytic_solver = True
+            # base_path = os.path.dirname(os.path.abspath(__file__))
+            # iter_solver_path = os.path.join(base_path, 'solvers/iterative.py')
+            # if not os.path.exists(iter_solver_path):
+            #     log.debug('Iterative solver not installed.')
+            #     use_analytic_solver = True
+        else:
+            solver = task['solver_name']
+            if solver == 'analytic':
+                use_analytic_solver = True
+            else:
+                raise ValueError(f'{solver} is not currently supported')
+        ###   mbGDML CHANGE END   ###
+
+        if use_analytic_solver:
+            log.info(
+                f'Using analytic solver (expected memory requirement: ~{est_bytes_analytic + est_bytes_overhead})'
             )
+            ###   mbGDML CHANGE START   ###
+            alphas = self.solve_analytic(task, desc, R_desc, R_d_desc, tril_perms_lin, y)
+            solver_keys['norm_y_train'] = np.linalg.norm(y)
+            ###   mbGDML CHANGE END   ###
 
         else:
-            raise ValueError(f'{solver} solver is not supported')
+            max_n_inducing_pts = Iterative.max_n_inducing_pts(
+                n_train, n_atoms, max_memory_bytes
+            )
+            est_bytes_iterative = Iterative.est_memory_requirement(
+                n_train, max_n_inducing_pts, n_atoms
+            )
+
+            log.info(
+                f'Using iterative solver (expected memory requirement: ~{est_bytes_iterative + est_bytes_overhead})'
+            )
+
+            alphas_F = task['alphas0_F'] if 'alphas0_F' in task else None
+            alphas_E = task['alphas0_E'] if 'alphas0_E' in task else None
+
+            iterative = Iterative(
+                self,
+                desc,
+                self._max_memory,
+                self._max_processes,
+                self._use_torch,
+                callback=callback,
+            )
+            (
+                alphas,
+                solver_keys['solver_tol'],
+                solver_keys[
+                    'solver_iters'
+                ],  # number of iterations performed (cg solver)
+                solver_keys['solver_resid'],  # residual of solution
+                train_rmse,
+                solver_keys['inducing_pts_idxs'],
+                is_conv,
+            ) = iterative.solve(
+                task,
+                R_desc,
+                R_d_desc,
+                tril_perms_lin,
+                y,
+                y_std,
+                save_progr_callback=save_progr_callback,
+            )
+
+            solver_keys['norm_y_train'] = np.linalg.norm(y)
+        
+            if not is_conv:
+                log.warning('Iterative solver did not converge!')
+                log.info('Troubleshooting tips:')
+                log.info('(1) Are the provided geometries highly correlated (i.e. very similar to each other)?')
+                log.info('(2) Try a larger length scale (sigma) parameter.')
+                log.warning('We will continue with this unconverged model, but its accuracy will likely be very bad.')
 
         alphas_E = None
         alphas_F = alphas
@@ -686,18 +931,15 @@ class GDMLTrain(object):
 
         model = self.create_model(
             task,
-            solver,
+            'analytic' if use_analytic_solver else 'cg',
             R_desc,
             R_d_desc,
             tril_perms_lin,
             y_std,
             alphas_F,
             alphas_E=alphas_E,
-            solver_resid=resid,
-            solver_iters=num_iters,
-            norm_y_train=np.linalg.norm(y),
-            inducing_pts_idxs=inducing_pts_idxs if solver == 'cg' else None,
         )
+        model.update(solver_keys)
 
         # Recover integration constant.
         # Note: if energy constraints are included in the kernel (via 'use_E_cstr'), do not
@@ -721,7 +963,15 @@ class GDMLTrain(object):
 
         return model
     
+    def analytic_est_memory_requirement(self, n_train, n_atoms):
+        est_bytes = 3 * (n_train * 3 * n_atoms) ** 2 * 8  # K + factor(s) of K
+        est_bytes += (n_train * 3 * n_atoms) * 8  # alpha
+        return est_bytes
+    
     def solve_analytic(self, task, desc, R_desc, R_d_desc, tril_perms_lin, y):
+        """Condensed ``sgdml.solvers.analytic.Analytic`` class.
+        """
+
         log.info(
             '\n-------------------------\n'
             '|   Analytical solver   |\n'

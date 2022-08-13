@@ -41,22 +41,28 @@ Every aspect of the process from preparing energy+gradient calculations, creatin
 
 # Features
 
-Creating mbGDML models:
+Creation:
 
 - Partition structures into monomers, dimers, trimers, etc.
 - Structure and data set breadcrumb trails using MD5 hashes.
-- Simple GDML training interface using CPUs or GPUs.
+- Simple GDML training interface using CPUs.
 
-Using mbGDML models:
+Use:
 
-- Energy and force predictions.
+- Energy and force predictions parallelized with [ray](https://docs.ray.io/en/latest/).
+- Periodic boundary conditions with the minimum image convention.
 - Calculator interface with the [Atomic Simulation Environment (ASE)](https://wiki.fysik.dtu.dk/ase/).
 
-Analyzing mbGDML models:
+Analysis:
 
 - Avoid recalculating energies and forces by storing predictions into predict sets (npz files).
 - Visually examine structural similarity and prediction accuracy using dimensionality reduction with [UMAP](https://umap-learn.readthedocs.io/en/latest/).
 - Analyze *n*-body contributions and predictions with heat maps.
+
+Other supported models:
+
+- [SchNetPack](https://schnetpack.readthedocs.io/en/stable/)
+- [GAP](https://libatoms.github.io/GAP/)
 
 # Installation
 

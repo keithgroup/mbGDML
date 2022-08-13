@@ -1,6 +1,7 @@
 # MIT License
 # 
-# Copyright (c) 2020-2022, Alex M. Maldonado
+# Copyright (c) 2018-2022 Stefan Chmiela, Gregory Fonseca
+# Copyright (c) 2022, Alex M. Maldonado
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -106,9 +107,6 @@ class gdmlModel(model):
 
         self.sig = model['sig']
         self.n_atoms = self.z.shape[0]
-        interact_cut_off = (
-            model['interact_cut_off'] if 'interact_cut_off' in model else None
-        )
         self.desc_func = _from_r
 
         self.lat_and_inv = (
@@ -271,7 +269,8 @@ from ._gdml.desc import _pdist, _r_to_desc, _r_to_d_desc, _from_r
 # This calculation is too fast to be a ray task.
 def _predict_gdml_wkr(
     r_desc, r_d_desc, n_atoms, sig, n_perms, R_desc_perms,
-    R_d_desc_alpha_perms, alphas_E_lin, stdev, integ_c, wkr_start_stop=None
+    R_d_desc_alpha_perms, alphas_E_lin, stdev, integ_c, wkr_start_stop=None,
+    chunk_size=None
 ):
     """Compute (part) of a GDML prediction.
 
@@ -291,12 +290,19 @@ def _predict_gdml_wkr(
         Partial prediction of all force components and energy (appended to
         array as last element).
     """
+    ###   mbGDML CHANGE   ###
     n_train = int(R_desc_perms.shape[0] / n_perms)
-    wkr_start, wkr_stop = (0, n_train)
+    ###   mbGDML CHANGE END   ###
 
+    wkr_start, wkr_stop = (0, n_train) if wkr_start_stop is None else wkr_start_stop
+    if chunk_size is None:
+        chunk_size = n_train
+
+    ###   mbGDML CHANGE   ###
     dim_d = (n_atoms * (n_atoms - 1)) // 2
     dim_i = 3 * n_atoms
-    dim_c = n_train * n_perms
+    dim_c = chunk_size * n_perms
+    ###   mbGDML CHANGE END   ###
 
     # Pre-allocate memory.
     diff_ab_perms = np.empty((dim_c, dim_d), dtype=np.double)
@@ -375,6 +381,7 @@ def _predict_gdml_wkr(
     r_d_desc = r_d_desc[None, ...]
     F = F[None, ...]
 
+    ###   mbGDML CHANGE   ###
     n = np.max((r_d_desc.shape[0], F.shape[0]))
     i, j = np.tril_indices(n_atoms, k=-1)
 
@@ -382,6 +389,7 @@ def _predict_gdml_wkr(
     out_F[:, i, j, :] = r_d_desc * F[..., None]
     out_F[:, j, i, :] = -out_F[:, i, j, :]
     out[1:] = out_F.sum(axis=1).reshape(n, -1)
+    ###   mbGDML CHANGE END   ###
 
     return out
 

@@ -282,12 +282,9 @@ class GDMLPredict:
             sys.exit()
 
         self.n_atoms = model['z'].shape[0]
-
-        interact_cut_off = (
-            model['interact_cut_off'] if 'interact_cut_off' in model else None
-        )  # NEW
+        
         self.desc = Desc(
-            self.n_atoms, interact_cut_off=interact_cut_off, max_processes=max_processes
+            self.n_atoms, max_processes=max_processes
         )
         glob['desc_func'] = self.desc
 

@@ -198,8 +198,8 @@ class mbGDMLTrain:
             train_dataset, n_train, valid_dataset, n_valid, sigma, lam=self.lam,
             use_sym=self.use_sym, use_E=self.use_E, use_E_cstr=self.use_E_cstr,
             use_cprsn=self.use_cprsn, solver=self.solver,
-            solver_tol=self.solver_tol, interact_cut_off=self.interact_cut_off,
-            idxs_train=train_idxs, idxs_valid=valid_idxs
+            solver_tol=self.solver_tol, idxs_train=train_idxs,
+            idxs_valid=valid_idxs
         )
         return self.task
     

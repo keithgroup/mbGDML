@@ -26,7 +26,6 @@ import itertools
 import numpy as np
 from .._gdml.desc import Desc
 from .. import utils
-import umap.umap_ as umap
 
 class structureEmbedding:
     """Uses the uniform manifold approximation and projection to embed R
@@ -61,6 +60,9 @@ class structureEmbedding:
             If :obj:`int`, the seed is used by the random number generator. If
             :obj:`None`, a random number is generated and passed into UMAP.
         """
+        global umap
+        import umap.umap_ as umap
+
         self.n_neighbors = n_neighbors
         self.min_dist = min_dist
         if random_state is None:

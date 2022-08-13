@@ -71,7 +71,6 @@ def test_train_results_1h2o():
         use_cprsn=False,
         solver='analytic',
         solver_tol=1e-4,
-        interact_cut_off=None,
         idxs_train=train_idxs,
         idxs_valid=valid_idxs,
     )
@@ -130,7 +129,7 @@ def test_1h2o_train_grid_search():
 
     train = mbGDMLTrain(
         use_sym=True, use_E=True, use_E_cstr=False, use_cprsn=False,
-        solver='analytic', lam=1e-15, solver_tol=1e-4, interact_cut_off=None
+        solver='analytic', lam=1e-15, solver_tol=1e-4
     )
     model = train.grid_search(
         dset,
@@ -182,7 +181,7 @@ def test_1h2o_train_bayes_opt():
 
     train = mbGDMLTrain(
         use_sym=True, use_E=True, use_E_cstr=False, use_cprsn=False,
-        solver='analytic', lam=1e-15, solver_tol=1e-4, interact_cut_off=None
+        solver='analytic', lam=1e-15, solver_tol=1e-4
     )
     gp_params = {'init_points': 5, 'n_iter': 5, 'alpha': 0.001}
     model, optimizer = train.bayes_opt(
