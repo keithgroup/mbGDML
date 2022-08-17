@@ -94,7 +94,11 @@ class mbeCalculator(Calculator):
                 if default != '_no_default_' and equal(value, default):
                     continue
             if isinstance(value, np.ndarray):
-                if value.dtype == '<U3':
+                # For some reason ASE does not like loading comp_ids as arrays.
+                # An error like "data type 'str128' not understood" will be
+                # thrown. We just convert all string arrays to lists to avoid
+                # this. 
+                if value.dtype.kind in {'U', 'S'}:
                     value = value.tolist()
             dct[key] = value
         return dct

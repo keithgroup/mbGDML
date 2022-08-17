@@ -1,6 +1,6 @@
 <h1 align="center">mbGDML</h1>
 
-<h4 align="center">Create, use, and analyze many-body gradient-domain machine learning potentials.</h4>
+<h4 align="center">Create, use, and analyze many-body, gradient-domain machine learning potentials.</h4>
 
 <p align="center">
     <a href="https://app.travis-ci.com/github/keithgroup/mbGDML">
@@ -37,7 +37,7 @@ However, it uses the inverse internuclear distance descriptor which sacrifices g
 [Many-body GDML (mbGDML)](https://github.com/keithgroup/mbGDML), is a route for GDML size-transferable potentials by using GDML to learn *n*-body interactions for use in a many-body expansion approach.
 Every aspect of the process from preparing energy+gradient calculations, creating data sets, training GDML models, and making predictions is taken care of in this user-friendly Python package.
 
-**Disclaimer**: This package is still under active development and is not ready for production.
+**Disclaimer**: This package is still under active development and is not suitable for production.
 
 # Features
 
