@@ -27,9 +27,10 @@ import numpy as np
 from scipy.spatial.distance import pdist
 
 class Cell:
-    """Define a periodic cell for many-body expansions.
+    """Enables :math:`n`-body predictions under periodic boundary conditions.
 
-    This is mostly a wrapper for ``ase.geometry.find_mic``.
+    The minimum-image convention (mic) is used to reformat :math:`n`-body
+    structures in a form resembling non-periodic structures.
     """
 
     def __init__(self, cell_v, cutoff, pbc=True):
@@ -53,13 +54,27 @@ class Cell:
         self.pbc = pbc
 
     def r_mic(self, r):
-        """Find minimum image convention coordinates of atoms in a periodic
+        """Find minimum-image convention coordinates of atoms in a periodic
         cell.
+
+        Creates a distance matrix by computing the distances of each atom with
+        respect to the first. Then uses ``ase.geometry.find_mic`` to get
+        non-periodic structure coordinates.
+
+        Also checks that all atomic pairwise distances are less than
+        ``self.cutoff``. If any are equal to greater than the cutoff then it
+        returns ``None``.
 
         Parameters
         ----------
-        r : :obj:`numpy.ndarray`
+        r : :obj:`numpy.ndarray`, ndim: ``2``
             Cartesian coordinates of atoms under periodic boundary conditions.
+        
+        Returns
+        -------
+        :obj:`numpy.ndarray`
+            Cartesian coordinates of atoms after applying the minimum-image
+            convention.
         """
         r = np.subtract(r, r[0,:])
         r_periodic, _ = find_mic(r, self.cell_v, pbc=self.pbc)

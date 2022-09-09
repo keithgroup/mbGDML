@@ -703,7 +703,7 @@ class GDMLTrain(object):
         Returns
         -------
         :obj:`dict`
-            Data structure of custom type :obj:`model`.
+            Data structure of custom type ``model``.
         """
         n_train, dim_d = R_d_desc.shape[:2]
         n_atoms = int((1 + np.sqrt(8 * dim_d + 1)) / 2)
