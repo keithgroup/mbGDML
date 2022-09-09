@@ -68,6 +68,7 @@ Or, the latest development version can be installed directly from the `GitHub re
 .. toctree::
    :hidden:
 
+   Many-body expansions <mbe>
    Data and Models <data-and-models/data-formats>
    Training <training>
    Predicting <predicting>

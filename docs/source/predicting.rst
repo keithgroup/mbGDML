@@ -8,6 +8,10 @@ We designed an extensible, modular framework for many-body predictions using :cl
 
 :class:`~mbgdml.mbe.mbePredict` requires two components: a model and predict function.
 
+.. image:: images/mbe-explained/mbe-predictions.png
+   :width: 700px
+   :align: center
+
 Model
 =====
 
