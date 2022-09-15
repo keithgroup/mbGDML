@@ -489,3 +489,55 @@ def save_json(json_path, json_dict):
     )
     with open(json_path, 'w') as f:
         f.write(json_string)
+
+def gen_combs(sets, replacement=False):
+    """Generate combinations from multiple sets.
+
+    Parameters
+    ----------
+    sets : :obj:`list` or :obj:`tuple`, ndim: ``2``
+        An iterable that contains multiple sets.
+    replacement : :obj:`bool`, default: ``False``
+        Allows repeated combinations in different order. If ``False``,
+        ``(0, 1)`` and ``(1, 0)`` could be possible if there is overlap
+        in the sets.
+    
+    Yields
+    ------
+    :obj:`tuple`
+        Entity IDs to retrieve cartesian coordinates for ML prediction.
+    """
+    combs = itertools.product(*sets)
+    # Excludes combinations that have repeats (e.g., (0, 0) and (1, 1. 2)).
+    combs = itertools.filterfalse(
+        lambda x: len(set(x)) <  len(x), combs
+    )
+    # At this point, there are still duplicates in this iterator.
+    # For example, (0, 1) and (1, 0) are still included.
+    for comb in combs:
+        # Sorts options is to avoid duplicate structures.
+        # For example, if combination is (1, 0) the sorted version is not
+        # equal and will not be included.
+        if not replacement:
+            if sorted(comb) != list(comb):
+                continue
+        yield comb
+
+def chunk_iterable(iterable, n):
+    """Chunk an iterable into ``n`` objects.
+
+    Parameters
+    ----------
+    iterable : ``iterable``
+        Iterable to chunk.
+    n : :obj:`int`
+        Size of each chunk.
+    
+    Yields
+    ------
+    :obj:`tuple`
+        ``n`` objects.
+    """
+    iterator = iter(iterable)
+    for first in iterator:
+        yield tuple(itertools.chain([first], itertools.islice(iterator, n - 1)))

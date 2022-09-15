@@ -12,5 +12,6 @@ API
    Periodic <periodic/periodic_module>
    Prediction <predict/predict_module>
    MBE <mbe/mbe_module>
+   Analysis <analysis/analysis_module>
    Utilities <utils/utils>
    GDML <gdml/gdml>

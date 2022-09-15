@@ -27,14 +27,14 @@ import numpy as np
 from scipy.spatial.distance import pdist
 
 class Cell:
-    """Enables :math:`n`-body predictions under periodic boundary conditions.
+    r"""Enables :math:`n`-body predictions under periodic boundary conditions.
 
     The minimum-image convention (mic) is used to reformat :math:`n`-body
     structures in a form resembling non-periodic structures.
     """
 
     def __init__(self, cell_v, cutoff, pbc=True):
-        """
+        r"""
         Parameters
         ----------
         cell_v : :obj:`numpy.ndarray`, shape: ``(3, 3)``
@@ -52,18 +52,38 @@ class Cell:
         self.cell_v = cell_v
         self.cutoff = cutoff
         self.pbc = pbc
-
-    def r_mic(self, r):
-        """Find minimum-image convention coordinates of atoms in a periodic
-        cell.
-
-        Creates a distance matrix by computing the distances of each atom with
-        respect to the first. Then uses ``ase.geometry.find_mic`` to get
-        non-periodic structure coordinates.
+    
+    def d_mic(self, d, check_cutoff=True):
+        r"""Applies the minimum-image convention to distance vectors.
 
         Also checks that all atomic pairwise distances are less than
         ``self.cutoff``. If any are equal to greater than the cutoff then it
         returns ``None``.
+
+        Parameters
+        ----------
+        d : :obj:`numpy.ndarray`, ndim: ``2``
+            Distances computed within the periodic cell.
+        
+        Returns
+        -------
+        :obj:`numpy.ndarray`
+            The minimum image coordinates.
+        """
+        d_periodic, _ = find_mic(d, self.cell_v, pbc=self.pbc)
+        # Check cutoff
+        if check_cutoff:
+            d_pd = pdist(d_periodic, metric='euclidean')
+            if np.any(np.ravel(d_pd >= self.cutoff)):
+                return None
+        return d_periodic
+
+    def r_mic(self, r):
+        r"""Find minimum-image convention coordinates of molecule(s) under
+        periodic boundary conditions.
+
+        Creates distance vectors of each atom with respect to the first.
+        Then applies the minimum-image convention using ``self.d_mic()``.
 
         Parameters
         ----------
@@ -76,11 +96,21 @@ class Cell:
             Cartesian coordinates of atoms after applying the minimum-image
             convention.
         """
-        r = np.subtract(r, r[0,:])
-        r_periodic, _ = find_mic(r, self.cell_v, pbc=self.pbc)
-        # Check cutoff
-        r_pd = pdist(r_periodic, metric='euclidean')
-        if np.any(np.ravel(r_pd >= self.cutoff)):
-            return None
-        else:
-            return r_periodic
+        # Computes the distance from the first atom.
+        assert r.ndim == 2
+        d = np.subtract(r, r[0,:])
+        return self.d_mic(d)
+    
+    @property
+    def volume(self):
+        r"""Volume of the periodic cell.
+        
+        The volume of the parallelepiped described by ``cell_v``
+        (:math:`\boldsymbol{v}`) is computed with
+        
+        .. math::
+            \text{Volume} = (v_1 \times v_2) \cdot v_3.
+        
+        """
+        vec = self.cell_v
+        return np.dot(vec[2], np.cross(vec[0], vec[1]))
