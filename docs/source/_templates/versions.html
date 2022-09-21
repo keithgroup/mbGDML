@@ -1,0 +1,21 @@
+{% if versions %}
+<h4>{{ _('Version') }}</h4>
+<form style="padding-bottom: 1em;">
+  <select name="URL" onchange="window.location.href=this.form.URL.options[this.form.URL.selectedIndex].value">
+    {%- for item in versions.branches %}
+    {%- if item == current_version %}
+    <option value="{{ item.url }}" selected>{{ item.name }}</option>
+    {% else %}
+    <option value="{{ item.url }}">{{ item.name }}</option>
+    {% endif %}
+    {%- endfor %}
+    {%- for item in versions.tags %}
+    {%- if item == current_version %}
+    <option value="{{ item.url }}" selected>{{ item.name }}</option>
+    {% else %}
+    <option value="{{ item.url }}">{{ item.name }}</option>
+    {% endif %}
+    {%- endfor %}
+  </select>
+</form>
+{% endif %}
