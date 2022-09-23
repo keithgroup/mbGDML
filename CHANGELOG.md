@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Added
 
+- Model analysis with Matérn covariance function.
 - ``mbe_contrib`` tests.
 - Radial distribution function analysis
 - Periodic many-body expansions with the minimum image convention.
