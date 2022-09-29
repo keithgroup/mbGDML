@@ -5,12 +5,11 @@
 from setuptools import setup, find_packages
 import versioneer
 
-# TODO: Scipy must be less than 1.8 because of a bayesian-optimization bug.
-# This is fixed in https://github.com/fmfn/BayesianOptimization/commit/35535c6312f365ead729de3d889d7b1fae1a8e0b
-# but not released yet.
+# TODO: Bayesian optimization on PyPI is incompatible with scipy>1.8.x.
+# We install bayesian-optimization from git until this is fixed.
 requirements = [
-    'ase', 'bayesian-optimization', 'cclib>=1.7', 'matplotlib', 'natsort',
-    'numpy', 'scipy<=1.7.3', 'psutil'
+    'ase', 'cclib>=1.7', 'matplotlib', 'natsort', 'numpy', 'scipy', 'psutil',
+    'bayesian-optimization @ git+https://github.com/fmfn/BayesianOptimization'
 ]
 setup_requirements = [ ]
 test_requirements = requirements.append(['pytest'])

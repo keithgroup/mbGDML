@@ -2,7 +2,8 @@ language: python
 python:
 - 3.9
 install:
-- pip install ase bayesian-optimization cclib matplotlib natsort numpy scipy==1.7.3 umap-learn
+- pip install ase cclib matplotlib natsort numpy scipy umap-learn
+- pip install git+https://github.com/fmfn/BayesianOptimization
 - pip install pytest-cov codecov coverage bump2version sphinx-multiversion
 - pip install Sphinx furo
 script:
