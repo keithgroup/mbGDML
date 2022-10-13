@@ -140,9 +140,15 @@ def mbe_worker(
             )
             
             # Index of the structure in the lower data set.
-            i_r_lower = np.where(
-                np.all(r_prov_specs_lower == r_prov_spec_lower_comb, axis=1)
-            )[0][0]
+            try:
+                i_r_lower = np.where(
+                    np.all(r_prov_specs_lower == r_prov_spec_lower_comb, axis=1)
+                )[0][0]
+            except IndexError as e:
+                if 'for axis 0 with size 0' in str(e):
+                    continue
+                else:
+                    raise
 
             deriv_lower = Deriv_lower[i_r_lower]
 
