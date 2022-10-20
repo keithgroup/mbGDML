@@ -8,5 +8,5 @@ touch ./html/.nojekyll
 
 # Create html redirect to main
 echo "<head>" > ./html/index.html
-echo "  <meta http-equiv='refresh' content='0; URL=https://www.aalexmmaldonado.com/reptar/main/index.html'>" >> ./html/index.html
+echo "  <meta http-equiv='refresh' content='0; URL=https://keithgroup.github.io/mbGDML/main/index.html'>" >> ./html/index.html
 echo "</head>" >> ./html/index.html
