@@ -2,9 +2,9 @@
 mbGDML
 ======
 
-.. image:: https://app.travis-ci.com/keithgroup/mbGDML.svg?branch=main
-   :target: https://app.travis-ci.com/keithgroup/mbGDML
-   :alt: Travis-CI build status
+.. image:: https://github.com/keithgroup/mbGDML/actions/workflows/python-package.yml/badge.svg
+   :target: https://github.com/keithgroup/mbGDML/actions/workflows/python-package.yml
+   :alt: GitHub actions build status
 
 .. image:: https://codecov.io/gh/keithgroup/mbGDML/branch/main/graph/badge.svg
    :target: https://codecov.io/gh/keithgroup/mbGDML
