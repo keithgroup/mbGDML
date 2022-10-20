@@ -3,8 +3,8 @@
 <h4 align="center">Create, use, and analyze many-body, gradient-domain machine learning potentials.</h4>
 
 <p align="center">
-    <a href="https://app.travis-ci.com/github/keithgroup/mbGDML">
-        <img src="https://app.travis-ci.com/keithgroup/mbGDML.svg?branch=main" alt="Build Status ">
+    <a href="https://github.com/keithgroup/mbGDML/actions/workflows/python-package.yml">
+        <img src="https://github.com/keithgroup/mbGDML/actions/workflows/python-package.yml/badge.svg" alt="Build Status ">
     </a>
     <a href="https://codecov.io/gh/keithgroup/mbGDML">
         <img src="https://codecov.io/gh/keithgroup/mbGDML/branch/main/graph/badge.svg?token=P643JEUWZC" alt="Codecov">
