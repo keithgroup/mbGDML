@@ -15,7 +15,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install ase cclib matplotlib natsort numpy scipy umap-learn
           python -m pip install git+https://github.com/fmfn/BayesianOptimization
-          python -m pip install pytest
+          python -m pip install pytest-cov
       - name: Run tests and collect coverage
         run: pytest --cov 
       - name: Upload coverage to Codecov
