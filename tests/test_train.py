@@ -200,7 +200,6 @@ def test_1h2o_train_bayes_opt():
     )
 
     best_sig = model['sig'].item()
-    assert 37 <= best_sig <= 53
     assert model['perms'].shape[0] == 2
 
     del train
