@@ -38,10 +38,12 @@ jobs:
       - name: Build documentation
         run: |
           sphinx-multiversion -nT ./docs/source ./docs/html
-          touch ../../../home/runner/work/mbGDML/mbGDML/docs/html/.nojekyll
-          echo "<head>" > ../../../home/runner/work/mbGDML/mbGDML/docs/html/index.html
-          echo "  <meta http-equiv='refresh' content='0; URL=https://keithgroup.github.io/mbGDML/main/index.html'>" >> ../../../home/runner/work/mbGDML/mbGDML/docs/html/index.html
-          echo "</head>" >> ../../../home/runner/work/mbGDML/mbGDML/docs/html/index.html
+          pwd
+          ls
+          touch ./docs/html/.nojekyll
+          echo "<head>" > ./docs/html/index.html
+          echo "  <meta http-equiv='refresh' content='0; URL=https://keithgroup.github.io/mbGDML/main/index.html'>" >> ./docs/html/index.html
+          echo "</head>" >> ./docs/html/index.html
       - name: Setup Pages
         uses: actions/configure-pages@v2
       - name: Upload artifact
