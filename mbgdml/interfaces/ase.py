@@ -21,6 +21,7 @@
 # SOFTWARE.
 
 from ase.calculators.calculator import Calculator
+import numpy as np
 
 class mbeCalculator(Calculator):
     """ASE calculator using the many-body expansion predictor in mbGDML.
@@ -29,7 +30,8 @@ class mbeCalculator(Calculator):
     implemented_properties = ['energy', 'forces']
 
     def __init__(
-        self, mbe_pred, parameters=None, e_conv=1.0, f_conv=1.0, *args, **kwargs
+        self, mbe_pred, parameters=None, e_conv=1.0, f_conv=1.0, atoms=None,
+        **kwargs
     ):
         """
         Parameters
@@ -43,9 +45,10 @@ class mbeCalculator(Calculator):
         f_conv : :obj:`float`, default: ``1.0``
             Model forces conversion factor to eV/A (required by ASE).
         """
-        self.atoms = None
         self.name = 'mbGDML'
-        self.results = {}
+        Calculator.__init__(
+            self, restart=None, label=None, atoms=atoms, **kwargs
+        )
 
         self.mbe_pred = mbe_pred
 
@@ -59,6 +62,11 @@ class mbeCalculator(Calculator):
     def calculate(self, atoms=None, *args, **kwargs):
         """Predicts energy and forces using many-body GDML models.
         """
+        if atoms is not None:
+            if self.mbe_pred.periodic_cell is not None:
+                atoms.wrap()
+            self.atoms = atoms.copy()
+        
         parameters = self.parameters
         entity_ids = parameters['entity_ids']
         comp_ids = parameters['comp_ids']
@@ -74,3 +82,24 @@ class mbeCalculator(Calculator):
         f *= self.f_conv
 
         self.results = {'energy': e, 'forces': f.reshape(-1, 3)}
+    
+    def todict(self, skip_default=True):
+        defaults = self.get_default_parameters()
+        dct = {}
+        for key, value in self.parameters.items():
+            if hasattr(value, 'todict'):
+                value = value.todict()
+            if skip_default:
+                default = defaults.get(key, '_no_default_')
+                if default != '_no_default_' and equal(value, default):
+                    continue
+            if isinstance(value, np.ndarray):
+                # For some reason ASE does not like loading comp_ids as arrays.
+                # An error like "data type 'str128' not understood" will be
+                # thrown. We just convert all string arrays to lists to avoid
+                # this. 
+                if value.dtype.kind in {'U', 'S'}:
+                    value = value.tolist()
+            dct[key] = value
+        return dct
+

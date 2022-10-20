@@ -311,7 +311,7 @@ class predictSet(mbGDMLData):
             self.e_unit = dset['e_unit']
     
     def load_models(
-        self, models, predict_model, use_ray=False, n_cores=None,
+        self, models, predict_model, use_ray=False, n_workers=None,
         wkr_chunk_size=100
     ):
         """Loads model(s) in preparation to create a predict set.
@@ -331,9 +331,8 @@ class predictSet(mbGDMLData):
             comes with some overhead and can make smaller computations much
             slower. Thus, this is only recommended with more than 10 or so
             entities.
-        n_cores : :obj:`int`, default: ``None``
-            Total number of cores available for predictions when using ray. If
-            ``None``, then this is determined by ``os.cpu_count()``.
+        n_workers : :obj:`int`, default: ``None``
+            Total number of workers available for predictions when using ray.
         wkr_chunk_size : :obj:`int`, default: ``100``
             Number of :math:`n`-body structures to assign to each spawned
             worker with ray.
@@ -343,7 +342,7 @@ class predictSet(mbGDMLData):
             import ray
             assert ray.is_initialized()
         self.mbePredict = mbePredict(
-            models, predict_model, use_ray, n_cores, wkr_chunk_size
+            models, predict_model, use_ray, n_workers, wkr_chunk_size
         )
         
         models_md5, nbody_orders = [], []
