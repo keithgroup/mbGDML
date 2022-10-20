@@ -1,6 +1,7 @@
 # MIT License
 # 
-# Copyright (c) 2020-2022, Alex M. Maldonado
+# Copyright (c) 2018-2022 Stefan Chmiela, Gregory Fonseca
+# Copyright (c) 2022, Alex M. Maldonado
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -106,9 +107,6 @@ class gdmlModel(model):
 
         self.sig = model['sig']
         self.n_atoms = self.z.shape[0]
-        interact_cut_off = (
-            model['interact_cut_off'] if 'interact_cut_off' in model else None
-        )
         self.desc_func = _from_r
 
         self.lat_and_inv = (
@@ -213,7 +211,7 @@ class schnetModel(model):
         Parameters
         ----------
         model_path : :obj:`str`
-            Path to GAP xml file.
+            Path to SchNet PyTorch model.
         comp_ids : ``iterable``
             Model component IDs that relate entity IDs of a structure to a
             fragment label.
@@ -271,7 +269,8 @@ from ._gdml.desc import _pdist, _r_to_desc, _r_to_d_desc, _from_r
 # This calculation is too fast to be a ray task.
 def _predict_gdml_wkr(
     r_desc, r_d_desc, n_atoms, sig, n_perms, R_desc_perms,
-    R_d_desc_alpha_perms, alphas_E_lin, stdev, integ_c, wkr_start_stop=None
+    R_d_desc_alpha_perms, alphas_E_lin, stdev, integ_c, wkr_start_stop=None,
+    chunk_size=None
 ):
     """Compute (part) of a GDML prediction.
 
@@ -291,12 +290,19 @@ def _predict_gdml_wkr(
         Partial prediction of all force components and energy (appended to
         array as last element).
     """
+    ###   mbGDML CHANGE   ###
     n_train = int(R_desc_perms.shape[0] / n_perms)
-    wkr_start, wkr_stop = (0, n_train)
+    ###   mbGDML CHANGE END   ###
 
+    wkr_start, wkr_stop = (0, n_train) if wkr_start_stop is None else wkr_start_stop
+    if chunk_size is None:
+        chunk_size = n_train
+
+    ###   mbGDML CHANGE   ###
     dim_d = (n_atoms * (n_atoms - 1)) // 2
     dim_i = 3 * n_atoms
-    dim_c = n_train * n_perms
+    dim_c = chunk_size * n_perms
+    ###   mbGDML CHANGE END   ###
 
     # Pre-allocate memory.
     diff_ab_perms = np.empty((dim_c, dim_d), dtype=np.double)
@@ -332,8 +338,7 @@ def _predict_gdml_wkr(
 
         np.subtract(
             np.broadcast_to(r_desc, rj_desc_perms.shape),
-            rj_desc_perms,
-            out=diff_ab_perms,
+            rj_desc_perms, out=diff_ab_perms
         )
         norm_ab_perms = sqrt5 * np.linalg.norm(diff_ab_perms, axis=1)
 
@@ -376,6 +381,7 @@ def _predict_gdml_wkr(
     r_d_desc = r_d_desc[None, ...]
     F = F[None, ...]
 
+    ###   mbGDML CHANGE   ###
     n = np.max((r_d_desc.shape[0], F.shape[0]))
     i, j = np.tril_indices(n_atoms, k=-1)
 
@@ -383,11 +389,15 @@ def _predict_gdml_wkr(
     out_F[:, i, j, :] = r_d_desc * F[..., None]
     out_F[:, j, i, :] = -out_F[:, i, j, :]
     out[1:] = out_F.sum(axis=1).reshape(n, -1)
+    ###   mbGDML CHANGE END   ###
 
     return out
 
 # Possible ray task.
-def predict_gdml(z, r, entity_ids, entity_combs, model, ignore_criteria=False):
+def predict_gdml(
+    z, r, entity_ids, entity_combs, model, periodic_cell, ignore_criteria=False,
+    **kwargs
+):
     """Predict total :math:`n`-body energy and forces of a single structure.
 
     Parameters
@@ -404,6 +414,8 @@ def predict_gdml(z, r, entity_ids, entity_combs, model, ignore_criteria=False):
         to slice ``r`` with ``entity_ids``.
     model : :obj:`mbgdml.predict.gdmlModel`
         GDML model containing all information need to make predictions.
+    periodic_cell : :obj:`mbgdml.periodic.Cell`, default: ``None``
+        Use periodic boundary conditions defined by this object.
     ignore_criteria : :obj:`bool`, default: ``False``
         Ignore any criteria for predictions; i.e., all :math:`n`-body
         structures will be predicted.
@@ -418,6 +430,15 @@ def predict_gdml(z, r, entity_ids, entity_combs, model, ignore_criteria=False):
     assert r.ndim == 2
     E = 0.
     F = np.zeros(r.shape)
+    if 'alchemy_scalers' in kwargs.keys():
+        alchemy_scalers = kwargs['alchemy_scalers']
+    else:
+        alchemy_scalers = None
+    
+    if periodic_cell is not None:
+        periodic = True
+    else:
+        periodic = False
 
     # Getting all contributions for each molecule combination (comb).
     for entity_id_comb in entity_combs:
@@ -428,18 +449,29 @@ def predict_gdml(z, r, entity_ids, entity_combs, model, ignore_criteria=False):
         for entity_id in entity_id_comb:
             r_slice.extend(np.where(entity_ids == entity_id)[0])
         
+        z_comp = z[r_slice]
+        r_comp = r[r_slice]
+
+        # If we are using a periodic cell we convert r_comp into coordinates
+        # we can use in many-body expansions.
+        if periodic:
+            r_comp = periodic_cell.r_mic(r_comp)
+            if r_comp is None:
+                # Any atomic pairwise distance was larger than cutoff.
+                continue
+        
+        # TODO: Check if we can avoid prediction if we have an alchemical factor of zero?
+
         # Checks criteria cutoff if present and desired.
         if model.criteria_cutoff is not None and not ignore_criteria:
             _, crit_val = model.criteria_desc_func(
-                model.z, r[r_slice], None, entity_ids[r_slice]
+                z_comp, r_comp, None, entity_ids[r_slice]
             )
             if crit_val >= model.criteria_cutoff:
                 # Do not include this contribution.
                 continue
         
         # Predicts energies and forces.
-        z_comp = z[r_slice]
-        r_comp = r[r_slice]
         r_desc, r_d_desc = model.desc_func(
             r_comp.flatten(), model.lat_and_inv
         )
@@ -454,6 +486,14 @@ def predict_gdml(z, r, entity_ids, entity_combs, model, ignore_criteria=False):
         e = out[0] + model.integ_c
         f = out[1:].reshape((len(z_comp), 3))
 
+        # Scale contribution if entity is included.
+        if alchemy_scalers is not None or alchemy_scalers != list():
+            for i in range(len(alchemy_scalers)):
+                alchemy_scaler = alchemy_scalers[i]
+                if alchemy_scaler.entity_id in entity_id_comb:
+                    E = alchemy_scaler.scale(E)
+                    F = alchemy_scaler.scale(F)
+
         # Adds contributions to total energy and forces.
         E += e
         F[r_slice] += f
@@ -461,7 +501,7 @@ def predict_gdml(z, r, entity_ids, entity_combs, model, ignore_criteria=False):
     return E, F
 
 def predict_gdml_decomp(
-    z, r, entity_ids, entity_combs, model, ignore_criteria=False
+    z, r, entity_ids, entity_combs, model, ignore_criteria=False, **kwargs
 ):
     """Predict all :math:`n`-body energies and forces of a single structure.
 
@@ -550,7 +590,10 @@ def predict_gdml_decomp(
 import ase
 
 # Possible ray task.
-def predict_gap(z, r, entity_ids, entity_combs, model, ignore_criteria=False):
+def predict_gap(
+    z, r, entity_ids, entity_combs, model, periodic_cell, ignore_criteria=False,
+    **kwargs
+):
     """Predict total :math:`n`-body energy and forces of a single structure.
 
     Parameters
@@ -567,6 +610,8 @@ def predict_gap(z, r, entity_ids, entity_combs, model, ignore_criteria=False):
         to slice ``r`` with ``entity_ids``.
     model : :obj:`mbgdml.predict.gapModel`
         GAP model containing all information need to make predictions.
+    periodic_cell : :obj:`mbgdml.periodic.Cell`, default: ``None``
+        Use periodic boundary conditions defined by this object.
     ignore_criteria : :obj:`bool`, default: ``False``
         Ignore any criteria for predictions; i.e., all :math:`n`-body
         structures will be predicted.
@@ -582,6 +627,11 @@ def predict_gap(z, r, entity_ids, entity_combs, model, ignore_criteria=False):
     E = 0.
     F = np.zeros(r.shape)
 
+    if periodic_cell is not None:
+        periodic = True
+    else:
+        periodic = False
+
     # Getting all contributions for each molecule combination (comb).
     first_r = True
     for entity_id_comb in entity_combs:
@@ -595,10 +645,19 @@ def predict_gap(z, r, entity_ids, entity_combs, model, ignore_criteria=False):
         
         z_comp = z[r_slice]
         r_comp = r[r_slice]
+
         if first_r:
             atoms = ase.Atoms(z_comp)
             atoms.set_calculator(model.gap)
             first_r = False
+        
+        # If we are using a periodic cell we convert r_comp into coordinates
+        # we can use in many-body expansions.
+        if periodic:
+            r_comp = periodic_cell.r_mic(r_comp)
+            if r_comp is None:
+                # Any atomic pairwise distance was larger than cutoff.
+                continue
         
         # Checks criteria cutoff if present and desired.
         if model.criteria_cutoff is not None and not ignore_criteria:
@@ -621,7 +680,7 @@ def predict_gap(z, r, entity_ids, entity_combs, model, ignore_criteria=False):
     return E, F
 
 def predict_gap_decomp(
-    z, r, entity_ids, entity_combs, model, ignore_criteria=False
+    z, r, entity_ids, entity_combs, model, ignore_criteria=False, **kwargs
 ):
     """Predict all :math:`n`-body energies and forces of a single structure.
 
@@ -704,7 +763,10 @@ def predict_gap_decomp(
 ###   SchNetPack   ###
 ######################
 
-def predict_schnet(z, r, entity_ids, entity_combs, model, ignore_criteria=False):
+def predict_schnet(
+    z, r, entity_ids, entity_combs, model, periodic_cell, ignore_criteria=False,
+    **kwargs
+):
     """Predict total :math:`n`-body energy and forces of a single structure.
 
     Parameters
@@ -719,8 +781,10 @@ def predict_schnet(z, r, entity_ids, entity_combs, model, ignore_criteria=False)
         Entity ID combinations (e.g., ``(53,)``, ``(0, 2)``,
         ``(32, 55, 293)``, etc.) to predict using this model. These are used
         to slice ``r`` with ``entity_ids``.
-    model : :obj:`mbgdml.predict.gapModel`
+    model : :obj:`mbgdml.predict.schnetModel`
         GAP model containing all information need to make predictions.
+    periodic_cell : :obj:`mbgdml.periodic.Cell`, default: ``None``
+        Use periodic boundary conditions defined by this object.
     ignore_criteria : :obj:`bool`, default: ``False``
         Ignore any criteria for predictions; i.e., all :math:`n`-body
         structures will be predicted.
@@ -740,6 +804,11 @@ def predict_schnet(z, r, entity_ids, entity_combs, model, ignore_criteria=False)
         device=torch.device(model.device)
     )
 
+    if periodic_cell is not None:
+        periodic = True
+    else:
+        periodic = False
+
     for entity_id_comb in entity_combs:
         log.debug(f'Entity combination: {entity_id_comb}')
 
@@ -751,6 +820,14 @@ def predict_schnet(z, r, entity_ids, entity_combs, model, ignore_criteria=False)
         
         z_comb = z[r_slice]
         r_comb = r[r_slice]
+
+        # If we are using a periodic cell we convert r_comp into coordinates
+        # we can use in many-body expansions.
+        if periodic:
+            r_comp = periodic_cell.r_mic(r_comp)
+            if r_comp is None:
+                # Any atomic pairwise distance was larger than cutoff.
+                continue
 
         # Checks criteria cutoff if present and desired.
         if model.criteria_cutoff is not None and not ignore_criteria:
@@ -768,7 +845,7 @@ def predict_schnet(z, r, entity_ids, entity_combs, model, ignore_criteria=False)
     return E, F
 
 def predict_schnet_decomp(
-    z, r, entity_ids, entity_combs, model, ignore_criteria=False
+    z, r, entity_ids, entity_combs, model, ignore_criteria=False, **kwargs
 ):
     """Predict total :math:`n`-body energy and forces of a single structure.
 
@@ -784,7 +861,7 @@ def predict_schnet_decomp(
         Entity ID combinations (e.g., ``(53,)``, ``(0, 2)``,
         ``(32, 55, 293)``, etc.) to predict using this model. These are used
         to slice ``r`` with ``entity_ids``.
-    model : :obj:`mbgdml.predict.gapModel`
+    model : :obj:`mbgdml.predict.schnetModel`
         GAP model containing all information need to make predictions.
     ignore_criteria : :obj:`bool`, default: ``False``
         Ignore any criteria for predictions; i.e., all :math:`n`-body

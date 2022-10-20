@@ -1,6 +1,6 @@
 <h1 align="center">mbGDML</h1>
 
-<h4 align="center">Create, use, and analyze many-body gradient-domain machine learning potentials.</h4>
+<h4 align="center">Create, use, and analyze many-body, gradient-domain machine learning potentials.</h4>
 
 <p align="center">
     <a href="https://app.travis-ci.com/github/keithgroup/mbGDML">
@@ -37,26 +37,32 @@ However, it uses the inverse internuclear distance descriptor which sacrifices g
 [Many-body GDML (mbGDML)](https://github.com/keithgroup/mbGDML), is a route for GDML size-transferable potentials by using GDML to learn *n*-body interactions for use in a many-body expansion approach.
 Every aspect of the process from preparing energy+gradient calculations, creating data sets, training GDML models, and making predictions is taken care of in this user-friendly Python package.
 
-**Disclaimer**: This package is still under active development and is not ready for production.
+**Disclaimer**: This package is still under active development and is not suitable for production.
 
 # Features
 
-Creating mbGDML models:
+Creation:
 
 - Partition structures into monomers, dimers, trimers, etc.
 - Structure and data set breadcrumb trails using MD5 hashes.
-- Simple GDML training interface using CPUs or GPUs.
+- Simple GDML training interface using CPUs.
 
-Using mbGDML models:
+Use:
 
-- Energy and force predictions.
+- Energy and force predictions parallelized with [ray](https://docs.ray.io/en/latest/).
+- Periodic boundary conditions with the minimum image convention.
 - Calculator interface with the [Atomic Simulation Environment (ASE)](https://wiki.fysik.dtu.dk/ase/).
 
-Analyzing mbGDML models:
+Analysis:
 
 - Avoid recalculating energies and forces by storing predictions into predict sets (npz files).
 - Visually examine structural similarity and prediction accuracy using dimensionality reduction with [UMAP](https://umap-learn.readthedocs.io/en/latest/).
 - Analyze *n*-body contributions and predictions with heat maps.
+
+Other supported models:
+
+- [SchNetPack](https://schnetpack.readthedocs.io/en/stable/)
+- [GAP](https://libatoms.github.io/GAP/)
 
 # Installation
 

@@ -140,9 +140,15 @@ def mbe_worker(
             )
             
             # Index of the structure in the lower data set.
-            i_r_lower = np.where(
-                np.all(r_prov_specs_lower == r_prov_spec_lower_comb, axis=1)
-            )[0][0]
+            try:
+                i_r_lower = np.where(
+                    np.all(r_prov_specs_lower == r_prov_spec_lower_comb, axis=1)
+                )[0][0]
+            except IndexError as e:
+                if 'for axis 0 with size 0' in str(e):
+                    continue
+                else:
+                    raise
 
             deriv_lower = Deriv_lower[i_r_lower]
 
@@ -417,11 +423,16 @@ def decomp_to_total(
 class mbePredict(object):
     """Predict energies and forces of structures using machine learning
     many-body models.
+
+    This can be parallelized with ray but needs to be initialized with
+    the ray cli or a script using this class. Note that initializing ray tasks
+    comes with some overhead and can make smaller computations much slower.
+    Only GDML models can run in parallel.
     """
 
     def __init__(
-        self, models, predict_model, use_ray=False, n_cores=None,
-        wkr_chunk_size=100
+        self, models, predict_model, use_ray=False, n_workers=None,
+        wkr_chunk_size=None, alchemy_scalers=None, periodic_cell=None
     ):
         """
         Parameters
@@ -435,34 +446,49 @@ class mbePredict(object):
             function if ``use_ray = True``. This can return total properties
             or all individual :math:`n`-body energies and forces.
         use_ray : :obj:`bool`, default: ``False``
-            Parallelize predictions using ray. Note that initializing ray tasks
-            comes with some overhead and can make smaller computations much
-            slower. Thus, this is only recommended with more than 10 or so
-            entities.
-        n_cores : :obj:`int`, default: ``None``
-            Total number of cores available for predictions when using ray. If
-            ``None``, then this is determined by ``os.cpu_count()``.
-        wkr_chunk_size : :obj:`int`, default: ``100``
+            Parallelize predictions using ray.
+        n_workers : :obj:`int`, default: ``None``
+            Total number of workers available for predictions when using ray.
+        wkr_chunk_size : :obj:`int`, default: ``None``
             Number of :math:`n`-body structures to assign to each spawned
-            worker with ray.
+            worker with ray. If ``None``, it will divide up the number of
+            predictions by ``n_workers``.
+        alchemical_scaling : :obj:`list` of ``mbgdml.alchemy.mbeAlchemyScale``, default: ``None``
+            Alchemical scaling of :math:`n`-body interactions of entities.
+        periodic_cell : :obj:`mbgdml.periodic.Cell`, default: ``None``
+            Use periodic boundary conditions defined by this object. If this
+            is not ``None`` only ``mbePredict.predict()`` can be used.
         """
         self.models = models
         self.predict_model = predict_model
 
         if models[0].type == 'gap':
             assert use_ray == False
+        elif models[0].type == 'schnet':
+            assert use_ray == False
 
         self.use_ray = use_ray
-        if n_cores is None:
-            n_cores = os.cpu_count()
-        self.n_cores = n_cores
+        self.n_workers = n_workers
         self.wkr_chunk_size = wkr_chunk_size
+        if alchemy_scalers is None:
+            alchemy_scalers = []
+        self.alchemy_scalers = alchemy_scalers
+        self.periodic_cell = periodic_cell
         if use_ray:
             global ray
             import ray
+            if not ray.is_initialized():
+                ray.init(address='auto')
             assert ray.is_initialized()
+
             self.models = [ray.put(model) for model in models]
+            #if alchemy_scalers is not None:
+            #    self.alchemy_scalers = [
+            #        ray.put(scaler) for scaler in alchemy_scalers
+            #    ]
             self.predict_model = ray.remote(predict_model)
+            if periodic_cell is not None:
+                self.periodic_cell = ray.put(periodic_cell)
 
     def get_avail_entities(self, comp_ids_r, comp_ids_model):
         """Determines available ``entity_ids`` for each ``comp_id`` in a
@@ -611,12 +637,21 @@ class mbePredict(object):
         avail_entity_ids = self.get_avail_entities(comp_ids, model_comp_ids)
         log.debug(f'Available entity IDs: {avail_entity_ids}')
         nbody_gen = self.gen_entity_combinations(avail_entity_ids)
+
+        kwargs_pred = {}
+        if self.alchemy_scalers is not None:
+            nbody_order = len(model_comp_ids)
+            kwargs_pred['alchemy_scalers'] = [
+                alchemy_scaler for alchemy_scaler in self.alchemy_scalers \
+                if alchemy_scaler.order == nbody_order
+            ]
         
         # Runs the predict_model function to calculate all n-body energies
         # with this model.
         if not self.use_ray:
             E, F = self.predict_model(
-                z, r, entity_ids, nbody_gen, model, ignore_criteria
+                z, r, entity_ids, nbody_gen, model, self.periodic_cell,
+                ignore_criteria, **kwargs_pred
             )
         else:
             # Put all common data into the ray object store.
@@ -625,7 +660,11 @@ class mbePredict(object):
             entity_ids = ray.put(entity_ids)
 
             nbody_gen = tuple(nbody_gen)
-            nbody_chunker = self.chunk(nbody_gen, self.wkr_chunk_size)
+            if self.wkr_chunk_size is None:
+                wkr_chunk_size = math.ceil(len(nbody_gen)/self.n_workers)
+            else:
+                wkr_chunk_size = self.wkr_chunk_size
+            nbody_chunker = self.chunk(nbody_gen, wkr_chunk_size)
             workers = []
 
             # Initialize workers 
@@ -633,10 +672,11 @@ class mbePredict(object):
             def add_worker(workers, chunk):
                 workers.append(
                     predict_model.remote(
-                        z, r, entity_ids, chunk, model, ignore_criteria
+                        z, r, entity_ids, chunk, model, self.periodic_cell, 
+                        ignore_criteria, **kwargs_pred
                     )
                 )
-            for _ in range(self.n_cores):
+            for _ in range(self.n_workers):
                 try:
                     chunk = next(nbody_chunker)
                     add_worker(workers, chunk)
@@ -654,6 +694,9 @@ class mbePredict(object):
                     add_worker(workers, chunk)
                 except StopIteration:
                     pass
+            
+            # Cleanup object store
+            del z, r, entity_ids
         
         return E, F
     
@@ -757,7 +800,11 @@ class mbePredict(object):
             E[:] = np.nan
             F[:] = np.nan
             
-            nbody_chunker = self.chunk_array(entity_combs, self.wkr_chunk_size)
+            if self.wkr_chunk_size is None:
+                wkr_chunk_size = math.ceil(len(entity_combs)/self.n_workers)
+            else:
+                wkr_chunk_size = self.wkr_chunk_size
+            nbody_chunker = self.chunk_array(entity_combs, wkr_chunk_size)
             workers = []
 
             # Initialize workers 
@@ -768,7 +815,7 @@ class mbePredict(object):
                         z, r, entity_ids, chunk, model, ignore_criteria
                     )
                 )
-            for _ in range(self.n_cores):
+            for _ in range(self.n_workers):
                 try:
                     chunk = next(nbody_chunker)
                     add_worker(workers, chunk)
@@ -834,7 +881,10 @@ class mbePredict(object):
                 )
                 E[i] += E_nbody
                 F[i] += F_nbody
-        log.t_stop(t_predict, message='Predictions took {time} s', precision=3)
+        log.t_stop(
+            t_predict, message='Predictions took {time} s', precision=3,
+            level=10
+        )
         return E, F
     
     def predict_decomp(self, z, R, entity_ids, comp_ids, ignore_criteria=False):
@@ -910,6 +960,6 @@ class mbePredict(object):
             entity_comb_data.append(np.array(entity_comb_nbody))
         log.t_stop(
             t_predict, message='Decomposed predictions took {time} s',
-            precision=3
+            precision=3, level=10
         )
         return E_data, F_data, entity_comb_data, nbody_orders

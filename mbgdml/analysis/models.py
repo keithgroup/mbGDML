@@ -20,207 +20,121 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-"""Analyses for mbGDML models."""
+"""Analyses for models."""
 
 import numpy as np
-from ..utils import atoms_by_element
 
-class forceComparison:
-    """Compare force vectors.
+def gdml_mat52_wrk(r_desc, n_atoms, sig, n_perms, R_desc_perms):
+    r"""Compute the Matérn 5/2 covariance function for a single structure with
+    respect to a GDML train set.
+
+    Parameters
+    ----------
+    r_desc : :obj:`numpy.ndarray`, ndim: ``1``
+        GDML descriptor of a single structure with permutational symmetries
+        specified by the model.
+    n_atoms : :obj:`int`
+        Total number of atoms in the system.
+    sig : :obj:`float`
+        Trained kernel length scale.
+    n_perms : :obj:`int`
+        Number of permutational symmetries.
+    R_desc_perms : :obj:`numpy.ndarray`, ndim: ``2``
+        Training descriptors with permutational symmetries.
+
+    Returns
+    -------
+    :obj:`numpy.ndarray`
+        (ndim: ``1``) Covariances between a single structure and the GDML
+        training set.
+
+    Notes
+    -----
+    The Matérn kernel when :math:`\nu = 5/2` reduces to the following
+    expression.
+
+    .. math::
+
+        k_{5/2} (x_i, x_j) = \left( 1 + \frac{\sqrt{5}}{l} d(x_i, x_j) \
+        + \frac{5}{3l} d(x_i, x_j)^2 \right) \exp \left( - \frac{\sqrt{5}}{l} d (x_i, x_j) \right)
+
+    For GDML, sigma (``sig``) is the kernel length-scale parameter :math:`l`.
+    :math:`d(x_i, x_j)` is the Euclidean distance between :math:`x_i` 
+    (``r_desc``) and :math:`x_j` (a single training point in ``R_desc_perms``).
+
+    .. note::
+
+        This can be a ray task if desired.
+    
     """
+    n_train = int(R_desc_perms.shape[0] / n_perms)
+    dim_d = (n_atoms * (n_atoms - 1)) // 2
+    dim_c = n_train * n_perms
 
-    def __init__(self):
-        pass
+    # Pre-allocate memory.
+    mat52_exp = np.empty((dim_c,), dtype=np.float64)
+    mat52 = np.ones((dim_c,), dtype=np.float64)
 
-    def force_similarity(self, predict_force, true_force):
-        """Compute cosine distance of two force vectors.
+    # Avoid divisions.
+    sig_inv = 1.0 / sig
+    mat52_base_fact = 5.0 / (3 * sig ** 2)
+    sqrt5 = np.sqrt(5.0)
+    diag_scale_fact = sqrt5 / sig
 
-        Computes 1 - cosine_similarity. Two exact vectors will thus have a
-        similarity of 0, orthogal vectors will be 1, and equal but opposite
-        will be 2.
-        
-        Parameters
-        ----------
-        predict_force : :obj:`numpy.ndarray`
-            Array of the predicted force vector by GDML.
-        true_force : :obj:`numpy.ndarray`
-            Array of the true force vector of the same shape as predict_force
-        
-        Returns
-        -------
-        :obj:`float`
-            Similarity (accuracy) of predicted force vector for an atom. 0.0 is 
-            perfect similarity and the further away from zero the less similar 
-            (accurate).
-        
-        """
-        similarity = np.dot(predict_force, true_force) / \
-                     (np.linalg.norm(predict_force) * \
-                      np.linalg.norm(true_force))
-        similarity = float(1 - similarity)
-        return similarity
+    # Computes the difference between the descriptor and the training set.
+    diff_ab_perms = np.subtract(
+        np.broadcast_to(r_desc, R_desc_perms.shape),
+        R_desc_perms
+    )
+    # Computes the norm of descriptor difference.
+    norm_ab_perms = np.linalg.norm(diff_ab_perms, ord=None, axis=1)
+
+    # Matern 5/2 exponential term.
+    np.exp(-diag_scale_fact * norm_ab_perms, out=mat52_exp)
+    mat52 += diag_scale_fact * norm_ab_perms
+    mat52 += mat52_base_fact * np.power(norm_ab_perms, 2)
+    mat52 *= mat52_exp
     
-    def cluster_force_similarity(self, predict_set, structure_index):
-        """Computes the cosine distance of each atomic force of a single
-        structure for all n-body corrections.
+    return mat52
 
-        Parameters
-        ----------
-        predict_set : :obj:`mbgdml.data.predictSet`
-            Object with loaded predict set.
-        structure_index : :obj:`int`
-            Index of the structure in the predict set arrays.
+def gdml_mat52(model, Z, R):
+    r"""Compute the Matérn 5/2 covariance function with respect to a GDML model.
 
-        Returns
-        -------
-        :obj:`numpy.ndarray`
-            Cosine similarities of all possible n-body corrections of a single
-            structure in the shape of ``(n_z, nbodies)`` where ``n_z`` is the
-            number of atoms in the structure and ``nbodies`` is the number of
-            n-body corrections in the predict set.
-        """
-        F = {}
-        F_index = 1
-        while f'F_{F_index}' in predict_set.asdict().keys():
-            _, F_nbody = predict_set.nbody_predictions(F_index)
-            F[f'F_{F_index}'] = F_nbody[structure_index]
-            F_index += 1
-        F_true = predict_set.F_true[structure_index]
-        similarities = np.zeros((F_true.shape[0], F_index - 1))
-        atom = 0
-        while atom < F_true.shape[0]:
-            F_index = 1
-            while f'F_{F_index}' in F:
-                similarities[atom][F_index - 1] = self.force_similarity(
-                    F_true[atom], F[f'F_{F_index}'][atom]
-                )
-                F_index += 1
-            atom += 1
-        return similarities
+    This is a light wrapper around :func:`mbgdml.analysis.models.gdml_mat52_wrk`
+    that can run in parallel.
+
+    Parameters
+    ----------
+    model : :obj:`mbgdml.predict.gdmlModel`
+        GDML model containing all information need to make predictions.
+    Z : :obj:`numpy.ndarray`, ndim: ``1``
+        Atomic numbers of all atoms in ``R`` (in the same order).
+    R : :obj:`numpy.ndarray`, ndim: ``2`` or ``3``
+        Cartesian coordinates of a single structure to predict.
     
-    def average_force_similarity(self, predict_set, structure_list):
-        """Computes average force similarity over multiple structures.
-
-        Parameters
-        ----------
-        predict_set : :obj:`mbgdml.data.predictSet`
-            Object with loaded predict set.
-        structure_list : :obj:`list`
-            Indices of structures to include in the heatmap. To select all
-            structures, one could use
-            ``list(range(0, predict_set.F_true.shape[0]))`` for example.
-        
-        Returns
-        -------
-        :obj:`numpy.ndarray`
-            Average cosine distances of all possible n-body corrections over
-            selected structures in the shape of ``(n_z, nbodies)`` where ``n_z``
-            is the number of atoms in the structure and ``nbodies`` is the
-            number of n-body corrections in the predict set.
-        """
-        sim_list = []
-        for struct in structure_list:
-            sim_list.append(self.cluster_force_similarity(
-                predict_set, struct
-            ))
-        if len(structure_list) != 1:
-            sim_mean = np.zeros(sim_list[0].shape)
-            for atom in list(range(0, sim_list[0].shape[0])):
-                for n_body in list(range(0, sim_list[0].shape[1])):
-                    mean_array = np.array([])
-                    for struct in structure_list:
-                        mean_array = np.append(
-                            mean_array,
-                            sim_list[structure_list[struct]][atom][n_body]
-                        )
-                    sim_mean[atom][n_body] = np.mean(mean_array)
-        return sim_mean
-
-
-class nbodyHeatMaps(forceComparison):
-    """Heat maps for n-body contribution accuracy.
+    Returns
+    -------
+    :obj:`numpy.ndarray`
+        (ndim: ``1`` or ``2``) Covariances between all structures in ``R`` and
+        the GDML training set.
     """
-
-    def __init__(self):
-        pass
-
-    def create_heatmap(
-        self, similarity, y_labels, num_nbody, name, data_labels
-    ):
-        """
-        Generates matplotlib heatmap figure.
-
-        Parameters
-        ----------
-        similarity : :obj:`numpy.ndarray`
-            Cosine distances in n x m array where n is the order of n-body
-            contributions, and m is the number of atoms.
-        y_labels : :obj:`list` [:obj:`str`]
-            Labels of the y axis of the heat map.
-        num_nbody : :obj:`list` [:obj:`str`]
-            Maximum number of n-body contributions to include.
-        name : :obj:`str`
-            File name to save the heatmap.
-        data_labels : :obj:`bool`
-            Whether or not to include values of cosine distance inside
-            heatmap cells.
-        
-        Returns
-        -------
-        :obj:`matplotlib.figure`
-            Figure object.
-        :obj:`matplotlib.axes.Axes`
-            Axes object.
-        """
-        import matplotlib.pyplot as plt
-        fig, heatmap = plt.subplots(figsize=(3, 4), constrained_layout=True)
-        #norm = mpl.colors.Normalize(vmin=0, vmax=2.0)
-        #im = heatmap.imshow(similarity, cmap='Reds', vmin=0.0, vmax=2.0, norm=norm)
-        im = heatmap.imshow(similarity, cmap='Reds')
-        # Customizing plot.
-        heatmap.set_xticks(np.arange(len(num_nbody)))
-        heatmap.set_xticklabels(num_nbody)
-        heatmap.set_xlabel('n-body order')
-        heatmap.set_yticks(np.arange(len(y_labels)))
-        heatmap.set_yticklabels(y_labels)
-        heatmap.set_ylabel('atoms')
-        # Customizing colorbar
-        fig.colorbar(im, orientation='vertical')
-        if data_labels:
-            # Loop over data dimensions and create text annotations.
-            for i in range(len(y_labels)):
-                for j in range(len(num_nbody)):
-                    num = np.around(similarity[i, j], decimals=2)
-                    heatmap.text(j, i, num,
-                                ha="center", va="center", color="black")
-        return fig, heatmap
+    if R.ndim == 2:
+        R = R[None, ...]
+    n_atoms = len(Z)
+    n_R = R.shape[0]
+    desc_size = model.R_desc_perms.shape[0]
+    desc_func = model.desc_func
     
-    def force_heatmap(
-        self, predict_set, structure_list, base_name, data_labels=False
-    ):
-        """Computes and saves force heat map of predict set.
-
-        Parameters
-        ----------
-        predict_set : :obj:`mbgdml.data.predictSet`
-            Object with loaded predict set.
-        structure_list : :obj:`list`
-            Indices of structures to include in the heatmap.
-        base_name : :obj:`str`
-            First part of saved file name.
-        data_labels : :obj:`bool`, optional
-            Whether or not to include values of cosine distance inside
-            heatmap cells.
-        """
-        sim_mean = self.average_force_similarity(predict_set, structure_list)
-        atoms = atoms_by_element(predict_set.z.tolist())
-        num_nbody = list(range(1, np.shape(sim_mean)[1] + 1))
-        num_nbody = [str(i) for i in num_nbody]
-        name = f'{base_name}-average'
-        self.create_heatmap(
-            sim_mean,
-            atoms,
-            num_nbody,
-            name,
-            data_labels
+    mat52 = np.empty((n_R, desc_size), dtype=np.float64)
+    R = R.reshape(n_R, n_atoms*3)
+    
+    for i in range(n_R):
+        r_desc, _ = desc_func(R[i], model.lat_and_inv)
+        mat52[i] = gdml_mat52_wrk(
+            r_desc, n_atoms, model.sig, model.n_perms, model.R_desc_perms
         )
+    
+    if n_R == 1:
+        return mat52[0]
+    else:
+        return mat52

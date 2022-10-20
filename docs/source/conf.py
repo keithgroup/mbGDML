@@ -37,7 +37,8 @@ extensions = [
     'sphinx.ext.napoleon',
     'sphinx.ext.intersphinx',
     'sphinx.ext.viewcode',
-    'sphinx.ext.autosectionlabel'
+    'sphinx.ext.autosectionlabel',
+    'sphinx_multiversion'
 ]
 
 # 
@@ -84,3 +85,19 @@ intersphinx_mapping = {
 
 html_theme = 'furo'
 
+# Including sphinx multiversion
+templates_path = [
+    "_templates",
+]
+smv_branch_whitelist = r'main'  # Only include the main branch
+html_sidebars = {
+    '**': [
+        "sidebar/scroll-start.html",
+        "sidebar/brand.html",
+        "sidebar/search.html",
+        "sidebar/navigation.html",
+        "sidebar/ethical-ads.html",
+        "sidebar/scroll-end.html",
+        'versions.html',
+    ],
+}

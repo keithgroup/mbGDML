@@ -9,7 +9,9 @@ API
    Training <training/training>
    Criteria <criteria/criteria_module>
    mbModel <mbModel/mbModel_module>
+   Periodic <periodic/periodic_module>
    Prediction <predict/predict_module>
    MBE <mbe/mbe_module>
+   Analysis <analysis/analysis_module>
    Utilities <utils/utils>
    GDML <gdml/gdml>
