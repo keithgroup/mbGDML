@@ -36,7 +36,7 @@ However, with ML force fields we often have balance high transferability (i.e., 
    :align: center
 
 Using high levels of quantum chemistry (e.g., coupled cluster) dramatically limits the amount of calculations one can reasonably perform.
-`Gradient domain machine learning (GDML) <http://quantum-machine.org/gdml/>`_ is one example of a ML force field designed to be data efficient---only requiring hundreds of training data points.
+`Gradient-domain machine learning (GDML) <http://quantum-machine.org/gdml/>`_ is one example of a ML force field designed to be data efficient---only requiring hundreds of training data points.
 GDML accomplishes this by learning the fundamental relationship between a geometry and its atomic forces instead of its energy.
 
 .. figure:: images/gdml-concept.png
