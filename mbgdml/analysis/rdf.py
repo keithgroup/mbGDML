@@ -20,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-"""Compute rdf curves under periodic boundary conditions."""
+"""Compute RDF curves under periodic boundary conditions."""
 
 from ..periodic import Cell
 from ..utils import gen_combs, chunk_iterable
@@ -31,14 +31,14 @@ import numpy as np
 def _bin_distances(
     R, R_idxs, atom_pairs, rdf_settings, cell_vectors
 ):
-    r"""Compute relevant rdf data for one or more structures.
+    r"""Compute relevant RDF data for one or more structures.
 
     Parameters
     ----------
     R : :obj:`numpy.ndarray` or :obj:`numpy.memmap`, ndim: ``3``
         Atomic coordinates of one or more structures.
     R_idxs : :obj:`int` or :obj:`list`
-        Indices of ``R`` to compute rdf contributions.
+        Indices of ``R`` to compute RDF contributions.
     atom_pairs : :obj:`numpy.ndarray`, ndim: ``2``
         Indices of all atom pairs to consider for each structure.
     rdf_settings : :obj:`dict`
@@ -77,7 +77,7 @@ def _bin_distances(
     return count, vol_contrib, n_R
 
 class RDF(object):
-    r"""Handles calculating the radial distribution function (rdf),
+    r"""Handles calculating the radial distribution function (RDF),
     :math:`g(r)`, of a constant volume simulation.
     """
 
@@ -95,7 +95,7 @@ class RDF(object):
             structures.
         comp_ids : :obj:`numpy.ndarray`, ndim: ``1``
             Labels for each ``entity_id`` used to determine the desired entity
-            for rdf computations.
+            for RDF computations.
         cell_vectors : :obj:`numpy.ndarray`
             The three cell vectors.
         inter_only : :obj:`bool`, default: ``True``
@@ -125,7 +125,7 @@ class RDF(object):
             self._max_chunk_size = 300
 
     def _setup(self, comp_id_pair, entity_idxs):
-        r"""Prepare to do rdf computation.
+        r"""Prepare to do RDF computation.
 
         Parameters
         ----------
@@ -190,7 +190,7 @@ class RDF(object):
         )
 
     def run(self, R, comp_id_pair, entity_idxs, step=1):
-        r"""Perform the rdf computation.
+        r"""Perform the RDF computation.
 
         Parameters
         ----------
@@ -219,7 +219,7 @@ class RDF(object):
         
         Examples
         --------
-        Suppose we want to compute the :math:`O_{w}`-:math:`O_{m}` rdf where
+        Suppose we want to compute the :math:`O_{w}`-:math:`O_{m}` RDF where
         :math:`O_{w}` and :math:`O_{m}` are the oxygen atoms of water and
         methanol, respectively. We can define our system as such.
 
@@ -236,18 +236,18 @@ class RDF(object):
             methanol, water, etc.
 
         This information completely specifies our system to prepare for computing
-        the rdf. We initialize our object with this information.
+        the RDF. We initialize our object with this information.
 
         >>> from mbgdml.analysis.rdf import RDF
         >>> rdf = RDF(Z, entity_ids, comp_ids, cell_vectors)
 
-        From here we need to specify what rdf to compute with ``rdf.run()``.
+        From here we need to specify what RDF to compute with ``rdf.run()``.
         We assume the Cartesian coordinates for ``R`` are already loaded as
         a 3D array or memory-map.
 
         The last two pieces of information are ``comp_id_pair`` and
         ``entity_idxs``. ``comp_id_pair`` specifies what components or species
-        we want to compute our rdf with respect to. In this example, we want
+        we want to compute our RDF with respect to. In this example, we want
         :math:`O_{w}`-:math:`O_{m}`. ``entity_idxs`` specifies which atom in
         each entity to use. Oxygen is the first atom in both water and
         methanol (i.e., index of ``0``).
@@ -255,15 +255,15 @@ class RDF(object):
         >>> comp_id_pair = ('h2o', 'meoh')
         >>> entity_idxs = (0, 0)
 
-        We can then compute our rdf!
+        We can then compute our RDF!
 
         >>> bins, gr = rdf.run(R, comp_id_pair, entity_idxs)
 
         Notes
         -----
         ``inter_only`` only comes into play when there is a chance of also
-        computing intramolecular distances during the rdf calculation. Take the
-        hydroxyl OH rdf in a pure methanol simulation for instance. Our
+        computing intramolecular distances during the RDF calculation. Take the
+        hydroxyl OH RDF in a pure methanol simulation for instance. Our
         ``comp_id_pair`` and ``entity_idxs`` would be ``('meoh', 'meoh')`` and
         ``(0, 1)``. The O-H intramolecular bond distance would be a perfectly
         valid atom pair. Usually we are interested in intermolecular distances.
@@ -271,7 +271,7 @@ class RDF(object):
         (``inter_only = False``) or not (``inter_only = True``).
 
         ``entity_idxs`` can specify one or more atoms for each component. For
-        example, if you wanted to compute the OH rdf of pure water you could
+        example, if you wanted to compute the OH RDF of pure water you could
         use ``entity_idxs = (0, (1, 2))``.
 
         TODO: Support different cell sizes for each structure.
@@ -330,34 +330,17 @@ class RDF(object):
                 add_worker(workers, chunker)
 
         
-        # Normalize the number density
-        norm = self._n_analyzed
-        #if self.norm in ["rdf", "density"]:
-        if True:
-            # Volume in each radial shell
-            vols = np.power(self.edges, 3)
-            norm *= 4/3 * np.pi * np.diff(vols)
+        # Normalize the RDF
+        norm = self._n_analyzed  # Number of analyzed frames
+        # Volume in each radial shell
+        vols = np.power(self.edges, 3)
+        norm *= 4/3 * np.pi * np.diff(vols)  # Array of shape self.edges
+        # Average number density
+        N = self._n_pairs
+        avg_volume = self._cuml_volume/self._n_analyzed
+        norm *= N / avg_volume
 
-        #if self.norm == "rdf":
-        if True:
-            # Number of each selection
-            nA = len(self._atom_sets[0])
-            nB = len(self._atom_sets[1])
-            #N = nA * nB
-            N = self._n_pairs
-
-            # If we had exclusions, take these into account
-            # if self._exclusion_block:
-            #     xA, xB = self._exclusion_block
-            #     nblocks = nA / xA
-            #     N -= xA * xB * nblocks
-
-            # Average number density
-            avg_volume = self._cuml_volume/self._n_analyzed
-            # box_vol = cuml_volume / n_R
-            # norm *= N / box_vol
-            norm *= N / avg_volume
-            self.results = self._count/norm
+        self.results = self._count/norm
         
         return self.bins, self.results
 
