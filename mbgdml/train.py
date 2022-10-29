@@ -28,7 +28,8 @@ import shutil
 from .data import mbModel, dataSet
 from .analysis.problematic import prob_structures
 from .mbe import mbePredict
-from .predict import gdmlModel, predict_gdml
+from .models import gdmlModel
+from .predictors import predict_gdml
 from ._gdml.train import GDMLTrain, model_errors, add_valid_errors
 from ._gdml.train import save_model, get_test_idxs
 from .utils import save_json

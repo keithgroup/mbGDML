@@ -477,7 +477,8 @@ For example, the script below makes predictions of :download:`clusters containin
     import numpy as np
     from mbgdml.data import dataSet
     from mbgdml.mbe import mbePredict
-    from mbgdml.predict import gdmlModel, predict_gdml
+    from mbgdml.models import gdmlModel
+    from mbgdml.predictors import predict_gdml
     from mbgdml.criteria import cm_distance_sum
     from mbgdml.utils import get_comp_ids, get_entity_ids
 

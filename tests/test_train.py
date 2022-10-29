@@ -30,7 +30,8 @@ from mbgdml.data import dataSet
 from mbgdml._gdml.train import GDMLTrain, get_test_idxs
 from mbgdml.train import mbGDMLTrain
 from mbgdml.analysis.problematic import prob_structures
-from mbgdml.predict import gdmlModel, predict_gdml
+from mbgdml.models import gdmlModel
+from mbgdml.predictors import predict_gdml
 
 dset_dir = './tests/data/datasets'
 train_dir = './tests/data/train'

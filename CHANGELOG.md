@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Changed
 
+- Split `predict` module into `models` and `predictors`.
 - Install bayesian-optimization from git until scipy bug is fixed.
 - Merged [sGDML](https://github.com/stefanch/sGDML) changes up to commit ``f840ba67826a790c129d78bf34365012423bfc98``.
 - Predict times are logged at debug level.

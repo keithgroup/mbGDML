@@ -64,7 +64,8 @@ Examples
     
     import numpy as np
     from mbgdml.mbe import mbePredict
-    from mbgdml.predict import gdmlModel, predict_gdml
+    from mbgdml.models import gdmlModel
+    from mbgdml.predictors import predict_gdml
     from mbgdml.criteria import cm_distance_sum
 
     # Loading mbGDML models.
