@@ -1,6 +1,6 @@
 # MIT License
 # 
-# Copyright (c) 2018-2020, Stefan Chmiela
+# Copyright (c) 2018-2021, Stefan Chmiela
 # Copyright (c) 2020-2022, Alex M. Maldonado
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -175,7 +175,7 @@ def to_cycles(perm):
     cycles = []
 
     while pi:
-        elem0 = next(iter(pi)) # arbitrary starting element
+        elem0 = next(iter(pi))  # arbitrary starting element
         this_elem = pi[elem0]
         next_item = pi[this_elem]
 
@@ -322,13 +322,6 @@ def find_extra_perms(R, z, lat_and_inv=None, max_processes=None):
     )
     perms = np.vstack((perms, add_perms))
 
-    # move cells
-    # add_perms = find_perms_via_alignment(R[0], frags[1], [128, 129, 127], [133, 132, 134], z, lat_and_inv=lat_and_inv, max_processes=max_processes)
-    # perms = np.vstack((perms, add_perms))
-    # sym_group_perms = complete_sym_group(perms)
-
-    # print(sym_group_perms.shape)
-
     # rotate cells
     add_perms = find_perms_via_alignment(
         R[0],
@@ -340,35 +333,13 @@ def find_extra_perms(R, z, lat_and_inv=None, max_processes=None):
         max_processes=max_processes,
     )
     perms = np.vstack((perms, add_perms))
-    # print(add_perms.shape)
-    # sym_group_perms = complete_sym_group(perms)
 
-    # rotate cells (triangle)
-    # add_perms = find_perms_via_alignment(R[0], frags[1], [132, 129, 134], [129, 134, 132], z, lat_and_inv=lat_and_inv, max_processes=max_processes)
-    # perms = np.vstack((perms, add_perms))
     sym_group_perms = complete_sym_group(perms)
 
     # print(perms.shape)
     print(sym_group_perms.shape)
 
-    # frag 1: bucky ball
-    # perms = find_perms_in_frag(R, z, frags[1], lat_and_inv=lat_and_inv, max_processes=max_processes)
-    # perms = np.vstack((p[None,:], perms))
-
-    # print('perms')
-    # print(perms.shape)
-
-    # perms = np.unique(perms, axis=0)
-    # perms = complete_sym_group(perms)
-
-    # print('perms')
-    # print(perms.shape)
-    # print(sym_group_perms.shape)
-
     return sym_group_perms
-
-    # NEW
-
 
 def find_frags(r, z, lat_and_inv=None):
 
@@ -389,10 +360,7 @@ def find_frags(r, z, lat_and_inv=None):
 
     adj = Analysis(atoms).adjacency_matrix[0]
     _, labels = connected_components(csgraph=adj, directed=False, return_labels=True)
-
-    # frags = []
-    # for label in np.unique(labels):
-    #    frags.append(np.where(labels == label)[0])
+    
     frags = [np.where(labels == label)[0] for label in np.unique(labels)]
     n_frags = len(frags)
 
@@ -413,8 +381,6 @@ def find_frag_perms(R, z, lat_and_inv=None, max_processes=None):
     from ase.geometry.analysis import Analysis
     from scipy.sparse.csgraph import connected_components
 
-    # TODO: positions must be in Angstrom for this to work!!
-
     n_train, n_atoms = R.shape[:2]
     lat, lat_inv = lat_and_inv
 
@@ -425,9 +391,6 @@ def find_frag_perms(R, z, lat_and_inv=None, max_processes=None):
     adj = Analysis(atoms).adjacency_matrix[0]
     _, labels = connected_components(csgraph=adj, directed=False, return_labels=True)
 
-    # frags = []
-    # for label in np.unique(labels):
-    #    frags.append(np.where(labels == label)[0])
     frags = [np.where(labels == label)[0] for label in np.unique(labels)]
     n_frags = len(frags)
 
@@ -437,59 +400,7 @@ def find_frag_perms(R, z, lat_and_inv=None, max_processes=None):
         )
         return [range(n_atoms)]
 
-    # print(labels)
-
-    # from . import ui, io
-    # xyz_str = io.generate_xyz_str(R[0][np.where(labels == 0)[0], :]*0.529177249, z[np.where(labels == 0)[0]])
-    # xyz_str = ui.indent_str(xyz_str, 2)
-    # sprint(xyz_str)
-
-    # NEW
-
-    # uniq_labels = np.unique(labels)
-    # R_cg = np.empty((R.shape[0], len(uniq_labels), R.shape[2]))
-    # z_frags = []
-    # z_cg = []
-    # for label in uniq_labels:
-    #     frag_idxs = np.where(labels == label)[0]
-
-    #     R_cg[:,label,:] = np.mean(R[:,frag_idxs,:], axis=1)
-    #     z_frag = np.sort(z[frag_idxs])
-
-    #     z_frag_label = 0
-    #     if len(z_frags) == 0:
-    #         z_frags.append(z_frag)
-    #     else:
-    #         z_frag_label = np.where(np.all(z_frags == z_frag, axis=1))[0]
-
-    #         if len(z_frag_label) == 0: # not found
-    #             z_frag_label = len(z_frags)
-    #             z_frags.append(z_frag)
-    #         else:
-    #             z_frag_label = z_frag_label[0]
-
-    #     z_cg.append(z_frag_label)
-
-    # print(z_cg)
-    # print(R_cg.shape)
-
-    # perms = find_perms(R_cg, np.array(z_cg), lat_and_inv=lat_and_inv, max_processes=max_processes)
-
-    # print('cg perms')
-    # print(perms)
-
-    # NEW
-
-    # print(n_frags)
-
     print('| Found ' + str(n_frags) + ' disconnected fragments.')
-
-    # ufrags = np.unique([np.sort(z[frag]) for frag in frags])
-    # print(ufrags)
-
-    # sys.exit()
-
-    # n_frags_unique = 0 # number of unique fragments
 
     # match fragments to find identical ones (allows permutations of fragments)
     swap_perms = [np.arange(n_atoms)]
@@ -532,24 +443,15 @@ def find_frag_perms(R, z, lat_and_inv=None, max_processes=None):
                         swap_perm[frags[f2][match_perm]] = frags[f1]
                         swap_perms.append(swap_perm)
 
-            # else:
-            #    n_frags_unique += 1
-
     swap_perms = np.unique(np.array(swap_perms), axis=0)
 
-    # print(swap_perms)
-
-    # print('| Found ' + str(n_frags_unique) + ' (likely to be) *unique* disconnected fragments.')
-
-    # commplete symmetric group
+    # complete symmetric group
     sym_group_perms = complete_sym_group(swap_perms)
     print(
         '| Found '
         + str(sym_group_perms.shape[0])
         + ' fragment permutations after closure.'
     )
-
-    # return sym_group_perms
 
     # match fragments with themselves (to find symmetries in each fragment)
 
@@ -588,18 +490,6 @@ def find_frag_perms(R, z, lat_and_inv=None, max_processes=None):
 
     return sym_group_perms
 
-    # f = 0
-    # perms = find_perms_via_alignment(R[0, :, :], frags[f], [215, 214, 210, 211], [209, 208, 212, 213], z, lat_and_inv=lat_and_inv, max_processes=max_processes)
-    # #perms = find_perms_via_alignment(R[0, :, :], frags[f], [214, 215, 210, 211], [209, 208, 212, 213], z, lat_and_inv=lat_and_inv, max_processes=max_processes)
-    # sym_group_perms = np.vstack((perms[None,:], sym_group_perms))
-    # sym_group_perms = complete_sym_group(sym_group_perms)
-
-    # #print(sym_group_perms.shape)
-
-    # #import sys
-    # #sys.exit()
-
-    # return sym_group_perms
 
 
 def _frag_perm_to_perm(n_atoms, frag_idxs, frag_perms):
@@ -643,21 +533,11 @@ def find_perms_via_alignment(
     max_processes=None,
 ):
 
-    # 1. find rotation that aligns points (Nx3 matrix) in 'align_a_idxs' with points in 'align_b_idxs'
-    # 2. rotate the whole thing
-    # find perms by matching those two structures (match atoms that are closest after transformation)
-
-    # align_a_ctr = np.mean(align_a_pts, axis=0)
-    # align_b_ctr = np.mean(align_b_pts, axis=0)
-
     # alignment indices are included in fragment
     assert np.isin(align_a_idxs, frag_idxs).all()
     assert np.isin(align_b_idxs, frag_idxs).all()
 
     assert len(align_a_idxs) == len(align_b_idxs)
-
-    # align_a_frag_idxs = np.where(np.in1d(frag_idxs, align_a_idxs))[0]
-    # align_b_frag_idxs = np.where(np.in1d(frag_idxs, align_b_idxs))[0]
 
     pts = pts_full[frag_idxs, :]
 
@@ -689,38 +569,8 @@ def find_perms_via_alignment(
 
     R_pair = np.vstack((pts_full[None, :, :], pts_full_R[None, :, :]))
 
-    # from . import io
-
-    # xyz_str = io.generate_xyz_str(pts_full, z)
-    # print(xyz_str)
-
-    # xyz_str = io.generate_xyz_str(pts_full_R, z)
-    # print(xyz_str)
-
-    # z_frag = z[frag_idxs]
-
     adj = scipy.spatial.distance.cdist(R_pair[0], R_pair[1], 'euclidean')
     _, perm = scipy.optimize.linear_sum_assignment(adj)
-
-    # score_before = np.linalg.norm(adj)
-
-    # adj_perm = scipy.spatial.distance.cdist(R_pair[0,:], R_pair[0, perm], 'euclidean')
-    # score = np.linalg.norm(adj_perm)
-
-    # print(score_before)
-    # print(score)
-
-    # print('---')
-
-    # print('data \'model example\'', '|', end='')
-    # print('testing', '|', end='')
-    # n_atoms = pts_full.shape[1]
-    # print(n_atoms)
-
-    # for p in pts_full[:,:]:
-    #    print('H {:.5f} {:.5f} {:.5f}'.format(*p), '|', end='')
-
-    # print('end \'model example\';show data')
 
     # draw selection
     if False:
@@ -764,11 +614,6 @@ def find_perms_via_reflection(
     r, z, frag_idxs, plane_3idxs, lat_and_inv=None, max_processes=None
 ):
 
-    # plane_3idxs can be tuples of atoms (to take their center) or atom indices
-
-    # pts = pts_full[frag_idxs, :]
-    # pts = r.copy()
-
     # compute normal of plane defined by atoms in 'plane_idxs'
 
     is_plane_defined_by_bond_centers = type(plane_3idxs[0]) is tuple
@@ -795,17 +640,10 @@ def find_perms_via_reflection(
     r_R = r.copy()
     r_R[frag_idxs, :] = reflection.dot(r[frag_idxs, :].T).T
 
-    # R_pair = np.vstack((r[None,:,:], r_R[None,:,:]))
-
     adj = scipy.spatial.distance.cdist(r, r_R, 'euclidean')
     _, perm = scipy.optimize.linear_sum_assignment(adj)
 
     print_perm_colors(perm, r, plane_3idxs)
-
-    # score_before = np.linalg.norm(adj)
-
-    # adj_perm = scipy.spatial.distance.cdist(R_pair[0,:], R_pair[0, perm], 'euclidean')
-    # score = np.linalg.norm(adj_perm)
 
     return perm
 

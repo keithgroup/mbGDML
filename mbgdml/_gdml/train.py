@@ -21,19 +21,24 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import numpy as np
-import scipy as sp
+import sys
+import os
+import logging
 import psutil
+
 from .sample import draw_strat_sample
 from .perm import find_perms, find_extra_perms, find_frag_perms
-from .desc import Desc
-from .predict import GDMLPredict
 from ..utils import md5_data
 from .. import __version__
 
 import multiprocessing as mp
+
 Pool = mp.get_context('fork').Pool
+
 from functools import partial
+
+import numpy as np
+import scipy as sp
 import warnings
 
 try:
@@ -43,7 +48,28 @@ except ImportError:
 else:
     _has_torch = True
 
-import logging
+try:
+    _torch_mps_is_available = torch.backends.mps.is_available()
+except AttributeError:
+    _torch_mps_is_available = False
+_torch_mps_is_available = False
+
+try:
+    _torch_cuda_is_available = torch.cuda.is_available()
+except AttributeError:
+    _torch_cuda_is_available = False
+
+from .. import __version__
+
+# TODO: remove exception handling once iterative solver ships
+try:
+    from .solvers.iterative import Iterative
+except ImportError:
+    pass
+
+from .predict import GDMLPredict
+from .desc import Desc
+
 log = logging.getLogger(__name__)
 
 def _share_array(arr_np, typecode_or_type):
@@ -60,8 +86,9 @@ def _share_array(arr_np, typecode_or_type):
 
     Returns
     -------
-        Array of ``ctype``.
+    Array of ``ctype``.
     """
+
     arr = mp.RawArray(typecode_or_type, arr_np.ravel())
     return arr, arr_np.shape
 
@@ -121,9 +148,10 @@ def _assemble_kernel_mat_wkr(
             keep_idxs_3n,
         ) = j  # (block index in final K, block index global, indices of partials within block)
         blk_j = slice(K_j, K_j + len(keep_idxs_3n))
+
     else:  # Sequential indexing
         K_j = j * dim_i if j < n_train else n_train * dim_i + (j % n_train)
-        blk_j = slice(K_j, K_j + dim_i) if j < n_train else slice(K_j, K_j+1) ######
+        blk_j = slice(K_j, K_j + dim_i) if j < n_train else slice(K_j, K_j + 1)
         keep_idxs_3n = slice(None)  # same as [:]
 
     # Note: The modulo-operator wraps around the index pointer on the training points when
@@ -151,14 +179,14 @@ def _assemble_kernel_mat_wkr(
     dim_i_keep = rj_d_desc.shape[1]
     diff_ab_outer_perms = np.empty((dim_d, dim_i_keep))
     diff_ab_perms = np.empty((n_perms, dim_d))
-    ri_d_desc = np.zeros((1, dim_d, dim_i)) # must be zeros!
+    ri_d_desc = np.zeros((1, dim_d, dim_i))  # must be zeros!
     k = np.empty((dim_i, dim_i_keep))
 
     if (
         j < n_train
     ):  # This column only contains second and first derivative constraints.
 
-        #for i in range(j if exploit_sym else 0, n_train):
+        # for i in range(j if exploit_sym else 0, n_train):
         for i in range(0, n_train):
 
             blk_i = slice(i * dim_i, (i + 1) * dim_i)
@@ -168,12 +196,7 @@ def _assemble_kernel_mat_wkr(
 
             norm_ab_perms = sqrt5 * np.linalg.norm(diff_ab_perms, axis=1)
             mat52_base_perms = np.exp(-norm_ab_perms / sig) / mat52_base_div * 5
-
-            # diff_ab_outer_perms = 5 * np.einsum(
-            #    'ki,kj->ij',
-            #    diff_ab_perms * mat52_base_perms[:, None],
-            #    np.einsum('ik,jki -> ij', diff_ab_perms, rj_d_desc_perms)
-            # )
+            
             np.einsum(
                 'ki,kj->ij',
                 diff_ab_perms * mat52_base_perms[:, None] * 5,
@@ -219,16 +242,16 @@ def _assemble_kernel_mat_wkr(
 
         if use_E_cstr:
 
-            #rj_d_desc = desc_func.d_desc_from_comp(R_d_desc[j % n_train, :, :])[0][
+            # rj_d_desc = desc_func.d_desc_from_comp(R_d_desc[j % n_train, :, :])[0][
             #    :, :
-            #]  # convert descriptor back to full representation
+            # ]  # convert descriptor back to full representation
 
-            #rj_d_desc_perms = np.reshape(
+            # rj_d_desc_perms = np.reshape(
             #    np.tile(rj_d_desc.T, n_perms)[:, tril_perms_lin], (-1, dim_d, n_perms)
-            #)
+            # )
 
-            E_off_i = n_train * dim_i # Account for 'alloc_extra_rows'!.
-            #blk_j_full = slice((j % n_train) * dim_i, ((j % n_train) + 1) * dim_i)
+            E_off_i = n_train * dim_i  # Account for 'alloc_extra_rows'!.
+            # blk_j_full = slice((j % n_train) * dim_i, ((j % n_train) + 1) * dim_i)
             # for i in range((j % n_train) if exploit_sym else 0, n_train):
             for i in range(0, n_train):
 
@@ -238,9 +261,12 @@ def _assemble_kernel_mat_wkr(
                     order='F',
                 )
 
-                ri_d_desc = desc_func.d_desc_from_comp(R_d_desc[i, :, :])[0] # convert descriptor back to full representation
+                ri_d_desc = desc_func.d_desc_from_comp(R_d_desc[i, :, :])[
+                    0
+                ]  # convert descriptor back to full representation
                 ri_d_desc_perms = np.reshape(
-                    np.tile(ri_d_desc.T, n_perms)[:, tril_perms_lin], (-1, dim_d, n_perms)
+                    np.tile(ri_d_desc.T, n_perms)[:, tril_perms_lin],
+                    (-1, dim_d, n_perms),
                 )
 
                 diff_ab_perms = R_desc[j % n_train, :] - ri_desc_perms
@@ -274,6 +300,7 @@ class GDMLTrain(object):
     and numerical solvers. GPU support is provided
     through PyTorch (requires optional `torch` dependency to be
     installed) for some solvers.
+
     """
     def __init__(self, max_memory=None, max_processes=None, use_torch=False):
         """
@@ -590,7 +617,7 @@ class GDMLTrain(object):
                         )
 
                     # TOOD: PBCs disabled when matching (for now).
-                    # task['perms'] = find_perms(
+                    # task['perms'] = perm.find_perms(
                     #    R_train_sync_mat, train_dataset['z'], lat_and_inv=lat_and_inv, max_processes=self._max_processes,
                     # )
                     task['perms'] = find_perms(
@@ -954,12 +981,7 @@ class GDMLTrain(object):
                 if E_train_mean is None
                 else E_train_mean
             )
-            if c is None:
-                # Something does not seem right.
-                # Turn off energy predictions for this model, only output force predictions.
-                model['use_E'] = False
-            else:
-                model['c'] = c
+            model['c'] = c
 
         return model
     
@@ -1121,14 +1143,22 @@ class GDMLTrain(object):
             If different scales in energy vs. force labels are
             detected in the provided dataset.
         """
-        gdml = GDMLPredict(
-            model, max_processes=self._max_processes
+
+        gdml_predict = GDMLPredict(
+            model,
+            max_memory=self._max_memory,
+            max_processes=self._max_processes,
+            use_torch=self._use_torch,
+            log_level=logging.CRITICAL,
         )
+
+        gdml_predict.set_R_desc(R_desc)
+        gdml_predict.set_R_d_desc(R_d_desc)
 
         n_train = task['E_train'].shape[0]
         R = task['R_train'].reshape(n_train, -1)
 
-        E_pred, _ = gdml.predict(R, R_desc=R_desc, R_d_desc=R_d_desc)
+        E_pred, _ = gdml_predict.predict(R)
         E_ref = np.squeeze(task['E_train'])
 
         e_fact = np.linalg.lstsq(
@@ -1166,7 +1196,7 @@ class GDMLTrain(object):
 
     def _assemble_kernel_mat(
         self, R_desc, R_d_desc, tril_perms_lin, sig, desc, use_E_cstr=False,
-        col_idxs=np.s_[:]
+        col_idxs=np.s_[:], alloc_extra_rows=0
     ):
         """Compute force field kernel matrix.
 
@@ -1204,6 +1234,7 @@ class GDMLTrain(object):
         :obj:`numpy.ndarray`
             Force field kernel matrix.
         """
+
         global glob
 
         n_train, dim_d = R_d_desc.shape[:2]
@@ -1211,6 +1242,11 @@ class GDMLTrain(object):
 
         # Determine size of kernel matrix.
         K_n_rows = n_train * dim_i
+
+        # Account for additional rows (and columns) due to energy constraints in the kernel matrix.
+        if use_E_cstr:
+            K_n_rows += n_train
+        
         if isinstance(col_idxs, slice):  # indexed by slice
             K_n_cols = len(range(*col_idxs.indices(K_n_rows)))
         else:  # indexed by list
@@ -1221,11 +1257,6 @@ class GDMLTrain(object):
             assert np.array_equal(col_idxs, np.sort(col_idxs))
 
             K_n_cols = len(col_idxs)
-
-        # Account for additional rows and columns due to energy constraints in the kernel matrix.
-        if use_E_cstr:
-            K_n_rows += n_train
-            K_n_cols += n_train
 
         # Make sure no indices are outside of the valid range.
         if K_n_cols > K_n_rows:
@@ -1248,7 +1279,7 @@ class GDMLTrain(object):
             M_slice_stop = None if col_idxs.stop is None else int(col_idxs.stop / dim_i)
             M_slice = slice(M_slice_start, M_slice_stop)
 
-            J = range(*M_slice.indices(n_train))
+            J = range(*M_slice.indices(n_train + (n_train if use_E_cstr else 0)))
 
             if M_slice_start is None:
                 exploit_sym = True
@@ -1257,21 +1288,26 @@ class GDMLTrain(object):
         else:
 
             if isinstance(col_idxs, slice):
-                random = list(range(*col_idxs.indices(n_train * dim_i)))
-            else:
-                random = col_idxs
+                # random = list(range(*col_idxs.indices(n_train * dim_i)))
+                col_idxs = list(range(*col_idxs.indices(K_n_rows)))
+
+            # Separate column indices of force-force and force-energy constraints.
+            cond = col_idxs >= (n_train * dim_i)
+            ff_col_idxs, fe_col_idxs = col_idxs[~cond], col_idxs[cond]
 
             # M - number training
             # N - number atoms
 
-            n_idxs = np.mod(random, dim_i)
-            m_idxs = (np.array(random) / dim_i).astype(int)
+            n_idxs = np.concatenate(
+                [np.mod(ff_col_idxs, dim_i), np.zeros(fe_col_idxs.shape, dtype=int)]
+            )  # Column indices that go beyond force-force correlations need a different treatment.
+
+            m_idxs = np.concatenate([np.array(ff_col_idxs) // dim_i, fe_col_idxs])
             m_idxs_uniq = np.unique(m_idxs)  # which points to include?
 
             m_n_idxs = [
                 list(n_idxs[np.where(m_idxs == m_idx)]) for m_idx in m_idxs_uniq
             ]
-
             m_n_idxs_lens = [len(m_n_idx) for m_n_idx in m_n_idxs]
 
             m_n_idxs_lens.insert(0, 0)
@@ -1282,17 +1318,95 @@ class GDMLTrain(object):
             # tuples: (block index in final K, block index global, indices of partials within block)
             J = list(zip(blk_start_idxs, m_idxs_uniq, m_n_idxs))
 
-        K = mp.RawArray('d', K_n_rows * K_n_cols)
-        glob['K'], glob['K_shape'] = K, (K_n_rows, K_n_cols)
+        if self._use_torch:
+            if not _has_torch:
+                raise ImportError(
+                    'Optional PyTorch dependency not found! Please run \'pip install sgdml[torch]\' to install it or disable the PyTorch option.'
+                )
+
+            K = np.empty((K_n_rows + alloc_extra_rows, K_n_cols))
+
+            if J is not list:
+                J = list(J)
+            
+            global torch_assemble_done
+            torch_assemble_todo, torch_assemble_done = K_n_cols, 0
+
+            def progress_callback(done):
+
+                global torch_assemble_done
+                torch_assemble_done += done
+
+                if callback is not None:
+                    callback(
+                        torch_assemble_done,
+                        torch_assemble_todo,
+                        newline_when_done=False,
+                    )
+
+            start = timeit.default_timer()
+
+            if _torch_cuda_is_available:
+                torch_device = 'cuda'
+            elif _torch_mps_is_available:
+                torch_device = 'mps'
+            else:
+                torch_device = 'cpu'
+
+            R_desc_torch = torch.from_numpy(R_desc).to(torch_device)  # N, d
+            R_d_desc_torch = torch.from_numpy(R_d_desc).to(torch_device)
+
+            from .torchtools import GDMLTorchAssemble
+
+            torch_assemble = GDMLTorchAssemble(
+                J,
+                tril_perms_lin,
+                sig,
+                use_E_cstr,
+                R_desc_torch,
+                R_d_desc_torch,
+                out=K[:K_n_rows, :],
+                callback=progress_callback,
+            )
+
+            # Enable data parallelism
+            n_gpu = torch.cuda.device_count()
+            if n_gpu > 1:
+                torch_assemble = torch.nn.DataParallel(torch_assemble)
+            torch_assemble.to(torch_device)
+
+            torch_assemble.forward(torch.arange(len(J)))
+            del torch_assemble
+
+            del R_desc_torch
+            del R_d_desc_torch
+
+            stop = timeit.default_timer()
+
+            if callback is not None:
+                dur_s = stop - start
+                sec_disp_str = 'took {:.1f} s'.format(dur_s) if dur_s >= 0.1 else ''
+                callback(DONE, sec_disp_str=sec_disp_str)
+
+            return K
+
+        K = mp.RawArray('d', (K_n_rows + alloc_extra_rows) * K_n_cols)
+        glob['K'], glob['K_shape'] = K, (K_n_rows + alloc_extra_rows, K_n_cols)
         glob['R_desc'], glob['R_desc_shape'] = _share_array(R_desc, 'd')
         glob['R_d_desc'], glob['R_d_desc_shape'] = _share_array(R_d_desc, 'd')
 
         glob['desc_func'] = desc
 
-        pool = Pool(self._max_processes)
+        pool = None
+        map_func = map
+        if self._max_processes != 1 and mp.cpu_count() > 1:
+            pool = Pool(
+                (self._max_processes or mp.cpu_count()) - 1
+            )  # exclude main process
+            map_func = pool.imap_unordered
 
         todo, done = K_n_cols, 0
-        for done_wkr in pool.imap_unordered(
+        for done_wkr in map_func(
             partial(
                 _assemble_kernel_mat_wkr,
                 tril_perms_lin=tril_perms_lin,
@@ -1305,15 +1419,17 @@ class GDMLTrain(object):
         ):
             done += done_wkr
 
-        pool.close()
-        pool.join()  # Wait for the worker processes to terminate (to measure total runtime correctly).
+        if pool is not None:
+            pool.close()
+            pool.join()  # Wait for the worker processes to terminate (to measure total runtime correctly).
+            pool = None
 
         # Release some memory.
         glob.pop('K', None)
         glob.pop('R_desc', None)
         glob.pop('R_d_desc', None)
 
-        return np.frombuffer(K).reshape(glob['K_shape'])
+        return np.frombuffer(K).reshape((K_n_rows + alloc_extra_rows), K_n_cols)
 
 
 def get_test_idxs(model, dataset, n_test=None):
