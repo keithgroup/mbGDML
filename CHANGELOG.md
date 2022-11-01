@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Changed
 
+- Reduce regularization strength to ``1e-10`` instead of ``1e-15``.
 - Split `predict` module into `models` and `predictors`.
 - Install bayesian-optimization from git until scipy bug is fixed.
 - Merged [sGDML](https://github.com/stefanch/sGDML) changes up to v0.5.4 (``124de3dd8d46a0622bd10c3b4ab033a00dbd3c27``).

@@ -86,7 +86,7 @@ class mbGDMLTrain:
 
     def __init__(
         self, use_sym=True, use_E=True, use_E_cstr=False, use_cprsn=False,
-        solver='analytic', lam=1e-15, solver_tol=1e-4, interact_cut_off=None,
+        solver='analytic', lam=1e-10, solver_tol=1e-4, interact_cut_off=None,
         use_torch=False, max_processes=None
     ):
         """
@@ -112,7 +112,7 @@ class mbGDMLTrain:
         solver : :obj:`str`, default: ``'analytic'``
             The GDML solver to use. Currently the only option is
             ``'analytic'``.
-        lam : :obj:`float`, default: ``1e-15``
+        lam : :obj:`float`, default: ``1e-10``
             Hyper-parameter lambda (regularization strength). This generally
             does not need to change.
         solver_tol : :obj:`float`, default: ``1e-4``
