@@ -127,7 +127,7 @@ class mbModel(mbGDMLData):
         dset : :obj:`dict`
             Dictionary of a mbGDML data set.
         """
-        dset_keys = ['entity_ids', 'comp_ids', 'criteria', 'z_slice', 'cutoff']
+        dset_keys = ['entity_ids', 'comp_ids']
         for key in dset_keys:
             self.model[key] = dset[key]
         self.model['code_version'] = np.array(mbgdml_version)

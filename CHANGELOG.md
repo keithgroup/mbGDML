@@ -31,6 +31,11 @@ Fixes attached ASE trajectory in reading ``entity_ids``.
 - Store ASE Atoms object to avoid recalculating energies and forces in ASE calculator.
 - Doc references to respective SchNet functions.
 
+### Removed
+
+- ``structureSets`` and sampling for data sets are no longer supported and subsequently removed.
+This functionality was incorporated into [reptar](https://github.com/aalexmmaldonado/reptar).
+
 ## [0.0.3] - 2022-07-25
 
 ### Added

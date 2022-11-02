@@ -28,7 +28,6 @@ import pytest
 import numpy as np
 
 from mbgdml import criteria
-from mbgdml.data import structureSet
 
 # Must be run from mbGDML root directory.
 
@@ -37,13 +36,13 @@ Rset_140h2o_path = './tests/data/structuresets/140h2o.sphere.gfn2.md.500k.prod1.
 criteria_molecule_index = {'h2o': 0, 'mecn': 4, 'meoh': 0}
 
 def load_140h2o_rset():
-    return structureSet(Rset_140h2o_path)
+    return dict(np.load(Rset_140h2o_path, allow_pickle=True))
 
 def test_get_z_slice():
     # 140 H2O
     rset = load_140h2o_rset()
     z_slice = criteria.get_z_slice(
-        rset.entity_ids, rset.comp_ids, criteria_molecule_index
+        rset['entity_ids'], rset['comp_ids'], criteria_molecule_index
     )
     z_slice_correct = np.array(
         [0,3,6,9,12,15,18,21,24,27,30,33,36,39,42,45,48,51, 54,57,60,63,66,69,
@@ -69,10 +68,10 @@ def test_get_z_slice():
 def test_distance_all():
     rset = load_140h2o_rset()
     z_slice = criteria.get_z_slice(
-        rset.entity_ids, rset.comp_ids, criteria_molecule_index
+        rset['entity_ids'], rset['comp_ids'], criteria_molecule_index
     )
     accept_r, max_distance = criteria.distance_all(
-        rset.z, rset.R[42], z_slice, rset.entity_ids, cutoff=[21.03]
+        rset['z'], rset['R'][42], z_slice, rset['entity_ids'], cutoff=[21.03]
     )
     assert max_distance == 21.039300581815084
     assert accept_r == False
@@ -80,10 +79,10 @@ def test_distance_all():
 def test_distance_sum():
     rset = load_140h2o_rset()
     z_slice = criteria.get_z_slice(
-        rset.entity_ids, rset.comp_ids, criteria_molecule_index
+        rset['entity_ids'], rset['comp_ids'], criteria_molecule_index
     )
     accept_r, distance = criteria.distance_sum(
-        rset.z, rset.R[42], z_slice, rset.entity_ids, cutoff=[1002.07]
+        rset['z'], rset['R'][42], z_slice, rset['entity_ids'], cutoff=[1002.07]
     )
     assert accept_r == False
     assert distance == 1002.0768889537801
@@ -91,7 +90,7 @@ def test_distance_sum():
 def test_cm_distance_sum():
     rset = load_140h2o_rset()
     accept_r, distance = criteria.cm_distance_sum(
-        rset.z, rset.R[42], [], rset.entity_ids, cutoff=[1001.506]
+        rset['z'], rset['R'][42], [], rset['entity_ids'], cutoff=[1001.506]
     )
     assert accept_r == False
     assert distance == 1001.5068227366426
