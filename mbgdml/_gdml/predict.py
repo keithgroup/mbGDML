@@ -42,13 +42,13 @@ else:
 
 try:
     _torch_mps_is_available = torch.backends.mps.is_available()
-except AttributeError:
+except (NameError, AttributeError):
     _torch_mps_is_available = False
 _torch_mps_is_available = False
 
 try:
     _torch_cuda_is_available = torch.cuda.is_available()
-except AttributeError:
+except (NameError, AttributeError):
     _torch_cuda_is_available = False
 import numpy as np
 
