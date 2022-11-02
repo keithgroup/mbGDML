@@ -30,7 +30,8 @@ from mbgdml.data import dataSet
 from mbgdml._gdml.train import GDMLTrain, get_test_idxs
 from mbgdml.train import mbGDMLTrain
 from mbgdml.analysis.problematic import prob_structures
-from mbgdml.predict import gdmlModel, predict_gdml
+from mbgdml.models import gdmlModel
+from mbgdml.predictors import predict_gdml
 
 dset_dir = './tests/data/datasets'
 train_dir = './tests/data/train'
@@ -149,7 +150,7 @@ def test_1h2o_train_grid_search():
 
     assert model['sig'].item() == 42
     assert np.allclose(
-        np.array(model['f_err'].item()['rmse']), 0.4673520776718695,
+        np.array(model['f_err'].item()['rmse']), 0.3500041153500304,
         rtol=1e-05, atol=1e-08
     )
     assert model['perms'].shape[0] == 2

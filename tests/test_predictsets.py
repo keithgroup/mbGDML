@@ -28,7 +28,8 @@ import numpy as np
 from mbgdml.data.predictset import predictSet
 import mbgdml.data as data
 from mbgdml.mbe import mbePredict
-from mbgdml.predict import gdmlModel, predict_gdml, predict_gdml_decomp
+from mbgdml.models import gdmlModel
+from mbgdml.predictors import predict_gdml, predict_gdml_decomp
 from mbgdml.criteria import cm_distance_sum
 
 dset_dir = './tests/data/datasets'

@@ -50,6 +50,7 @@ def draw_strat_sample(T, n, excl_idxs=None):
     :obj:`numpy.ndarray`
         Array of indices that form the sample.
     """
+    
     if excl_idxs is None or len(excl_idxs) == 0:
         excl_idxs = None
 

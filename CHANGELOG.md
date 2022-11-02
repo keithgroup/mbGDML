@@ -14,8 +14,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Changed
 
+- Modularize the error and loss calculations.
+- Reduce regularization strength to ``1e-10`` instead of ``1e-15``.
+- Split `predict` module into `models` and `predictors`.
 - Install bayesian-optimization from git until scipy bug is fixed.
-- Merged [sGDML](https://github.com/stefanch/sGDML) changes up to commit ``f840ba67826a790c129d78bf34365012423bfc98``.
+- Merged [sGDML](https://github.com/stefanch/sGDML) changes up to v0.5.4 (``124de3dd8d46a0622bd10c3b4ab033a00dbd3c27``).
 - Predict times are logged at debug level.
 - Ray must be initialized outside of ``mbePredict`` class.
 - Use ``n_workers`` instead of ``n_cores`` in mbePredict.

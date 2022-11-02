@@ -105,7 +105,7 @@ def gdml_mat52(model, Z, R):
 
     Parameters
     ----------
-    model : :obj:`mbgdml.predict.gdmlModel`
+    model : :obj:`mbgdml.models.gdmlModel`
         GDML model containing all information need to make predictions.
     Z : :obj:`numpy.ndarray`, ndim: ``1``
         Atomic numbers of all atoms in ``R`` (in the same order).
