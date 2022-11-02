@@ -12,9 +12,6 @@
     <a href="https://doi.org/10.5281/zenodo.6270373">
         <img src="https://zenodo.org/badge/DOI/10.5281/zenodo.6270373.svg" alt="DOI">
     </a>
-    <a href="https://lgtm.com/projects/g/keithgroup/mbGDML/context:python">
-        <img src="https://img.shields.io/lgtm/grade/python/g/keithgroup/mbGDML.svg?logo=lgtm&logoWidth=18" alt="Language grade: Python">
-    </a>
     <a href="https://github.com/keithgroup/mbGDML/blob/main/LICENSE" target="_blank">
         <img src="https://img.shields.io/github/license/keithgroup/mbGDML" alt="License">
     </a>
