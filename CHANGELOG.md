@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Changed
 
+- Modularize the error and loss calculations.
 - Reduce regularization strength to ``1e-10`` instead of ``1e-15``.
 - Split `predict` module into `models` and `predictors`.
 - Install bayesian-optimization from git until scipy bug is fixed.

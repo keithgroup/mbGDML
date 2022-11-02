@@ -150,7 +150,7 @@ def test_1h2o_train_grid_search():
 
     assert model['sig'].item() == 42
     assert np.allclose(
-        np.array(model['f_err'].item()['rmse']), 0.4673520776718695,
+        np.array(model['f_err'].item()['rmse']), 0.3500041153500304,
         rtol=1e-05, atol=1e-08
     )
     assert model['perms'].shape[0] == 2

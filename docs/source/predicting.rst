@@ -15,8 +15,8 @@ We designed an extensible, modular framework for many-body predictions using :cl
 Model
 =====
 
-Information needed to make quantum chemistry or machine learning predictions are contained in objects that inherit the :class:`~mbgdml.predict.model` class.
-For example, :class:`~mbgdml.predict.gdmlModel` stores GDML parameters for use in its predict function.
+Information needed to make quantum chemistry or machine learning predictions are contained in objects that inherit the :class:`~mbgdml.models.model` class.
+For example, :class:`~mbgdml.models.gdmlModel` stores GDML parameters for use in its predict function.
 
 Predict
 =======
@@ -28,8 +28,8 @@ Predict functions perform the actual predictions from the respective model objec
 - ``entity_ids``: integers specifying atoms that make up individual entities or fragments,
 - ``entity_combs``: unique combinations of entity IDs to predict. 
 
-For example, :func:`~mbgdml.predict.predict_gdml` will sum up all :math:`n`-body combinations for its contribution to ``r``'s energy and forces.
-You can also have decomposed predict functions (i.e., :func:`~mbgdml.predict.predict_gdml_decomp`) that returns all individual :math:`n`-body energies and forces.
+For example, :func:`~mbgdml.predictors.predict_gdml` will sum up all :math:`n`-body combinations for its contribution to ``r``'s energy and forces.
+You can also have decomposed predict functions (i.e., :func:`~mbgdml.predictors.predict_gdml_decomp`) that returns all individual :math:`n`-body energies and forces.
 
 ``mbePredict``
 ==============
@@ -52,9 +52,9 @@ Supported potentials
 
 mbGDML already provides support for the following potentials: 
 
-- Gradient-Domain Machine Learning (GDML) with :class:`~mbgdml.predict.gdmlModel` and :func:`~mbgdml.predict.predict_gdml`
-- Gaussian Approximation Potential (GAP) with :class:`~mbgdml.predict.gapModel` and :func:`~mbgdml.predict.predict_gap`
-- SchNetPack with :class:`~mbgdml.predict.schnetModel` and :func:`~mbgdml.predict.predict_schnet`
+- Gradient-Domain Machine Learning (GDML) with :class:`~mbgdml.models.gdmlModel` and :func:`~mbgdml.predictors.predict_gdml`
+- Gaussian Approximation Potential (GAP) with :class:`~mbgdml.models.gapModel` and :func:`~mbgdml.predictors.predict_gap`
+- SchNetPack with :class:`~mbgdml.models.schnetModel` and :func:`~mbgdml.predictors.predict_schnet`
 
 Examples
 ========

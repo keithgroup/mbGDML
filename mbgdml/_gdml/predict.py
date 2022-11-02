@@ -250,14 +250,14 @@ class GDMLPredict(object):
 
         This class is used to load a trained model and make energy and
         force predictions for new geometries. GPU support is provided
-        through PyTorch (requires optional `torch` dependency to be
+        through PyTorch (requires optional ``torch`` dependency to be
         installed).
 
         Note
         ----
-        The parameters `batch_size` and `num_workers` are only
+        The parameters ``batch_size`` and ``num_workers`` are only
         relevant if this code runs on a CPU. Both can be set
-        automatically via the function `prepare_parallel`.
+        automatically via the function ``prepare_parallel``.
         Note: Running calculations via PyTorch is only
         recommended with available GPU hardware. CPU calculations
         are faster with our NumPy implementation.
@@ -271,7 +271,7 @@ class GDMLPredict(object):
             Chunk size for processing parallel tasks.
         num_workers : :obj:`int`, optional
             Number of parallel workers.
-        max_memory : int, optional
+        max_memory : :obj:`int`, optional
             Limit the max. memory usage [GB]. This is only a
             soft limit that can not always be enforced.
         max_processes : :obj:`int`, optional
@@ -279,8 +279,8 @@ class GDMLPredict(object):
             used. This parameters has no effect if `use_torch=True`
         use_torch : :obj:`bool`, optional
             Use PyTorch to calculate predictions
-        log_level : optional
-            Set custom logging level (e.g. `logging.CRITICAL`)
+        log_level : ``logging.level``, default: ``None``
+            Set custom logging level (e.g. ``logging.CRITICAL``)
         """
 
         global globs
@@ -479,7 +479,7 @@ class GDMLPredict(object):
     def set_R_d_desc(self, R_d_desc):
         """Store a reference to the training geometry descriptor Jacobians.
 
-        This function must be called before `set_alphas()` can be used.
+        This function must be called before ``set_alphas()`` can be used.
 
         This routine is used during iterative model training.
 
@@ -503,7 +503,7 @@ class GDMLPredict(object):
 
     def set_alphas(self, alphas_F, alphas_E=None):
         """Reconfigure the current model with a new set of regression parameters.
-        `R_d_desc` needs to be set for this function to work.
+        ``R_d_desc`` needs to be set for this function to work.
         
         This routine is used during iterative model training.
 
@@ -558,10 +558,11 @@ class GDMLPredict(object):
         """
         Set number of processes to use during prediction.
 
-        If bulk_mp == True, each worker handles the whole generation of single
+        If ``bulk_mp == True``, each worker handles the whole generation of single
         prediction (this if for querying multiple geometries at once)
-        If bulk_mp == False, each worker may handle only a part of a prediction
-        (chunks are defined in 'wkr_starts_stops'). In that scenario multiple
+
+        If ``bulk_mp == False``, each worker may handle only a part of a prediction
+        (chunks are defined in ``'wkr_starts_stops'``). In that scenario multiple
         processes are used to distribute the work of generating a single
         prediction.
 
@@ -570,13 +571,13 @@ class GDMLPredict(object):
         Note
         ----
         This parameter can be optimally determined using
-        `prepare_parallel`.
+        ``prepare_parallel``.
 
         Parameters
         ----------
         num_workers : :obj:`int`, optional
             Number of processes (maximum value is set if ``None``).
-        force_reset : bool, optional
+        force_reset : :obj:`bool`, optional
             Force applying the new setting.
         """
 
@@ -626,11 +627,11 @@ class GDMLPredict(object):
         Note
         ----
         This parameter can be optimally determined using
-        `prepare_parallel`.
+        ``prepare_parallel``.
 
         Parameters
         ----------
-        chunk_size : int
+        chunk_size : :obj:`int`, default: ``None``
             Chunk size (maximum value is set if `None`).
         """
 
@@ -661,8 +662,8 @@ class GDMLPredict(object):
 
         Parameters
         ----------
-        batch_size : :obj:`int`
-                Chunk size (maximum value is set if `None`).
+        batch_size : :obj:`int`, default: ``None``
+            Chunk size (maximum value is set if ``None``).
         """
 
         self._set_chunk_size(batch_size)
@@ -706,13 +707,13 @@ class GDMLPredict(object):
 
         Parameters
         ----------
-                n_bulk : int, optional
-                        Number of geometries that will be passed to the
-                        `predict` function in each call (performance
-                        will be optimized for that exact use case).
-                n_reps : int, optional
-                        Number of repetitions (bigger value: more
-                        accurate, but also slower).
+        n_bulk : int, optional
+            Number of geometries that will be passed to the
+            `predict` function in each call (performance
+            will be optimized for that exact use case).
+        n_reps : int, optional
+            Number of repetitions (bigger value: more
+            accurate, but also slower).
 
         Returns
         -------
@@ -728,22 +729,22 @@ class GDMLPredict(object):
         """
         Find and set the optimal parallelization parameters for the
         currently loaded model, running on a particular system. The result
-        also depends on the number of geometries `n_bulk` that will be
+        also depends on the number of geometries ``n_bulk`` that will be
         passed at once when calling the `predict` function.
 
         This function runs a benchmark in which the prediction routine is
-        repeatedly called `n_reps`-times (default: 1) with varying parameter
+        repeatedly called ``n_reps``-times (default: 1) with varying parameter
         configurations, while the runtime is measured for each one. The
         optimal parameters are then cached for fast retrieval in future
         calls of this function.
 
         We recommend calling this function after initialization of this
         class, as it will drastically increase the performance of the
-        `predict` function.
+        ``predict`` function.
 
         Note
         ----
-        Depending on the parameter `n_reps`, this routine may take
+        Depending on the parameter ``n_reps``, this routine may take
         some seconds/minutes to complete. However, once a
         statistically significant number of benchmark results has
         been gathered for a particular configuration, it starts
@@ -1055,7 +1056,7 @@ class GDMLPredict(object):
         """Predict energy and forces for multiple geometries.
         
         This function can run on the GPU, if the optional PyTorch dependency is
-        installed and `use_torch=True` was specified during
+        installed and ``use_torch=True`` was specified during
         initialization of this class.
 
         Optionally, the descriptors and descriptor Jacobians for the
@@ -1064,18 +1065,18 @@ class GDMLPredict(object):
 
         Note
         ----
-        The order of the atoms in `R` is not arbitrary and must
+        The order of the atoms in ``R`` is not arbitrary and must
         be the same as used for training the model.
 
         Parameters
         ----------
         R : :obj:`numpy.ndarray`, optional
             An 2D array of size M x 3N containing the Cartesian coordinates of
-            each atom of M molecules. If this parameter is ommited, the training
+            each atom of M molecules. If this parameter is omitted, the training
             error is returned. Note that the training geometries need to be set
             right after initialization using ``set_R()`` for this to work.
-        return_E : boolean, optional
-            If false (default: true), only the forces are returned.
+        return_E : :obj:`bool`, default: ``True``
+            If ``False``, only the forces are returned.
 
         Returns
         -------

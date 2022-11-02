@@ -6,6 +6,5 @@
     bayes_opt
     grid_search
     iterative_train
-    losses
     mbGDMLTrain
 

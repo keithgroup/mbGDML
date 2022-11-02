@@ -29,6 +29,7 @@ import psutil
 from .sample import draw_strat_sample
 from .perm import find_perms, find_extra_perms, find_frag_perms
 from ..utils import md5_data
+from ..losses import mae, rmse
 from .. import __version__
 
 import multiprocessing as mp
@@ -616,7 +617,7 @@ class GDMLTrain(object):
                             )
                         )
 
-                    # TOOD: PBCs disabled when matching (for now).
+                    # TODO: PBCs disabled when matching (for now).
                     # task['perms'] = perm.find_perms(
                     #    R_train_sync_mat, train_dataset['z'], lat_and_inv=lat_and_inv, max_processes=self._max_processes,
                     # )
@@ -627,43 +628,6 @@ class GDMLTrain(object):
                         lat_and_inv=lat_and_inv,
                         max_processes=self._max_processes,
                     )
-
-                    # NEW
-
-                    USE_EXTRA_PERMS = False
-
-                    if USE_EXTRA_PERMS:
-                        task['perms'] = find_extra_perms(
-                            R_train_sync_mat,
-                            train_dataset['z'],
-                            # lat_and_inv=None,
-                            lat_and_inv=lat_and_inv,
-                            max_processes=self._max_processes,
-                        )
-
-                    # NEW
-
-                    # NEW
-
-                    USE_FRAG_PERMS = False
-
-                    if USE_FRAG_PERMS:
-                        frag_perms = find_frag_perms(
-                            R_train_sync_mat,
-                            train_dataset['z'],
-                            lat_and_inv=lat_and_inv,
-                            max_processes=self._max_processes,
-                        )
-                        task['perms'] = np.vstack((task['perms'], frag_perms))
-                        task['perms'] = np.unique(task['perms'], axis=0)
-
-                        print(
-                            '| Keeping '
-                            + str(task['perms'].shape[0])
-                            + ' unique permutations.'
-                        )
-
-                    # NEW
 
             else:  # use provided perms
 
@@ -1332,18 +1296,6 @@ class GDMLTrain(object):
             global torch_assemble_done
             torch_assemble_todo, torch_assemble_done = K_n_cols, 0
 
-            def progress_callback(done):
-
-                global torch_assemble_done
-                torch_assemble_done += done
-
-                if callback is not None:
-                    callback(
-                        torch_assemble_done,
-                        torch_assemble_todo,
-                        newline_when_done=False,
-                    )
-
             start = timeit.default_timer()
 
             if _torch_cuda_is_available:
@@ -1538,30 +1490,25 @@ def add_valid_errors(
         log.warning('Model is already validated and overwrite is False.')
         return
 
-    n_valid, e_mae, e_rmse, f_mae, f_rmse = model_errors(
+    n_valid, E_errors, F_errors = model_errors(
         model, dataset, is_valid=True, max_processes=max_processes,
         use_torch=use_torch
     )
 
     model['n_test'] = 0  # flag the model as not tested
 
-    results = {
-        'force': {'mae': f_mae, 'rmse': f_rmse}
+    results = {'force': F_errors}
+    model['f_err'] = {
+        'mae': mae(F_errors), 'rmse': rmse(F_errors)
     }
-    model['f_err'] = results['force']
 
     if model['use_E']:
-        results['energy'] = {
-            'mae': e_mae,
-            'rmse': e_rmse,
+        results['energy'] = E_errors
+        model['e_err'] = {
+            'mae': mae(E_errors), 'rmse': rmse(E_errors)
         }
-        model['e_err'] = results['energy']
     else:
-        results['energy'] = {
-            'mae': None,
-            'rmse': None,
-        }
-    
+        results['energy'] = None
     return results, model
 
 def save_model(model, model_path):
@@ -1629,6 +1576,7 @@ def model_errors(
     z = dataset['z']
     R = dataset['R'][test_idxs, :, :]
     F = dataset['F'][test_idxs, :, :]
+    n_R = R.shape[0]
 
     if model['use_E']:
         E = dataset['E'][test_idxs]
@@ -1660,13 +1608,8 @@ def model_errors(
             gdml_predict._set_bulk_mp(bulk_mp)
 
     n_atoms = z.shape[0]
-
-    if model['use_E']:
-        e_mae_sum, e_rmse_sum = 0, 0
-    f_mae_sum, f_rmse_sum = 0, 0
-    cos_mae_sum, cos_rmse_sum = 0, 0
-    mag_mae_sum, mag_rmse_sum = 0, 0
     
+    E_pred, F_pred = np.empty(n_R), np.empty(R.shape)
     t_pred = log.t_start()
     n_done = 0
     for b_range in _batch(list(range(len(test_idxs))), b_size):
@@ -1677,43 +1620,34 @@ def model_errors(
         r = R[b_range].reshape(n_done_step, -1)
         e_pred, f_pred = gdml_predict.predict(r)
 
-        # energy error
+        F_pred[b_range] = f_pred.reshape((len(b_range), n_atoms, 3))
         if model['use_E']:
-            e = E[b_range]
-            e_mae, e_mae_sum, e_rmse, e_rmse_sum = _online_err(
-                np.squeeze(e) - e_pred, 1, n_done, e_mae_sum, e_rmse_sum
-            )
+            E_pred[b_range] = e_pred
 
-        # force component error
-        f = F[b_range].reshape(n_done_step, -1)
-        f_mae, f_mae_sum, f_rmse, f_rmse_sum = _online_err(
-            f - f_pred, 3 * n_atoms, n_done, f_mae_sum, f_rmse_sum
-        )
-    
-    log.info(f"\nForce MAE  : {f_mae:.5f}")
-    log.info(f"Force RMSE : {f_rmse:.5f}")
-    if model['use_E']:
-        log.info(f"Energy MAE  : {e_mae:.5f}")
-        log.info(f"Energy RMSE : {e_rmse:.5f}")
     t_elapsed = log.t_stop(
         t_pred, message='\nTook {time} s'
     )
-    log.info(f'Prediction rate : {n_done/t_elapsed:.2f} structures per second')
+    log.info(f'Prediction rate : {n_R/t_elapsed:.2f} structures per second')
+
+    # Force errors
+    F_errors = F_pred - F
+    F_mae = mae(F_errors)
+    F_rmse = rmse(F_errors)
+    log.info(f"\nForce MAE  : {F_mae:.5f}")
+    log.info(f"Force RMSE : {F_rmse:.5f}")
+
+    # Energy errors
     if model['use_E']:
-        return len(test_idxs), e_mae, e_rmse, f_mae, f_rmse
+        E_errors = E_pred - E
+        E_mae = mae(E_errors)
+        E_rmse = rmse(E_errors)
+        log.info(f"Energy MAE  : {E_mae:.5f}")
+        log.info(f"Energy RMSE : {E_rmse:.5f}")
+    
+    if model['use_E']:
+        return len(test_idxs), E_errors, F_errors
     else:
-        return len(test_idxs), None, None, f_mae, f_rmse
-
-def _online_err(err, size, n, mae_n_sum, rmse_n_sum):
-    err = np.abs(err)
-
-    mae_n_sum += np.sum(err) / size
-    mae = mae_n_sum / n
-
-    rmse_n_sum += np.sum(err ** 2) / size
-    rmse = np.sqrt(rmse_n_sum / n)
-
-    return mae, mae_n_sum, rmse, rmse_n_sum
+        return len(test_idxs), None, F_errors
 
 def _batch(iterable, n=1):
     l = len(iterable)

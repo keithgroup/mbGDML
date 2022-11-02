@@ -44,7 +44,7 @@ def predict_gap(
         Entity ID combinations (e.g., ``(53,)``, ``(0, 2)``,
         ``(32, 55, 293)``, etc.) to predict using this model. These are used
         to slice ``r`` with ``entity_ids``.
-    model : :obj:`mbgdml.predict.gapModel`
+    model : :obj:`mbgdml.models.gapModel`
         GAP model containing all information need to make predictions.
     periodic_cell : :obj:`mbgdml.periodic.Cell`, default: ``None``
         Use periodic boundary conditions defined by this object.
@@ -132,7 +132,7 @@ def predict_gap_decomp(
         Entity ID combinations (e.g., ``(53,)``, ``(0, 2)``,
         ``(32, 55, 293)``, etc.) to predict using this model. These are used
         to slice ``r`` with ``entity_ids``.
-    model : :obj:`mbgdml.predict.gdmlModel`
+    model : :obj:`mbgdml.models.gdmlModel`
         GDML model containing all information need to make predictions.
     
     Returns

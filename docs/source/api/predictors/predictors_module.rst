@@ -2,11 +2,7 @@
 ==================
 
 .. toctree::
-
-    gapModel
-    gdmlModel
-    schnetModel
-    model
+    
     predict_gap
     predict_gap_decomp
     predict_gdml

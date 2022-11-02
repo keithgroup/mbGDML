@@ -33,52 +33,10 @@ from .predictors import predict_gdml
 from ._gdml.train import GDMLTrain, model_errors, add_valid_errors
 from ._gdml.train import save_model, get_test_idxs
 from .utils import save_json
+from .losses import loss_f_rmse, mae, rmse
 
 import logging
 log = logging.getLogger(__name__)
-
-def loss_f_rmse(results):
-    """Returns the force RMSE.
-
-    Parameters
-    ----------
-    results : :obj:`dict`
-        Validation results which contain force and energy MAEs and RMSEs.
-    """
-    return results['force']['rmse']
-
-def loss_f_e_weighted_mse(results, rho, n_atoms):
-    r"""Computes a combined energy and force loss function.
-
-    .. math::
-
-        l = \frac{\rho}{Q} \left\Vert E - \hat{E} \right\Vert^2
-        + \frac{1}{n_{atoms} Q} \sum_{i=0}^{n_{atoms}}
-        \left\Vert \bf{F}_i - \widehat{\bf{F}}_i \right\Vert^2,
-    
-    where :math:`\rho` is a trade-off between energy and force errors,
-    :math:`Q` is the number of validation structures, :math:`\Vert \ldots \Vert`
-    is the norm, and :math:`\widehat{\;}` is the model prediction of the
-    property.
-
-    Parameters
-    ----------
-    results : :obj:`dict`
-        Validation results which contain force and energy MAEs and RMSEs.
-    rho : :obj:`float`
-        Energy and force trade-off. A recommended value would be in the range
-        of ``0.01`` to ``0.1``.
-    n_atoms : :obj:`int`
-        Number of atoms.
-    
-    Returns
-    -------
-    :obj:`float`
-        Validation loss.
-    """
-    F_mse = results['force']['rmse']**2
-    E_mse = results['energy']['rmse']**2
-    return rho*E_mse + (1/n_atoms)*F_mse
 
 class mbGDMLTrain:
     """Train many-body GDML models.
@@ -237,16 +195,15 @@ class mbGDMLTrain:
         :obj:`mbgdml.data.mbModel`
             Tested and finalized many-body GDML model.
         """
-        n_test, e_mae, e_rmse, f_mae, f_rmse = model_errors(
+        n_test, E_errors, F_errors = model_errors(
             model.model, dataset, is_valid=False, n_test=n_test,
             max_processes=self.max_processes, use_torch=self.use_torch
         )
         model.model['n_test'] = np.array(n_test)
 
-        results_test = {
-            'energy': {'mae': e_mae, 'rmse': e_rmse},
-            'force': {'mae': f_mae, 'rmse': f_rmse},
-        }
+        results_test = {'force': {'mae': mae(F_errors), 'rmse': rmse(F_errors)}}
+        if E_errors is not None:
+            results_test['energy'] = {'mae': mae(E_errors), 'rmse': rmse(E_errors)}
         
         # Adding mbGDML-specific modifications to model.
         model.add_modifications(dataset)
@@ -415,7 +372,7 @@ class mbGDMLTrain:
         use_domain_opt : :obj:`bool`, default: ``False``
             Whether to use a sequential reduction optimizer or not. This
             sometimes crashes.
-        loss : callable, default: :obj:`mbgdml.train.loss_f_rmse`
+        loss : callable, default: :obj:`mbgdml.losses.loss_f_rmse`
             Loss function for validation. The input of this function is the
             dictionary of :obj:`mbgdml._gdml.train.add_valid_errors` which
             contains force and energy MAEs and RMSEs.
@@ -512,16 +469,16 @@ class mbGDMLTrain:
 
             valid_json['sigmas'].append(float(model_trial['sig']))
             valid_json['energy']['mae'].append(
-                valid_results['energy']['mae']
+                mae(valid_results['energy'])
             )
             valid_json['energy']['rmse'].append(
-                valid_results['energy']['rmse']
+                rmse(valid_results['energy'])
             )
             valid_json['force']['mae'].append(
-                valid_results['force']['mae']
+                mae(valid_results['force'])
             )
             valid_json['force']['rmse'].append(
-                valid_results['force']['rmse']
+                rmse(valid_results['force'])
             )
 
             model_trail_path = os.path.join(
@@ -730,7 +687,7 @@ class mbGDMLTrain:
         save_dir : :obj:`str`, default: ``'.'``
             Path to train and save the mbGDML model. Defaults to current
             directory.
-        loss : callable, default: :obj:`mbgdml.train.loss_f_rmse`
+        loss : callable, default: :obj:`mbgdml.losses.loss_f_rmse`
             Loss function for validation. The input of this function is the
             dictionary of :obj:`mbgdml._gdml.train.add_valid_errors` which
             contains force and energy MAEs and RMSEs.
@@ -822,10 +779,10 @@ class mbGDMLTrain:
 
             losses.append(loss(valid_results, **loss_kwargs))
             valid_json['sigmas'].append(model_trial['sig'])
-            valid_json['energy']['mae'].append(valid_results['energy']['mae'])
-            valid_json['energy']['rmse'].append(valid_results['energy']['rmse'])
-            valid_json['force']['mae'].append(valid_results['force']['mae'])
-            valid_json['force']['rmse'].append(valid_results['force']['rmse'])
+            valid_json['energy']['mae'].append(mae(valid_results['energy']))
+            valid_json['energy']['rmse'].append(rmse(valid_results['energy']))
+            valid_json['force']['mae'].append(mae(valid_results['force']))
+            valid_json['force']['rmse'].append(rmse(valid_results['force']))
 
             model_trail_path = os.path.join(
                 task_dir, f'model-trial-sig{model_trial["sig"]}.npz'
@@ -978,7 +935,7 @@ class mbGDMLTrain:
 
             The number of probes done during the initial grid search will be
             subtracted from the Bayesian optimization ``init_points``.
-        loss : ``callable``, default: :obj:`mbgdml.train.loss_f_rmse`
+        loss : ``callable``, default: :obj:`mbgdml.losses.loss_f_rmse`
             Loss function for validation. The input of this function is the
             dictionary of :obj:`mbgdml._gdml.train.add_valid_errors` which
             contains force and energy MAEs and RMSEs.
