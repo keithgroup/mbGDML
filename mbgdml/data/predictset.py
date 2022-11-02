@@ -318,7 +318,7 @@ class predictSet(mbGDMLData):
 
         Parameters
         ----------
-        models : :obj:`list` of :obj:`mbgdml.predict.mlWorker`
+        models : :obj:`list` of :obj:`mbgdml.predictors.mlWorker`
             Machine learning model objects that contain all information to make
             predictions using ``predict_model``.
         predict_model : ``callable``

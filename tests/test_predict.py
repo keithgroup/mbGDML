@@ -27,7 +27,8 @@ import pytest
 import numpy as np
 import mbgdml.data as data
 from mbgdml.mbe import mbePredict
-from mbgdml.predict import gdmlModel, predict_gdml
+from mbgdml.models import gdmlModel
+from mbgdml.predictors import predict_gdml
 from mbgdml.criteria import cm_distance_sum
 
 dset_dir = './tests/data/datasets'

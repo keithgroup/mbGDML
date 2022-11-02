@@ -14,9 +14,6 @@ mbGDML
    :target: https://doi.org/10.5281/zenodo.6270373
    :alt: DOI
 
-.. image:: https://img.shields.io/lgtm/grade/python/g/keithgroup/mbGDML.svg?logo=lgtm&logoWidth=18
-   :target: https://lgtm.com/projects/g/keithgroup/mbGDML/context:python
-
 .. image:: https://img.shields.io/github/license/keithgroup/mbGDML
    :target: https://github.com/keithgroup/mbGDML/blob/main/LICENSE
 

@@ -1,6 +1,6 @@
 # MIT License
 # 
-# Copyright (c) 2018-2022, Stefan Chmiela
+# Copyright (c) 2018-2022 Stefan Chmiela, Luis Galvez
 # Copyright (c) 2022, Alex M. Maldonado
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -23,13 +23,13 @@
 
 import numpy as np
 import scipy as sp
+from scipy import spatial
 
 import multiprocessing as mp
 
 Pool = mp.get_context('fork').Pool
 
 from functools import partial
-from scipy import spatial
 import timeit
 
 try:
@@ -205,7 +205,7 @@ def _r_to_d_desc(r, pdist, lat_and_inv=None):
     return d_desc_elem
 
 
-def _from_r(r, lat_and_inv=None, coff=None):
+def _from_r(r, lat_and_inv=None):
     """
     Generate descriptor and its Jacobian for one molecular geometry
     in Cartesian coordinates.
@@ -264,7 +264,7 @@ class Desc(object):
         self.tril_indices = np.tril_indices(n_atoms, k=-1)
 
         # Precompute indices for nonzero entries in desriptor derivatives.
-        self.d_desc_mask = np.zeros((n_atoms, n_atoms - 1), dtype=int)
+        self.d_desc_mask = np.zeros((n_atoms, n_atoms - 1), dtype=np.int64)
         for a in range(n_atoms):  # for each partial derivative
             rows, cols = self.tril_indices
             self.d_desc_mask[a, :] = np.concatenate(
