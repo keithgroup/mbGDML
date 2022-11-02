@@ -20,15 +20,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import json
-import itertools
 import os
-from random import randrange, sample, choice
 import numpy as np
 from cclib.parser.utils import convertor
 from .basedata import mbGDMLData
 from .. import __version__ as mbgdml_version
-from ..parse import parse_stringfile
 from .. import utils
 from ..mbe import mbePredict
   
@@ -37,21 +33,38 @@ class dataSet(mbGDMLData):
     """For creating, loading, manipulating, and using data sets.
     """
 
-    def __init__(self, *args):
+    def __init__(
+        self, dset_path=None, Z_key='Z', R_key='R', E_key='E', F_key='F'
+    ):
         """
         Parameters
         ----------
-        dataset_path : :obj:`str`, optional
+        dset_path : :obj:`str`, optional
             Path to a `npz` file.
+        Z_key : :obj:`str`, default: ``Z``
+            :obj:`dict` key in ``dset_path`` for atomic numbers.
+        R_key : :obj:`str`, default: ``R``
+            :obj:`dict` key in ``dset_path`` for atomic Cartesian coordinates.
+        E_key : :obj:`str`, default: ``E``
+            :obj:`dict` key in ``dset_path`` for energies.
+        F_key : :obj:`str`, default: ``F``
+            :obj:`dict` key in ``dset_path`` for atomic forces.
         """
         self.type = 'd'
         self.name = 'dataset'
-        if len(args) == 1:
-            self.load(args[0])
+
+        # Set keys for atomic properties.
+        self.Z_key = Z_key
+        self.R_key = R_key
+        self.E_key = E_key
+        self.F_key = F_key
+
+        if dset_path is not None:
+            self.load(dset_path)
     
     @property
     def name(self):
-        """Human-redable label for the data set.
+        """Human-readable label for the data set.
 
         :type: :obj:`str`
         """
@@ -71,7 +84,7 @@ class dataSet(mbGDMLData):
         Keys are the Rset IDs (:obj:`int`) and values are MD5 hashes
         (:obj:`str`) for the particular structure set.
         
-        This is used as a bredcrumb trail that specifies where each structure
+        This is used as a breadcrumb trail that specifies where each structure
         in the data set originates from.
 
         Examples
@@ -430,10 +443,10 @@ class dataSet(mbGDMLData):
             Contains all information and arrays stored in data set.
         """
         self.name = dataset['name'].item()
-        self._z = dataset['z']
-        self._R = dataset['R']
-        self._E = dataset['E']
-        self._F = dataset['F']
+        self._Z = dataset[self.Z_key]
+        self._R = dataset[self.R_key]
+        self._E = dataset[self.E_key]
+        self._F = dataset[self.F_key]
         self._r_unit = dataset['r_unit'].item()
         try:
             self._e_unit = dataset['e_unit'].item()
@@ -497,13 +510,13 @@ class dataSet(mbGDMLData):
             'name': np.array(self.name),
             'r_prov_ids': np.array(self.r_prov_ids),
             'r_prov_specs': np.array(self.r_prov_specs),
-            'z': np.array(self.z),
-            'R': np.array(self.R),
+            self.Z_key: np.array(self.Z),
+            self.R_key: np.array(self.R),
             'r_unit': np.array(self.r_unit),
             'entity_ids': self.entity_ids,
             'comp_ids': self.comp_ids
         }
-        md5_properties = ['z', 'R']
+        md5_properties = [self.Z_key, self.R_key]
 
         # When starting a new data set from a structure set, there will not be
         # any energy or force data. Thus, we try to add the data if available,
@@ -516,24 +529,24 @@ class dataSet(mbGDMLData):
 
         # Energies.
         try:
-            dataset['E'] = np.array(self.E)
+            dataset[self.E_key] = np.array(self.E)
             dataset['e_unit'] = np.array(self.e_unit)
             dataset['E_min'] = np.array(self.E_min)
             dataset['E_max'] = np.array(self.E_max)
             dataset['E_mean'] = np.array(self.E_mean)
             dataset['E_var'] = np.array(self.E_var)
-            md5_properties.append('E')
+            md5_properties.append(self.E_key)
         except BaseException:
             pass
         
         # Forces.
         try:
-            dataset['F'] = np.array(self.F)
+            dataset[self.F_key] = np.array(self.F)
             dataset['F_min'] = np.array(self.F_min)
             dataset['F_max'] = np.array(self.F_max)
             dataset['F_mean'] = np.array(self.F_mean)
             dataset['F_var'] = np.array(self.F_var)
-            md5_properties.append('F')
+            md5_properties.append(self.F_key)
         except BaseException:
             pass
 
@@ -580,4 +593,4 @@ class dataSet(mbGDMLData):
         save_dir : :obj:`str`
         """
         xyz_path = os.path.join(save_dir, self.name)
-        utils.write_xyz(xyz_path, self.z, self.R)
+        utils.write_xyz(xyz_path, self.Z, self.R)

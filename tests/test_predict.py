@@ -58,10 +58,10 @@ def test_predict_single_16mer():
         ) for model in models
     ]
 
-    dset_16h2o = data.dataSet(dset_16h2o_path)
+    dset_16h2o = data.dataSet(dset_16h2o_path, Z_key='z')
     mbe_pred = mbePredict(models, predict_gdml, use_ray=False)
     E_predict, F_predict = mbe_pred.predict(
-        dset_16h2o.z, dset_16h2o.R, dset_16h2o.entity_ids, dset_16h2o.comp_ids,
+        dset_16h2o.Z, dset_16h2o.R, dset_16h2o.entity_ids, dset_16h2o.comp_ids,
         ignore_criteria=False
     )
     E = np.array([-766368.03399751])

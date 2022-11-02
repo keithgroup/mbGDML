@@ -39,7 +39,7 @@ def test_dset_default_attributes():
     assert len(dset.r_prov_ids) == 0
     assert dset.r_prov_specs.shape == (1, 0)
 
-    assert dset.z.shape == (0,)
+    assert dset.Z.shape == (0,)
     assert dset.R.shape == (1, 1, 0)
     assert dset.E.shape == (0,)
     assert dset.F.shape == (1, 1, 0)

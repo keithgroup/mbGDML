@@ -31,7 +31,7 @@ class mbGDMLData():
         pass
     
     @property
-    def z(self):
+    def Z(self):
         """Atomic numbers of all atoms in data set structures.
         
         A ``(n,)`` shape array of type :obj:`numpy.int32` containing atomic
@@ -39,25 +39,25 @@ class mbGDMLData():
 
         :type: :obj:`numpy.ndarray`
         """
-        if hasattr(self, '_z'):
-            return self._z
+        if hasattr(self, '_Z'):
+            return self._Z
         else:
-            return np.array([])
+            return np.array([], dtype=np.int32)
     
-    @z.setter
-    def z(self, var):
-        self._z = var
+    @Z.setter
+    def Z(self, var):
+        self._Z = var
     
     @property
-    def n_z(self):
+    def n_Z(self):
         """Number of atoms.
 
         :type: :obj:`int`
         """
-        if self.z.ndim == 1 or self.z.ndim == 2:
-            return int(self.z.shape[0])
-        elif self.z.ndim == 3:
-            return int(self.z.shape[1])
+        if self.Z.ndim == 1 or self.Z.ndim == 2:
+            return int(self.Z.shape[0])
+        elif self.Z.ndim == 3:
+            return int(self.Z.shape[1])
 
     @property
     def R(self):

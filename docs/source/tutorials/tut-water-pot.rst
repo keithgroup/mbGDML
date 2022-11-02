@@ -505,8 +505,8 @@ For example, the script below makes predictions of :download:`clusters containin
     # Ensures we execute from script directory (for relative paths).
     os.chdir(os.path.dirname(os.path.realpath(__file__)))
 
-    dset = dataSet(dset_path)
-    z = dset.z
+    dset = dataSet(dset_path, Z_key='z')
+    z = dset.Z
     R = dset.R
     E_true = dset.E
     F_true = dset.F

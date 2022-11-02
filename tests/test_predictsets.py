@@ -59,17 +59,17 @@ def test_predictset_correct_contribution_predictions():
         ) for model in models
     ]
     pset = data.predictSet()
-    pset.load_dataset(dset_6h2o_path)
+    pset.load_dataset(dset_6h2o_path, Z_key='z')
     pset.load_models(
         models, predict_gdml_decomp, use_ray=False
     )
     pset.prepare()
     E_pset, F_pset = pset.nbody_predictions([1, 2, 3])
 
-    dset_6h2o = data.dataSet(dset_6h2o_path)
+    dset_6h2o = data.dataSet(dset_6h2o_path, Z_key='z')
     mbe_pred = mbePredict(models, predict_gdml, use_ray=False)
     E_predict, F_predict = mbe_pred.predict(
-        dset_6h2o.z, dset_6h2o.R, dset_6h2o.entity_ids, dset_6h2o.comp_ids,
+        dset_6h2o.Z, dset_6h2o.R, dset_6h2o.entity_ids, dset_6h2o.comp_ids,
         ignore_criteria=False
     )
     assert np.allclose(E_pset, E_predict)
@@ -92,7 +92,7 @@ def test_predictset_nan_for_failed_criteria():
         ) for model in models
     ]
     pset = data.predictSet()
-    pset.load_dataset(dset_16h2o_2h2o_path)
+    pset.load_dataset(dset_16h2o_2h2o_path, Z_key='z')
     pset.load_models(models, predict_gdml_decomp)
     pset.prepare()
     E_pset, F_pset = pset.nbody_predictions([2])

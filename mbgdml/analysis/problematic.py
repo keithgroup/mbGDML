@@ -267,7 +267,7 @@ class prob_structures:
             self.json_dict = {}
 
         log.info('Loading dataset\n')
-        Z, R, E, F = dset.z, dset.R, dset.E, dset.F
+        Z, R, E, F = dset.Z, dset.R, dset.E, dset.F
         entity_ids, comp_ids = dset.entity_ids, dset.comp_ids
         
         # Removing training indices.

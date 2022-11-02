@@ -56,7 +56,7 @@ class predictSet(mbGDMLData):
         be ``['h2o', 'meoh']``.
     """
 
-    def __init__(self, pset=None):
+    def __init__(self, pset=None, Z_key='Z', R_key='R', E_key='E', F_key='F'):
         """
         Parameters
         ----------
@@ -68,6 +68,13 @@ class predictSet(mbGDMLData):
         self.mbgdml_version = mbgdml_version
         self._loaded = False
         self._predicted = False
+
+        # Set keys for atomic properties.
+        self.Z_key = Z_key
+        self.R_key = R_key
+        self.E_key = E_key
+        self.F_key = F_key
+
         if pset is not None:
             self.load(pset)  
     
@@ -81,7 +88,7 @@ class predictSet(mbGDMLData):
         and ``comp_ids``.
         """
         E_nbody, F_nbody, entity_combs, nbody_orders = self.mbePredict.predict_decomp(
-            self.z, self.R, self.entity_ids, self.comp_ids
+            self.Z, self.R, self.entity_ids, self.comp_ids
         )
         self.nbody_orders = nbody_orders
         for i in range(len(nbody_orders)):
@@ -103,8 +110,8 @@ class predictSet(mbGDMLData):
             'version': np.array(self.mbgdml_version),
             'name': np.array(self.name),
             'theory': np.array(self.theory),
-            'z': self.z,
-            'R': self.R,
+            self.Z_key: self.Z,
+            self.R_key: self.R,
             'r_unit': np.array(self.r_unit),
             'E_true': self.E_true,
             'e_unit': np.array(self.e_unit),
@@ -127,7 +134,7 @@ class predictSet(mbGDMLData):
                     'No data can be predicted or is not loaded.'
                 )
             else: 
-                self.prepare(self.z, self.R, self.entity_ids, self.comp_ids)
+                self.prepare(self.Z, self.R, self.entity_ids, self.comp_ids)
         
         return pset
     
@@ -184,21 +191,21 @@ class predictSet(mbGDMLData):
         self.name = str(pset['name'][()])
         self.theory = str(pset['theory'][()])
         self.version = str(pset['version'][()])
-        self.z = pset['z']
-        self.R = pset['R']
+        self.Z = pset[self.Z_key]
+        self.R = pset[self.R_key]
 
         self.r_unit = str(pset['r_unit'][()])
         self.e_unit = str(pset['e_unit'][()])
-        self.E_true = pset['E_true']
-        self.F_true = pset['F_true']
+        self.E_true = pset[f'{self.E_key}_true']
+        self.F_true = pset[f'{self.F_key}_true']
         self.entity_ids = pset['entity_ids']
         self.comp_ids = pset['comp_ids']
         self.nbody_orders = pset['nbody_orders']
         self.models_md5 = pset['models_md5']
 
         for i in pset['nbody_orders']:
-            setattr(self, f'E_{i}', pset[f'E_{i}'])
-            setattr(self, f'F_{i}', pset[f'F_{i}'])
+            setattr(self, f'{self.E_key}_{i}', pset[f'{self.E_key}_{i}'])
+            setattr(self, f'{self.F_key}_{i}', pset[f'{self.F_key}_{i}'])
             setattr(self, f'entity_combs_{i}', pset[f'entity_combs_{i}'])
 
         self._loaded = True
@@ -232,8 +239,8 @@ class predictSet(mbGDMLData):
         E = np.zeros(self.E_true.shape)
         F = np.zeros(self.F_true.shape)
         for nbody_order in nbody_orders:
-            E_decomp = getattr(self, f'E_{nbody_order}')
-            F_decomp = getattr(self, f'F_{nbody_order}')
+            E_decomp = getattr(self, f'{self.E_key}_{nbody_order}')
+            F_decomp = getattr(self, f'{self.F_key}_{nbody_order}')
             entity_combs = getattr(self, f'entity_combs_{nbody_order}')
             if len(nbody_orders) == 1:
                 return E_decomp, F_decomp
@@ -244,56 +251,38 @@ class predictSet(mbGDMLData):
             F += F_nbody
         return E, F
 
-    def load_dataset(self, dset):
+    def load_dataset(
+        self, dset, Z_key='Z', R_key='R', E_key='E', F_key='F'
+    ):
         """Loads data set in preparation to create a predict set.
 
         Parameters
         ----------
         dset : :obj:`str` or :obj:`dict`
             Path to data set or :obj:`dict` with at least the following data:
-
-            ``z`` (:obj:`numpy.ndarray`, ndim: ``1``) - 
-                Atomic numbers.
-
-            ``R`` (:obj:`numpy.ndarray`, ndim: ``3``) - 
-                Cartesian coordinates.
-
-            ``E`` (:obj:`numpy.ndarray`, ndim: ``1``) - 
-                Reference, or true, energies of the structures we will predict.
-
-            ``F`` (:obj:`numpy.ndarray`, ndim: ``3``) - 
-                Reference, or true, forces of the structures we will predict.
-
-            ``entity_ids`` (:obj:`numpy.ndarray`, ndim: ``1``) - 
-                An array specifying which atoms belong to which entities.
-
-            ``comp_ids`` (:obj:`numpy.ndarray`, ndim: ``1``) - 
-                An array relating ``entity_id`` to a fragment label for chemical
-                components or species.
-
-            ``theory`` (:obj:`str`) - 
-                The level of theory used to compute energy and forces.
-
-            ``r_unit`` (:obj:`str`) - 
-                Units of distance.
-                
-            ``e_unit`` (:obj:`str`) - 
-                Units of energy.
+        Z_key : :obj:`str`, default: ``Z``
+            :obj:`dict` key in ``dset_path`` for atomic numbers.
+        R_key : :obj:`str`, default: ``R``
+            :obj:`dict` key in ``dset_path`` for atomic Cartesian coordinates.
+        E_key : :obj:`str`, default: ``E``
+            :obj:`dict` key in ``dset_path`` for energies.
+        F_key : :obj:`str`, default: ``F``
+            :obj:`dict` key in ``dset_path`` for atomic forces.
         """
         if isinstance(dset, str):
             dset = dict(np.load(dset, allow_pickle=True))
         elif not isinstance(dset, dict):
             raise TypeError(f'{type(dset)} is not supported')
 
-        self.z = dset['z']
-        self.R = dset['R']
-        E = dset['E']
-        if not isinstance(dset['E'], np.ndarray):
+        self.Z = dset[Z_key]
+        self.R = dset[R_key]
+        E = dset[E_key]
+        if not isinstance(dset[E_key], np.ndarray):
             E = np.array(E)
         if E.ndim == 0:
             E = np.array([E])
         self.E_true = E
-        self.F_true = dset['F']
+        self.F_true = dset[F_key]
         self.entity_ids = dset['entity_ids']
         self.comp_ids = dset['comp_ids']
 

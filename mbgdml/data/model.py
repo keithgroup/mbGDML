@@ -102,7 +102,7 @@ class mbModel(mbGDMLData):
         if model['type'].item() != 'm':
             raise AttributeError('This npz is not a GDML model.')
 
-        self.z = model['z']
+        self.Z = model['z']
         self.r_unit = str(model['r_unit'].item())
         self.e_unit = str(model['e_unit'].item())
         
