@@ -39,23 +39,13 @@ class model(object):
         model.
     """
 
-    def __init__(self, criteria_desc_func=None, criteria_cutoff=None):
+    def __init__(self, criteria=None):
         """
         Parameters
         ----------
-        criteria_desc : ``callable``, default: ``None``
-            A descriptor used to filter :math:`n`-body structures from being
-            predicted.
-        criteria_cutoff : :obj:`float`, default: ``None``
-            Value of ``criteria_desc`` where the mlModel will not predict the
-            :math:`n`-body contribution of. If ``None``, no cutoff will be
-            enforced.
+        criteria : :obj:`mbgdml.descriptor.Criteria`, default: ``None``
+            Initialized descriptor criteria for accepting a structure based on
+            a descriptor and cutoff.
         """
-        self.criteria_desc_func = criteria_desc_func
-        # Make sure cutoff is a single value (weird extraction from npz).
-        if isinstance(criteria_cutoff, np.ndarray):
-            if len(criteria_cutoff) == 0:
-                criteria_cutoff = None
-            elif len(criteria_cutoff) == 1:
-                criteria_cutoff = criteria_cutoff[0]
-        self.criteria_cutoff = criteria_cutoff
+        self.criteria = criteria
+    

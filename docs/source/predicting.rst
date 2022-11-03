@@ -66,7 +66,7 @@ Examples
     from mbgdml.mbe import mbePredict
     from mbgdml.models import gdmlModel
     from mbgdml.predictors import predict_gdml
-    from mbgdml.criteria import cm_distance_sum
+    from mbgdml.descriptors import com_distance_sum
 
     # Loading mbGDML models.
     model_paths = [
@@ -77,9 +77,9 @@ Examples
     models = (
         dict(np.load(model_path, allow_pickle=True)) for model_path in model_paths
     )
-    models = [
+    models = [None, 6.0, 10.0]
         gdmlModel(
-            model, criteria_desc_func=cm_distance_sum,
+            model, criteria_desc_func=com_distance_sum,
             criteria_cutoff=model['cutoff']
         ) for model in models
     ]

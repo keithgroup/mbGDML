@@ -4,6 +4,10 @@
 Tutorial: Water potential
 =========================
 
+.. attention::
+
+    This tutorial uses an old API and needs be rewritten
+
 We walk through a general framework for developing a mbGDML potential for a single species: water.
 At the end, we will have models that predict 1-, 2-, and 3-body interactions at the MP2/def2-TZVP level of theory.
 
@@ -219,19 +223,14 @@ Example distances for a water trimer are shown below.
    :width: 300px
    :align: center
 
-We provide a simple function :func:`mbgdml.criteria.cm_distance_sum` can compute this metric.
-Different criteria can be used or added, but so far each one requires four parameters:
+We provide a simple function :func:`mbgdml.descriptors.com_distance_sum` can compute this metric.
 
-* ``z``: atomic numbers of the structure;
-* ``R``: Cartesian coordinates;
-* ``z_slice``: relevant atom indices for the criteria;
-* ``entity_ids``: entity IDs for every atom in the structure.
 
 .. note::
     Not every criteria will always use ``z_slice`` or ``entity_ids``.
     We just always require them to standardize their use in scripts.
     If a criteria does not use a parameter then just pass a "None" equivalent.
-    For example, :func:`mbgdml.criteria.cm_distance_sum` does not use ``z_slice`` directly in the criteria evaluation so we just pass ``np.array([])`` to the function.
+    For example, :func:`mbgdml.descriptors.com_distance_sum` does not use ``z_slice`` directly in the criteria evaluation so we just pass ``np.array([])`` to the function.
 
 To determine cutoffs we typically calculate all *n*-body interactions for a large structure.
 We then plot the predicted *n*-body energy when using different cutoffs and determine when it reasonably converges.
@@ -247,7 +246,7 @@ The following Python script will sample 5,000 trimer structures from our product
     import os
     import numpy as np
     from mbgdml.data import structureSet, dataSet
-    from mbgdml.criteria import cm_distance_sum
+    from mbgdml.criteria import com_distance_sum
 
     rset_path = './140h2o.pm.gfn2.md.500k.prod1.npz'
     dset_name = '140h2o.pm.gfn2.md.500k.prod1.3h2o-dset-cm10.noef'
@@ -259,7 +258,7 @@ The following Python script will sample 5,000 trimer structures from our product
     # A number (e.g., `5000`) or `'all'`.
     quantity = 5000
     # Only accept structures that pass some criteria.
-    r_criteria = cm_distance_sum  # None for 1mer, cm_distance_sum for others.
+    r_criteria = com_distance_sum  # None for 1mer, com_distance_sum for others.
     z_slice = np.array([])  # Specifies which atoms to use for a criteria.
     cutoff = np.array([10.0])  # Angstroms; [] for 1mer, [##] for others.
     # Will translate the center of mass of the sampled cluster to the origin.
@@ -298,7 +297,7 @@ The script is very similar with only a few modifications.
     import os
     import numpy as np
     from mbgdml.data import dataSet
-    from mbgdml.criteria import cm_distance_sum
+    from mbgdml.criteria import com_distance_sum
 
     dset_path_for_sampling = './140h2o.pm.gfn2.md.500k.prod1.3h2o-dset-cm10.noef.npz'
     dset_name = '140h2o.pm.gfn2.md.500k.prod1.3h2o.cm10.dset.2h2o-dset-noef'
@@ -310,7 +309,7 @@ The script is very similar with only a few modifications.
     # A number (e.g., `5000`) or `'all'`.
     quantity = 'all'
     # Only accept structures that pass some criteria.
-    r_criteria = None  # None for 1mer or dset sampling, cm_distance_sum for others.
+    r_criteria = None  # None for 1mer or dset sampling, com_distance_sum for others.
     z_slice = np.array([])  # Specifies which atoms to use for a criteria.
     cutoff = np.array([])  # Angstroms; [] for 1mer, [##] for others.
     # Will translate the center of mass of the sampled cluster to the origin.
@@ -479,7 +478,7 @@ For example, the script below makes predictions of :download:`clusters containin
     from mbgdml.mbe import mbePredict
     from mbgdml.models import gdmlModel
     from mbgdml.predictors import predict_gdml
-    from mbgdml.criteria import cm_distance_sum
+    from mbgdml.criteria import com_distance_sum
     from mbgdml.utils import get_comp_ids, get_entity_ids
 
     dset_path = './dsets/6h2o/6h2o.temelso.etal-dset-mp2.def2tzvp.npz'
@@ -493,7 +492,7 @@ For example, the script below makes predictions of :download:`clusters containin
     )
     models = [
         gdmlModel(
-            model, criteria_desc_func=cm_distance_sum,
+            model, criteria_desc_func=com_distance_sum,
             criteria_cutoff=model['cutoff']
         ) for model in models
     ]

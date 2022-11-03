@@ -29,8 +29,7 @@ log = logging.getLogger(__name__)
 class gapModel(model):
 
     def __init__(
-        self, model_path, comp_ids, criteria_desc_func=None,
-        criteria_cutoff=None
+        self, model_path, comp_ids, criteria=None,
     ):
         """
         Parameters
@@ -40,18 +39,14 @@ class gapModel(model):
         comp_ids : ``iterable``
             Model component IDs that relate entity IDs of a structure to a
             fragment label.
-        criteria_desc_func : ``callable``, default: ``None``
-            A descriptor used to filter :math:`n`-body structures from being
-            predicted.
-        criteria_cutoff : :obj:`float`, default: ``None``
-            Value of ``criteria_desc_func`` where the mlModel will not predict
-            the :math:`n`-body contribution of. If ``None``, no cutoff will be
-            enforced.
+        criteria : :obj:`mbgdml.descriptor.Criteria`, default: ``None``
+            Initialized descriptor criteria for accepting a structure based on
+            a descriptor and cutoff.
         """
         global quippy
         import quippy
 
-        super().__init__(criteria_desc_func, criteria_cutoff)
+        super().__init__(criteria)
         self.type = 'gap'
         self.gap = quippy.potential.Potential(
             param_filename=model_path

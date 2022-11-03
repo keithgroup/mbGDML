@@ -111,10 +111,10 @@ Data set objects contain the following information .
 Atomic numbers
 ^^^^^^^^^^^^^^
 
-.. autoattribute:: mbgdml.data.dataSet.z
+.. autoattribute:: mbgdml.data.dataSet.Z
     :noindex:
 
-.. autoattribute:: mbgdml.data.dataSet.n_z
+.. autoattribute:: mbgdml.data.dataSet.n_Z
     :noindex:
 
 Cartesian Coordinates
@@ -146,18 +146,6 @@ Structure set identification
     :noindex:
 
 .. autoattribute:: mbgdml.data.dataSet.r_prov_specs
-    :noindex:
-
-Structure sampling
-^^^^^^^^^^^^^^^^^^
-
-.. autoattribute:: mbgdml.data.dataSet.criteria
-    :noindex:
-
-.. autoattribute:: mbgdml.data.dataSet.z_slice
-    :noindex:
-
-.. autoattribute:: mbgdml.data.dataSet.cutoff
     :noindex:
 
 Structure properties

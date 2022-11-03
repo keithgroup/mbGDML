@@ -40,10 +40,10 @@ Structure set objects contain the following information.
 Atomic numbers
 ^^^^^^^^^^^^^^
 
-.. autoattribute:: mbgdml.data.model.mbModel.z
+.. autoattribute:: mbgdml.data.model.mbModel.Z
     :noindex:
 
-.. autoattribute:: mbgdml.data.model.mbModel.n_z
+.. autoattribute:: mbgdml.data.model.mbModel.n_Z
     :noindex:
 
 MD5 hash

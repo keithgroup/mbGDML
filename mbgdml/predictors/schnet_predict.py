@@ -26,8 +26,7 @@ import numpy as np
 log = logging.getLogger(__name__)
 
 def predict_schnet(
-    z, r, entity_ids, entity_combs, model, periodic_cell, ignore_criteria=False,
-    **kwargs
+    z, r, entity_ids, entity_combs, model, periodic_cell, **kwargs
 ):
     """Predict total :math:`n`-body energy and forces of a single structure.
 
@@ -47,9 +46,6 @@ def predict_schnet(
         GAP model containing all information need to make predictions.
     periodic_cell : :obj:`mbgdml.periodic.Cell`, default: ``None``
         Use periodic boundary conditions defined by this object.
-    ignore_criteria : :obj:`bool`, default: ``False``
-        Ignore any criteria for predictions; i.e., all :math:`n`-body
-        structures will be predicted.
     
     Returns
     -------
@@ -92,11 +88,10 @@ def predict_schnet(
                 continue
 
         # Checks criteria cutoff if present and desired.
-        if model.criteria_cutoff is not None and not ignore_criteria:
-            _, crit_val = model.criteria_desc_func(
-                z_comb, r_comb, None, entity_ids[r_slice]
-            )
-            if crit_val >= model.criteria_cutoff:
+        if model.criteria is not None:
+            accept_r, _ = model.criteria.accept(z_comp, r_comp)
+            if not accept_r:
+                # Do not include this contribution.
                 continue
         
         # Making predictions
@@ -107,7 +102,7 @@ def predict_schnet(
     return E, F
 
 def predict_schnet_decomp(
-    z, r, entity_ids, entity_combs, model, ignore_criteria=False, **kwargs
+    z, r, entity_ids, entity_combs, model, **kwargs
 ):
     """Predict total :math:`n`-body energy and forces of a single structure.
 
@@ -125,9 +120,6 @@ def predict_schnet_decomp(
         to slice ``r`` with ``entity_ids``.
     model : :obj:`mbgdml.models.schnetModel`
         GAP model containing all information need to make predictions.
-    ignore_criteria : :obj:`bool`, default: ``False``
-        Ignore any criteria for predictions; i.e., all :math:`n`-body
-        structures will be predicted.
     
     Returns
     -------
@@ -172,11 +164,10 @@ def predict_schnet_decomp(
         r_comb = r[r_slice]
 
         # Checks criteria cutoff if present and desired.
-        if model.criteria_cutoff is not None and not ignore_criteria:
-            _, crit_val = model.criteria_desc_func(
-                z_comb, r_comb, None, entity_ids[r_slice]
-            )
-            if crit_val >= model.criteria_cutoff:
+        if model.criteria is not None:
+            accept_r, _ = model.criteria.accept(z_comp, r_comp)
+            if not accept_r:
+                # Do not include this contribution.
                 continue
         
         # Making predictions

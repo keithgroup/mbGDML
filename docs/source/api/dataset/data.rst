@@ -14,7 +14,7 @@ Interface
 Structure
 ---------
 
-.. autoattribute:: mbgdml.data.dataSet.z
+.. autoattribute:: mbgdml.data.dataSet.Z
 
 .. autoattribute:: mbgdml.data.dataSet.R
     
@@ -40,16 +40,6 @@ Breadcrumbs
 .. autoattribute:: mbgdml.data.dataSet.r_prov_ids
 
 .. autoattribute:: mbgdml.data.dataSet.r_prov_specs
-
-Selection
----------
-
-.. autoattribute:: mbgdml.data.dataSet.criteria
-
-.. autoattribute:: mbgdml.data.dataSet.z_slice
-
-.. autoattribute:: mbgdml.data.dataSet.cutoff
-
 
 Many-body
 ---------

@@ -32,6 +32,7 @@ from mbgdml.train import mbGDMLTrain
 from mbgdml.analysis.problematic import prob_structures
 from mbgdml.models import gdmlModel
 from mbgdml.predictors import predict_gdml
+from mbgdml.descriptors import Criteria, com_distance_sum
 
 dset_dir = './tests/data/datasets'
 train_dir = './tests/data/train'
@@ -216,11 +217,13 @@ def test_1h2o_prob_indices():
     model_path = os.path.join(
         './tests/data/models', '1h2o-model.npz'
     )
-    model = dict(np.load(model_path, allow_pickle=True))
-    model = gdmlModel(
-        model, criteria_desc_func=None,
-        criteria_cutoff=None
+    model_dict = dict(np.load(model_path, allow_pickle=True))
+    model_desc_kwargs = {'entity_ids': np.array([0, 0, 0])}
+    model_desc_cutoff = None
+    model_criteria = Criteria(
+        com_distance_sum, model_desc_kwargs, model_desc_cutoff
     )
+    model = gdmlModel(model_dict, criteria=model_criteria)
     dset = dataSet(dset_path, Z_key='z')
 
     prob_s = prob_structures([model], predict_gdml)

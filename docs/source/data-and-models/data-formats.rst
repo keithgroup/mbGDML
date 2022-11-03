@@ -10,8 +10,7 @@ We use the following sets of data with many-body GDML.
 
 .. toctree::
    :maxdepth: 2
-
-   Structure sets <structuresets>
+   
    Data sets <datasets>
    Models <models>
 

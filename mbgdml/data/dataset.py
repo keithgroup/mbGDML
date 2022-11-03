@@ -557,13 +557,6 @@ class dataSet(mbGDMLData):
             dataset['mb_models_md5'] = np.array(self.mb_models_md5)
         if len(self.mb_dsets_md5) > 0:
             dataset['mb_dsets_md5'] = np.array(self.mb_dsets_md5)
-
-        try:
-            dataset['criteria'] = np.array(self.criteria)
-            dataset['z_slice'] = np.array(self.z_slice)
-            dataset['cutoff'] = np.array(self.cutoff)
-        except BaseException:
-            pass
         
         if hasattr(self, 'centered'):
             dataset['centered'] = np.array(self.centered)

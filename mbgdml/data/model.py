@@ -106,13 +106,9 @@ class mbModel(mbGDMLData):
         self.r_unit = str(model['r_unit'].item())
         self.e_unit = str(model['e_unit'].item())
         
-        for key in ['criteria', 'z_slice', 'cutoff', 'entity_ids', 'comp_ids']:
+        for key in ['entity_ids', 'comp_ids']:
             if key in model.keys():
                 data = model[key]
-                if key in ['criteria', 'z_slice', 'cutoff']:
-                    data = data.item()
-                if key == 'criteria':
-                    data = str(data)
                 setattr(self, key, data)
 
         self.model = model

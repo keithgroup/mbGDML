@@ -31,23 +31,17 @@ log = logging.getLogger(__name__)
 
 class gdmlModel(model):
 
-    def __init__(
-        self, model, criteria_desc_func=None, criteria_cutoff=None
-    ):
+    def __init__(self, model, criteria=None):
         """
         Parameters
         ----------
         model : :obj:`str` or :obj:`dict`
             Path to GDML npz model or :obj:`dict`.
-        criteria_desc_func : ``callable``, default: ``None``
-            A descriptor used to filter :math:`n`-body structures from being
-            predicted.
-        criteria_cutoff : :obj:`float`, default: ``None``
-            Value of ``criteria_desc_func`` where the mlModel will not predict
-            the :math:`n`-body contribution of. If ``None``, no cutoff will be
-            enforced.
+        criteria : :obj:`mbgdml.descriptor.Criteria`, default: ``None``
+            Initialized descriptor criteria for accepting a structure based on
+            a descriptor and cutoff.
         """
-        super().__init__(criteria_desc_func, criteria_cutoff)
+        super().__init__(criteria)
 
         self.type = 'gdml'
 

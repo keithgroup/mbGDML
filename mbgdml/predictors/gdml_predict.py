@@ -155,8 +155,7 @@ def _predict_gdml_wkr(
 
 # Possible ray task.
 def predict_gdml(
-    z, r, entity_ids, entity_combs, model, periodic_cell, ignore_criteria=False,
-    **kwargs
+    z, r, entity_ids, entity_combs, model, periodic_cell, **kwargs
 ):
     """Predict total :math:`n`-body energy and forces of a single structure.
 
@@ -176,9 +175,6 @@ def predict_gdml(
         GDML model containing all information need to make predictions.
     periodic_cell : :obj:`mbgdml.periodic.Cell`, default: ``None``
         Use periodic boundary conditions defined by this object.
-    ignore_criteria : :obj:`bool`, default: ``False``
-        Ignore any criteria for predictions; i.e., all :math:`n`-body
-        structures will be predicted.
     
     Returns
     -------
@@ -208,7 +204,7 @@ def predict_gdml(
         r_slice = []
         for entity_id in entity_id_comb:
             r_slice.extend(np.where(entity_ids == entity_id)[0])
-        
+
         z_comp = z[r_slice]
         r_comp = r[r_slice]
 
@@ -223,11 +219,9 @@ def predict_gdml(
         # TODO: Check if we can avoid prediction if we have an alchemical factor of zero?
 
         # Checks criteria cutoff if present and desired.
-        if model.criteria_cutoff is not None and not ignore_criteria:
-            _, crit_val = model.criteria_desc_func(
-                z_comp, r_comp, None, entity_ids[r_slice]
-            )
-            if crit_val >= model.criteria_cutoff:
+        if model.criteria is not None:
+            accept_r, _ = model.criteria.accept(z_comp, r_comp)
+            if not accept_r:
                 # Do not include this contribution.
                 continue
         
@@ -261,7 +255,7 @@ def predict_gdml(
     return E, F
 
 def predict_gdml_decomp(
-    z, r, entity_ids, entity_combs, model, ignore_criteria=False, **kwargs
+    z, r, entity_ids, entity_combs, model, **kwargs
 ):
     """Predict all :math:`n`-body energies and forces of a single structure.
 
@@ -316,18 +310,17 @@ def predict_gdml_decomp(
         for entity_id in entity_id_comb:
             r_slice.extend(np.where(entity_ids == entity_id)[0])
         
+        z_comp = z[r_slice]
+        r_comp = r[r_slice]
+        
         # Checks criteria cutoff if present and desired.
-        if model.criteria_cutoff is not None and not ignore_criteria:
-            _, crit_val = model.criteria_desc_func(
-                model.z, r[r_slice], None, entity_ids[r_slice]
-            )
-            if crit_val >= model.criteria_cutoff:
+        if model.criteria is not None:
+            accept_r, _ = model.criteria.accept(z_comp, r_comp)
+            if not accept_r:
                 # Do not include this contribution.
                 continue
         
         # Predicts energies and forces.
-        z_comp = z[r_slice]
-        r_comp = r[r_slice]
         r_desc, r_d_desc = model.desc_func(
             r_comp.flatten(), model.lat_and_inv
         )

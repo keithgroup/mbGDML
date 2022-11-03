@@ -30,7 +30,7 @@ import mbgdml.data as data
 from mbgdml.mbe import mbePredict
 from mbgdml.models import gdmlModel
 from mbgdml.predictors import predict_gdml, predict_gdml_decomp
-from mbgdml.criteria import cm_distance_sum
+from mbgdml.descriptors import Criteria, com_distance_sum
 
 dset_dir = './tests/data/datasets'
 model_dir = './tests/data/models'
@@ -49,14 +49,22 @@ def test_predictset_correct_contribution_predictions():
         f'{model_dir}/140h2o.sphere.gfn2.md.500k.prod1.3h2o.dset.2h2o.cm.6-model.mb-train500.npz',
         f'{model_dir}/140h2o.sphere.gfn2.md.500k.prod1.3h2o-model.mb-train500.npz',
     ]
-    models = (
+    model_dicts = (
         dict(np.load(model_path, allow_pickle=True)) for model_path in model_h2o_paths
     )
+    model_desc_kwargs = (
+        {'entity_ids': np.array([0, 0, 0])},
+        {'entity_ids': np.array([0, 0, 0, 1, 1, 1])},
+        {'entity_ids': np.array([0, 0, 0, 1, 1, 1, 2, 2, 2])},
+    )
+    model_desc_cutoffs = (None, 6.0, 10.0)
+    model_criterias = [
+        Criteria(com_distance_sum, desc_kwargs, cutoff) for desc_kwargs,cutoff \
+        in zip(model_desc_kwargs, model_desc_cutoffs)
+    ]
     models = [
-        gdmlModel(
-            model, criteria_desc_func=cm_distance_sum,
-            criteria_cutoff=model['cutoff']
-        ) for model in models
+        gdmlModel(model, criteria=criteria) for model,criteria \
+        in zip(model_dicts, model_criterias)
     ]
     pset = data.predictSet()
     pset.load_dataset(dset_6h2o_path, Z_key='z')
@@ -69,8 +77,7 @@ def test_predictset_correct_contribution_predictions():
     dset_6h2o = data.dataSet(dset_6h2o_path, Z_key='z')
     mbe_pred = mbePredict(models, predict_gdml, use_ray=False)
     E_predict, F_predict = mbe_pred.predict(
-        dset_6h2o.Z, dset_6h2o.R, dset_6h2o.entity_ids, dset_6h2o.comp_ids,
-        ignore_criteria=False
+        dset_6h2o.Z, dset_6h2o.R, dset_6h2o.entity_ids, dset_6h2o.comp_ids
     )
     assert np.allclose(E_pset, E_predict)
     assert np.allclose(F_pset, F_predict)
@@ -82,14 +89,20 @@ def test_predictset_nan_for_failed_criteria():
     model_h2o_paths = [
         f'{model_dir}/140h2o.sphere.gfn2.md.500k.prod1.3h2o.dset.2h2o.cm.6-model.mb-train500.npz',
     ]
-    models = (
+    model_dicts = (
         dict(np.load(model_path, allow_pickle=True)) for model_path in model_h2o_paths
     )
+    model_desc_kwargs = (
+        {'entity_ids': np.array([0, 0, 0, 1, 1, 1])},
+    )
+    model_desc_cutoffs = (6.0,)
+    model_criterias = [
+        Criteria(com_distance_sum, desc_kwargs, cutoff) for desc_kwargs,cutoff \
+        in zip(model_desc_kwargs, model_desc_cutoffs)
+    ]
     models = [
-        gdmlModel(
-            model, criteria_desc_func=cm_distance_sum,
-            criteria_cutoff=model['cutoff']
-        ) for model in models
+        gdmlModel(model, criteria=criteria) for model,criteria \
+        in zip(model_dicts, model_criterias)
     ]
     pset = data.predictSet()
     pset.load_dataset(dset_16h2o_2h2o_path, Z_key='z')
