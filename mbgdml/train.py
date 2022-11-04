@@ -754,7 +754,7 @@ class mbGDMLTrain:
             assert n_valid == len(valid_idxs)
             assert len(set(valid_idxs)) == len(valid_idxs)
         
-        dset_dict = _prepare_dset_dict(dataset)
+        dset_dict = self._prepare_dset_dict(dataset)
         
         task_dir = os.path.join(save_dir, 'tasks')
         if os.path.exists(task_dir):
