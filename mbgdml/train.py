@@ -278,6 +278,20 @@ class mbGDMLTrain:
 
         return fig
     
+    def _prepare_dset_dict(self, dataset):
+        """Prepares dataset dictionary for sGDML training routines from mbGDML
+        data set object.
+
+        Primarily updates keys to the sGDML standard (e.g., ``'z'``, ``'R'``,
+        ``'E'``, ``'F'``).
+        """
+        dset_dict = dataset.asdict()
+        dset_dict['z'] = dset_dict.pop(dataset.Z_key)
+        dset_dict['R'] = dset_dict.pop(dataset.R_key)
+        dset_dict['E'] = dset_dict.pop(dataset.E_key)
+        dset_dict['F'] = dset_dict.pop(dataset.F_key)
+        return dset_dict
+    
     def bayes_opt(
         self, dataset, model_name, n_train, n_valid, check_energy_pred=True,
         sigma_bounds=(2, 400), n_test=None, require_E_eval=False,
@@ -430,7 +444,7 @@ class mbGDMLTrain:
             assert n_valid == len(valid_idxs)
             assert len(set(valid_idxs)) == len(valid_idxs)
         
-        dset_dict = dataset.asdict()
+        dset_dict = self._prepare_dset_dict(dataset)
 
         task_dir = os.path.join(save_dir, 'tasks')
         if os.path.exists(task_dir):
@@ -740,7 +754,7 @@ class mbGDMLTrain:
             assert n_valid == len(valid_idxs)
             assert len(set(valid_idxs)) == len(valid_idxs)
         
-        dset_dict = dataset.asdict()
+        dset_dict = _prepare_dset_dict(dataset)
         
         task_dir = os.path.join(save_dir, 'tasks')
         if os.path.exists(task_dir):
@@ -833,6 +847,7 @@ class mbGDMLTrain:
 
             job_json['model']['sigma'] = model_best.model['sig'][()]
             job_json['model']['n_symm'] = len(model_best.model['perms'])
+            # TODO: Can we sort validation data to make it easier to follow?
             job_json['validation'] = valid_json
 
             save_json(os.path.join(save_dir, 'training.json'), job_json)
