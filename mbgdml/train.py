@@ -25,10 +25,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 import shutil
-from .data import mbModel, dataSet
+from .data import dataSet
+from .models import gdmlModel
 from .analysis.problematic import prob_structures
 from .mbe import mbePredict
-from .models import gdmlModel
 from .predictors import predict_gdml
 from ._gdml.train import GDMLTrain, model_errors, add_valid_errors
 from ._gdml.train import save_model, get_test_idxs
@@ -43,13 +43,17 @@ class mbGDMLTrain:
     """
 
     def __init__(
-        self, use_sym=True, use_E=True, use_E_cstr=False, use_cprsn=False,
-        solver='analytic', lam=1e-10, solver_tol=1e-4, interact_cut_off=None,
-        use_torch=False, max_processes=None
+        self, entity_ids, comp_ids, use_sym=True, use_E=True, use_E_cstr=False,
+        use_cprsn=False, solver='analytic', lam=1e-10, solver_tol=1e-4,
+        interact_cut_off=None, use_torch=False, max_processes=None
     ):
         """
         Parameters
         ----------
+        entity_ids : :obj:`numpy.ndarray`
+            Model ``entity_ids``.
+        comp_ids : :obj:`numpy.ndarray`
+            Model ``comp_ids``.
         use_sym : :obj:`bool`, default: ``True``
             If to identify and include symmetries when training GDML models.
             This usually increases training and prediction times, but comes
@@ -83,6 +87,9 @@ class mbGDMLTrain:
             The maximum number of cores to use for the training process. Will
             automatically calculate if not specified.
         """
+        self.entity_ids = entity_ids
+        self.comp_ids = comp_ids
+
         self.use_sym = use_sym
         self.use_E = use_E
         self.use_E_cstr = use_E_cstr
@@ -196,10 +203,10 @@ class mbGDMLTrain:
             Tested and finalized many-body GDML model.
         """
         n_test, E_errors, F_errors = model_errors(
-            model.model, dataset, is_valid=False, n_test=n_test,
+            model.model_dict, dataset, is_valid=False, n_test=n_test,
             max_processes=self.max_processes, use_torch=self.use_torch
         )
-        model.model['n_test'] = np.array(n_test)
+        model.model_dict['n_test'] = np.array(n_test)
 
         results_test = {'force': {'mae': mae(F_errors), 'rmse': rmse(F_errors)}}
         if E_errors is not None:
@@ -208,9 +215,9 @@ class mbGDMLTrain:
         # Adding mbGDML-specific modifications to model.
         model.add_modifications(dataset)
         if 'mb' in dataset.keys():
-            model.model['mb'] = int(dataset['mb'][()])
+            model.model_dict['mb'] = int(dataset['mb'][()])
         if 'mb_models_md5' in dataset.keys():
-            model_best.model['mb_models_md5'] = dataset['mb_models_md5']
+            model_best.model_dict['mb_models_md5'] = dataset['mb_models_md5']
         
         return model, results_test
     
@@ -226,13 +233,13 @@ class mbGDMLTrain:
             Dataset used for training, validation, and testing.
         """
         log.info('\n#   Writing train, valid, and test indices   #')
-        train_idxs = model.model['idxs_train']
-        valid_idxs = model.model['idxs_valid']
+        train_idxs = model.model_dict['idxs_train']
+        valid_idxs = model.model_dict['idxs_valid']
 
         np.save(os.path.join(save_dir, 'train_idxs'), train_idxs)
         np.save(os.path.join(save_dir, 'valid_idxs'), valid_idxs)
 
-        test_idxs = get_test_idxs(model.model, dataset, n_test=n_test)
+        test_idxs = get_test_idxs(model.model_dict, dataset, n_test=n_test)
         np.save(os.path.join(save_dir, 'test_idxs'), test_idxs)
     
     def plot_bayes_opt_gp(self, optimizer):
@@ -620,7 +627,7 @@ class mbGDMLTrain:
         model_best_path = os.path.join(
             task_dir, f'model-{sigma_best}.npz'
         )
-        model_best = mbModel(model_best_path)
+        model_best = gdmlModel(model_best_path, comp_ids=self.comp_ids)
 
         # Testing model
         model_best, results_test = self.test_model(
@@ -629,13 +636,13 @@ class mbGDMLTrain:
 
         # Including final JSON stuff and writing.
         if write_json:
-            job_json['training']['idxs'] = model_best.model['idxs_train'].tolist()
-            job_json['testing']['n_test'] = int(model_best.model['n_test'][()])
+            job_json['training']['idxs'] = model_best.model_dict['idxs_train'].tolist()
+            job_json['testing']['n_test'] = int(model_best.model_dict['n_test'][()])
             job_json['testing']['energy'] = results_test['energy']
             job_json['testing']['force'] = results_test['force']
 
-            job_json['model']['sigma'] = float(model_best.model['sig'][()])
-            job_json['model']['n_symm'] = len(model_best.model['perms'])
+            job_json['model']['sigma'] = float(model_best.model_dict['sig'][()])
+            job_json['model']['n_symm'] = len(model_best.model_dict['perms'])
             job_json['validation'] = valid_json
 
             save_json(os.path.join(save_dir, 'training.json'), job_json)
@@ -647,7 +654,8 @@ class mbGDMLTrain:
             shutil.rmtree(task_dir)
 
         # Saving model.
-        model_best.save(model_name, model_best.model, save_dir)
+        save_path = os.path.join(save_dir, model_name)
+        model_best.save(save_path)
 
         # Bayesian optimization plot
         if plot_bo:
@@ -655,7 +663,7 @@ class mbGDMLTrain:
             fig.savefig(os.path.join(save_dir, 'bayes_opt.png'), dpi=600)
 
         log.t_stop(t_job, message='\nJob duration : {time} s', precision=2)
-        return model_best.model, optimizer
+        return model_best.model_dict, optimizer
         
     def grid_search(
         self, dataset, model_name, n_train, n_valid,
@@ -820,8 +828,8 @@ class mbGDMLTrain:
             on_grid_bounds = True
             next_search_sign = '>'
         
-        model_best = mbModel(model_best_path)
-        sigma_best = model_best.model['sig'].item()
+        model_best = gdmlModel(model_best_path, comp_ids=self.comp_ids)
+        sigma_best = model_best.model_dict['sig'].item()
         if sigma_best == sigmas[0]:
             on_grid_bounds = True
             next_search_sign = '<'
@@ -840,13 +848,13 @@ class mbGDMLTrain:
 
         # Including final JSON stuff and writing.
         if write_json:
-            job_json['training']['idxs'] = model_best.model['idxs_train'].tolist()
-            job_json['testing']['n_test'] = int(model_best.model['n_test'][()])
+            job_json['training']['idxs'] = model_best.model_dict['idxs_train'].tolist()
+            job_json['testing']['n_test'] = int(model_best.model_dict['n_test'][()])
             job_json['testing']['energy'] = results_test['energy']
             job_json['testing']['force'] = results_test['force']
 
-            job_json['model']['sigma'] = model_best.model['sig'][()]
-            job_json['model']['n_symm'] = len(model_best.model['perms'])
+            job_json['model']['sigma'] = model_best.model_dict['sig'][()]
+            job_json['model']['n_symm'] = len(model_best.model_dict['perms'])
             # TODO: Can we sort validation data to make it easier to follow?
             job_json['validation'] = valid_json
 
@@ -859,10 +867,11 @@ class mbGDMLTrain:
             shutil.rmtree(task_dir)
 
         # Saving model.
-        model_best.save(model_name, model_best.model, save_dir)
+        save_path = os.path.join(save_dir, model_name)
+        model_best.save(save_path)
 
         log.t_stop(t_job, message='\nJob duration : {time} s', precision=2)
-        return model_best.model
+        return model_best.model_dict
     
     def iterative_train(
         self, dataset, model_name, n_train_init, n_train_final, n_valid,
@@ -985,7 +994,7 @@ class mbGDMLTrain:
             log.log_array(train_idxs, level=10)
             
             prob_s = prob_structures(
-                [gdmlModel(model0)], predict_gdml
+                [gdmlModel(model0, comp_ids=self.comp_ids)], predict_gdml
             )
             save_dir_i = os.path.join(save_dir, f'train{n_train}')
             os.makedirs(save_dir_i, exist_ok=overwrite)
@@ -1028,7 +1037,9 @@ class mbGDMLTrain:
                 )
 
             train_idxs = model['idxs_train']
-            prob_s = prob_structures([gdmlModel(model)], predict_gdml)
+            prob_s = prob_structures(
+                [gdmlModel(model, comp_ids=self.comp_ids)], predict_gdml
+            )
             prob_idxs = prob_s.find(dataset, n_train_step, save_dir=save_dir_i)
             
             train_idxs = np.concatenate((train_idxs, prob_idxs))

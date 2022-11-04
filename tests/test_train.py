@@ -130,6 +130,7 @@ def test_1h2o_train_grid_search():
     sigmas = [32, 42, 52]
 
     train = mbGDMLTrain(
+        entity_ids=np.array([0, 0, 0]), comp_ids=np.array(['h2o']),
         use_sym=True, use_E=True, use_E_cstr=False, use_cprsn=False,
         solver='analytic', lam=1e-15, solver_tol=1e-4
     )
@@ -182,6 +183,7 @@ def test_1h2o_train_bayes_opt():
     sigmas = [32, 42, 52]
 
     train = mbGDMLTrain(
+        entity_ids=np.array([0, 0, 0]), comp_ids=np.array(['h2o']),
         use_sym=True, use_E=True, use_E_cstr=False, use_cprsn=False,
         solver='analytic', lam=1e-15, solver_tol=1e-4
     )

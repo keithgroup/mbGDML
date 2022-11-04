@@ -450,6 +450,7 @@ Please refer to the :ref:`training <Training>` page for more information.
         assert num_train == len(idxs_train)
 
     train = mbGDMLTrain(
+        entity_ids=np.array([0, 0, 0, 1, 1, 1]), comp_ids = np.array(['h2o', 'h2o']),
         use_sym=True, use_E=True, use_E_cstr=False, use_cprsn=False
     )
     train.grid_search(

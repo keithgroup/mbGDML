@@ -36,6 +36,7 @@ Fixes attached ASE trajectory in reading ``entity_ids``.
 
 ### Removed
 
+- ``mbgdml.data.mbModel`` was adsorbed into ``mbgdml.models.gdmlModel``.
 - ``structureSets`` and sampling for data sets are no longer supported and subsequently removed.
 This functionality was incorporated into [reptar](https://github.com/aalexmmaldonado/reptar).
 

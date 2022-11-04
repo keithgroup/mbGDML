@@ -283,7 +283,7 @@ class prob_structures:
 
             if train_idxs is None:
                 try:
-                    train_idxs = self.models[0]._model_dict['idxs_train']
+                    train_idxs = self.models[0].model_dict['idxs_train']
                 except Exception:
                     raise AttributeError('Training indices were not provided')
             else:

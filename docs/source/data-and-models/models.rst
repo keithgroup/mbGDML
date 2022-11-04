@@ -12,23 +12,23 @@ Loading and saving
 ------------------
 
 Models are stored as NumPy ``.npz`` files.
-To load a data set, you can pass the path to a ``model.npz`` file or explicitly use the :meth:`~mbgdml.data.mbModel.load` function.
+To load a data set, you can pass the path to a ``model.npz`` file or explicitly use the :meth:`~mbgdml.models.gdmlModel.load` function.
 
 .. code-block:: python
 
-    from mbgdml.data import mbModel
+    from mbgdml.models import gdmlModel
 
-    model = mbModel('./path/to/model.npz')
+    model = gdmlModel('./path/to/model.npz')
     # Or
-    model = mbModel()
+    model = gdmlModel()
     model.load('./path/to/model.npz')
 
-Saving a model can be done using the :meth:`~mbgdml.data.mbModel.save` function.
+Saving a model can be done using the :meth:`~mbgdml.models.gdmlModel.save` function.
 The required ``model`` dictionary for ``save`` is provided as the ``model`` attribute which creates a dictionary of all data to save in the ``npz`` file.
 
 .. code-block:: python
 
-    model.save('model', model.model, './path/to')
+    model.save('./path/to/model.npz')
 
 
 
@@ -40,21 +40,21 @@ Structure set objects contain the following information.
 Atomic numbers
 ^^^^^^^^^^^^^^
 
-.. autoattribute:: mbgdml.data.model.mbModel.Z
+.. autoattribute:: mbgdml.models.gdmlModel.Z
     :noindex:
 
-.. autoattribute:: mbgdml.data.model.mbModel.n_Z
+.. autoattribute:: mbgdml.models.gdmlModel.n_Z
     :noindex:
 
 MD5 hash
 ^^^^^^^^
 
-.. autoattribute:: mbgdml.data.model.mbModel.md5
+.. autoattribute:: mbgdml.models.gdmlModel.md5
     :noindex:
 
 
 Version control
 ^^^^^^^^^^^^^^^
 
-.. autoattribute:: mbgdml.data.model.mbModel.code_version
+.. autoattribute:: mbgdml.models.gdmlModel.code_version
     :noindex:

@@ -227,7 +227,7 @@ class structureEmbedding:
 
         Parameters
         ----------
-        a_model : :obj:`mbgdml.data.model`
+        a_model : :obj:`mbgdml.models.gdmlModel`
             A loaded model object.
         
         Returns
@@ -235,7 +235,7 @@ class structureEmbedding:
         :obj:`numpy.ndarray`
             Inverse pairwise distance descriptors.
         """
-        return a_model.model['R_desc'].T
+        return a_model.model_dict['R_desc'].T
 
     def get_R_desc(self, z, R):
         """Calculates the inverse pairwise sGDML descriptor and its Jacobian.
