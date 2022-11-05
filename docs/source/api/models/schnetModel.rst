@@ -2,4 +2,4 @@
 ===============
 
 .. autoclass:: mbgdml.models.schnetModel
-
+    :members:

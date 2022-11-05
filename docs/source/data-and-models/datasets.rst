@@ -6,7 +6,6 @@ Data sets
 
 The foundation of ML methods is the data set.
 It represents the collection of structures, energies, and forces that GDML trains on and potential energy surface it reproduces.
-Structures are always ``sampled`` from one or more :ref:`structure sets<structure-sets>`.
 
 
 .. _load-save-dset:
@@ -41,11 +40,6 @@ Creation
 --------
 
 Data sets are created in two stages: structural sampling and calculating energy and forces.
-
-Structure sampling
-^^^^^^^^^^^^^^^^^^
-
-Curating a data set starts by sampling geometries from :ref:`structure sets<structure-sets>` or even data sets with :meth:`~mbgdml.data.dataSet.sample_structures`.
 
 Energies and forces
 ^^^^^^^^^^^^^^^^^^^
@@ -93,11 +87,6 @@ We indicate that a data set contains many-body data with the following attribute
 
 .. autoattribute:: mbgdml.data.dataSet.mb_models_md5
     :noindex:
-
-Removing *n*-body contributions
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-- :meth:`~mbgdml.data.dataSet.create_mb_from_dsets`
     
 
 Contents

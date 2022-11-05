@@ -8,7 +8,6 @@ API
    Training <training/training>
    Models <models/models_module>
    Descriptors <descriptors/descriptors_module>
-   mbModel <mbModel/mbModel_module>
    Losses <losses/losses_module>
    Periodic <periodic/periodic_module>
    Predictors <predictors/predictors_module>

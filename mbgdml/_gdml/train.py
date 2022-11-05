@@ -1593,6 +1593,7 @@ def model_errors(
     log.info(f'Batch size : {b_size} structures\n')
 
     if not use_torch:
+        log.debug('Using CPU (use_torch = False)')
         if num_workers == 0 or batch_size == 0:
             gps, is_from_cache = gdml_predict.prepare_parallel(
                 n_bulk=b_size, return_is_from_cache=True
@@ -1613,7 +1614,7 @@ def model_errors(
     t_pred = log.t_start()
     n_done = 0
     for b_range in _batch(list(range(len(test_idxs))), b_size):
-
+        log.info(f'{n_done} done')
         n_done_step = len(b_range)
         n_done += n_done_step
 
@@ -1630,6 +1631,7 @@ def model_errors(
     log.info(f'Prediction rate : {n_R/t_elapsed:.2f} structures per second')
 
     # Force errors
+    log.info('Computing force (and energy) errors')
     F_errors = F_pred - F
     F_mae = mae(F_errors)
     F_rmse = rmse(F_errors)

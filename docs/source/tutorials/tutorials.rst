@@ -11,5 +11,4 @@ Below, we provide a list of helpful tutorials to help get started.
    :maxdepth: 2
    
    Configurational sampling <config-sampling>
-   Water potential <tut-water-pot>
 

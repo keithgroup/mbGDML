@@ -73,6 +73,62 @@ class prob_structures:
         self.mbe_pred = mbePredict(
             models, predict_model, use_ray, n_workers, wkr_chunk_size
         )
+
+        ({'n_clusters': 10}, {'n_clusters': 5})
+
+        self.course_n_cl_r = 10
+        """Number of clusters used in the course stage for geometries.
+
+        There will be a total of ``course_n_cl_r`` clusters.
+
+        :type: :obj:`int`, default: ``10``
+        """
+        self.course_n_cl_e = 5
+        """Number of clusters used in the course stage for energies.
+        After clustering structures by geometric descriptor (using
+        ``course_n_cl_r``), then each cluster is further refined by energies.
+
+        There will be a total of ``course_n_cl_r`` :math:`\\times`
+        ``course_n_cl_e`` clusters.
+
+        :type: :obj:`int`, default: ``5``
+        """
+        self.refine_n_cl = 100
+        """Number of clusters used in the refine stage.
+
+        :type: :obj:`int`, default: ``100``
+        """
+        self.refine_min_r_ratio = 2.0
+        """Minimum ratio of structures to number of clusters in the refine
+        stage. Will reduce the minimum loss set point for refinement until 
+        ``refine_n_cl`` :math:`\\times` ``refine_min_r_ratio`` structures are
+        available.
+
+        :type: :obj:`int`, default: ``2.0``
+        """
+        self.kwargs_subplot = {
+            'figsize': (5.5, 3), 'constrained_layout': True
+        }
+        """``pyplot.subplot`` keyword arguments.
+
+        **Default:**
+
+        .. code-block:: python
+
+            {'figsize': (5.5, 3), 'constrained_layout': True}
+
+        :type: :obj:`dict`
+        """
+        self.plot_lolli_color = '#223F4B'
+        """Lollipop color.
+        
+        :type: :obj:`str`, default: ``'#223F4B'``
+        """
+        self.plot_annotate_cl_idx = False
+        """Add the cluster index above the cluster loss value.
+
+        :type: :obj:`bool`, default: ``False``
+        """
     
     def get_pd(self, R):
         """Computes pairwise distances from atomic positions.
@@ -84,8 +140,9 @@ class prob_structures:
         
         Returns
         -------
-        :obj:`numpy.ndarray`, shape: ``(n_samples, n_atoms*(n_atoms-1)/2)``
-            Pairwise distances of atoms in each structure.
+        :obj:`numpy.ndarray`
+            Pairwise distances of atoms in each structure with shape
+            ``(n_samples, n_atoms*(n_atoms-1)/2)``.
         """
         assert R.ndim == 3
         n_samples, n_atoms, _ = R.shape
@@ -112,12 +169,18 @@ class prob_structures:
         :obj:`numpy.ndarray`
             Dataset indices from clusters with higher-than-average losses.
         """
-        # TODO: Fix circumstance when cl_idxs_prob is less than n_find
         log.info('Finding problematic structures')
-        mean_loss = np.mean(cl_losses)
-        cl_idxs_prob = np.concatenate(np.argwhere(cl_losses >= mean_loss))
-        clusters = np.array(cl_idxs, dtype=object)[cl_idxs_prob]
-        idxs = np.concatenate(clusters)
+        loss_bound = np.mean(cl_losses)  # Initial minimum loss
+        loss_step = loss_bound/500
+        loss_bound += loss_step
+        idxs = []
+        while len(idxs) < 1.5*self.refine_n_cl:
+            log.info(f'Minimum cluster loss : {loss_bound:.4f}')
+            cl_idxs_prob = np.concatenate(np.argwhere(cl_losses >= loss_bound))
+            clusters = np.array(cl_idxs, dtype=object)[cl_idxs_prob]
+            idxs = np.concatenate(clusters)
+            loss_bound -= loss_step
+            log.info(f'N structures included : {len(idxs)}\n')
         return idxs
     
     def n_cl_samples(self, n_sample, cl_weights, cl_pop, cl_losses):
@@ -211,7 +274,6 @@ class prob_structures:
     def find(
         self, dset, n_find, dset_is_train=True, train_idxs=None,
         write_json=True, save_cl_plot=True,
-        kwargs_subplot={'figsize': (5.5, 3), 'constrained_layout': True},
         kwargs_plot={'lolli_color': '#223F4B', 'annotate_cl_idx': False},
         image_format='png', image_dpi=600, save_dir='.'
     ):
@@ -246,8 +308,6 @@ class prob_structures:
             Write JSON file detailing clustering and prediction errors.
         save_cl_plot : :obj:`bool`, default: ``True``
             Plot cluster losses and histogram.
-        kwargs_subplot : :obj:`dict`, optional
-            Subplot keyword arguments.
         kwargs_plot : :obj:`dict`, optional
             ``self.plot_cl_losses`` keyword arguments.
         image_format : :obj:`str`, default: ``png``
@@ -354,7 +414,7 @@ class prob_structures:
         R_pd_prob = R_pd[prob_indices]
         cl_data_prob = (R_pd_prob,)
         cl_algos_prob = (clustering.agglomerative,)
-        cl_kwargs_prob = ({'n_clusters': 100},)
+        cl_kwargs_prob = ({'n_clusters': self.refine_n_cl},)
         cl_idxs_prob = clustering.cluster_structures(
             cl_data_prob, cl_algos_prob, cl_kwargs_prob
         )
@@ -403,10 +463,8 @@ class prob_structures:
             )
         
         if save_cl_plot:
-            kwargs_subplot = {'figsize': (5.5, 3), 'constrained_layout': True}
             fig = self.plot_cl_losses(
-                cl_pop, cl_losses, 'Force MSE', kwargs_subplot=kwargs_subplot,
-                **kwargs_plot
+                cl_pop, cl_losses, 'Force MSE', **kwargs_plot
             )
             fig.savefig(
                 os.path.join(save_dir, f'cl_losses.{image_format}'),
@@ -427,12 +485,6 @@ class prob_structures:
             Cluster populations (unsorted).
         cl_losses : :obj:`numpy.ndarray`
             Cluster losses (unsorted).
-        kwargs_subplot : :obj:`dict`
-            Subplot keyword arguments.
-        lolli_color : :obj:`str`, default: ``#223F4B``
-            Lollipop color.
-        annotate_cl_idx : :obj:`bool`, default: ``False``
-            Add the cluster index above the cluster loss value.
         
         Returns
         -------
@@ -452,7 +504,7 @@ class prob_structures:
         n_cl = len(cl_pop)
         cl_plot_x = np.array(range(n_cl))*cl_width
 
-        fig, ax_pop = plt.subplots(nrows=1, ncols=1, **kwargs_subplot)
+        fig, ax_pop = plt.subplots(nrows=1, ncols=1, **self.kwargs_subplot)
         ax_loss = ax_pop.twinx()
 
         ax_loss.yaxis.set_ticks_position('left')
@@ -487,7 +539,7 @@ class prob_structures:
         )
 
         # Annotate with cluster index
-        if annotate_cl_idx:
+        if self.plot_annotate_cl_idx:
             for i in range(len(loss_sort)):
                 cl_idx = loss_sort[i]
                 cl_x = cl_plot_x[i]
@@ -496,11 +548,11 @@ class prob_structures:
                 else:
                     x_disp = -2.7
                 ax_loss.annotate(
-                    str(cl_idx), (cl_x, cl_losses[i]), xytext=(x_disp, 3), xycoords='data',
-                    fontsize=4, fontweight='bold', textcoords='offset points',
-                    color=lolli_color
+                    str(cl_idx), (cl_x, cl_losses[i]), xytext=(x_disp, 3),
+                    xycoords='data', fontsize=4, fontweight='bold',
+                    textcoords='offset points', color=self.plot_lolli_color
                 )
-
+        
         # Handle axes label
         ax_pop.set_xticks([])
 

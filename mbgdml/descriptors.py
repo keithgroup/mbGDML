@@ -162,6 +162,7 @@ def com_distance_sum(Z, R, entity_ids):
     This descriptor, :math:`L`, is defined as
     
     .. math::
+    
         L = \sum_i^N l_i = \sum_i^N \Vert \mathbf{CM}_{i} - \mathbf{CM} \Vert_2
     
     where :math:`\mathbf{CM}` is the center of mass of the structure and

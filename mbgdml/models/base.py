@@ -43,7 +43,7 @@ class model(object):
         """
         Parameters
         ----------
-        criteria : :obj:`mbgdml.descriptor.Criteria`, default: ``None``
+        criteria : :obj:`mbgdml.descriptors.Criteria`, default: ``None``
             Initialized descriptor criteria for accepting a structure based on
             a descriptor and cutoff.
         """

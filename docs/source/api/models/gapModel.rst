@@ -2,4 +2,4 @@
 ============
 
 .. autoclass:: mbgdml.models.gapModel
-
+    :members:

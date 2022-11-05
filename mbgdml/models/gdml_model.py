@@ -44,7 +44,7 @@ class gdmlModel(model):
             Model component IDs that relate entity IDs of a structure to a
             fragment label. This overrides any model ``comp_ids`` if they are
             present.
-        criteria : :obj:`mbgdml.descriptor.Criteria`, default: ``None``
+        criteria : :obj:`mbgdml.descriptors.Criteria`, default: ``None``
             Initialized descriptor criteria for accepting a structure based on
             a descriptor and cutoff.
         for_predict : :obj:`bool`, default: ``True``

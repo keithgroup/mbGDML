@@ -12,7 +12,7 @@ Loading and saving
 ------------------
 
 Models are stored as NumPy ``.npz`` files.
-To load a data set, you can pass the path to a ``model.npz`` file or explicitly use the :meth:`~mbgdml.models.gdmlModel.load` function.
+To load a data set, you can pass the path to a ``model.npz`` file or explicitly use the dictionary.
 
 .. code-block:: python
 
@@ -36,15 +36,6 @@ Contents
 --------
 
 Structure set objects contain the following information.
-
-Atomic numbers
-^^^^^^^^^^^^^^
-
-.. autoattribute:: mbgdml.models.gdmlModel.Z
-    :noindex:
-
-.. autoattribute:: mbgdml.models.gdmlModel.n_Z
-    :noindex:
 
 MD5 hash
 ^^^^^^^^
