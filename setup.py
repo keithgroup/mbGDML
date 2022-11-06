@@ -7,7 +7,7 @@ import versioneer
 
 requirements = [
     'ase', 'cclib>=1.7', 'matplotlib', 'natsort', 'numpy', 'scipy', 'psutil',
-    'bayesian-optimization>=1.3.0'
+    'bayesian-optimization>=1.3.0', 'pandas'
 ]
 setup_requirements = [ ]
 test_requirements = requirements.append(['pytest'])

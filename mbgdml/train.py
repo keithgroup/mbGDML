@@ -104,6 +104,121 @@ class mbGDMLTrain:
         self.GDMLTrain = GDMLTrain(
             max_processes=max_processes, use_torch=use_torch
         )
+        self.sigma_grid = [
+            2, 25, 50, 100, 200, 300, 400, 500, 700, 900, 1100, 1500, 2000,
+            2500, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 50000,
+            100000
+        ]
+        """Determining reasonable ``sigma_bounds`` is difficult without some
+        prior experience with the system. Even then, the optimal ``sigma``
+        can drastically change depending on the training set size.
+
+        ``sigma_grid`` will assist with determining optimal
+        ``sigma_bounds`` by first performing a course grid search. The
+        Bayesian optimization will start with the bounds of the grid-search
+        minimum. It is recommended to choose a large ``sigma_bounds`` as
+        large as your ``sigma_grid``; it will be updated internally.
+
+        The number of probes done during the initial grid search will be
+        subtracted from the Bayesian optimization ``init_points``.
+
+        We recommend that the grid includes several lower sigmas (< 50), a
+        few medium sigmas (< 500), and several large sigmas that span up to
+        at least 1000 for higher-order models.
+
+        **Default**
+
+        .. code-block:: python
+
+            [
+                2, 25, 50, 100, 200, 300, 400, 500, 700, 900, 1100, 1500, 2000,
+                2500, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000,
+                50000, 100000
+            ]
+
+        :type: :obj:`list`
+        """
+        self.bayes_opt_params = {
+            'init_points': 5, 'n_iter': 10, 'alpha': 1e-7, 'acq': 'ucb',
+            'kappa': 0.1
+        }
+        """Bayesian optimization parameters.
+
+        **Default**
+
+        .. code-block:: python
+
+            {
+                'init_points': 5, 'n_iter': 10, 'alpha': 1e-7, 'acq': 'ucb',
+                'kappa': 0.1
+            }
+            
+
+        :type: :obj:`dict`
+        """
+        self.bayes_opt_params_final = None
+        """Bayesian optimization parameters for the final iterative model.
+
+        If ``None``, then ``bayes_opt_params`` are used.
+
+        Default: ``None``
+
+        :type: :obj:`dict`
+        """
+        self.sigma_bounds = (2, 400)
+        """Kernel length scale bounds for the Bayesian optimization.
+
+        This is only used if ``sigma_grid`` if ``None``.
+
+        Default: ``(2, 400)``
+
+        :type: :obj:`tuple`
+        """
+        self.check_energy_pred = True
+        """Will return the model with the lowest loss that predicts reasonable
+        energies. If ``False``, the model with the lowest loss is not
+        checked for reasonable energy predictions.
+
+        Sometimes, GDML kernels are unable to accurately reconstruct potential
+        energies even if the force predictions are accurate. This is
+        sometimes prevalent in many-body models with low and high sigmas
+        (i.e., sigmas less than 5 or greater than 500).
+        
+        Default: ``True``
+
+        :type: :obj:`bool`
+        """
+        self.loss_func = loss_f_rmse
+        """Loss function for validation. The input of this function is the
+        dictionary of :obj:`mbgdml._gdml.train.add_valid_errors` which
+        contains ``force`` and ``energy`` errors.
+        
+        Default: :obj:`mbgdml.losses.loss_f_rmse`
+        
+        :type: ``callable``
+        """
+        self.loss_kwargs = {}
+        """Loss function keyword arguments with the exception of the validation
+        ``results`` dictionary.
+        
+        :type: :obj:`dict`
+        """
+        self.require_E_eval = True
+        """Require energy evaluation regardless even if they are terrible.
+
+        If ``False``, it defaults to sGDML behavior (this does not work well
+        with n-body training).
+        
+        Default: ``True``
+
+        :type: :obj:`bool`
+        """
+        self.keep_tasks = False
+        """Keep all models trained during the train task if ``True``. They are
+        removed by default.
+        
+        :type: :obj:`bool`
+        """
     
     def min_memory_analytic(self, n_train, n_atoms):
         r"""Minimum memory recommendation for training analytically.
@@ -125,8 +240,7 @@ class mbGDMLTrain:
         :obj:`float`
             Minimum memory requirements in MB.
         """
-        mem = (8*((n_train * 3*n_atoms)**2))/1000000
-        return mem
+        return (8*((n_train * 3*n_atoms)**2))*1e-6
     
     def __del__(self):
         global glob
@@ -169,7 +283,7 @@ class mbGDMLTrain:
         )
         return self.task
     
-    def train_model(self, task, require_E_eval=False):
+    def train_model(self, task):
         """Trains a GDML model from a task.
 
         Parameters
@@ -184,7 +298,7 @@ class mbGDMLTrain:
         :obj:`dict`
             Trained (not validated or tested) model.
         """
-        model = self.GDMLTrain.train(task, require_E_eval=require_E_eval)
+        model = self.GDMLTrain.train(task, require_E_eval=self.require_E_eval)
         return model
     
     def test_model(self, model, dataset, n_test=None):
@@ -220,6 +334,36 @@ class mbGDMLTrain:
             model_best.model_dict['mb_models_md5'] = dataset['mb_models_md5']
         
         return model, results_test
+    
+    def save_valid_csv(self, save_dir, valid_json):
+        """Writes a CSV summary file for validation statistics.
+
+        This is just easier to see the trend of sigma and validation error.
+
+        Parameters
+        ----------
+        save_dir : :obj:`str`
+            Where to save the CSV file.
+        valid_json : :obj:`dict`
+            The validation json curated during the training routine.
+        """
+        import pandas as pd
+
+        sigmas = np.array(valid_json['sigmas'])
+        sigma_argsort = np.argsort(sigmas)
+
+        sigmas = sigmas[sigma_argsort]
+        losses = np.array(valid_json['losses'])[sigma_argsort]
+        e_mae = np.array(valid_json['energy']['mae'])[sigma_argsort]
+        e_rmse = np.array(valid_json['energy']['rmse'])[sigma_argsort]
+        f_mae = np.array(valid_json['force']['mae'])[sigma_argsort]
+        f_rmse = np.array(valid_json['force']['rmse'])[sigma_argsort]
+
+        df = pd.DataFrame(
+            {'sigma': sigmas, 'losses': losses, 'e_mae': e_mae, 'e_rmse': e_rmse,
+            'f_mae': f_mae, 'f_rmse': f_rmse}
+        )
+        df.to_csv(os.path.join(save_dir, 'valid.csv'), index=False)
     
     def save_idxs(self, model, dataset, save_dir, n_test):
         """Saves npy files of the dataset splits (training, validation, and
@@ -300,17 +444,14 @@ class mbGDMLTrain:
         return dset_dict
     
     def bayes_opt(
-        self, dataset, model_name, n_train, n_valid, check_energy_pred=True,
-        sigma_bounds=(2, 400), n_test=None, require_E_eval=False,
-        save_dir='.', initial_grid=None,
-        gp_params={'init_points': 5, 'n_iter': 10, 'alpha': 1e-7, 'acq': 'ucb', 'kappa': 0.1},
-        use_domain_opt=False, loss=loss_f_rmse, loss_kwargs={}, plot_bo=True,
-        keep_tasks=False, train_idxs=None, valid_idxs=None, overwrite=False,
-        write_json=True, write_idxs=True
+        self, dataset, model_name, n_train, n_valid,
+        n_test=None, save_dir='.', is_final=False, use_domain_opt=False,
+        plot_bo=True, train_idxs=None,
+        valid_idxs=None, overwrite=False, write_json=True, write_idxs=True
     ):
         """Train a GDML model using Bayesian optimization for sigma.
 
-        Uses the `Bayesian optimization <https://github.com/fmfn/BayesianOptimization>`_
+        Uses the `Bayesian optimization <https://github.com/fmfn/BayesianOptimization>`__
         package to automatically find the optimal sigma. This will maximize
         the negative validation loss.
 
@@ -330,81 +471,19 @@ class mbGDMLTrain:
             The number of training points to use.
         n_valid : :obj:`int`
             The number of validation points to use.
-        check_energy_pred : :obj:`bool`, default: ``True``
-            Will return the model with the lowest loss that predicts reasonable
-            energies. If ``False``, the model with the lowest loss is not
-            checked for reasonable energy predictions.
-
-            Sometimes, GDML kernels are unable to accurately reconstruct potential
-            energies even if the force predictions are accurate. This is
-            sometimes prevalent in many-body models with low and high sigmas
-            (i.e., sigmas less than 5 or greater than 500).
-        sigma_bounds : :obj:`tuple`, default: ``(2, 300)``
-            Kernel length scale bounds for the Bayesian optimization.
         n_test : :obj:`int`, default: ``None``
             The number of test points to test the validated GDML model.
             Defaults to testing all available structures.
-        require_E_eval : :obj:`bool`, default: ``False``
-            Require energy evaluation regardless even if they are terrible.
         save_dir : :obj:`str`, default: ``'.'``
             Path to train and save the mbGDML model. Defaults to current
             directory.
-        initial_grid : :obj:`list`, default: ``None``
-            Determining reasonable ``sigma_bounds`` is difficult without some
-            prior experience with the system. Even then, the optimal ``sigma``
-            can drastically change depending on the training set size.
-
-            ``initial_grid`` will assist with determining optimal
-            ``sigma_bounds`` by first performing a course grid search. The
-            Bayesian optimization will start with the bounds of the grid-search
-            minimum. It is recommended to choose a large ``sigma_bounds`` as
-            large as your ``initial_grid``; it will be updated internally.
-
-            The number of probes done during the initial grid search will be
-            subtracted from the Bayesian optimization ``init_points``.
-
-            We recommend that the grid includes several lower sigmas (< 50), a
-            few medium sigmas (< 500), and several large sigmas that span up to
-            at least 1000 for higher-order models.
-        gp_params : :obj:`dict`
-            Gaussian process parameters. Others can be included.
-
-            ``init_points``
-                How many steps of random exploration you want to perform.
-                Random exploration can help by diversifying the exploration
-                space. Defaults to ``10``.
-            ``n_iter``
-                How many steps of bayesian optimization you want to perform.
-                The more steps the more likely to find a good maximum you are.
-                Defaults to ``10``.
-            ``alpha`` 
-                This parameters controls how much noise the GP can handle, so
-                increase it whenever you think that extra flexibility is needed.
-                Defaults to ``0.001``.
-            ``acq``
-                Acquisition function. Defaults to ``ucb`` which stands for
-                Upper Confidence Bounds method.
-            ``kappa`` 
-                Controls the balance between exploitation and exploration. The
-                higher the ``kappa`` the more exploratory it will be. Since
-                there is likely to be only one minimum (sometimes two or a
-                very flat loss function) we generally favor exploitation.
-                Default to ``0.1``.
+        is_final : :obj:`bool`
+            If we use ``bayes_opt_params_final`` or not.
         use_domain_opt : :obj:`bool`, default: ``False``
             Whether to use a sequential reduction optimizer or not. This
             sometimes crashes.
-        loss : callable, default: :obj:`mbgdml.losses.loss_f_rmse`
-            Loss function for validation. The input of this function is the
-            dictionary of :obj:`mbgdml._gdml.train.add_valid_errors` which
-            contains force and energy MAEs and RMSEs.
-        loss_kwargs : :obj:`dict`, default: ``{}``
-            Loss function kwargs with the exception of the validation
-            ``results`` dictionary.
         plot_bo : :obj:`bool`, default: ``True``
             Plot the Bayesian optimization Gaussian process.
-        keep_tasks : :obj:`bool`, default: ``False``
-            Keep all models trained during the train task if ``True``. They are
-            removed by default.
         train_idxs : :obj:`numpy.ndarray`, default: ``None``
             The specific indices of structures to train the model on. If
             ``None`` will automatically sample the training data set.
@@ -475,7 +554,7 @@ class mbGDMLTrain:
         }
         def opt_func(sigma):
             task['sig'] = sigma
-            model_trial = self.train_model(task, require_E_eval=require_E_eval)
+            model_trial = self.train_model(task)
 
             if len(valid_json['idxs']) == 0:
                 valid_json['idxs'] = model_trial['idxs_valid'].tolist()
@@ -485,7 +564,7 @@ class mbGDMLTrain:
                 max_processes=self.max_processes, use_torch=self.use_torch
             )
 
-            l = loss(valid_results, **loss_kwargs)
+            l = self.loss_func(valid_results, **self.loss_kwargs)
             valid_json['losses'].append(l)
 
             valid_json['sigmas'].append(float(model_trial['sig']))
@@ -510,6 +589,7 @@ class mbGDMLTrain:
 
             return -l
 
+        sigma_bounds = self.sigma_bounds
         opt_kwargs = {
             'f': opt_func, 'pbounds': {'sigma': sigma_bounds}, 'verbose': 0
         }
@@ -523,20 +603,28 @@ class mbGDMLTrain:
         # If no minimum is found, the provided sigma_bounds are used.
         # For every probe we will reduce the number of initial points in the
         # Bayesian optimization.
+        if is_final:
+            if self.bayes_opt_params_final is not None:
+                gp_params = self.bayes_opt_params_final
+            else:
+                gp_params = self.bayes_opt_params
+        else:
+            gp_params = self.bayes_opt_params
         if gp_params is not None and 'init_points' in gp_params.keys():
             init_points = gp_params['init_points']
         else:
             init_points = 5  # BayesianOptimization default.
-        if initial_grid is not None:
+        sigma_grid = self.sigma_grid
+        if sigma_grid is not None:
             log.info('#   Initial grid search   #')
-            initial_grid.sort()
+            sigma_grid.sort()
 
-            n_sigmas = len(initial_grid)
+            n_sigmas = len(sigma_grid)
             def probe_sigma(sigma):
                 optimizer.probe({'sigma': sigma}, lazy=False)
             
             def check_loss_rising(valid_json, min_idxs_orig):
-                if check_energy_pred:
+                if self.check_energy_pred:
                     if valid_json['energy']['rmse'][min_idxs_orig] is None:
                         # Restart to find a better minimum that predicts energies.
                         return None
@@ -564,8 +652,8 @@ class mbGDMLTrain:
 
             loss_rising = False
             do_extra = 4  # Extra sigmas to check after losses rise.
-            for i in range(len(initial_grid)):
-                sigma = initial_grid[i]
+            for i in range(len(sigma_grid)):
+                sigma = sigma_grid[i]
                 probe_sigma(sigma)
                 init_points -= 1
 
@@ -580,7 +668,7 @@ class mbGDMLTrain:
                 if loss_rising:
                     # We do two extra sigmas to ensure we did not have premature
                     # rising loss.
-                    if i != len(initial_grid)-1 and do_extra > 0:
+                    if i != len(sigma_grid)-1 and do_extra > 0:
                         do_extra -= 1
                         continue
                 
@@ -613,7 +701,7 @@ class mbGDMLTrain:
 
         for idx in min_idxs:
             sigma_best = results[idx]['params']['sigma']
-            if check_energy_pred:
+            if self.check_energy_pred:
                 e_rmse = valid_json['energy']['rmse'][idx]
                 if e_rmse is None:
                     # Go to the next lowest loss.
@@ -647,10 +735,12 @@ class mbGDMLTrain:
 
             save_json(os.path.join(save_dir, 'training.json'), job_json)
 
+            self.save_valid_csv(save_dir, valid_json)
+
         if write_idxs:
             self.save_idxs(model_best, dset_dict, save_dir, n_test)
         
-        if not keep_tasks:
+        if not self.keep_tasks:
             shutil.rmtree(task_dir)
 
         # Saving model.
@@ -666,9 +756,7 @@ class mbGDMLTrain:
         return model_best.model_dict, optimizer
         
     def grid_search(
-        self, dataset, model_name, n_train, n_valid,
-        sigmas=list(range(2, 400, 30)), n_test=None, require_E_eval=False,
-        save_dir='.', loss=loss_f_rmse, loss_kwargs={}, keep_tasks=False,
+        self, dataset, model_name, n_train, n_valid, n_test=None, save_dir='.',
         train_idxs=None, valid_idxs=None, overwrite=False, write_json=True,
         write_idxs=True,
     ):
@@ -696,29 +784,12 @@ class mbGDMLTrain:
             The number of training points to use.
         n_valid : :obj:`int`
             The number of validation points to use.
-        sigmas : :obj:`list`, default: ``list(range(2, 400, 30))``
-            Kernel length scales (i.e., hyperparameters) to train and validate
-            GDML models. Note, more length scales usually mean longer training
-            times. Two is the minimum value and can get as large as several
-            hundred. Can be :obj:`int` or :obj:`float`.
         n_test : :obj:`int`, default: ``None``
             The number of test points to test the validated GDML model.
             Defaults to testing all available structures.
-        require_E_eval : :obj:`bool`, default: ``False``
-            Require energy evaluation regardless even if they are terrible.
         save_dir : :obj:`str`, default: ``'.'``
             Path to train and save the mbGDML model. Defaults to current
             directory.
-        loss : callable, default: :obj:`mbgdml.losses.loss_f_rmse`
-            Loss function for validation. The input of this function is the
-            dictionary of :obj:`mbgdml._gdml.train.add_valid_errors` which
-            contains force and energy MAEs and RMSEs.
-        loss_kwargs : :obj:`dict`, default: ``{}``
-            Loss function kwargs with the exception of the validation
-            ``results`` dictionary.
-        keep_tasks : :obj:`bool`, default: ``False``
-            Keep all models trained during the train task if ``True``. They are
-            removed by default.
         train_idxs : :obj:`numpy.ndarray`, default: ``None``
             The specific indices of structures to train the model on. If
             ``None`` will automatically sample the training data set.
@@ -763,6 +834,8 @@ class mbGDMLTrain:
             assert len(set(valid_idxs)) == len(valid_idxs)
         
         dset_dict = self._prepare_dset_dict(dataset)
+        sigmas = self.sigma_grid
+        sigmas.sort()
         
         task_dir = os.path.join(save_dir, 'tasks')
         if os.path.exists(task_dir):
@@ -778,18 +851,17 @@ class mbGDMLTrain:
         )
 
         # Starting grid search
-        sigmas.sort()
         trial_model_paths = []
-        losses = []
         valid_json = {
             'sigmas': [],
+            'losses': [],
             'force': {'mae': [], 'rmse': []},
             'energy': {'mae': [], 'rmse': []},
             'idxs': [],
         }
         model_best_path = None
         for next_sigma in sigmas[1:]:
-            model_trial = self.train_model(task, require_E_eval=require_E_eval)
+            model_trial = self.train_model(task)
 
             if len(valid_json['idxs']) == 0:
                 valid_json['idxs'] = model_trial['idxs_valid'].tolist()
@@ -799,7 +871,9 @@ class mbGDMLTrain:
                 max_processes=self.max_processes, use_torch=self.use_torch
             )
 
-            losses.append(loss(valid_results, **loss_kwargs))
+            valid_json['losses'].append(
+                self.loss_func(valid_results, **self.loss_kwargs)
+            )
             valid_json['sigmas'].append(model_trial['sig'])
             valid_json['energy']['mae'].append(mae(valid_results['energy']))
             valid_json['energy']['rmse'].append(rmse(valid_results['energy']))
@@ -812,8 +886,8 @@ class mbGDMLTrain:
             save_model(model_trial, model_trail_path)
             trial_model_paths.append(model_trail_path)
             
-            if len(losses) > 1:
-                if losses[-1] > losses[-2]:
+            if len(valid_json['losses']) > 1:
+                if valid_json['losses'][-1] > valid_json['losses'][-2]:
                     log.info('\nValidation errors are rising')
                     log.info('Terminating grid search')
                     model_best_path = trial_model_paths[-2]
@@ -859,11 +933,13 @@ class mbGDMLTrain:
             job_json['validation'] = valid_json
 
             save_json(os.path.join(save_dir, 'training.json'), job_json)
+
+            self.save_valid_csv(save_dir, valid_json)
         
         if write_idxs:
             self.save_idxs(model_best, dset_dict, save_dir, n_test)
         
-        if not keep_tasks:
+        if not self.keep_tasks:
             shutil.rmtree(task_dir)
 
         # Saving model.
@@ -875,18 +951,13 @@ class mbGDMLTrain:
     
     def iterative_train(
         self, dataset, model_name, n_train_init, n_train_final, n_valid,
-        model0=None, n_train_step=100, sigma_bounds=(2, 400), n_test=None,
-        require_E_eval=False, save_dir='.', check_energy_pred=True,
-        gp_params={'init_points': 10, 'n_iter': 10, 'alpha': 0.001},
-        gp_params_final=None, initial_grid=None, loss=loss_f_rmse,
-        loss_kwargs={}, overwrite=False, write_json=True, write_idxs=True,
-        keep_tasks=False
+        model0=None, n_train_step=100, n_test=None, save_dir='.',
+        overwrite=False, write_json=True, write_idxs=True
     ):
         """Iteratively trains a GDML model by using Bayesian optimization and
         adding problematic (high error) structures to the training set.
 
-        Trains a GDML model with :meth:`mbgdml.train.mbGDMLTrain.bayes_opt`
-        using ``sigma_bounds`` and ``gp_params``.
+        Trains a GDML model with :meth:`mbgdml.train.mbGDMLTrain.bayes_opt`.
 
         Parameters
         ----------
@@ -909,72 +980,17 @@ class mbGDMLTrain:
         n_train_step : :obj:`int`, default: ``100``
             Number of problematic structures to add to the training set for
             each iteration.
-        sigma_bounds : :obj:`tuple`, default: ``(2, 300)``
-            Kernel length scale bounds for the Bayesian optimization.
         n_test : :obj:`int`, default: ``None``
             The number of test points to test the validated GDML model.
             Defaults to testing all available structures.
-        require_E_eval : :obj:`bool`, default: ``False``
-            Require energy evaluation regardless even if they are terrible.
         save_dir : :obj:`str`, default: ``'.'``
             Path to train and save the mbGDML model.
-        check_energy_pred : :obj:`bool`, default: ``True``
-            Will return the model with the lowest loss that predicts reasonable
-            energies. If ``False``, the model with the lowest loss is not
-            checked for reasonable energy predictions.
-
-            Sometimes, GDML kernels are unable to accurately reconstruct potential
-            energies even if the force predictions are accurate. This is
-            sometimes prevalent in many-body models with low and high sigmas
-            (i.e., sigmas less than 5 or greater than 500).
-        gp_params : :obj:`dict`
-            Gaussian process kwargs. Others can be provided.
-
-            ``init_points`` (:obj:`int`, default: ``10``) - 
-                How many steps of random exploration you want to perform.
-                Random exploration can help by diversifying the exploration
-                space.
-            
-            ``n_iter`` (:obj:`int`, default: ``10``) - 
-                How many steps of bayesian optimization you want to perform.
-                The more steps the more likely to find a good maximum you are.
-
-            ``alpha`` (:obj:`float`, default: ``0.001``) - 
-                This parameters controls how much noise the GP can handle, so
-                increase it whenever you think that extra flexibility is needed.
-        
-        gp_params_final : :obj:`dict`, default: ``None``
-            Gaussian process keyword arguments for the last training task.
-            This could be used to perform a more thorough hyperparameter search.
-        initial_grid : :obj:`list`, default: ``None``
-            Determining reasonable ``sigma_bounds`` is difficult without some
-            prior experience with the system. Even then, the optimal ``sigma``
-            can drastically change depending on the training set size.
-
-            ``initial_grid`` will assist with determining optimal
-            ``sigma_bounds`` by first performing a course grid search. The
-            Bayesian optimization will start with the bounds of the grid-search
-            minimum. It is recommended to choose a large ``sigma_bounds`` as
-            large as your ``initial_grid``; it will be updated internally.
-
-            The number of probes done during the initial grid search will be
-            subtracted from the Bayesian optimization ``init_points``.
-        loss : ``callable``, default: :obj:`mbgdml.losses.loss_f_rmse`
-            Loss function for validation. The input of this function is the
-            dictionary of :obj:`mbgdml._gdml.train.add_valid_errors` which
-            contains force and energy MAEs and RMSEs.
-        loss_kwargs : :obj:`dict`, default: ``{}``
-            Loss function kwargs with the exception of the validation
-            ``results`` dictionary.
         overwrite : :obj:`bool`, default: ``False``
             Overwrite existing files.
         write_json : :obj:`bool`, default: ``True``
             Write a JSON file containing information about the training job.
         write_idxs : :obj:`bool`, default: ``True``
             Write npy files for training, validation, and test indices.
-        keep_tasks : :obj:`bool`, default: ``False``
-            Keep all models trained during the train task if ``True``. They are
-            removed by default.
         """
         log.log_package()
 
@@ -1007,20 +1023,16 @@ class mbGDMLTrain:
             n_train = n_train_init
             train_idxs = None
         
-        gp_params_i = gp_params
+        sigma_bounds = self.sigma_bounds
         while n_train <= n_train_final:
-            if n_train == n_train_final and gp_params_final is not None:
-                gp_params_i = gp_params_final
             
             save_dir_i = os.path.join(save_dir, f'train{n_train}')
             model, _ = self.bayes_opt(
                 dataset, model_name+f'-train{n_train}', n_train, n_valid,
-                sigma_bounds=sigma_bounds, n_test=n_test, save_dir=save_dir_i,
-                initial_grid=initial_grid, gp_params=gp_params_i, loss=loss,
-                loss_kwargs=loss_kwargs, train_idxs=train_idxs, valid_idxs=None,
-                overwrite=overwrite, write_json=write_json, write_idxs=write_idxs,
-                keep_tasks=keep_tasks, check_energy_pred=check_energy_pred,
-                require_E_eval=require_E_eval
+                n_test=n_test, save_dir=save_dir_i,
+                train_idxs=train_idxs,
+                valid_idxs=None, overwrite=overwrite, write_json=write_json,
+                write_idxs=write_idxs
             )
 
             # Check sigma bounds

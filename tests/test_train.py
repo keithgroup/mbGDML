@@ -127,19 +127,19 @@ def test_1h2o_train_grid_search():
 
     n_train = 50
     n_valid = 100
-    sigmas = [32, 42, 52]
+    sigma_grid = [32, 42, 52]
 
     train = mbGDMLTrain(
         entity_ids=np.array([0, 0, 0]), comp_ids=np.array(['h2o']),
         use_sym=True, use_E=True, use_E_cstr=False, use_cprsn=False,
         solver='analytic', lam=1e-15, solver_tol=1e-4
     )
+    train.sigma_grid = sigma_grid
     model = train.grid_search(
         dset,
         '1h2o',
         n_train,
         n_valid,
-        sigmas,
         train_idxs=train_idxs,
         valid_idxs=valid_idxs,
         write_json=True,
@@ -187,15 +187,14 @@ def test_1h2o_train_bayes_opt():
         use_sym=True, use_E=True, use_E_cstr=False, use_cprsn=False,
         solver='analytic', lam=1e-15, solver_tol=1e-4
     )
-    gp_params = {'init_points': 5, 'n_iter': 5, 'alpha': 0.001}
+    train.bayes_opt_params = {'init_points': 5, 'n_iter': 5, 'alpha': 0.001}
+    train.sigma_bounds = (2, 100)
     model, optimizer = train.bayes_opt(
         dset,
         '1h2o',
         n_train,
         n_valid,
-        sigma_bounds=(2, 100),
         save_dir='./tests/tmp/1h2o-bo',
-        gp_params=gp_params,
         train_idxs=train_idxs,
         valid_idxs=valid_idxs,
         overwrite=True,
