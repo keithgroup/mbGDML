@@ -51,7 +51,7 @@ def mse(errors):
     :obj:`float`
         Mean square error.
     """
-    return np.mean(np.abs(errors.flatten()))
+    return np.mean(errors.flatten()**2)
 
 def rmse(errors):
     """Mean square error.
@@ -66,6 +66,16 @@ def rmse(errors):
         Mean square error.
     """
     return np.sqrt(mse(errors))
+
+def loss_f_mse(results):
+    """Returns the force RMSE.
+
+    Parameters
+    ----------
+    results : :obj:`dict`
+        Validation results which contain force and energy MAEs and RMSEs.
+    """
+    return mse(results['force'])
 
 def loss_f_rmse(results):
     """Returns the force RMSE.
