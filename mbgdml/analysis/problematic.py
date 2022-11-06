@@ -33,6 +33,7 @@ from scipy.spatial.distance import pdist
 from . import clustering
 from ..mbe import mbePredict
 from ..utils import save_json
+from ..losses import loss_f_mse
 
 log = logging.getLogger(__name__)
 
@@ -105,6 +106,16 @@ class prob_structures:
         available.
 
         :type: :obj:`int`, default: ``2.0``
+        """
+        self.loss_func = loss_f_mse
+        """Loss function used to determine problematic structures.
+
+        :type: ``callable``, default: :obj:`mbgdml.losses.loss_f_mse`
+        """
+        self.loss_func_kwargs = {}
+        """Any keyword arguments beyond ``results`` for the loss function.
+
+        :type: :obj:`dict`, default: ``{}``
         """
         self.kwargs_subplot = {
             'figsize': (5.5, 3), 'constrained_layout': True
@@ -383,7 +394,9 @@ class prob_structures:
             self.json_dict['clustering']['population'] = cl_pop
 
         log.info('\nPredicting structures')
+        t_prediction = log.t_start()
         E_pred, F_pred = self.mbe_pred.predict(Z, R, entity_ids, comp_ids)
+        log.t_stop(t_prediction, message='Took {time} s')
         log.info('Computing prediction errors')
         E_errors = E_pred - E
         F_errors = F_pred - F
@@ -397,12 +410,12 @@ class prob_structures:
         F_errors_cl = clustering.get_clustered_data(cl_idxs, F_errors)
 
         # Computing cluster losses
-        loss_kwargs = {'F_errors': F_errors_cl}
+        loss_kwargs = {'energy': E_errors_cl, 'force': F_errors_cl}
         cl_losses = clustering.get_cluster_losses(
-            clustering.cluster_loss_F_mse, loss_kwargs
+            self.loss_func, loss_kwargs
         )
         if write_json:
-            self.json_dict['clustering']['loss_function'] = 'force_mse'
+            self.json_dict['clustering']['loss_function'] = self.loss_func.__name__
             self.json_dict['clustering']['losses'] = cl_losses
             
 
@@ -438,16 +451,18 @@ class prob_structures:
         F_errors_cluster_prob = clustering.get_clustered_data(
             cl_idxs_prob, F_errors
         )
-        idx_loss_kwargs = {'F_errors': F_errors}
-        structure_loss = clustering.idx_loss_f_mse(
-            **idx_loss_kwargs
-        )
+        idx_loss_kwargs = {'energy': E_errors, 'force': F_errors}
+        structure_loss = np.empty(E_errors.shape)
+        for i in range(len(structure_loss)):
+            structure_loss[i] = self.loss_func({
+                'energy': E_errors[i], 'force': F_errors[i]
+            })
 
         structure_loss_cl = clustering.get_clustered_data(
             cl_idxs_prob, structure_loss
         )
         if write_json:
-            self.json_dict['problematic_clustering']['loss_function'] = 'force_mse'
+            self.json_dict['problematic_clustering']['loss_function'] = self.loss_func.__name__
             self.json_dict['problematic_clustering']['losses'] = structure_loss_cl
 
         next_idxs = self.select_prob_indices(
@@ -464,7 +479,7 @@ class prob_structures:
         
         if save_cl_plot:
             fig = self.plot_cl_losses(
-                cl_pop, cl_losses, 'Force MSE', **kwargs_plot
+                cl_pop, cl_losses, **kwargs_plot
             )
             fig.savefig(
                 os.path.join(save_dir, f'cl_losses.{image_format}'),
@@ -474,7 +489,7 @@ class prob_structures:
         return next_idxs
     
     def plot_cl_losses(
-        self, cl_pop, cl_losses, loss_label, kwargs_subplot={},
+        self, cl_pop, cl_losses, kwargs_subplot={},
         lolli_color='#223F4B', annotate_cl_idx=False
     ):
         """Plot cluster losses and population histogram using matplotlib.
@@ -513,7 +528,7 @@ class prob_structures:
         ax_pop.yaxis.set_label_position('right')
 
         # Cluster losses
-        ax_loss.set_ylabel(loss_label)
+        ax_loss.set_ylabel(self.loss_func.__name__)
         ax_loss.vlines(
             x=cl_plot_x, ymin=0, ymax=cl_losses, linewidth=0.8, color=lolli_color
         )
