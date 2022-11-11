@@ -140,7 +140,7 @@ class mbGDMLTrain:
         """
         self.bayes_opt_params = {
             'init_points': 10, 'n_iter': 10, 'alpha': 1e-7, 'acq': 'ucb',
-            'kappa': 0.1
+            'kappa': 1.5
         }
         """Bayesian optimization parameters.
 
@@ -150,7 +150,7 @@ class mbGDMLTrain:
 
             {
                 'init_points': 10, 'n_iter': 10, 'alpha': 1e-7, 'acq': 'ucb',
-                'kappa': 0.1
+                'kappa': 1.5
             }
             
 
