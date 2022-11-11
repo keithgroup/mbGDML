@@ -139,7 +139,7 @@ class mbGDMLTrain:
         :type: :obj:`list`
         """
         self.bayes_opt_params = {
-            'init_points': 5, 'n_iter': 10, 'alpha': 1e-7, 'acq': 'ucb',
+            'init_points': 10, 'n_iter': 10, 'alpha': 1e-7, 'acq': 'ucb',
             'kappa': 0.1
         }
         """Bayesian optimization parameters.
@@ -149,7 +149,7 @@ class mbGDMLTrain:
         .. code-block:: python
 
             {
-                'init_points': 5, 'n_iter': 10, 'alpha': 1e-7, 'acq': 'ucb',
+                'init_points': 10, 'n_iter': 10, 'alpha': 1e-7, 'acq': 'ucb',
                 'kappa': 0.1
             }
             
@@ -433,7 +433,7 @@ class mbGDMLTrain:
         )
 
         ax.set_xlabel('Sigma')
-        ax.set_ylabel('Loss')
+        ax.set_ylabel(self.loss_func.__name__)
 
         ax.set_xlim(left=lower_bound, right=upper_bound)
 
