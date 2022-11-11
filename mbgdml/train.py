@@ -219,6 +219,18 @@ class mbGDMLTrain:
         
         :type: :obj:`bool`
         """
+        self.bayes_opt_n_check_rising = 4
+        """Number of additional ``sigma_grid`` probes to check if loss
+        continues to rise after finding a minima.
+
+        We often perform a grid search prior to Bayesian optimization.
+        Sometimes, with :math:`n`-body training, the loss will start rising
+        but then fall again to a lower value. Thus, we do some extra (larger)
+        sigmas to check if the loss will fall again. If it does, then we
+        restart the grid search.
+
+        :type: :obj:`int`
+        """
     
     def min_memory_analytic(self, n_train, n_atoms):
         r"""Minimum memory recommendation for training analytically.
@@ -669,7 +681,7 @@ class mbGDMLTrain:
                 return True
 
             loss_rising = False
-            do_extra = 4  # Extra sigmas to check after losses rise.
+            do_extra = self.bayes_opt_n_check_rising  # Extra sigmas to check after losses rise.
             for i in range(len(sigma_grid)):
                 sigma = sigma_grid[i]
                 probe_sigma(sigma)
@@ -684,7 +696,7 @@ class mbGDMLTrain:
                         min_idxs_orig = len(valid_json['sigmas'])-2
                 
                 if loss_rising:
-                    # We do two extra sigmas to ensure we did not have premature
+                    # We do extra sigmas to ensure we did not have premature
                     # rising loss.
                     if i != len(sigma_grid)-1 and do_extra > 0:
                         do_extra -= 1
@@ -700,6 +712,7 @@ class mbGDMLTrain:
                         # Or we checked for energy predictions and it failed.
                         # Restart the grid search.
                         loss_rising = False
+                        do_extra = self.bayes_opt_n_check_rising
                     else:
                         # Loss has continued to rise; good chance we found the minimum.
 
