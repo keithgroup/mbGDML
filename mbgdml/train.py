@@ -553,6 +553,21 @@ class mbGDMLTrain:
             'idxs': [],
         }
         def opt_func(sigma):
+            """Computes the (negative) validation loss that Bayesian
+            optimization tries to optimize.
+
+            Also updates ``valid_json``.
+
+            Parameters
+            ----------
+            sigma : :obj:`float`
+                Kernel length scale for a validation run.
+            
+            Returns
+            -------
+            :obj:`float`
+                Negative loss.
+            """
             task['sig'] = sigma
             model_trial = self.train_model(task)
 
@@ -623,32 +638,35 @@ class mbGDMLTrain:
             def probe_sigma(sigma):
                 optimizer.probe({'sigma': sigma}, lazy=False)
             
-            def check_loss_rising(valid_json, min_idxs_orig):
+            def constant_loss_rising(valid_json, min_idxs_orig):
+                """Checks for sustained rising loss.
+
+                Parameters
+                ----------
+                valid_json : :obj:`dict`
+                    Data from validation calculations.
+                min_idxs_orig : :obj:`int`
+                    Index of the minimum.
+                
+                Returns
+                -------
+                :obj:`bool`
+                    If the loss has continued to rise after identifying a 
+                    minimum.
+                """
                 if self.check_energy_pred:
                     if valid_json['energy']['rmse'][min_idxs_orig] is None:
                         # Restart to find a better minimum that predicts energies.
-                        return None
+                        return False
                 
                 losses = valid_json['losses']
                 # Check if losses start falling after minimum. 
                 for i in range(min_idxs_orig+1, len(losses)):
                     if losses[i] < losses[i-1]:
                         # We will restart the grid search to find another minimum.
-                        return None
+                        return False
                 
-                # Check if minimum is at the lower bound.
-                sigmas = valid_json['sigmas']
-                lower_bound_idx = min_idxs_orig - 1
-                upper_bound_idx = min_idxs_orig + 1
-                if lower_bound_idx < 0:
-                    lower_bound_idx = 0
-                if upper_bound_idx >= len(sigmas):
-                    upper_bound_idx = len(sigmas)-1
-                
-                sigma_bounds = (
-                    sigmas[lower_bound_idx], sigmas[upper_bound_idx]
-                )
-                return sigma_bounds
+                return True
 
             loss_rising = False
             do_extra = 4  # Extra sigmas to check after losses rise.
@@ -673,19 +691,26 @@ class mbGDMLTrain:
                         continue
                 
                     # Once do_extra is complete we check losses.
-                    sigma_bounds_new = check_loss_rising(
+                    restart_grid_search = constant_loss_rising(
                         valid_json, min_idxs_orig
                     )
-                    if sigma_bounds_new is None:
+
+                    if not constant_loss_rising(valid_json, min_idxs_orig):
                         # Losses started lowering again.
                         # Or we checked for energy predictions and it failed.
                         # Restart the grid search.
                         loss_rising = False
                     else:
-                        # We found a minimum and will start the Bayesian optimization.
-                        optimizer.set_bounds(
-                            {'sigma': sigma_bounds_new}
+                        # Loss has continued to rise; good chance we found the minimum.
+
+                        # Update the sigma upper bound to the largest sigma
+                        # we have already checked.  
+                        sigma_bounds = (
+                            sigma_bounds[0], np.max(valid_json['sigmas'])
                         )
+                        optimizer.set_bounds({'sigma': sigma_bounds})
+
+                        # We stop grid search and start Bayesian optimization.
                         break
         
         if init_points < 0:

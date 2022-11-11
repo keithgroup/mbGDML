@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Changed
 
+- Do not restrict ``sigma_bounds`` for Bayesian optimization after initial grid search.
 - ``mbgdml.criteria`` is now ``mbgdml.descriptors`` with a modular handling of descriptors and cutoffs.
 - Provide changeable ``Z``, ``R``, ``E``, and ``F`` keys for loading ``npz`` data sets.
 - Modularize the error and loss calculations.
