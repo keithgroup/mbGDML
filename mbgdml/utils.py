@@ -26,45 +26,7 @@ import itertools
 import json
 import numpy as np
 import os
-
-element_to_z = {
-    'H': 1, 'He': 2, 'Li': 3, 'Be': 4, 'B': 5, 'C': 6, 'N': 7, 'O': 8, 'F': 9,
-    'Ne': 10, 'Na': 11, 'Mg': 12, 'Al': 13, 'Si': 14, 'P': 15, 'S': 16,
-    'Cl': 17, 'Ar': 18, 'K': 19, 'Ca': 20, 'Sc': 21, 'Ti': 22, 'V': 23,
-    'Cr': 24, 'Mn': 25, 'Fe': 26, 'Co': 27, 'Ni': 28, 'Cu': 29, 'Zn': 30,
-    'Ga': 31,'Ge': 32, 'As': 33, 'Se': 34, 'Br': 35, 'Kr': 36, 'Rb': 37,
-    'Sr': 38, 'Y': 39, 'Zr': 40, 'Nb': 41, 'Mo': 42, 'Tc': 43, 'Ru': 44,
-    'Rh': 45, 'Pd': 46, 'Ag': 47, 'Cd': 48, 'In': 49, 'Sn': 50, 'Sb': 51,
-    'Te': 52, 'I': 53, 'Xe': 54, 'Cs': 55, 'Ba': 56, 'La': 57, 'Ce': 58,
-    'Pr': 59, 'Nd': 60, 'Pm': 61, 'Sm': 62, 'Eu': 63, 'Gd': 64, 'Tb': 65,
-    'Dy': 66, 'Ho': 67, 'Er': 68, 'Tm': 69, 'Yb': 70, 'Lu': 71, 'Hf': 72,
-    'Ta': 73, 'W': 74, 'Re': 75, 'Os': 76, 'Ir': 77, 'Pt': 78, 'Au': 79,
-    'Hg': 80, 'Tl': 81, 'Pb': 82, 'Bi': 83, 'Po': 84, 'At': 85, 'Rn': 86,
-    'Fr': 87, 'Ra': 88, 'Ac': 89, 'Th': 90, 'Pa': 91, 'U': 92, 'Np': 93,
-    'Pu': 94, 'Am': 95, 'Cm': 96, 'Bk': 97, 'Cf': 98, 'Es': 99, 'Fm': 100,
-    'Md': 101, 'No': 102, 'Lr': 103, 'Rf': 104, 'Db': 105, 'Sg': 106,
-    'Bh': 107, 'Hs': 108, 'Mt': 109, 'Ds': 110, 'Rg': 111, 'Cn': 112,
-    'Uuq': 114, 'Uuh': 116,
-}
-z_to_element = {v: k for k, v in element_to_z.items()}
-
-# Standard atomic weight from version 4.1 of
-# https://www.nist.gov/pml/atomic-weights-and-isotopic-compositions-relative-atomic-masses
-# If lower and upper bounds were provided the lower bound was selected.
-z_to_mass = (
-    None, 1.00784, 4.002602, 6.938, 9.0121831, 10.806, 12.0096, 14.00643,  # N
-    15.99903, 18.998403163, 20.1797, 22.98976928, 24.304, 26.9815385, 28.084,  # Si
-    30.973761998, 32.059, 35.446, 39.948, 39.0983, 40.078, 44.955908,  # Sc
-    47.867, 50.9415, 51.9961, 54.938044, 55.845, 58.933194, 58.6934, 63.546,  # Cu
-    65.38, 69.723, 72.630, 74.921595, 78.971, 79.901, 83.798, 85.4678, 87.62,  # Sr
-    88.90584, 91.224, 92.90637, 95.95, 98.0, 101.07, 102.90550, 106.42, 107.8682,  # Ag
-    112.414, 114.818, 118.710, 121.760, 127.60, 126.90447, 131.293,  # Xe
-    132.90545196, 137.327, 138.90547, 140.116, 140.90766, 144.242, 145.0, 150.36,  # Sm
-    151.964, 157.25, 158.92535, 162.500, 164.93033, 167.259, 168.93422, 173.054,  # Yb
-    174.9668, 178.49, 180.94788, 183.84, 186.207, 190.23, 192.217, 195.084,  # Pt
-    196.966569, 200.592, 204.382, 207.2, 208.98040, 209.0, 210.0, 222.0, 223.0, 226.0,  # Ra
-    227.0, 232.0377, 231.03588, 238.02891, 237.0, 244.0  # Pu
-)
+from qcelemental import periodictable as ptable
 
 def norm_path(path):
     """Normalizes directory paths to be consistent.
@@ -168,12 +130,12 @@ def natsort_list(unsorted_list):
 
     return sorted_list
 
-def string_xyz_arrays(z, R, *args, precision=10):
+def string_xyz_arrays(Z, R, *args, precision=10):
     """Create string of array data in XYZ format for a single structure.
 
     Parameters
     ----------
-    z : :obj:`numpy.ndarray`, int, ndim=1
+    Z : :obj:`numpy.ndarray`, int, ndim=1
         Atomic numbers of all atoms in the system.
     R : :obj:`numpy.ndarray`, float, ndim=2
         Cartesian coordinates of all atoms in the same order as ``Z``.
@@ -192,8 +154,8 @@ def string_xyz_arrays(z, R, *args, precision=10):
         of atoms 
     """
     struct_string = ''
-    for i in range(len(z)):
-        atom_string = str(z_to_element[z[i]])
+    for i in range(len(Z)):
+        atom_string = str(atoms_by_element[Z[i]])
         for arr in (R, *args):
             if arr is not None:
                 atom_string += '    '
@@ -207,7 +169,7 @@ def string_xyz_arrays(z, R, *args, precision=10):
     return struct_string
 
 def write_xyz(
-    xyz_path, z, R, comments=None, data_precision=10
+    xyz_path, Z, R, comments=None, data_precision=10
 ):
     """Write standard XYZ file.
     
@@ -224,7 +186,7 @@ def write_xyz(
     data_precision : :obj:`int`, optional
         Number of decimal points for printing array data. Default is ``13``.
     """
-    n_atoms = len(z)
+    n_atoms = len(Z)
     with open(xyz_path, 'w') as f:
         for i in range(len(R)):
             f.write(f'{n_atoms}\n')
@@ -235,7 +197,7 @@ def write_xyz(
             else:
                 comment = '\n'
             f.write(comment)
-            f.write(string_xyz_arrays(z, R[i], precision=data_precision))
+            f.write(string_xyz_arrays(Z, R[i], precision=data_precision))
 
 def convert_forces(
     forces, e_units_calc, r_units_calc, e_units, r_units
@@ -295,12 +257,7 @@ def atoms_by_element(atom_list):
     :obj:`list` [:obj:`str`]
         Element symbols of atoms within a structure.
     """
-
-    atom_list_elements = []
-    for atom in atom_list:
-        atom_list_elements.append(str(z_to_element[atom]))
-
-    return atom_list_elements
+    return [ptable.to_symbol(z) for z in atom_list]
 
 def atoms_by_number(atom_list):
     """Converts a list of atoms identified by their elemental symbol to their
@@ -316,7 +273,7 @@ def atoms_by_number(atom_list):
     :obj:`list` [:obj:`int`]
         Atomic numbers of atoms within a structure.
     """
-    return [int(element_to_z[i]) for i in atom_list]
+    return [ptable.to_atomic_number(symbol) for symbol in atom_list]
 
 def md5_data(data, keys):
     """Creates MD5 hash for a set of data.
@@ -438,14 +395,14 @@ def get_R_slice(entities, entity_ids):
         )
     return np.array(atom_idx)
 
-def center_structures(z, R):
+def center_structures(Z, R):
     """Centers each structure's center of mass to the origin.
 
     Previously centered structures should not be affected by this technique.
 
     Parameters
     ----------
-    z : :obj:`numpy.ndarray`
+    Z : :obj:`numpy.ndarray`
         Atomic numbers of the atoms in every structure.
     R : :obj:`numpy.ndarray`
         Cartesian atomic coordinates of data set structures.
@@ -462,7 +419,7 @@ def center_structures(z, R):
     masses = np.empty(R[0].shape)
     
     for i in range(len(masses)):
-        masses[i,:] = z_to_mass[z[i]]
+        masses[i,:] = ptable.to_mass(Z[i])
     
     for i in range(len(R)):
         r = R[i]

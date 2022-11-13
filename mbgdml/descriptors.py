@@ -23,7 +23,7 @@
 import itertools
 import logging
 import numpy as np
-from .utils import z_to_mass
+from qcelemental import periodictable as ptable
 
 log = logging.getLogger(__name__)
 
@@ -119,7 +119,7 @@ def get_center_of_mass(Z, R):
         R = R[None, ...]
     masses = np.empty(R[0].shape)
     for i in range(len(masses)):
-        masses[i,:] = z_to_mass[Z[i]]
+        masses[i,:] = ptable.to_mass(Z[i])
     R_masses = np.full(R.shape, masses)
     com_structure = np.average(R, axis=1, weights=R_masses)
     return com_structure

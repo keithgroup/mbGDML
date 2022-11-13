@@ -45,4 +45,4 @@ def test_com_distance_sum():
     )
     accept_r, desc_v = r_criteria.accept(rset['z'], rset['R'][42])
     assert accept_r == False
-    assert desc_v == 1001.5068227366426
+    assert desc_v == 1001.506707631225
