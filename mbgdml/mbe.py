@@ -432,7 +432,8 @@ class mbePredict(object):
 
     def __init__(
         self, models, predict_model, use_ray=False, n_workers=None,
-        wkr_chunk_size=None, alchemy_scalers=None, periodic_cell=None
+        ray_address='auto', wkr_chunk_size=None, alchemy_scalers=None,
+        periodic_cell=None
     ):
         """
         Parameters
@@ -449,6 +450,8 @@ class mbePredict(object):
             Parallelize predictions using ray.
         n_workers : :obj:`int`, default: ``None``
             Total number of workers available for predictions when using ray.
+        ray_address : :obj:`str`, default: ``'auto'``
+            Ray cluster address to connect to.
         wkr_chunk_size : :obj:`int`, default: ``None``
             Number of :math:`n`-body structures to assign to each spawned
             worker with ray. If ``None``, it will divide up the number of
@@ -478,7 +481,7 @@ class mbePredict(object):
             global ray
             import ray
             if not ray.is_initialized():
-                ray.init(address='auto')
+                ray.init(address=ray_address)
             assert ray.is_initialized()
 
             self.models = [ray.put(model) for model in models]
