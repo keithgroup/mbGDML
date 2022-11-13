@@ -2,36 +2,315 @@
 Training
 ========
 
-The goal of training ML models is to optimize regression coefficients (i.e., parameters) to reduce some performance metric.
-Once we have a :ref:`data set<data-sets>` with structures, forces, and possibly energies, we can begin training a GDML model.
-This is done through the :class:`mbgdml.train.mbGDMLTrain` class.
+mbGDML is a data-driven method; meaning we need to train a ML model to reproduce a system's potential energy surface (PES).
+Once we have a collection of structures (usually from a MD simulation) and calculated energies and forces we can begin training GDML models.
 
-After initializing a ``mbGDMLTrain`` object, you then load the desired data set using the following function.
-This class provides several training routines.
+.. seealso::
 
-Hyperparameter optimization
-===========================
+    Code for training largely comes from the `sGDML package <https://github.com/stefanch/sGDML>`__ where modifications were made to support many-body data and new routines.
+    For more technical information, please refer to the extensive `sGDML literature <http://www.sgdml.org/>`__.
 
-Identifying the optimal hyperparameters for ML models is crucial.
-For GDML models, the hyperparameter of interest is the kernel length scale or ``sigma``.
-There are several possible procedures for tuning hyperparameters and mbGDML provides two options.
 
-- :meth:`~mbgdml.train.mbGDMLTrain.bayes_opt`
-- :meth:`~mbgdml.train.mbGDMLTrain.grid_search`
+
+
+
+Data
+====
+
+We require data to be stored in NumPy ``npz`` files.
+These are `binary files <https://numpy.org/doc/stable/reference/generated/numpy.savez.html>`__ that can store several NumPy arrays of various types.
+At minimum, mbGDML needs four arrays containing information about the PES.
+
+- ``Z`` of shape ``(n_atoms,)``: atomic numbers for all structures in the data set.
+- ``R`` of shape ``(n_structures, n_atoms, 3)``: Cartesian coordinates of all structures in the data set.
+- ``E`` of shape ``(n_structures,)``: Total or many-body energy for each structure.
+- ``F`` of shape ``(n_structures, n_atoms, 3)``: Total or many-body atomic forces for each structure.
+
+.. attention::
+
+    GDML uses a global descriptor, meaning the number and order of atoms must be the same for each structure.
+    For example, if you have a single water molecule and your ``Z`` is ``[8, 1, 1]`` then every structure in ``R`` must have the oxygen atom first.
+
+Here are some examples of water :download:`1-body <./files/dsets/1h2o.npz>`, :download:`2-body <./files/dsets/2h2o-nbody.npz>`, and :download:`3-body <./files/dsets/3h2o-nbody.npz>` data sets.
+
+.. tip::
+
+    Sampling, curating, and calculating data sets is done with a complementary Python package `reptar <https://github.com/aalexmmaldonado/reptar>`__.
+    Please refer to `reptar's documentation <https://www.aalexmmaldonado.com/reptar/main/index.html>`__.
+
+
+
+
+Data set class
+--------------
+
+We use the :class:`~mbgdml.data.dataSet` class to load and provide simple access to data.
+
+.. note::
+
+    We will frequently use ``Z``, ``R``, ``E``, and ``F`` as the key in the ``npz`` file for their respect data.
+    You can load data sets by passing ``X_key`` when initializing the :class:`~mbgdml.data.dataSet` class.
+    For example, you can have ``Z_key`` be ``'atomic_numbers'``.
+
+
+
+
+
+What are we training?
+=====================
+
+The underlying technical details of GDML are important, but only a few concepts are really necessary for training and using models.
+Briefly, a GDML model takes Cartesian coordinates and outputs an energy and forces shown in the following flowchart.
+
+.. mermaid::
+
+    flowchart LR
+        coords[/Coordinates/] --> desc[/Descriptor/]
+        desc -- sigma --> traindist[/Train set</br>distances/]
+        traindist -- alphas --> forces[/Forces/]
+        forces -- integ_c --> energy[/Energy/]
+
+``sigma``, ``alphas``, and the integration constant ``integ_c`` are broadly the three pieces of data we get during training for predictions.
+We will discus these later.
+
+
+
+Matérn kernel
+-------------
+
+GDML is based on the Matérn kernel, :math:`k_\nu`, that is twice differentiable (:math:`\nu = 5/2`):
+
+.. math::
+    k_{5/2} (\overrightarrow{x}_i, \overrightarrow{x}_j) = \left( 1 + \frac{\sqrt{5}}{\sigma} d(\overrightarrow{x}_i, \overrightarrow{x}_j) 
+    + \frac{5}{3\sigma} d(\overrightarrow{x}_i, \overrightarrow{x}_j)^2 \right) \exp \left( - \frac{\sqrt{5}}{\sigma} d (\overrightarrow{x}_i, \overrightarrow{x}_j) \right),
+    :label: matern_kernel
+
+where :math:`\overrightarrow{x}_i` and :math:`\overrightarrow{x}_j` are the descriptors of two data points :math:`i` and :math:`j`, :math:`\sigma` is the kernel length scale, and :math:`d (\overrightarrow{x}_i, \overrightarrow{x}_j)` is the L2 (i.e., Euclidean) norm or distance between :math:`\overrightarrow{x}_i` and :math:`\overrightarrow{x}_j`.
+
+.. note::
+
+    GDML literature uses :math:`\sigma` to represent kernel length scale.
+    :math:`l` is often used in other sources.
+
+GDML uses the inverse atomic pairwise distances as the descriptor (e.g., :math:`x_i` and :math:`x_j`).
+For example, consider this water dimer.
+
+.. raw:: html
+
+    <script src="https://3Dmol.csb.pitt.edu/build/3Dmol-min.js"></script>
+
+    <div style="height: 300px; width: 400px; margin: auto;"
+    class='viewer_3Dmoljs' data-datatype='xyz'
+    data-backgroundcolor='0xffffff'
+    data-href='./2h2o-psi4-opt.xyz'
+    data-style='stick'
+    data-spin='axis:y;speed:0.1'>
+    </div>
+
+We can compute the inverse atomic pairwise distances with :func:`~mbgdml._gdml.desc._from_r` (and their partial derivatives needed for GDML models).
+
+.. code-block:: python
+
+    import numpy as np
+    from mbgdml._gdml.desc import _from_r
+
+    # Water dimer coordinates.
+    R = np.array(
+        [[ 1.80957202,  0.78622087,  0.4170556 ],
+         [ 1.39159092,  0.9217478 ,  1.27126597],
+         [ 2.40137633,  0.04199757,  0.55361951],
+         [-0.16942685,  0.19603795, -1.64383542],
+         [-0.10053189,  0.84679289, -2.34463743],
+         [ 0.50972947,  0.45598791, -1.00676722]]
+    )
+    # Compute the pairwise descriptors and their partial derivatives.
+    r_desc, r_desc_d = _from_r(R)
+    print(r_desc)  # Descriptor
+    # [1.04101674 1.04101716 0.65814497 0.34275482 0.29538202 0.29537792
+    #  0.29775736 0.25559815 0.25559542 1.04293945 0.51124879 0.40212734
+    #  0.40211189 1.03435064 0.65723451]
+    print(r_desc_d)  # Descriptor partial derivatives
+    # [[-0.47155221  0.15289692  0.96369139]
+    #  [ 0.66765451 -0.83960869  0.15406699]
+    #  [ 0.28786826 -0.25079801 -0.20458568]
+    #  [-0.07968861 -0.02376498 -0.08298618]
+    #  [-0.04023092 -0.01870317 -0.07512869]
+    #  [-0.0662526   0.0039698  -0.05663098]
+    #  [-0.05042484  0.00159904 -0.07290594]
+    #  [-0.02491596 -0.00125162 -0.06037956]
+    #  [-0.04177636  0.01343831 -0.04839451]
+    #  [ 0.07815643  0.73823522 -0.79501006]
+    #  [-0.17369512 -0.04412831 -0.19026234]
+    #  [-0.05734442 -0.03028677 -0.14813267]
+    #  [-0.12299311  0.02691727 -0.10145489]
+    #  [ 0.75157635  0.28766903  0.70500027]
+    #  [ 0.17325148 -0.11094843  0.37981758]]
+
+.. note::
+
+    Predictions using GDML do not directly use :func:`~mbgdml._gdml.desc._from_r` but instead uses :class:`~mbgdml._gdml.desc.Desc`.
+
+.. important::
+
+    GDML does not directly use or compute the Matérn kernel.
+    Instead, it uses the Hessian matrix of the Matérn kernel where each row and column encodes how a training point "interacts" with all other training points.
+    We will refer to this as the **kernel matrix**.
+    :meth:`~mbgdml._gdml.train.GDMLTrain._assemble_kernel_mat` and :func:`~mbgdml._gdml.train._assemble_kernel_mat_wkr` are used to build this.
+
+
+
+
+
+``sigma``
+---------
+
+The kernel length scale, :math:`\sigma` or ``sigma``, is the hyperparameter we optimizing during training coming from Equation :eq:`matern_kernel`.
+It broadly represents the smoothness of how quickly the kernel function can change.
+As we can see in the figures below, the smaller length scale rapidly changes to better fit the data.
+
+.. figure:: http://evelinag.com/Ariadne/img/smallLengthscale.png
+   :align: center
+   :width: 350 px
+
+   Small length scale.
+
+.. figure:: http://evelinag.com/Ariadne/img/largeLengthscale.png
+   :align: center
+   :width: 350 px
+
+   Large length scale.
+
+There is no analytical way to determine the optimal ``sigma``.
+We have to just iteratively try values that minimizes the error during training.
+How we do this in mbGDML will be discussed later.
+
+
+``alphas``
+----------
+
+Once we have the kernel Hessian we need the ``(n_train, n_atoms, 3)`` regression parameters.
+This is analytically determined using Cholesky factorization.
+First, we use :func:`scipy.linalg.cho_factor` to decompose the negative kernel matrix from :meth:`~mbgdml._gdml.train.GDMLTrain._assemble_kernel_mat` after we apply the regularization parameter ``lam``: ``K[np.diag_indices_from(K)] -= lam``.
+The negative of :func:`scipy.linalg.cho_solve` computes ``alphas`` where the targets are the atomic forces (scaled by their standard deviation).
+If Cholesky factorization fails, we try LU factorization with :func:`scipy.linalg.solve`.
+
+.. math::
+    \hat{\boldsymbol{f}}_\boldsymbol{F} (\overrightarrow{x}_i) = \sum_i^M \sum_j^{3N} \left( \overrightarrow{\alpha}_i \right)_j
+    \frac{\partial}{\partial x_j} \nabla_{\overrightarrow{x}_i} \: k_{5/2} (\overrightarrow{x}_i, \overrightarrow{x}_j)
+    :label: gdml_force_eq
+
+All of this is automatically done in :meth:`~mbgdml._gdml.train.GDMLTrain.solve_analytic`.
+
+
+``integ_c``
+-----------
+
+GDML is an energy-conserving potential where the energy is recovered by integrating the forces up to an integration constant, ``integ_c``.
+
+.. math::
+    \hat{f}_E (\overrightarrow{x}_i) = \sum_i^M \sum_j^{3N} \left( \overrightarrow{\alpha}_i \right)_j
+    \frac{\partial}{\partial x_j} k_{5/2} (\overrightarrow{x}_i, \overrightarrow{x}_j) + c
+    :label: gdml_energy_eq
+
+This is automatically done in :meth:`~mbgdml._gdml.train.GDMLTrain._recov_int_const`.
+
+
+Training routine
+================
+
+We provide a :class:`~mbgdml.train.mbGDMLTrain` class that manages all training routines.
+There are many training and model options that are either parameters or attributes.
+Please refer to the :class:`~mbgdml.train.mbGDMLTrain` documentation for explanations.
+
+
+``create_task``
+---------------
+
+.. mermaid::
+
+    flowchart LR
+        mbGDMLTrain([mbGDMLTrain]) -- sigma --> create_task([create_task])
+        create_task --> task[/Task/]
+
+``train_model``
+---------------
+
+.. mermaid::
+
+    flowchart LR
+        task[/Task/] --> train_model([train_model])
+        train_model --> model[/Model/]
+
+``add_valid_errors``
+--------------------
+
+.. mermaid::
+
+    flowchart LR
+        model[/Model/] --> add_valid_errors([add_valid_errors])
+        add_valid_errors --> errors[/Validation<br/>errors/]
+
+
+
+``sigma`` optimization
+======================
+
+mbGDML provides two standard routines for optimizing ``sigma``: :meth:`~mbgdml.train.mbGDMLTrain.grid_search` and :meth:`~mbgdml.train.mbGDMLTrain.bayes_opt`
+
+
+``grid_search``
+---------------
+
+:meth:`~mbgdml.train.mbGDMLTrain.grid_search` performs a simple grid search on the ``sigmas`` provided in :attr:`~mbgdml.train.mbGDMLTrain.sigma_grid`.
+Typically, the validation errors will decrease with increasing ``sigmas`` and eventually start rising.
+So we sort the sigmas by ascending values and repeat the training routine discussed above until the validation errors begin to rise.
+
+.. figure:: images/training/1h2o-sigma-loss-increasing.png
+    :align: center
+    :width: 450 px
+
+    Validation loss, :func:`~mbgdml.losses.loss_f_e_weighted_mse`, of training a water 1-body potential with 1000 training points.
+    Note: additional ``sigmas`` were performed for illustrative purposes.
+
+.. admonition:: Info
+
+    This is how the `sGDML package <https://github.com/stefanch/sGDML>`__ trains their models.
+
+``bayes_opt``
+-------------
+
+More often than not, the optimal ``sigma`` is not one in :attr:`~mbgdml.train.mbGDMLTrain.sigma_grid`, but somewhere in between.
+We implemented a routine using the `bayesian-optimization <https://github.com/fmfn/BayesianOptimization>`__ package that better optimizes ``sigmas``.
+Furthermore, unlike the `sGDML package <https://github.com/stefanch/sGDML>`__ we do not restrict ``sigmas`` to integer values.
+
+.. figure:: images/training/2h2o-sigma-dual-min.png
+    :align: center
+    :width: 450 px
+
+    Validation loss, :func:`~mbgdml.losses.loss_f_e_weighted_mse`, of training a water 2-body potential with 300 training points.
+
 
 
 Iterative training
 ==================
 
-Curating the training set is no easy task.
-Instead of sampling based on energy distributions, we can iteratively build the training set to improve global accuracy using :meth:`~mbgdml.train.mbGDMLTrain.iterative_train`.
-This involves two stages:
+.. figure:: images/training/1h2o-cl-losses-1000-rand.png
+    :align: center
+    :width: 600 px
 
-1. Training a preliminary model with the standard sampling procedure.
-For example, a model trained on 200 data points.
+    Mean loss, :func:`~mbgdml.losses.loss_f_mse`, from a randomly trained water 1-body model on 1000 structures.
+    An initial model was trained on ``100`` structures and ``50`` structures were iteratively added until ``1000`` was reached.
+    The maximum cluster loss was :math:`0.163` [kcal/(mol A)]\ :sup:`2`.
 
-2. Using the previous model, make predictions of the entire dataset and identify structures with high errors.
-Add these structures to the previous training set and repeat until the final training set size is reached.
+.. figure:: images/training/1h2o-cl-losses-1000-iter.png
+    :align: center
+    :width: 600 px
 
-In the end, we have a model that has minimized the maximum errors across the data set.
-However, this comes at the expense of raising the smallest errors.
+    Mean loss, :func:`~mbgdml.losses.loss_f_mse`, from an iteratively trained water 1-body model on 1000 structures.
+    Structures were automatically selected using :func:`~mbgdml._gdml.sample.draw_strat_sample`.
+    The maximum cluster loss was :math:`5.079 \times 10^{-7}` [kcal/(mol A)]\ :sup:`2`.
+
+.. seealso::
+
+    This iterative training routine was originally introduced in DOI: `10.1063/5.0035530 <https://doi.org/10.1063/5.0035530>`__.
+

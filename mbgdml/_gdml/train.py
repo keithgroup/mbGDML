@@ -854,8 +854,9 @@ class GDMLTrain(object):
         ###   mbGDML CHANGE END   ###
 
         if use_analytic_solver:
+            mem_req_mb = (est_bytes_analytic + est_bytes_overhead)*1e-6  # MB
             log.info(
-                f'Using analytic solver (expected memory requirement: ~{est_bytes_analytic + est_bytes_overhead})'
+                f'Using analytic solver (expected memory requirement: ~{mem_req_mb:.3f} MB)'
             )
             ###   mbGDML CHANGE START   ###
             alphas = self.solve_analytic(task, desc, R_desc, R_d_desc, tril_perms_lin, y)
@@ -1180,7 +1181,7 @@ class GDMLTrain(object):
             1D array containing all recovered permutations
             expanded as one large permutation to be applied to a
             tiled copy of the object to be permuted.
-        sig : int
+        sig : :obj:`int`
             Hyperparameter sigma (kernel length scale).
         use_E_cstr : :obj:`bool`, optional
             True: include energy constraints in the kernel,

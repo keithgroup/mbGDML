@@ -2,4 +2,4 @@
 ===============
 
 .. autoclass:: mbgdml.train.mbGDMLTrain
-
+    :members:

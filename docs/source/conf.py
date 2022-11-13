@@ -22,6 +22,7 @@ sys.path.insert(0, os.path.abspath('../'))
 project = 'mbGDML'
 copyright = '2020-2022 Alex M. Maldonado'
 author = 'Alex M. Maldonado'
+html_title = 'mbGDML'
 
 
 
@@ -38,7 +39,10 @@ extensions = [
     'sphinx.ext.intersphinx',
     'sphinx.ext.viewcode',
     'sphinx.ext.autosectionlabel',
-    'sphinx_multiversion'
+    'sphinx_multiversion',
+    'sphinx_design',
+    'sphinxcontrib.mermaid',
+    'sphinxemoji.sphinxemoji',
 ]
 
 # 
@@ -71,7 +75,9 @@ intersphinx_mapping = {
     'numpy': ('https://numpy.org/doc/stable/', None),
     'matplotlib': ('https://matplotlib.org/stable/', None),
     'cclib': ('https://cclib.github.io/', None),
-    'ase': ('https://wiki.fysik.dtu.dk/ase/', None)
+    'ase': ('https://wiki.fysik.dtu.dk/ase/', None),
+    'torch': ("https://pytorch.org/docs/master/", None),
+    'scipy': ('https://docs.scipy.org/doc/scipy/', None),
 }
 
 
@@ -101,3 +107,9 @@ html_sidebars = {
         'versions.html',
     ],
 }
+
+# Manually copy over files to the root. These can then be referenced outside of the
+# download directive.
+html_extra_path = [
+    './files/structures/2h2o-psi4-opt.xyz',
+]

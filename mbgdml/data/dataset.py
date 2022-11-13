@@ -44,7 +44,7 @@ class dataSet(mbGDMLData):
         Z_key : :obj:`str`, default: ``Z``
             :obj:`dict` key in ``dset_path`` for atomic numbers.
         R_key : :obj:`str`, default: ``R``
-            :obj:`dict` key in ``dset_path`` for atomic Cartesian coordinates.
+            :obj:`dict` key in ``dset_path`` for Cartesian coordinates.
         E_key : :obj:`str`, default: ``E``
             :obj:`dict` key in ``dset_path`` for energies.
         F_key : :obj:`str`, default: ``F``

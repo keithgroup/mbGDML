@@ -318,14 +318,14 @@ class mbGDMLTrain:
         
         Parameters
         ----------
-        model : :obj:`mbgdml.data.mbModel`
+        model : :obj:`mbgdml.models.gdmlModel`
             Model to test.
         dataset : :obj:`dict`
             Test dataset.
         
         Returns
         -------
-        :obj:`mbgdml.data.mbModel`
+        :obj:`mbgdml.models.gdmlModel`
             Tested and finalized many-body GDML model.
         """
         n_test, E_errors, F_errors = model_errors(
@@ -383,7 +383,7 @@ class mbGDMLTrain:
 
         Parameters
         ----------
-        model : :obj:`mbgdml.data.mbModel`
+        model : :obj:`mbgdml.models.gdmlModel`
             Many-body GDML model.
         dataset : :obj:`dict`
             Dataset used for training, validation, and testing.
@@ -804,13 +804,6 @@ class mbGDMLTrain:
         found then start to increase (overfitting). We sort ``sigmas`` from
         lowest to highest and stop the search once the loss function starts
         increasing.
-
-        Notes
-        -----
-        For higher-order models, the loss function could prematurely find
-        a minimum at small sigmas. We recommend spanning a large search space
-        (e.g., ``list(range(2, 500, 50))``), then refining the search grid by
-        decreasing the step size.
         
         Parameters
         ----------

@@ -4,7 +4,7 @@ API
 .. toctree::
    :maxdepth: 4
    
-   Data sets <dataset/dataset_module>
+   Data sets <dataSet>
    Training <training/training>
    Models <models/models_module>
    Descriptors <descriptors/descriptors_module>
