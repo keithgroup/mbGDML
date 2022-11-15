@@ -18,6 +18,6 @@ jobs:
           python -m pip install pandas
           python -m pip install pytest-cov
       - name: Run tests and collect coverage
-        run: pytest --cov 
+        run: pytest --cov=mbgdml
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
