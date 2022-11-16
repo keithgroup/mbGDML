@@ -239,7 +239,7 @@ Please see the following incomplete list of literature for additional informatio
 
 .. attention::
 
-    If you have any questions or comments about the information presented here please do not hesitate to create an `issue on the GitHub repository <https://github.com/keithgroup/mbGDML/issues>`__.
+    If you have any questions or comments about the information presented here please do not hesitate to create a `discussion on the GitHub repository <https://github.com/keithgroup/mbGDML/discussions>`__.
 
 - **Overview**: `10.1063/1.5126216 <https://doi.org/10.1063/1.5126216>`__, `10.1063/1.4986110 <https://doi.org/10.1063/1.4986110>`__, `10.1063/1.4947087 <https://doi.org/10.1063/1.4947087>`__, `10.1063/1.4885846 <https://doi.org/10.1063/1.4885846>`__
 - **Cutoffs**: `10.1021/acs.jctc.9b01095 <https://doi.org/10.1021/acs.jctc.9b01095>`__
