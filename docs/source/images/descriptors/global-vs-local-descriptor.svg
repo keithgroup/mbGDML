@@ -1,0 +1,1653 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="8in"
+   height="4in"
+   viewBox="0 0 203.2 101.6"
+   version="1.1"
+   id="svg5"
+   inkscape:version="1.2.1 (1:1.2.1+202210291244+9c6d41e410)"
+   sodipodi:docname="global-vs-local-descriptor.svg"
+   inkscape:export-filename="global-vs-local-descriptor.png"
+   inkscape:export-xdpi="1000"
+   inkscape:export-ydpi="1000"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview7"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="true"
+     inkscape:document-units="in"
+     showgrid="false"
+     inkscape:zoom="2.2872649"
+     inkscape:cx="539.72761"
+     inkscape:cy="104.27301"
+     inkscape:window-width="1864"
+     inkscape:window-height="1129"
+     inkscape:window-x="467"
+     inkscape:window-y="1114"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1"
+     units="in"
+     showguides="true"
+     inkscape:guide-bbox="true"
+     inkscape:showpageshadow="2"
+     inkscape:deskcolor="#d1d1d1" />
+  <defs
+     id="defs2">
+    <marker
+       style="overflow:visible"
+       id="RoundedArrow"
+       refX="0"
+       refY="0"
+       orient="auto-start-reverse"
+       inkscape:stockid="RoundedArrow"
+       markerWidth="6.1347523"
+       markerHeight="5.9304953"
+       viewBox="0 0 6.1347524 5.9304951"
+       inkscape:isstock="true"
+       inkscape:collect="always"
+       preserveAspectRatio="xMidYMid">
+      <path
+         transform="scale(0.7)"
+         d="m -0.21114562,-4.1055728 6.42229122,3.21114561 a 1,1 90 0 1 0,1.78885438 L -0.21114562,4.1055728 A 1.236068,1.236068 31.717474 0 1 -2,3 v -6 a 1.236068,1.236068 148.28253 0 1 1.78885438,-1.1055728 z"
+         style="fill:context-stroke;fill-rule:evenodd;stroke:none"
+         id="path1367" />
+    </marker>
+    <marker
+       style="overflow:visible"
+       id="RoundedArrow-9"
+       refX="0"
+       refY="0"
+       orient="auto-start-reverse"
+       inkscape:stockid="RoundedArrow"
+       markerWidth="6.1347523"
+       markerHeight="5.9304953"
+       viewBox="0 0 6.1347524 5.9304951"
+       inkscape:isstock="true"
+       inkscape:collect="always"
+       preserveAspectRatio="xMidYMid">
+      <path
+         transform="scale(0.7)"
+         d="m -0.21114562,-4.1055728 6.42229122,3.21114561 a 1,1 90 0 1 0,1.78885438 L -0.21114562,4.1055728 A 1.236068,1.236068 31.717474 0 1 -2,3 v -6 a 1.236068,1.236068 148.28253 0 1 1.78885438,-1.1055728 z"
+         style="fill:context-stroke;fill-rule:evenodd;stroke:none"
+         id="path1367-2" />
+    </marker>
+  </defs>
+  <g
+     inkscape:groupmode="layer"
+     id="layer4"
+     inkscape:label="background"
+     sodipodi:insensitive="true">
+    <rect
+       style="fill:#ffffff;stroke-width:1.19945;stroke-linecap:round;stroke-dasharray:1.19945, 2.3989;stroke-dashoffset:0"
+       id="rect985"
+       width="203.2"
+       height="101.6"
+       x="0"
+       y="0" />
+  </g>
+  <g
+     inkscape:groupmode="layer"
+     id="layer2"
+     inkscape:label="local-environment"
+     style="display:inline">
+    <g
+       id="g1940"
+       transform="matrix(0.35820538,0,0,0.35820538,44.198755,7.1153428)"
+       style="stroke-width:1.41818;stroke-dasharray:none">
+      <path
+         style="fill:none;stroke:#004da0;stroke-width:1.41818;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+         d="M 29.314663,37.991266 H 54.262695"
+         id="path76204" />
+      <ellipse
+         style="fill:none;stroke:#004da0;stroke-width:1.41818;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+         id="path34-3"
+         cx="29.320436"
+         cy="37.985916"
+         inkscape:label="inner barrier"
+         rx="24.93469"
+         ry="24.565145" />
+      <g
+         id="g23473-6"
+         inkscape:label="water"
+         transform="matrix(1.2613628,0,0,1.2566028,-64.880586,-58.497133)"
+         style="stroke-width:1.12645;stroke-dasharray:none">
+        <circle
+           id="circle1030-7-8-7-7-2-9-3-7"
+           inkscape:label="H atom"
+           class="st1"
+           cx="67.914162"
+           cy="94.924858"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.12645;stroke-dasharray:none" />
+        <circle
+           id="circle1030-7-8-7-7-2-9-5"
+           inkscape:label="H atom"
+           class="st1"
+           cx="60.655411"
+           cy="99.271973"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.12645;stroke-dasharray:none" />
+        <circle
+           id="path1084-6-9-5-2-7-35"
+           inkscape:label="O atom"
+           class="st2"
+           cx="64.786949"
+           cy="96.828964"
+           r="3.8441317"
+           style="fill:#ff5555;stroke-width:1.12645;stroke-dasharray:none" />
+      </g>
+      <ellipse
+         id="circle1030-7-8-7-7-2-9-3-1-6"
+         inkscape:label="H atom"
+         class="st1"
+         cx="55.188812"
+         cy="19.352407"
+         style="fill:#e6e6e6;stroke-width:1.41818;stroke-dasharray:none"
+         rx="3.8518863"
+         ry="3.8373501" />
+      <ellipse
+         id="circle1030-7-8-7-7-2-9-2-2"
+         inkscape:label="H atom"
+         class="st1"
+         cx="51.170769"
+         cy="28.747492"
+         style="fill:#e6e6e6;stroke:#fdb719;stroke-width:1.41818;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+         rx="3.8518863"
+         ry="3.8373501" />
+      <ellipse
+         id="path1084-6-9-5-2-7-3-9"
+         inkscape:label="O atom"
+         class="st2"
+         cx="57.54129"
+         cy="25.86487"
+         style="fill:#ff5555;stroke-width:1.41818;stroke-dasharray:none"
+         rx="4.848845"
+         ry="4.8305464" />
+      <g
+         id="g23468-6-1"
+         inkscape:label="water"
+         transform="matrix(-1.1500064,-0.51623515,-0.51819067,1.1456665,146.27699,6.091533)"
+         style="stroke-width:1.12645;stroke-dasharray:none">
+        <circle
+           id="circle1030-7-8-7-7-2-9-3-1-1-2"
+           inkscape:label="H atom"
+           class="st1"
+           cx="98.140701"
+           cy="70.944351"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.12645;stroke-dasharray:none" />
+        <circle
+           id="circle1030-7-8-7-7-2-9-2-9-7"
+           inkscape:label="H atom"
+           class="st1"
+           cx="94.955223"
+           cy="78.420929"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.12645;stroke-dasharray:none" />
+        <circle
+           id="path1084-6-9-5-2-7-3-0-0"
+           inkscape:label="O atom"
+           class="st2"
+           cx="100.00573"
+           cy="76.126945"
+           r="3.8441317"
+           style="fill:#ff5555;stroke-width:1.12645;stroke-dasharray:none" />
+      </g>
+      <ellipse
+         id="path1084-6-9-5-2-7-3-6-9"
+         inkscape:label="O atom"
+         class="st2"
+         cx="15.012227"
+         cy="19.158445"
+         style="fill:#ff5555;stroke:#fdb719;stroke-width:1.41818;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+         rx="4.848845"
+         ry="4.8305464" />
+      <ellipse
+         id="circle1030-7-8-7-7-2-9-3-1-8-3"
+         inkscape:label="H atom"
+         class="st1"
+         cx="15.917909"
+         cy="13.769552"
+         style="fill:#e6e6e6;stroke-width:1.41818;stroke-dasharray:none"
+         rx="3.8518863"
+         ry="3.8373501" />
+      <ellipse
+         id="circle1030-7-8-7-7-2-9-2-7-6"
+         inkscape:label="H atom"
+         class="st1"
+         cx="13.65426"
+         cy="24.662741"
+         style="fill:#e6e6e6;stroke:#fdb719;stroke-width:1.41818;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+         rx="3.8518863"
+         ry="3.8373501" />
+      <g
+         id="g23463-68-0"
+         inkscape:label="water"
+         transform="matrix(0.3259298,1.2139277,-1.2185262,0.32469982,102.11506,-37.039662)"
+         style="stroke-width:1.12645;stroke-dasharray:none">
+        <circle
+           id="path1084-6-9-5-2-7-3-6-8-6"
+           inkscape:label="O atom"
+           class="st2"
+           cx="64.321983"
+           cy="56.88055"
+           r="3.8441317"
+           style="fill:#ff5555;stroke-width:1.12645;stroke-dasharray:none" />
+        <circle
+           id="circle1030-7-8-7-7-2-9-3-1-8-9-2"
+           inkscape:label="H atom"
+           class="st1"
+           cx="65.040001"
+           cy="52.592091"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.12645;stroke-dasharray:none" />
+        <circle
+           id="circle1030-7-8-7-7-2-9-2-7-09-6"
+           inkscape:label="H atom"
+           class="st1"
+           cx="63.245396"
+           cy="61.260845"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.12645;stroke-dasharray:none" />
+      </g>
+      <g
+         id="g23127-1"
+         inkscape:label="methanol"
+         transform="matrix(1.2613628,0,0,1.2566028,-68.988943,-79.355758)"
+         style="stroke-width:1.12645;stroke-dasharray:none">
+        <circle
+           id="circle1030-7-8-7-7-2-9-30-6-1-4-8"
+           inkscape:label="H atom"
+           class="st1"
+           cx="78.898964"
+           cy="56.92979"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.12645;stroke-dasharray:none" />
+        <circle
+           id="circle1030-7-8-7-7-2-9-3-0-1-7"
+           inkscape:label="H atom"
+           class="st1"
+           cx="86.468887"
+           cy="61.011089"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.12645;stroke-dasharray:none" />
+        <circle
+           id="path1084-6-9-5-2-7-1-1-9-9"
+           inkscape:label="C atom"
+           class="st2"
+           cx="85.615746"
+           cy="57.149418"
+           r="4.8124061"
+           style="fill:#80817e;fill-opacity:1;stroke-width:1.12645;stroke-dasharray:none" />
+        <circle
+           id="circle1030-7-8-7-7-2-9-30-65-2"
+           inkscape:label="H atom"
+           class="st1"
+           cx="85.24749"
+           cy="62.383339"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.12645;stroke-dasharray:none" />
+        <circle
+           id="path1084-6-9-5-2-7-1-3-0"
+           inkscape:label="O atom"
+           class="st2"
+           cx="89.980064"
+           cy="52.200466"
+           r="3.8441317"
+           style="fill:#ff5555;stroke-width:1.12645;stroke-dasharray:none" />
+        <circle
+           id="circle1030-7-8-7-7-2-9-30-6-5-2"
+           inkscape:label="H atom"
+           class="st1"
+           cx="95.063957"
+           cy="54.231201"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.12645;stroke-dasharray:none" />
+      </g>
+      <ellipse
+         id="circle1030-7-8-7-7-2-9-30-6-1-4-9-0-7-3"
+         inkscape:label="H atom"
+         class="st1"
+         cx="-42.447803"
+         cy="38.552536"
+         style="fill:#e6e6e6;stroke:#fdb719;stroke-width:1.41818;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+         transform="matrix(0.15463593,-0.98797152,0.98814887,0.15349857,0,0)"
+         rx="3.8376958"
+         ry="3.8515418" />
+      <ellipse
+         id="path1084-6-9-5-2-7-1-3-0-8-9-7"
+         inkscape:label="O atom"
+         class="st2"
+         cx="-38.762951"
+         cy="34.005318"
+         style="fill:#ff5555;stroke:#fdb719;stroke-width:1.41818;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+         transform="matrix(0.15463593,-0.98797152,0.98814887,0.15349857,0,0)"
+         rx="4.8309817"
+         ry="4.8484116" />
+      <ellipse
+         id="circle1030-7-8-7-7-2-9-30-65-0-1-4-5"
+         inkscape:label="H atom"
+         class="st1"
+         cx="-27.31851"
+         cy="39.317261"
+         style="fill:#e6e6e6;stroke:#fdb719;stroke-width:1.41818;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+         transform="matrix(0.15463593,-0.98797152,0.98814887,0.15349857,0,0)"
+         rx="3.8376958"
+         ry="3.8515418" />
+      <ellipse
+         id="path1084-6-9-5-2-7-1-1-9-0-0-6-9"
+         inkscape:label="C atom"
+         class="st2"
+         cx="-33.035599"
+         cy="34.842438"
+         style="fill:#80817e;fill-opacity:1;stroke:none;stroke-width:1.41818;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+         transform="matrix(0.15463593,-0.98797152,0.98814887,0.15349857,0,0)"
+         rx="6.0478277"
+         ry="6.0696473" />
+      <ellipse
+         id="circle1030-7-8-7-7-2-9-3-0-1-3-8-3-2"
+         inkscape:label="H atom"
+         class="st1"
+         cx="-38.231602"
+         cy="38.561127"
+         style="fill:#e6e6e6;stroke:#fdb719;stroke-width:1.41818;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+         transform="matrix(0.15463593,-0.98797152,0.98814887,0.15349857,0,0)"
+         rx="3.8376958"
+         ry="3.8515418" />
+      <ellipse
+         id="circle1030-7-8-7-7-2-9-30-6-5-5-4-9-2"
+         inkscape:label="H atom"
+         class="st1"
+         cx="-31.226244"
+         cy="27.972139"
+         style="fill:#e6e6e6;stroke:#fdb719;stroke-width:1.41818;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+         transform="matrix(0.15463593,-0.98797152,0.98814887,0.15349857,0,0)"
+         rx="3.8376958"
+         ry="3.8515418" />
+      <text
+         xml:space="preserve"
+         style="font-style:normal;font-weight:normal;font-size:5.64444px;line-height:1.25;font-family:sans-serif;fill:#004da0;fill-opacity:1;stroke:none;stroke-width:1.41818;stroke-dasharray:none"
+         x="39.821243"
+         y="42.789406"
+         id="text88786"><tspan
+           sodipodi:role="line"
+           style="font-style:italic;font-size:5.64444px;fill:#004da0;fill-opacity:1;stroke-width:1.41818;stroke-dasharray:none"
+           x="39.821243"
+           y="42.789406"
+           id="tspan88788">r<tspan
+   style="font-size:65%;baseline-shift:sub;fill:#004da0;fill-opacity:1;stroke-width:1.41818;stroke-dasharray:none"
+   id="tspan107293">cut</tspan></tspan></text>
+      <g
+         id="g24771-8"
+         transform="matrix(1.2613628,0,0,1.2566028,-86.183969,-51.506031)"
+         inkscape:label="methanol"
+         style="stroke-width:1.12645;stroke-dasharray:none">
+        <circle
+           id="circle1030-7-8-7-7-2-9-30-3-9"
+           inkscape:label="H atom"
+           class="st1"
+           cx="-71.70742"
+           cy="-22.097275"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.12645;stroke-dasharray:none"
+           transform="rotate(-169.92525)" />
+        <circle
+           id="circle1030-7-8-7-7-2-9-30-6-8-7"
+           inkscape:label="H atom"
+           class="st1"
+           cx="-66.73819"
+           cy="-32.497406"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.12645;stroke-dasharray:none"
+           transform="rotate(-169.92525)" />
+        <circle
+           id="circle1030-7-8-7-7-2-9-30-6-1-6-3"
+           inkscape:label="H atom"
+           class="st1"
+           cx="-76.861702"
+           cy="-30.852562"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.12645;stroke-dasharray:none"
+           transform="rotate(-169.92525)" />
+        <circle
+           id="path1084-6-9-5-2-7-1-1-2-6"
+           inkscape:label="C atom"
+           class="st2"
+           cx="-70.566422"
+           cy="-27.822945"
+           r="4.8124061"
+           style="fill:#80817e;fill-opacity:1;stroke-width:1.12645;stroke-dasharray:none"
+           transform="rotate(-169.92525)" />
+        <circle
+           id="path1084-6-9-5-2-7-1-2-1"
+           inkscape:label="O atom"
+           class="st2"
+           cx="-68.520348"
+           cy="-26.870918"
+           r="3.8441317"
+           style="fill:#ff5555;stroke-width:1.12645;stroke-dasharray:none"
+           transform="rotate(-169.92525)" />
+        <circle
+           id="circle1030-7-8-7-7-2-9-3-0-5-2"
+           inkscape:label="H atom"
+           class="st1"
+           cx="-63.671803"
+           cy="-24.944771"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.12645;stroke-dasharray:none"
+           transform="rotate(-169.92525)" />
+      </g>
+      <g
+         id="g23127-5-5-9"
+         inkscape:label="methanol"
+         transform="matrix(-1.2479145,-0.18300681,0.18370005,-1.2432051,82.342645,150.55958)"
+         style="stroke-width:1.12645;stroke-dasharray:none">
+        <circle
+           id="circle1030-7-8-7-7-2-9-30-6-1-4-0-7-3"
+           inkscape:label="H atom"
+           class="st1"
+           cx="78.898964"
+           cy="56.92979"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.12645;stroke-dasharray:none" />
+        <circle
+           id="circle1030-7-8-7-7-2-9-3-0-1-35-96-1"
+           inkscape:label="H atom"
+           class="st1"
+           cx="86.468887"
+           cy="61.011089"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.12645;stroke-dasharray:none" />
+        <circle
+           id="path1084-6-9-5-2-7-1-1-9-5-4-9"
+           inkscape:label="C atom"
+           class="st2"
+           cx="85.615746"
+           cy="57.149418"
+           r="4.8124061"
+           style="fill:#80817e;fill-opacity:1;stroke-width:1.12645;stroke-dasharray:none" />
+        <circle
+           id="circle1030-7-8-7-7-2-9-30-65-5-7-4"
+           inkscape:label="H atom"
+           class="st1"
+           cx="85.24749"
+           cy="62.383339"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.12645;stroke-dasharray:none" />
+        <circle
+           id="path1084-6-9-5-2-7-1-3-4-4-7"
+           inkscape:label="O atom"
+           class="st2"
+           cx="89.980064"
+           cy="52.200466"
+           r="3.8441317"
+           style="fill:#ff5555;stroke-width:1.12645;stroke-dasharray:none" />
+        <circle
+           id="circle1030-7-8-7-7-2-9-30-6-5-7-1-8"
+           inkscape:label="H atom"
+           class="st1"
+           cx="95.063957"
+           cy="54.231201"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.12645;stroke-dasharray:none" />
+      </g>
+      <g
+         id="g23463-6-4"
+         inkscape:label="water"
+         transform="matrix(0.55579586,-1.1280375,-1.1323106,-0.55369842,109.75393,148.39799)"
+         style="stroke-width:1.12645;stroke-dasharray:none">
+        <circle
+           id="path1084-6-9-5-2-7-3-6-3-5"
+           inkscape:label="O atom"
+           class="st2"
+           cx="64.321983"
+           cy="56.88055"
+           r="3.8441317"
+           style="fill:#ff5555;stroke-width:1.12645;stroke-dasharray:none" />
+        <circle
+           id="circle1030-7-8-7-7-2-9-3-1-8-5-0"
+           inkscape:label="H atom"
+           class="st1"
+           cx="65.040001"
+           cy="52.592091"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.12645;stroke-dasharray:none" />
+        <circle
+           id="circle1030-7-8-7-7-2-9-2-7-0-3"
+           inkscape:label="H atom"
+           class="st1"
+           cx="63.245396"
+           cy="61.260845"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.12645;stroke-dasharray:none" />
+      </g>
+      <g
+         id="g23298-6-9-6"
+         inkscape:label="methanol"
+         transform="matrix(1.2613628,0,0,-1.2566028,-54.644344,184.42902)"
+         style="stroke-width:1.12645;stroke-dasharray:none">
+        <circle
+           id="circle1030-7-8-7-7-2-9-30-6-1-4-9-0-1-1"
+           inkscape:label="H atom"
+           class="st1"
+           cx="47.27972"
+           cy="78.143944"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.12645;stroke-dasharray:none" />
+        <circle
+           id="path1084-6-9-5-2-7-1-3-0-8-8-0"
+           inkscape:label="O atom"
+           class="st2"
+           cx="50.211849"
+           cy="74.53862"
+           r="3.8441317"
+           style="fill:#ff5555;stroke-width:1.12645;stroke-dasharray:none" />
+        <circle
+           id="circle1030-7-8-7-7-2-9-30-65-0-1-0-6"
+           inkscape:label="H atom"
+           class="st1"
+           cx="59.318474"
+           cy="78.750267"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.12645;stroke-dasharray:none" />
+        <circle
+           id="path1084-6-9-5-2-7-1-1-9-0-0-7-3"
+           inkscape:label="C atom"
+           class="st2"
+           cx="54.769249"
+           cy="75.202339"
+           r="4.8124061"
+           style="fill:#80817e;fill-opacity:1;stroke-width:1.12645;stroke-dasharray:none" />
+        <circle
+           id="circle1030-7-8-7-7-2-9-3-0-1-3-8-6-2"
+           inkscape:label="H atom"
+           class="st1"
+           cx="50.634659"
+           cy="78.150757"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.12645;stroke-dasharray:none" />
+        <circle
+           id="circle1030-7-8-7-7-2-9-30-6-5-5-4-4-0"
+           inkscape:label="H atom"
+           class="st1"
+           cx="56.208992"
+           cy="69.755127"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.12645;stroke-dasharray:none" />
+      </g>
+      <g
+         id="g23135-2-3-2-6"
+         transform="matrix(1.2613628,0,0,-1.2566028,-31.786143,121.97476)"
+         inkscape:label="methanol"
+         style="stroke-width:1.12645;stroke-dasharray:none">
+        <circle
+           id="circle1030-7-8-7-7-2-9-30-3-6-8-1"
+           inkscape:label="H atom"
+           class="st1"
+           cx="90.546532"
+           cy="95.767059"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.12645;stroke-dasharray:none" />
+        <circle
+           id="circle1030-7-8-7-7-2-9-30-6-8-2-5-5"
+           inkscape:label="H atom"
+           class="st1"
+           cx="95.515762"
+           cy="85.366928"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.12645;stroke-dasharray:none" />
+        <circle
+           id="circle1030-7-8-7-7-2-9-30-6-1-6-2-9-5"
+           inkscape:label="H atom"
+           class="st1"
+           cx="85.39225"
+           cy="87.011772"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.12645;stroke-dasharray:none" />
+        <circle
+           id="path1084-6-9-5-2-7-1-1-2-9-8-4"
+           inkscape:label="C atom"
+           class="st2"
+           cx="91.687531"
+           cy="90.041389"
+           r="4.8124061"
+           style="fill:#80817e;fill-opacity:1;stroke-width:1.12645;stroke-dasharray:none" />
+        <circle
+           id="path1084-6-9-5-2-7-1-2-7-3-7"
+           inkscape:label="O atom"
+           class="st2"
+           cx="93.733604"
+           cy="90.993416"
+           r="3.8441317"
+           style="fill:#ff5555;stroke-width:1.12645;stroke-dasharray:none" />
+        <circle
+           id="circle1030-7-8-7-7-2-9-3-0-5-9-7-6"
+           inkscape:label="H atom"
+           class="st1"
+           cx="98.582146"
+           cy="92.919563"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.12645;stroke-dasharray:none" />
+      </g>
+      <g
+         id="g23135-2-3-5-5"
+         transform="matrix(1.2155044,-0.33702415,0.33575232,1.2109174,-171.59681,-57.888532)"
+         inkscape:label="methanol"
+         style="stroke-width:1.12645;stroke-dasharray:none">
+        <circle
+           id="circle1030-7-8-7-7-2-9-30-3-6-2-6"
+           inkscape:label="H atom"
+           class="st1"
+           cx="90.546532"
+           cy="95.767059"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.12645;stroke-dasharray:none" />
+        <circle
+           id="circle1030-7-8-7-7-2-9-30-6-8-2-0-9"
+           inkscape:label="H atom"
+           class="st1"
+           cx="95.515762"
+           cy="85.366928"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.12645;stroke-dasharray:none" />
+        <circle
+           id="circle1030-7-8-7-7-2-9-30-6-1-6-2-8-3"
+           inkscape:label="H atom"
+           class="st1"
+           cx="85.39225"
+           cy="87.011772"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.12645;stroke-dasharray:none" />
+        <circle
+           id="path1084-6-9-5-2-7-1-1-2-9-5-7"
+           inkscape:label="C atom"
+           class="st2"
+           cx="91.687531"
+           cy="90.041389"
+           r="4.8124061"
+           style="fill:#80817e;fill-opacity:1;stroke-width:1.12645;stroke-dasharray:none" />
+        <circle
+           id="path1084-6-9-5-2-7-1-2-7-9-4"
+           inkscape:label="O atom"
+           class="st2"
+           cx="93.733604"
+           cy="90.993416"
+           r="3.8441317"
+           style="fill:#ff5555;stroke-width:1.12645;stroke-dasharray:none" />
+        <circle
+           id="circle1030-7-8-7-7-2-9-3-0-5-9-6-5"
+           inkscape:label="H atom"
+           class="st1"
+           cx="98.582146"
+           cy="92.919563"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.12645;stroke-dasharray:none" />
+      </g>
+      <g
+         id="g23468-8-2-2"
+         inkscape:label="water"
+         transform="matrix(1.2613628,0,0,-1.2566028,-45.480533,170.79799)"
+         style="stroke-width:1.12645;stroke-dasharray:none">
+        <circle
+           id="circle1030-7-8-7-7-2-9-3-1-5-5-5"
+           inkscape:label="H atom"
+           class="st1"
+           cx="98.140701"
+           cy="70.944351"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.12645;stroke-dasharray:none" />
+        <circle
+           id="circle1030-7-8-7-7-2-9-2-0-7-4"
+           inkscape:label="H atom"
+           class="st1"
+           cx="94.955223"
+           cy="78.420929"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.12645;stroke-dasharray:none" />
+        <circle
+           id="path1084-6-9-5-2-7-3-8-5-7"
+           inkscape:label="O atom"
+           class="st2"
+           cx="100.00573"
+           cy="76.126945"
+           r="3.8441317"
+           style="fill:#ff5555;stroke-width:1.12645;stroke-dasharray:none" />
+      </g>
+      <g
+         id="g23473-8-8-4"
+         inkscape:label="water"
+         transform="matrix(1.2613628,0,0,-1.2566028,-33.887637,207.27924)"
+         style="stroke-width:1.12645;stroke-dasharray:none">
+        <circle
+           id="circle1030-7-8-7-7-2-9-3-9-4-4"
+           inkscape:label="H atom"
+           class="st1"
+           cx="67.914162"
+           cy="94.924858"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.12645;stroke-dasharray:none" />
+        <circle
+           id="circle1030-7-8-7-7-2-9-7-6-3"
+           inkscape:label="H atom"
+           class="st1"
+           cx="60.655411"
+           cy="99.271973"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.12645;stroke-dasharray:none" />
+        <circle
+           id="path1084-6-9-5-2-7-8-4-0"
+           inkscape:label="O atom"
+           class="st2"
+           cx="64.786949"
+           cy="96.828964"
+           r="3.8441317"
+           style="fill:#ff5555;stroke-width:1.12645;stroke-dasharray:none" />
+      </g>
+    </g>
+  </g>
+  <g
+     inkscape:groupmode="layer"
+     id="layer5"
+     inkscape:label="local-cards">
+    <g
+       id="g3553"
+       transform="translate(2.3534192,-35.637493)"
+       style="stroke-width:0.70555556;stroke-dasharray:none">
+      <path
+         class="st5"
+         d="m 147.42664,70.660524 h -14.15069 c -1.25999,0 -2.28229,-0.99916 -2.28229,-2.23063 V 44.339503 c 0,-1.23147 1.0223,-2.23063 2.28229,-2.23063 h 14.15069 c 1.25999,0 2.28229,0.99916 2.28229,2.23063 v 24.091521 c 0,1.23147 -1.0223,2.2295 -2.28229,2.2295 z"
+         id="path95"
+         style="fill:#ffffff;stroke:#969696;stroke-width:0.70555556;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;stroke-dasharray:none" />
+      <path
+         class="st5"
+         d="m 150.88815,70.660524 h -14.15068 c -1.25999,0 -2.28229,-0.99916 -2.28229,-2.23063 V 44.339503 c 0,-1.23147 1.0223,-2.23063 2.28229,-2.23063 h 14.15068 c 1.26,0 2.2823,0.99916 2.2823,2.23063 v 24.091521 c 0,1.23147 -1.0223,2.2295 -2.2823,2.2295 z"
+         id="path97"
+         style="fill:#ffffff;stroke:#969696;stroke-width:0.70555556;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;stroke-dasharray:none" />
+      <path
+         class="st5"
+         d="m 154.34967,70.660524 h -14.15068 c -1.25999,0 -2.2823,-0.99916 -2.2823,-2.23063 V 44.339503 c 0,-1.23147 1.02231,-2.23063 2.2823,-2.23063 h 14.15068 c 1.25999,0 2.28229,0.99916 2.28229,2.23063 v 24.091521 c 0,1.23147 -1.0223,2.2295 -2.28229,2.2295 z"
+         id="path99"
+         style="fill:#ffffff;stroke:#969696;stroke-width:0.70555556;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;stroke-dasharray:none" />
+      <path
+         class="st5"
+         d="m 157.81119,70.660524 h -14.15068 c -1.26,0 -2.2823,-0.99916 -2.2823,-2.23063 V 44.339503 c 0,-1.23147 1.0223,-2.23063 2.2823,-2.23063 h 14.15068 c 1.25999,0 2.28229,0.99916 2.28229,2.23063 v 24.091521 c 0,1.23147 -1.0223,2.2295 -2.28229,2.2295 z"
+         id="path101"
+         style="fill:#ffffff;stroke:#969696;stroke-width:0.70555556;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;stroke-dasharray:none" />
+      <path
+         class="st5"
+         d="m 161.2727,70.660524 h -14.15068 c -1.25999,0 -2.28229,-0.99916 -2.28229,-2.23063 V 44.339503 c 0,-1.23147 1.0223,-2.23063 2.28229,-2.23063 h 14.15068 c 1.26,0 2.2823,0.99916 2.2823,2.23063 v 24.091521 c 0,1.23147 -1.0223,2.2295 -2.2823,2.2295 z"
+         id="path103"
+         style="fill:#ffffff;stroke:#969696;stroke-width:0.70555556;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;stroke-dasharray:none" />
+      <path
+         class="st5"
+         d="m 164.73422,70.660524 h -14.15068 c -1.25999,0 -2.28229,-0.99916 -2.28229,-2.23063 V 44.339503 c 0,-1.23147 1.0223,-2.23063 2.28229,-2.23063 h 14.15068 c 1.25999,0 2.28229,0.99916 2.28229,2.23063 v 24.091521 c 0,1.23147 -1.0223,2.2295 -2.28229,2.2295 z"
+         id="path105"
+         style="fill:#ffffff;stroke:#969696;stroke-width:0.70555556;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;stroke-dasharray:none" />
+      <path
+         class="st5"
+         d="m 168.19574,70.660524 h -14.15068 c -1.25999,0 -2.2823,-0.99916 -2.2823,-2.23063 V 44.339503 c 0,-1.23147 1.02231,-2.23063 2.2823,-2.23063 h 14.15068 c 1.25999,0 2.28229,0.99916 2.28229,2.23063 v 24.091521 c 0,1.23147 -1.0223,2.2295 -2.28229,2.2295 z"
+         id="path107"
+         style="fill:#ffffff;stroke:#969696;stroke-width:0.70555556;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;stroke-dasharray:none" />
+      <path
+         class="st5"
+         d="m 171.65725,70.660524 h -14.15068 c -1.25999,0 -2.28229,-0.99916 -2.28229,-2.23063 V 44.339503 c 0,-1.23147 1.0223,-2.23063 2.28229,-2.23063 h 14.15068 c 1.26,0 2.2823,0.99916 2.2823,2.23063 v 24.091521 c 0,1.23147 -1.0223,2.2295 -2.2823,2.2295 z"
+         id="path109"
+         style="fill:#ffffff;stroke:#969696;stroke-width:0.70555556;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;stroke-dasharray:none" />
+      <path
+         class="st5"
+         d="m 175.11877,70.660524 h -14.15068 c -1.25999,0 -2.28229,-0.99916 -2.28229,-2.23063 V 44.339503 c 0,-1.23147 1.0223,-2.23063 2.28229,-2.23063 h 14.15068 c 1.25999,0 2.2823,0.99916 2.2823,2.23063 v 24.091521 c 0,1.23147 -1.02231,2.2295 -2.2823,2.2295 z"
+         id="path111"
+         style="fill:#ffffff;stroke:#969696;stroke-width:0.70555556;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;stroke-dasharray:none" />
+      <path
+         class="st5"
+         d="m 178.58029,70.660524 h -14.15068 c -1.26,0 -2.2823,-0.99916 -2.2823,-2.23063 V 44.339503 c 0,-1.23147 1.0223,-2.23063 2.2823,-2.23063 h 14.15068 c 1.25999,0 2.28229,0.99916 2.28229,2.23063 v 24.091521 c 0,1.23147 -1.0223,2.2295 -2.28229,2.2295 z"
+         id="path113"
+         style="fill:#ffffff;stroke:#969696;stroke-width:0.70555556;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;stroke-dasharray:none" />
+      <path
+         class="st5"
+         d="m 182.04181,70.660524 h -14.15069 c -1.25999,0 -2.28229,-0.99916 -2.28229,-2.23063 V 44.339503 c 0,-1.23147 1.0223,-2.23063 2.28229,-2.23063 h 14.15069 c 1.25999,0 2.28229,0.99916 2.28229,2.23063 v 24.091521 c 0,1.23147 -1.0223,2.2295 -2.28229,2.2295 z"
+         id="path115"
+         style="fill:#ffffff;stroke:#969696;stroke-width:0.70555556;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;stroke-dasharray:none" />
+      <path
+         class="st5"
+         d="m 185.50332,70.660524 h -14.15068 c -1.25999,0 -2.28229,-0.99916 -2.28229,-2.23063 V 44.339503 c 0,-1.23147 1.0223,-2.23063 2.28229,-2.23063 h 14.15068 c 1.26,0 2.2823,0.99916 2.2823,2.23063 v 24.091521 c 0,1.23147 -1.0223,2.2295 -2.2823,2.2295 z"
+         id="path117"
+         style="fill:#ffffff;stroke:#969696;stroke-width:0.70555556;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;stroke-dasharray:none" />
+      <path
+         class="st5"
+         d="m 188.96484,70.660524 h -14.15068 c -1.25999,0 -2.2823,-0.99916 -2.2823,-2.23063 V 44.339503 c 0,-1.23147 1.02231,-2.23063 2.2823,-2.23063 h 14.15068 c 1.25999,0 2.28229,0.99916 2.28229,2.23063 v 24.091521 c 0,1.23147 -1.0223,2.2295 -2.28229,2.2295 z"
+         id="path119"
+         style="fill:#ffffff;stroke:#969696;stroke-width:0.70555556;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;stroke-dasharray:none" />
+      <path
+         class="st5"
+         d="m 192.42636,70.660524 h -14.15068 c -1.26,0 -2.2823,-0.99916 -2.2823,-2.23063 V 44.339503 c 0,-1.23147 1.0223,-2.23063 2.2823,-2.23063 h 14.15068 c 1.25999,0 2.28229,0.99916 2.28229,2.23063 v 24.091521 c 0,1.23147 -1.0223,2.2295 -2.28229,2.2295 z"
+         id="path121"
+         style="fill:#ffffff;stroke:#969696;stroke-width:0.70555556;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;stroke-dasharray:none" />
+      <path
+         class="st5"
+         d="m 195.88787,70.660524 h -14.15068 c -1.25999,0 -2.28229,-0.99916 -2.28229,-2.23063 V 44.339503 c 0,-1.23147 1.0223,-2.23063 2.28229,-2.23063 h 14.15068 c 1.26,0 2.28229,0.99916 2.28229,2.23063 v 24.091521 c 0,1.23147 -1.02229,2.2295 -2.28229,2.2295 z"
+         id="path123-7"
+         style="fill:#ffffff;stroke:#969696;stroke-width:0.70555556;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;stroke-dasharray:none" />
+      <text
+         xml:space="preserve"
+         style="font-size:3.04188px;fill:#ffb81c;stroke-width:0.70555556;stroke-linecap:round;stroke-linejoin:round;stroke-dashoffset:2.01601;stroke-dasharray:none"
+         x="178.92276"
+         y="49.860355"
+         id="text402-8"
+         transform="scale(1.0115135,0.98861755)"><tspan
+           id="tspan400"
+           x="178.92276"
+           y="49.860355"
+           style="fill:#666666;stroke-width:0.70555556;stroke-dasharray:none">01001100</tspan><tspan
+           x="178.92276"
+           y="53.662708"
+           id="tspan454"
+           style="fill:#666666;stroke-width:0.70555556;stroke-dasharray:none">01101111</tspan><tspan
+           x="178.92276"
+           y="57.465061"
+           id="tspan456"
+           style="fill:#666666;stroke-width:0.70555556;stroke-dasharray:none">01100011</tspan><tspan
+           x="178.92276"
+           y="61.267422"
+           id="tspan458"
+           style="fill:#666666;stroke-width:0.70555556;stroke-dasharray:none">01100001</tspan><tspan
+           x="178.92276"
+           y="65.069786"
+           id="tspan460-6"
+           style="fill:#666666;stroke-width:0.70555556;stroke-dasharray:none">01101100</tspan></text>
+    </g>
+  </g>
+  <g
+     inkscape:groupmode="layer"
+     id="layer7"
+     inkscape:label="arrows" />
+  <g
+     inkscape:groupmode="layer"
+     id="layer6"
+     inkscape:label="labels">
+    <text
+       xml:space="preserve"
+       style="font-size:6.36681px;font-family:sans-serif;-inkscape-font-specification:sans-serif;fill:#ee0606;stroke-width:0.508001;stroke-dasharray:none"
+       x="0.92742884"
+       y="23.127495"
+       id="text3109"><tspan
+         sodipodi:role="line"
+         id="tspan3107"
+         style="font-weight:bold;fill:#4d4d4d;stroke-width:0.508001"
+         x="0.92742884"
+         y="23.127495">Local</tspan></text>
+    <g
+       id="g5617"
+       transform="translate(6.2172897,-11.088943)">
+      <path
+         style="fill:none;stroke:#333333;stroke-width:0.578556;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;marker-end:url(#RoundedArrow)"
+         d="M 89.066726,31.836149 H 111.78712"
+         id="path4051" />
+      <text
+         xml:space="preserve"
+         style="font-size:6.36681px;font-family:sans-serif;-inkscape-font-specification:sans-serif;fill:#ee0606;stroke-width:0.508001;stroke-dasharray:none"
+         x="79.55619"
+         y="29.094297"
+         id="text3109-4"><tspan
+           sodipodi:role="line"
+           id="tspan3107-3"
+           style="font-weight:normal;fill:#4d4d4d;stroke-width:0.508001"
+           x="79.55619"
+           y="29.094297">Encodes each</tspan></text>
+      <text
+         xml:space="preserve"
+         style="font-size:6.36681px;font-family:sans-serif;-inkscape-font-specification:sans-serif;fill:#ee0606;stroke-width:0.508001;stroke-dasharray:none"
+         x="101.55246"
+         y="39.34306"
+         id="text3109-4-1"><tspan
+           sodipodi:role="line"
+           style="font-weight:normal;text-align:center;text-anchor:middle;fill:#4d4d4d;stroke-width:0.508001"
+           x="101.55246"
+           y="39.34306"
+           id="tspan5604">atom</tspan></text>
+    </g>
+    <g
+       id="g5617-0"
+       transform="translate(6.2172884,40.101618)">
+      <g
+         id="g5961"
+         transform="translate(0,1.8924959)">
+        <path
+           style="fill:none;stroke:#333333;stroke-width:0.578556;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;marker-end:url(#RoundedArrow-9)"
+           d="M 89.066726,31.836149 H 111.78712"
+           id="path4051-6" />
+        <text
+           xml:space="preserve"
+           style="font-size:6.36681px;font-family:sans-serif;-inkscape-font-specification:sans-serif;fill:#ee0606;stroke-width:0.508001;stroke-dasharray:none"
+           x="77.826149"
+           y="29.094297"
+           id="text3109-4-8"><tspan
+             sodipodi:role="line"
+             id="tspan3107-3-9"
+             style="font-weight:normal;fill:#4d4d4d;stroke-width:0.508001"
+             x="77.826149"
+             y="29.094297">Encodes entire</tspan></text>
+        <text
+           xml:space="preserve"
+           style="font-size:6.36681px;font-family:sans-serif;-inkscape-font-specification:sans-serif;fill:#ee0606;stroke-width:0.508001;stroke-dasharray:none"
+           x="101.55246"
+           y="39.34306"
+           id="text3109-4-1-2"><tspan
+             sodipodi:role="line"
+             style="font-weight:normal;text-align:center;text-anchor:middle;fill:#4d4d4d;stroke-width:0.508001"
+             x="101.55246"
+             y="39.34306"
+             id="tspan5604-6">structure</tspan></text>
+      </g>
+    </g>
+    <text
+       xml:space="preserve"
+       style="font-size:6.36681px;font-family:sans-serif;-inkscape-font-specification:sans-serif;fill:#ee0606;stroke-width:0.508001;stroke-dasharray:none"
+       x="1.1947851"
+       y="76.225258"
+       id="text3109-8"><tspan
+         sodipodi:role="line"
+         id="tspan3107-8"
+         style="font-weight:bold;fill:#4d4d4d;stroke-width:0.508001"
+         x="1.1947851"
+         y="76.225258">Global</tspan></text>
+  </g>
+  <g
+     inkscape:groupmode="layer"
+     id="layer1"
+     inkscape:label="global-cards">
+    <path
+       class="st5"
+       d="m 175.22944,91.205106 h -16.58822 c -1.47703,0 -2.67543,-1.215434 -2.67543,-2.713461 V 59.186812 c 0,-1.498028 1.1984,-2.713461 2.67543,-2.713461 h 16.58822 c 1.47703,0 2.67543,1.215433 2.67543,2.713461 v 29.306204 c 0,1.498028 -1.1984,2.71209 -2.67543,2.71209 z"
+       id="path123"
+       style="display:inline;fill:#ffffff;stroke:#969696;stroke-width:0.70555556;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;stroke-dasharray:none" />
+    <text
+       xml:space="preserve"
+       style="font-size:3.03389px;display:inline;fill:#ffb81c;stroke-width:0.529165;stroke-linecap:round;stroke-linejoin:round;stroke-dashoffset:2.01601"
+       x="160.39731"
+       y="64.943443"
+       id="text402"
+       transform="scale(0.99296771,1.0070821)"><tspan
+         sodipodi:role="line"
+         x="160.39731"
+         y="64.943443"
+         id="tspan460"
+         style="font-size:3.03389px;fill:#666666;stroke-width:0.529165">01000111</tspan><tspan
+         sodipodi:role="line"
+         x="160.39731"
+         y="68.735809"
+         style="font-size:3.03389px;fill:#666666;stroke-width:0.529165"
+         id="tspan1030">01101100</tspan><tspan
+         sodipodi:role="line"
+         x="160.39731"
+         y="72.528168"
+         style="font-size:3.03389px;fill:#666666;stroke-width:0.529165"
+         id="tspan1032">01101111</tspan><tspan
+         sodipodi:role="line"
+         x="160.39731"
+         y="76.320534"
+         style="font-size:3.03389px;fill:#666666;stroke-width:0.529165"
+         id="tspan1034">01100010</tspan><tspan
+         sodipodi:role="line"
+         x="160.39731"
+         y="80.112892"
+         style="font-size:3.03389px;fill:#666666;stroke-width:0.529165"
+         id="tspan1036">01100001</tspan><tspan
+         sodipodi:role="line"
+         x="160.39731"
+         y="83.905258"
+         style="font-size:3.03389px;fill:#666666;stroke-width:0.529165"
+         id="tspan1038">01101100</tspan></text>
+  </g>
+  <g
+     inkscape:groupmode="layer"
+     id="layer3"
+     inkscape:label="outer-environment">
+    <g
+       id="g982"
+       transform="matrix(0.35842589,0,0,0.35839482,26.589491,46.543323)"
+       style="stroke-width:2.79009">
+      <ellipse
+         style="fill:none;stroke:#004da0;stroke-width:2.26543;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:2.26543, 4.5309;stroke-dashoffset:0;stroke-opacity:1"
+         id="path34"
+         cx="76.094147"
+         cy="76.199982"
+         inkscape:label="inner barrier"
+         rx="75.613022"
+         ry="74.93557" />
+      <g
+         id="g23473"
+         inkscape:label="water"
+         transform="matrix(1.2613628,0,0,1.2566028,-18.604571,-20.319797)"
+         style="stroke-width:2.79009">
+        <circle
+           id="circle1030-7-8-7-7-2-9-3"
+           inkscape:label="H atom"
+           class="st1"
+           cx="67.914162"
+           cy="94.924858"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.00239" />
+        <circle
+           id="circle1030-7-8-7-7-2-9"
+           inkscape:label="H atom"
+           class="st1"
+           cx="60.655411"
+           cy="99.271973"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.00239" />
+        <circle
+           id="path1084-6-9-5-2-7"
+           inkscape:label="O atom"
+           class="st2"
+           cx="64.786949"
+           cy="96.828964"
+           r="3.8441317"
+           style="fill:#ff5555;stroke-width:1.00239" />
+      </g>
+      <ellipse
+         id="circle1030-7-8-7-7-2-9-3-1"
+         inkscape:label="H atom"
+         class="st1"
+         cx="101.46483"
+         cy="57.529743"
+         style="fill:#e6e6e6;stroke-width:1.26199"
+         rx="3.8518863"
+         ry="3.8373501" />
+      <ellipse
+         id="circle1030-7-8-7-7-2-9-2"
+         inkscape:label="H atom"
+         class="st1"
+         cx="97.446785"
+         cy="66.924828"
+         style="fill:#e6e6e6;stroke:none;stroke-width:2.67667;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+         rx="3.8518863"
+         ry="3.8373501" />
+      <ellipse
+         id="path1084-6-9-5-2-7-3"
+         inkscape:label="O atom"
+         class="st2"
+         cx="103.81731"
+         cy="64.042206"
+         style="fill:#ff5555;stroke-width:1.26199"
+         rx="4.848845"
+         ry="4.8305464" />
+      <g
+         id="g23468-6"
+         inkscape:label="water"
+         transform="matrix(-1.1500064,-0.51623516,-0.51819067,1.1456665,192.55301,44.268869)"
+         style="stroke-width:2.79009">
+        <circle
+           id="circle1030-7-8-7-7-2-9-3-1-1"
+           inkscape:label="H atom"
+           class="st1"
+           cx="98.140701"
+           cy="70.944351"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.00239" />
+        <circle
+           id="circle1030-7-8-7-7-2-9-2-9"
+           inkscape:label="H atom"
+           class="st1"
+           cx="94.955223"
+           cy="78.420929"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.00239" />
+        <circle
+           id="path1084-6-9-5-2-7-3-0"
+           inkscape:label="O atom"
+           class="st2"
+           cx="100.00573"
+           cy="76.126945"
+           r="3.8441317"
+           style="fill:#ff5555;stroke-width:1.00239" />
+      </g>
+      <ellipse
+         id="path1084-6-9-5-2-7-3-6"
+         inkscape:label="O atom"
+         class="st2"
+         cx="61.288242"
+         cy="57.335781"
+         style="fill:#ff5555;stroke:none;stroke-width:2.67667;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+         rx="4.848845"
+         ry="4.8305464" />
+      <ellipse
+         id="circle1030-7-8-7-7-2-9-3-1-8"
+         inkscape:label="H atom"
+         class="st1"
+         cx="62.193924"
+         cy="51.946888"
+         style="fill:#e6e6e6;stroke-width:1.26199"
+         rx="3.8518863"
+         ry="3.8373501" />
+      <ellipse
+         id="circle1030-7-8-7-7-2-9-2-7"
+         inkscape:label="H atom"
+         class="st1"
+         cx="59.930275"
+         cy="62.840076"
+         style="fill:#e6e6e6;stroke:none;stroke-width:2.67667;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+         rx="3.8518863"
+         ry="3.8373501" />
+      <g
+         id="g23463-68"
+         inkscape:label="water"
+         transform="matrix(0.32592981,1.2139277,-1.2185262,0.32469982,148.39107,1.1376739)"
+         style="stroke-width:2.79009">
+        <circle
+           id="path1084-6-9-5-2-7-3-6-8"
+           inkscape:label="O atom"
+           class="st2"
+           cx="64.321983"
+           cy="56.88055"
+           r="3.8441317"
+           style="fill:#ff5555;stroke-width:1.00239" />
+        <circle
+           id="circle1030-7-8-7-7-2-9-3-1-8-9"
+           inkscape:label="H atom"
+           class="st1"
+           cx="65.040001"
+           cy="52.592091"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.00239" />
+        <circle
+           id="circle1030-7-8-7-7-2-9-2-7-09"
+           inkscape:label="H atom"
+           class="st1"
+           cx="63.245396"
+           cy="61.260845"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.00239" />
+      </g>
+      <g
+         id="g23127"
+         inkscape:label="methanol"
+         transform="matrix(1.2613628,0,0,1.2566028,-22.712928,-41.178422)"
+         style="stroke-width:2.79009">
+        <circle
+           id="circle1030-7-8-7-7-2-9-30-6-1-4"
+           inkscape:label="H atom"
+           class="st1"
+           cx="78.898964"
+           cy="56.92979"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.00239" />
+        <circle
+           id="circle1030-7-8-7-7-2-9-3-0-1"
+           inkscape:label="H atom"
+           class="st1"
+           cx="86.468887"
+           cy="61.011089"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.00239" />
+        <circle
+           id="path1084-6-9-5-2-7-1-1-9"
+           inkscape:label="C atom"
+           class="st2"
+           cx="85.615746"
+           cy="57.149418"
+           r="4.8124061"
+           style="fill:#80817e;fill-opacity:1;stroke-width:1.25486" />
+        <circle
+           id="circle1030-7-8-7-7-2-9-30-65"
+           inkscape:label="H atom"
+           class="st1"
+           cx="85.24749"
+           cy="62.383339"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.00239" />
+        <circle
+           id="path1084-6-9-5-2-7-1-3"
+           inkscape:label="O atom"
+           class="st2"
+           cx="89.980064"
+           cy="52.200466"
+           r="3.8441317"
+           style="fill:#ff5555;stroke-width:1.00239" />
+        <circle
+           id="circle1030-7-8-7-7-2-9-30-6-5"
+           inkscape:label="H atom"
+           class="st1"
+           cx="95.063957"
+           cy="54.231201"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.00239" />
+      </g>
+      <ellipse
+         id="circle1030-7-8-7-7-2-9-30-6-1-4-9-0-7"
+         inkscape:label="H atom"
+         class="st1"
+         cx="-73.069412"
+         cy="90.175545"
+         style="fill:#e6e6e6;stroke:none;stroke-width:2.67667;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+         transform="matrix(0.15463593,-0.98797152,0.98814887,0.15349857,0,0)"
+         rx="3.8376958"
+         ry="3.8515418" />
+      <ellipse
+         id="path1084-6-9-5-2-7-1-3-0-8-9"
+         inkscape:label="O atom"
+         class="st2"
+         cx="-69.38456"
+         cy="85.628326"
+         style="fill:#ff5555;stroke:none;stroke-width:2.67667;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+         transform="matrix(0.15463593,-0.98797152,0.98814887,0.15349857,0,0)"
+         rx="4.8309817"
+         ry="4.8484116" />
+      <ellipse
+         id="circle1030-7-8-7-7-2-9-30-65-0-1-4"
+         inkscape:label="H atom"
+         class="st1"
+         cx="-57.940121"
+         cy="90.940269"
+         style="fill:#e6e6e6;stroke:none;stroke-width:2.67667;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+         transform="matrix(0.15463593,-0.98797152,0.98814887,0.15349857,0,0)"
+         rx="3.8376958"
+         ry="3.8515418" />
+      <ellipse
+         id="path1084-6-9-5-2-7-1-1-9-0-0-6"
+         inkscape:label="C atom"
+         class="st2"
+         cx="-63.657207"
+         cy="86.465446"
+         style="fill:#80817e;fill-opacity:1;stroke:none;stroke-width:3.4648;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+         transform="matrix(0.15463593,-0.98797152,0.98814887,0.15349857,0,0)"
+         rx="6.0478277"
+         ry="6.0696473" />
+      <ellipse
+         id="circle1030-7-8-7-7-2-9-3-0-1-3-8-3"
+         inkscape:label="H atom"
+         class="st1"
+         cx="-68.85321"
+         cy="90.184135"
+         style="fill:#e6e6e6;stroke:none;stroke-width:2.67667;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+         transform="matrix(0.15463593,-0.98797152,0.98814887,0.15349857,0,0)"
+         rx="3.8376958"
+         ry="3.8515418" />
+      <ellipse
+         id="circle1030-7-8-7-7-2-9-30-6-5-5-4-9"
+         inkscape:label="H atom"
+         class="st1"
+         cx="-61.847855"
+         cy="79.595146"
+         style="fill:#e6e6e6;stroke:none;stroke-width:2.67667;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+         transform="matrix(0.15463593,-0.98797152,0.98814887,0.15349857,0,0)"
+         rx="3.8376958"
+         ry="3.8515418" />
+      <g
+         id="g24771"
+         transform="matrix(1.2613628,0,0,1.2566028,-39.907954,-13.328695)"
+         inkscape:label="methanol"
+         style="stroke-width:2.79009">
+        <circle
+           id="circle1030-7-8-7-7-2-9-30-3"
+           inkscape:label="H atom"
+           class="st1"
+           cx="-71.70742"
+           cy="-22.097275"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.00239"
+           transform="rotate(-169.92525)" />
+        <circle
+           id="circle1030-7-8-7-7-2-9-30-6-8"
+           inkscape:label="H atom"
+           class="st1"
+           cx="-66.73819"
+           cy="-32.497406"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.00239"
+           transform="rotate(-169.92525)" />
+        <circle
+           id="circle1030-7-8-7-7-2-9-30-6-1-6"
+           inkscape:label="H atom"
+           class="st1"
+           cx="-76.861702"
+           cy="-30.852562"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.00239"
+           transform="rotate(-169.92525)" />
+        <circle
+           id="path1084-6-9-5-2-7-1-1-2"
+           inkscape:label="C atom"
+           class="st2"
+           cx="-70.566422"
+           cy="-27.822945"
+           r="4.8124061"
+           style="fill:#80817e;fill-opacity:1;stroke-width:1.25486"
+           transform="rotate(-169.92525)" />
+        <circle
+           id="path1084-6-9-5-2-7-1-2"
+           inkscape:label="O atom"
+           class="st2"
+           cx="-68.520348"
+           cy="-26.870918"
+           r="3.8441317"
+           style="fill:#ff5555;stroke-width:1.00239"
+           transform="rotate(-169.92525)" />
+        <circle
+           id="circle1030-7-8-7-7-2-9-3-0-5"
+           inkscape:label="H atom"
+           class="st1"
+           cx="-63.671803"
+           cy="-24.944771"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.00239"
+           transform="rotate(-169.92525)" />
+      </g>
+      <g
+         id="g23127-5-5"
+         inkscape:label="methanol"
+         transform="matrix(-1.2479145,-0.18300681,0.18370005,-1.2432051,128.61866,188.73692)"
+         style="stroke-width:2.79009">
+        <circle
+           id="circle1030-7-8-7-7-2-9-30-6-1-4-0-7"
+           inkscape:label="H atom"
+           class="st1"
+           cx="78.898964"
+           cy="56.92979"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.00239" />
+        <circle
+           id="circle1030-7-8-7-7-2-9-3-0-1-35-96"
+           inkscape:label="H atom"
+           class="st1"
+           cx="86.468887"
+           cy="61.011089"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.00239" />
+        <circle
+           id="path1084-6-9-5-2-7-1-1-9-5-4"
+           inkscape:label="C atom"
+           class="st2"
+           cx="85.615746"
+           cy="57.149418"
+           r="4.8124061"
+           style="fill:#80817e;fill-opacity:1;stroke-width:1.25486" />
+        <circle
+           id="circle1030-7-8-7-7-2-9-30-65-5-7"
+           inkscape:label="H atom"
+           class="st1"
+           cx="85.24749"
+           cy="62.383339"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.00239" />
+        <circle
+           id="path1084-6-9-5-2-7-1-3-4-4"
+           inkscape:label="O atom"
+           class="st2"
+           cx="89.980064"
+           cy="52.200466"
+           r="3.8441317"
+           style="fill:#ff5555;stroke-width:1.00239" />
+        <circle
+           id="circle1030-7-8-7-7-2-9-30-6-5-7-1"
+           inkscape:label="H atom"
+           class="st1"
+           cx="95.063957"
+           cy="54.231201"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.00239" />
+      </g>
+      <g
+         id="g23463-6"
+         inkscape:label="water"
+         transform="matrix(0.55579586,-1.1280375,-1.1323106,-0.55369842,156.02994,186.57533)"
+         style="stroke-width:2.79009">
+        <circle
+           id="path1084-6-9-5-2-7-3-6-3"
+           inkscape:label="O atom"
+           class="st2"
+           cx="64.321983"
+           cy="56.88055"
+           r="3.8441317"
+           style="fill:#ff5555;stroke-width:1.00239" />
+        <circle
+           id="circle1030-7-8-7-7-2-9-3-1-8-5"
+           inkscape:label="H atom"
+           class="st1"
+           cx="65.040001"
+           cy="52.592091"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.00239" />
+        <circle
+           id="circle1030-7-8-7-7-2-9-2-7-0"
+           inkscape:label="H atom"
+           class="st1"
+           cx="63.245396"
+           cy="61.260845"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.00239" />
+      </g>
+      <g
+         id="g23298-6-9"
+         inkscape:label="methanol"
+         transform="matrix(1.2613628,0,0,-1.2566028,-8.3683291,222.60636)"
+         style="stroke-width:2.79009">
+        <circle
+           id="circle1030-7-8-7-7-2-9-30-6-1-4-9-0-1"
+           inkscape:label="H atom"
+           class="st1"
+           cx="47.27972"
+           cy="78.143944"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.00239" />
+        <circle
+           id="path1084-6-9-5-2-7-1-3-0-8-8"
+           inkscape:label="O atom"
+           class="st2"
+           cx="50.211849"
+           cy="74.53862"
+           r="3.8441317"
+           style="fill:#ff5555;stroke-width:1.00239" />
+        <circle
+           id="circle1030-7-8-7-7-2-9-30-65-0-1-0"
+           inkscape:label="H atom"
+           class="st1"
+           cx="59.318474"
+           cy="78.750267"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.00239" />
+        <circle
+           id="path1084-6-9-5-2-7-1-1-9-0-0-7"
+           inkscape:label="C atom"
+           class="st2"
+           cx="54.769249"
+           cy="75.202339"
+           r="4.8124061"
+           style="fill:#80817e;fill-opacity:1;stroke-width:1.25486" />
+        <circle
+           id="circle1030-7-8-7-7-2-9-3-0-1-3-8-6"
+           inkscape:label="H atom"
+           class="st1"
+           cx="50.634659"
+           cy="78.150757"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.00239" />
+        <circle
+           id="circle1030-7-8-7-7-2-9-30-6-5-5-4-4"
+           inkscape:label="H atom"
+           class="st1"
+           cx="56.208992"
+           cy="69.755127"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.00239" />
+      </g>
+      <g
+         id="g23135-2-3-2"
+         transform="matrix(1.2613628,0,0,-1.2566028,14.489872,160.1521)"
+         inkscape:label="methanol"
+         style="stroke-width:2.79009">
+        <circle
+           id="circle1030-7-8-7-7-2-9-30-3-6-8"
+           inkscape:label="H atom"
+           class="st1"
+           cx="90.546532"
+           cy="95.767059"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.00239" />
+        <circle
+           id="circle1030-7-8-7-7-2-9-30-6-8-2-5"
+           inkscape:label="H atom"
+           class="st1"
+           cx="95.515762"
+           cy="85.366928"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.00239" />
+        <circle
+           id="circle1030-7-8-7-7-2-9-30-6-1-6-2-9"
+           inkscape:label="H atom"
+           class="st1"
+           cx="85.39225"
+           cy="87.011772"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.00239" />
+        <circle
+           id="path1084-6-9-5-2-7-1-1-2-9-8"
+           inkscape:label="C atom"
+           class="st2"
+           cx="91.687531"
+           cy="90.041389"
+           r="4.8124061"
+           style="fill:#80817e;fill-opacity:1;stroke-width:1.25486" />
+        <circle
+           id="path1084-6-9-5-2-7-1-2-7-3"
+           inkscape:label="O atom"
+           class="st2"
+           cx="93.733604"
+           cy="90.993416"
+           r="3.8441317"
+           style="fill:#ff5555;stroke-width:1.00239" />
+        <circle
+           id="circle1030-7-8-7-7-2-9-3-0-5-9-7"
+           inkscape:label="H atom"
+           class="st1"
+           cx="98.582146"
+           cy="92.919563"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.00239" />
+      </g>
+      <g
+         id="g23135-2-3-5"
+         transform="matrix(1.2155044,-0.33702415,0.33575232,1.2109174,-125.32079,-19.711196)"
+         inkscape:label="methanol"
+         style="stroke-width:2.79009">
+        <circle
+           id="circle1030-7-8-7-7-2-9-30-3-6-2"
+           inkscape:label="H atom"
+           class="st1"
+           cx="90.546532"
+           cy="95.767059"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.00239" />
+        <circle
+           id="circle1030-7-8-7-7-2-9-30-6-8-2-0"
+           inkscape:label="H atom"
+           class="st1"
+           cx="95.515762"
+           cy="85.366928"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.00239" />
+        <circle
+           id="circle1030-7-8-7-7-2-9-30-6-1-6-2-8"
+           inkscape:label="H atom"
+           class="st1"
+           cx="85.39225"
+           cy="87.011772"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.00239" />
+        <circle
+           id="path1084-6-9-5-2-7-1-1-2-9-5"
+           inkscape:label="C atom"
+           class="st2"
+           cx="91.687531"
+           cy="90.041389"
+           r="4.8124061"
+           style="fill:#80817e;fill-opacity:1;stroke-width:1.25486" />
+        <circle
+           id="path1084-6-9-5-2-7-1-2-7-9"
+           inkscape:label="O atom"
+           class="st2"
+           cx="93.733604"
+           cy="90.993416"
+           r="3.8441317"
+           style="fill:#ff5555;stroke-width:1.00239" />
+        <circle
+           id="circle1030-7-8-7-7-2-9-3-0-5-9-6"
+           inkscape:label="H atom"
+           class="st1"
+           cx="98.582146"
+           cy="92.919563"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.00239" />
+      </g>
+      <g
+         id="g23468-8-2"
+         inkscape:label="water"
+         transform="matrix(1.2613628,0,0,-1.2566028,0.79548245,208.97533)"
+         style="stroke-width:2.79009">
+        <circle
+           id="circle1030-7-8-7-7-2-9-3-1-5-5"
+           inkscape:label="H atom"
+           class="st1"
+           cx="98.140701"
+           cy="70.944351"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.00239" />
+        <circle
+           id="circle1030-7-8-7-7-2-9-2-0-7"
+           inkscape:label="H atom"
+           class="st1"
+           cx="94.955223"
+           cy="78.420929"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.00239" />
+        <circle
+           id="path1084-6-9-5-2-7-3-8-5"
+           inkscape:label="O atom"
+           class="st2"
+           cx="100.00573"
+           cy="76.126945"
+           r="3.8441317"
+           style="fill:#ff5555;stroke-width:1.00239" />
+      </g>
+      <g
+         id="g23473-8-8"
+         inkscape:label="water"
+         transform="matrix(1.2613628,0,0,-1.2566028,12.388378,245.45658)"
+         style="stroke-width:2.79009">
+        <circle
+           id="circle1030-7-8-7-7-2-9-3-9-4"
+           inkscape:label="H atom"
+           class="st1"
+           cx="67.914162"
+           cy="94.924858"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.00239" />
+        <circle
+           id="circle1030-7-8-7-7-2-9-7-6"
+           inkscape:label="H atom"
+           class="st1"
+           cx="60.655411"
+           cy="99.271973"
+           r="3.0537496"
+           style="fill:#e6e6e6;stroke-width:1.00239" />
+        <circle
+           id="path1084-6-9-5-2-7-8-4"
+           inkscape:label="O atom"
+           class="st2"
+           cx="64.786949"
+           cy="96.828964"
+           r="3.8441317"
+           style="fill:#ff5555;stroke-width:1.00239" />
+      </g>
+    </g>
+  </g>
+</svg>

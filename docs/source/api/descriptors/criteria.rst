@@ -2,4 +2,4 @@
 ============
 
 .. autoclass:: mbgdml.descriptors.Criteria
-    
+    :members:
