@@ -227,7 +227,7 @@ class structureEmbedding:
 
         Parameters
         ----------
-        a_model : :obj:`mbgdml.data.model`
+        a_model : :obj:`mbgdml.models.gdmlModel`
             A loaded model object.
         
         Returns
@@ -235,7 +235,7 @@ class structureEmbedding:
         :obj:`numpy.ndarray`
             Inverse pairwise distance descriptors.
         """
-        return a_model.model['R_desc'].T
+        return a_model.model_dict['R_desc'].T
 
     def get_R_desc(self, z, R):
         """Calculates the inverse pairwise sGDML descriptor and its Jacobian.
@@ -543,8 +543,8 @@ class mbExpansion:
         # pylint: disable=not-an-iterable
         # pylint: disable=unsubscriptable-object
         # Determines increasing order n-body cluster size.
-        dset_n_z = [len(i.z) for i in nmer_dsets]  # Number of atoms
-        n_body_order = [dset_n_z.index(i) for i in sorted(dset_n_z)]
+        dset_n_Z = [len(i.z) for i in nmer_dsets]  # Number of atoms
+        n_body_order = [dset_n_Z.index(i) for i in sorted(dset_n_Z)]
         nmer_dsets = [nmer_dsets[i] for i in n_body_order]  # Smallest to largest molecules.
         
         # Creates many-body data sets.
@@ -556,7 +556,7 @@ class mbExpansion:
         
         # Sets up energy and force variables.
         n_molecules = nbody_dsets[0].n_R
-        n_atoms_per_molecule = nbody_dsets[0].n_z
+        n_atoms_per_molecule = nbody_dsets[0].n_Z
         E = np.zeros((1,))
         F = np.zeros((n_molecules, n_atoms_per_molecule, 3))
         

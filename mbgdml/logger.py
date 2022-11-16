@@ -25,7 +25,7 @@ import numpy as np
 import random
 import time
 from . import __version__
-from .utils import z_to_element
+from .utils import atoms_by_element
 
 class timeTracker:
     """Simple way to keep track of multiple timings."""
@@ -121,9 +121,7 @@ class GDMLLogger(logging.Logger, timeTracker):
         else:
             raise ValueError(f'log_model does not support {d_type} type')
         z = model["z"]
-        atom_string = ''.join(
-            z_to_element[i] for i in z
-        )
+        atom_string = ''.join(atoms_by_element(z))
         self.info(f'Atoms : {len(z)}')
         self.info(f'Elements : {atom_string}')
         try:

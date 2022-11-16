@@ -297,7 +297,7 @@ class Desc(object):
         lat_and_inv : :obj:`tuple` of :obj:`numpy.ndarray`, optional
             Tuple of 3 x 3 matrix containing lattice vectors as columns and its
             inverse.
-        max_processes : int, optional
+        max_processes : :obj:`int`, optional
             Limit the max. number of processes. Otherwise all CPU cores are
             used. This parameter overwrites the global setting as set during
             initialization.

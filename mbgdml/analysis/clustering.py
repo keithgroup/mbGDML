@@ -135,7 +135,7 @@ def cluster_structures(cl_data, cl_algs, cl_kwargs):
 
         cl_idxs = cl_idxs_new
     
-    log.t_stop(t_clustering, message='Total clustering time: {time} s')
+    log.t_stop(t_clustering, message='Total clustering time : {time} s')
     return cl_idxs
 
 def get_cluster_losses(loss_func, loss_kwargs):
@@ -163,81 +163,6 @@ def get_cluster_losses(loss_func, loss_kwargs):
         cluster_loss_kwargs = {
             kwarg: loss_kwargs[kwarg][i] for kwarg in loss_kws
         }
-        losses.append(loss_func(**cluster_loss_kwargs))
+        losses.append(loss_func(cluster_loss_kwargs))
     
     return np.array(losses)
-
-def idx_loss_f_mse(**kwargs):
-    r"""Compute force MSE of individual structures.
-
-    Parameters
-    ----------
-    **kwargs : :obj:`dict`
-        Keyword arguments for the loss function.
-
-        ``F_errors`` : (:obj:`numpy.ndarray`) -
-        Force predictions errors of all structures in a cluster.
-    
-    Returns
-    -------
-    :obj:`numpy.ndarray`
-    """
-    F_errors = kwargs['F_errors']
-    F_shape = F_errors.shape
-    F_errors = F_errors.reshape((F_shape[0], F_shape[1]*F_shape[2]))
-    se = F_errors**2
-    mse = np.mean(se, axis=1)
-    return mse
-
-def idx_loss_f_rmse(**kwargs):
-    """Compute force RMSE of individual structures.
-
-    Parameters
-    ----------
-    **kwargs : :obj:`dict`
-        Keyword arguments for the loss function.
-
-        ``F_errors`` : (:obj:`numpy.ndarray`) -
-        Force predictions errors of all structures in a cluster.
-    
-    Returns
-    -------
-    :obj:`numpy.ndarray`
-    """
-    mse = idx_loss_f_mse(**kwargs)
-    return np.sqrt(mse)
-
-def cluster_loss_F_mse(**kwargs):
-    """Compute force MSE from force errors of several structures.
-
-    Parameters
-    ----------
-    **kwargs : :obj:`dict`
-        Keyword arguments for the loss function.
-
-        ``F_errors`` : (:obj:`numpy.ndarray`) -
-        Force predictions errors of all structures in a cluster.
-
-    Returns
-    -------
-    :obj:`float`
-    """
-    return np.mean((kwargs['F_errors'])**2)
-
-def cluster_loss_F_rmse(**kwargs):
-    """Compute force RMSE from force errors of several structures.
-
-    Parameters
-    ----------
-    **kwargs : :obj:`dict`
-        Keyword arguments for the loss function.
-
-        ``F_errors`` : (:obj:`numpy.ndarray`) -
-        Force predictions errors of all structures in a cluster.
-
-    Returns
-    -------
-    :obj:`float`
-    """
-    mse = cluster_loss_F_mse(**kwargs)
-    return np.sqrt(mse)

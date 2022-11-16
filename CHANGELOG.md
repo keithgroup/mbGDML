@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Added
 
+- ``mbgdml.descriptors.Criteria`` class for setting up structure descriptors and cutoffs for models.
 - Model analysis with Matérn covariance function.
 - ``mbe_contrib`` tests.
 - Radial distribution function analysis
@@ -14,6 +15,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Changed
 
+- Switch to qcelemental for atom properties.
+- Do not restrict ``sigma_bounds`` for Bayesian optimization after initial grid search.
+- ``mbgdml.criteria`` is now ``mbgdml.descriptors`` with a modular handling of descriptors and cutoffs.
+- Provide changeable ``Z``, ``R``, ``E``, and ``F`` keys for loading ``npz`` data sets.
 - Modularize the error and loss calculations.
 - Reduce regularization strength to ``1e-10`` instead of ``1e-15``.
 - Split `predict` module into `models` and `predictors`.
@@ -30,6 +35,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 Fixes attached ASE trajectory in reading ``entity_ids``.
 - Store ASE Atoms object to avoid recalculating energies and forces in ASE calculator.
 - Doc references to respective SchNet functions.
+
+### Removed
+
+- ``mbgdml.data.mbModel`` was adsorbed into ``mbgdml.models.gdmlModel``.
+- ``structureSets`` and sampling for data sets are no longer supported and subsequently removed.
+This functionality was incorporated into [reptar](https://github.com/aalexmmaldonado/reptar).
 
 ## [0.0.3] - 2022-07-25
 

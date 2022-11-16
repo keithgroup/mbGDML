@@ -29,7 +29,7 @@ import mbgdml.data as data
 from mbgdml.mbe import mbePredict
 from mbgdml.models import gdmlModel
 from mbgdml.predictors import predict_gdml
-from mbgdml.criteria import cm_distance_sum
+from mbgdml.descriptors import Criteria, com_distance_sum
 
 dset_dir = './tests/data/datasets'
 model_dir = './tests/data/models'
@@ -48,21 +48,28 @@ def test_predict_single_16mer():
         f'{model_dir}/140h2o.sphere.gfn2.md.500k.prod1.3h2o.dset.2h2o.cm.6-model.mb-train500.npz',
         f'{model_dir}/140h2o.sphere.gfn2.md.500k.prod1.3h2o-model.mb-train500.npz',
     ]
-    models = (
+    model_dicts = (
         dict(np.load(model_path, allow_pickle=True)) for model_path in model_h2o_paths
     )
+    model_desc_kwargs = (
+        {'entity_ids': np.array([0, 0, 0])},
+        {'entity_ids': np.array([0, 0, 0, 1, 1, 1])},
+        {'entity_ids': np.array([0, 0, 0, 1, 1, 1, 2, 2, 2])},
+    )
+    model_desc_cutoffs = (None, 6.0, 10.0)
+    model_criterias = [
+        Criteria(com_distance_sum, desc_kwargs, cutoff) for desc_kwargs,cutoff \
+        in zip(model_desc_kwargs, model_desc_cutoffs)
+    ]
     models = [
-        gdmlModel(
-            model, criteria_desc_func=cm_distance_sum,
-            criteria_cutoff=model['cutoff']
-        ) for model in models
+        gdmlModel(model, criteria=criteria) for model,criteria \
+        in zip(model_dicts, model_criterias)
     ]
 
-    dset_16h2o = data.dataSet(dset_16h2o_path)
+    dset_16h2o = data.dataSet(dset_16h2o_path, Z_key='z')
     mbe_pred = mbePredict(models, predict_gdml, use_ray=False)
     E_predict, F_predict = mbe_pred.predict(
-        dset_16h2o.z, dset_16h2o.R, dset_16h2o.entity_ids, dset_16h2o.comp_ids,
-        ignore_criteria=False
+        dset_16h2o.Z, dset_16h2o.R, dset_16h2o.entity_ids, dset_16h2o.comp_ids
     )
     E = np.array([-766368.03399751])
     F = np.array([

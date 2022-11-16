@@ -21,33 +21,28 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-"""Tests for `mbgdml` package."""
+"""Tests for `mbgdml.descriptor`."""
 
+from math import isclose
 import pytest
 import numpy as np
 
-import mbgdml.data as data
 from mbgdml import descriptors
-from mbgdml import utils
 
 # Must be run from mbGDML root directory.
 
-def test_dset_default_attributes():
-    dset = data.dataSet()
+Rset_140h2o_path = './tests/data/structuresets/140h2o.sphere.gfn2.md.500k.prod1.npz'
 
-    assert isinstance(dset.r_prov_ids, dict)
-    assert len(dset.r_prov_ids) == 0
-    assert dset.r_prov_specs.shape == (1, 0)
+def load_140h2o_rset():
+    return dict(np.load(Rset_140h2o_path, allow_pickle=True))
 
-    assert dset.Z.shape == (0,)
-    assert dset.R.shape == (1, 1, 0)
-    assert dset.E.shape == (0,)
-    assert dset.F.shape == (1, 1, 0)
-
-    assert dset.entity_ids.shape == (0,)
-    assert dset.comp_ids.shape == (0,)
-
-    try:
-        dset.md5
-    except AttributeError:
-        pass
+def test_com_distance_sum():
+    rset = load_140h2o_rset()
+    r_criteria = descriptors.Criteria(
+        descriptors.com_distance_sum,
+        desc_kwargs={'entity_ids': rset['entity_ids']},
+        cutoff=1001.506
+    )
+    accept_r, desc_v = r_criteria.accept(rset['z'], rset['R'][42])
+    assert accept_r == False
+    assert desc_v == 1001.506707631225

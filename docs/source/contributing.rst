@@ -1,89 +1,173 @@
-.. _contributing:
-.. highlight:: shell
-
 ============
 Contributing
 ============
 
-Contributions are welcome, and they are greatly appreciated!
+We welcome all contributions, and they are greatly appreciated!
 Every little bit helps, and credit will always be given.
 
-You can contribute in many ways:
+
+
 
 Types of Contributions
 ======================
 
-Report Bugs
+Report bugs
 -----------
 
 Report bugs at https://github.com/keithgroup/mbGDML/issues.
 
 If you are reporting a bug, please include:
 
-* Your operating system name and version.
-* Any details about your local setup that might be helpful in troubleshooting.
-* Detailed steps to reproduce the bug.
+- Your operating system name and version.
+- Any details about your local setup that might be helpful in troubleshooting.
+- Detailed steps to reproduce the bug.
+
+
 
 Fix Bugs
 --------
 
-Look through the GitHub issues for bugs.
-Anything tagged with "bug" and "help wanted" is open to whoever wants to implement it.
+Look through the `GitHub issues <https://github.com/keithgroup/mbGDML/issues>`__ for bugs.
+Anything tagged with ``bug`` and ``help wanted`` is open to whoever wants to implement it.
 
-Implement Features
+
+
+Implement features
 ------------------
 
-Look through the GitHub issues for features.
-Anything tagged with "enhancement" and "help wanted" is open to whoever wants to implement it.
+Look through the `GitHub issues <https://github.com/keithgroup/mbGDML/issues>`__ for features.
+Anything tagged with ``enhancement`` and ``help wanted`` is open to whoever wants to implement it.
+
+
 
 Write Documentation
 -------------------
 
-mbgdml could always use more documentation, whether as part of the official mbgdml docs, in docstrings, or even on the web in blog posts, articles, and such.
+mbGDML could always use more documentation, whether as part of the official mbGDML docs, in docstrings, or even on the web in blog posts, articles, and such.
 
-Submit Feedback
----------------
 
-The best way to send feedback is to file an issue at https://github.com/keithgroup/mbGDML/issues.
 
-If you are proposing a feature:
+Propose a new feature
+---------------------
 
-* Explain in detail how it would work.
-* Keep the scope as narrow as possible, to make it easier to implement.
-* Remember that this is a volunteer-driven project, and that contributions are welcome :)
+The best way to propose a new feature is by starting a discussion at https://github.com/keithgroup/mbGDML/discussions.
+
+- Create a discussion in the |:bulb:| Ideas category.
+- Explain in detail how it would work.
+- Keep the scope as narrow as possible, to make it easier to implement.
+- Remember that this is a volunteer-driven project, and that contributions are welcome :)
+
+
+
+Discussions
+===========
+
+If you have any questions, comments, concerns, or criticisms please start a `discussion <https://github.com/keithgroup/mbGDML/discussions>`__ so we can improve mbGDML!
+
+
 
 Get Started!
 ============
 
-Ready to contribute? Here's how to set up ``mbgdml`` for local development.
+Ready to contribute?
+Here's how to set up ``mbgdml`` for local development.
 
-1. Fork the ``mbgdml`` repo on GitHub.
-2. Clone your fork locally::
+1. Fork the `mbGDML repo on GitHub <https://github.com/keithgroup/mbGDML>`__.
+2. Clone your fork locally.
+
+.. code-block:: bash
 
     $ git clone git@github.com:your_name_here/mbgdml.git
 
-3. Install your local copy::
+3. Install your local copy.
 
-    $ cd mbgdml/
+.. code-block:: bash
+
+    $ cd mbGDML/
     $ pip install .
 
-4. Create a branch for local development::
+4. Create a branch for local development.
 
-    $ git checkout -b name-of-your-bugfix-or-feature
+.. code-block:: bash
 
-   Now you can make your changes locally.
+    $ git checkout -b name-of-your-branch
 
-5. When you're done making changes, check that your changes pass the tests.::
+Now you can make your changes locally.
+
+5. When you're done making changes, check that your changes pass the tests.
+
+.. code-block:: bash
 
     $ pytest
+    ======================= test session starts ========================
+    platform linux -- Python 3.10.4, pytest-7.1.2, pluggy-1.0.0
+    rootdir: /home/alex/repos/keith/mbGDML-dev
+    plugins: anyio-3.6.1, order-1.0.1
+    collected 12 items                                                 
 
-6. Commit your changes and push your branch to GitHub::
+    tests/test_datasets.py .                                     [  8%]
+    tests/test_descriptors.py .                                  [ 16%]
+    tests/test_mbe.py .                                          [ 25%]
+    tests/test_predict.py .                                      [ 33%]
+    tests/test_predictsets.py ..                                 [ 50%]
+    tests/test_rdf.py .                                          [ 58%]
+    tests/test_train.py .....                                    [100%]
+
+    ======================= 12 passed in 29.55s ========================
+
+6. Write any additional documentation in ``docs/source/``.
+You can easily build and view the documentation locally by running the ``docs/branch-build-docs.sh`` script then opening ``docs/html/index.html`` in your favorite browser.
+
+.. code-block:: bash
+
+    $ ./docs/branch-build-docs.sh 
+    Running Sphinx v5.3.0
+    making output directory... done
+    loading intersphinx inventory from https://urllib3.readthedocs.io/en/latest/objects.inv...
+    loading intersphinx inventory from https://docs.python.org/3/objects.inv...
+    loading intersphinx inventory from https://numpy.org/doc/stable/objects.inv...
+    loading intersphinx inventory from https://matplotlib.org/stable/objects.inv...
+    loading intersphinx inventory from https://cclib.github.io/objects.inv...
+    loading intersphinx inventory from https://wiki.fysik.dtu.dk/ase/objects.inv...
+    loading intersphinx inventory from https://pytorch.org/docs/master/objects.inv...
+    loading intersphinx inventory from https://docs.scipy.org/doc/scipy/objects.inv...
+    building [mo]: targets for 0 po files that are out of date
+    building [html]: targets for 111 source files that are out of date
+    updating environment: [new config] 111 added, 0 changed, 0 removed
+    reading sources... [100%] training                                                                                                               
+    looking for now-outdated files... none found
+    pickling environment... done
+    checking consistency... done
+    preparing documents... done
+    writing output... [100%] training                                                                                                                
+    generating indices... genindex done
+    highlighting module code... [100%] mbgdml.utils                                                                                                  
+    writing additional pages... search done
+    copying images... [100%] images/training/1h2o-cl-losses-1000-iter.png                                                                            
+    copying downloadable files... [100%] files/dsets/3h2o-nbody.npz                                                                                  
+    copying static files... done
+    copying extra files... done
+    dumping search index in English (code: en)... done
+    dumping object inventory... done
+    build succeeded.
+
+    The HTML pages are in html.
+
+7. Add a description of the changes in the ``CHANGELOG.md``.
+Please follow the general format specified `here <https://keepachangelog.com/en/1.0.0/>`__.
+
+8. Commit your changes and push your branch to GitHub.
+
+.. code-block:: bash
 
     $ git add .
     $ git commit -m "Your detailed description of your changes."
-    $ git push origin name-of-your-bugfix-or-feature
+    $ git push origin name-of-your-branch
 
-7. Submit a pull request through the GitHub website.
+9. Submit a pull request through the GitHub website.
+
+
+
 
 Pull Request Guidelines
 =======================
@@ -93,18 +177,22 @@ Before you submit a pull request, check that it meets these guidelines:
 1. The pull request should include tests.
 2. If the pull request adds functionality, the docs should be updated.
    Put your new functionality into a function with a docstring, and add the feature to the list in ``CHANGELOG.md``.
-3. The pull request should work for Python 3.9.
-   Check app.travis-ci.com/github/keithgroup/mbGDML/pull_requests and make sure that the tests pass for all supported Python versions.
+
+.. tip::
+
+    You can open a draft pull request first to check that GitHub actions pass for all supported Python versions.
 
 Deploying
 =========
 
 A reminder for the maintainers on how to deploy.
-Make sure all your changes are committed (including an entry in HISTORY.rst).
-Then run::
+Make sure all your changes are committed.
+Then run
 
-$ bump2version patch # possible: major / minor / patch
-$ git push
-$ git push --tags
+.. code-block:: bash
 
-Travis will then deploy to PyPI if tests pass.
+    $ bump2version patch # possible: major / minor / patch
+    $ git push
+    $ git push --tags
+
+

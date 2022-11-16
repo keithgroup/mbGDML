@@ -26,40 +26,64 @@ import numpy as np
 from .base import model
 from ..utils import md5_data
 from .._gdml.desc import _from_r
+from .. import __version__ as mbgdml_version
 
 log = logging.getLogger(__name__)
 
 class gdmlModel(model):
 
     def __init__(
-        self, model, criteria_desc_func=None, criteria_cutoff=None
+        self, model, comp_ids=None, criteria=None, for_predict=True
     ):
         """
         Parameters
         ----------
         model : :obj:`str` or :obj:`dict`
             Path to GDML npz model or :obj:`dict`.
-        criteria_desc_func : ``callable``, default: ``None``
-            A descriptor used to filter :math:`n`-body structures from being
-            predicted.
-        criteria_cutoff : :obj:`float`, default: ``None``
-            Value of ``criteria_desc_func`` where the mlModel will not predict
-            the :math:`n`-body contribution of. If ``None``, no cutoff will be
-            enforced.
+        comp_ids : ``iterable``, default: ``None``
+            Model component IDs that relate entity IDs of a structure to a
+            fragment label. This overrides any model ``comp_ids`` if they are
+            present.
+        criteria : :obj:`mbgdml.descriptors.Criteria`, default: ``None``
+            Initialized descriptor criteria for accepting a structure based on
+            a descriptor and cutoff.
+        for_predict : :obj:`bool`, default: ``True``
+            Unpack the model for use in predictors.
         """
-        super().__init__(criteria_desc_func, criteria_cutoff)
+        super().__init__(criteria)
 
         self.type = 'gdml'
-
+        
+        self._load(model, comp_ids)
+        self._unpack()
+    
+    def _load(self, model, comp_ids):
         if isinstance(model, str):
+            log.debug(f'Loading model from {model}')
             model = dict(np.load(model, allow_pickle=True))
-        elif not isinstance(model, dict):
+        elif isinstance(model, dict):
+            log.debug(f'Loading model from dictionary')
+        else:
             raise TypeError(f'{type(model)} is not string or dict')
-        self._model_dict = model
+        
+        self.model_dict = model
 
         self.z = model['z']
-        self.comp_ids = model['comp_ids']
+        self.r_unit = model['r_unit'].item()
+
+        if 'entity_ids' in model.keys():
+            self.entity_ids = model['entity_ids']
+        else:
+            self.entity_ids = None
+
+        if comp_ids is not None:
+            self.comp_ids = comp_ids
+        else:
+            self.comp_ids = model['comp_ids']
         self.nbody_order = len(self.comp_ids)
+    
+    def _unpack(self):
+        model = self.model_dict
 
         self.sig = model['sig']
         self.n_atoms = self.z.shape[0]
@@ -96,18 +120,60 @@ class gdmlModel(model):
             self.alphas_E_lin = None
     
     @property
+    def code_version(self):
+        """mbGDML version used to train the model.
+
+        Raises
+        ------
+        AttributeError
+            If accessing information when no model is loaded.
+        """
+
+        if hasattr(self, 'model_dict'):
+            return self.model_dict['code_version'].item()
+        else:
+            raise AttributeError('No model is loaded.')
+    
+    @property
     def md5(self):
         """Unique MD5 hash of model.
 
-        :type: :obj:`bytes`
+        :type: :obj:`str`
         """
         md5_properties_all = [
             'md5_train', 'z', 'R_desc', 'R_d_desc_alpha', 'sig', 'alphas_F'
         ]
         md5_properties = []
         for key in md5_properties_all:
-            if key in self._model_dict.keys():
+            if key in self.model_dict.keys():
                 md5_properties.append(key)
-        md5_string = md5_data(self._model_dict, md5_properties)
+        md5_string = md5_data(self.model_dict, md5_properties)
         return md5_string
 
+    def add_modifications(self, dset):
+        """mbGDML-specific modifications of models.
+
+        Transfers information from data set to model.
+
+        Parameters
+        ----------
+        dset : :obj:`dict`
+            Dictionary of a mbGDML data set.
+        """
+        dset_keys = ['entity_ids', 'comp_ids']
+        for key in dset_keys:
+            self.model_dict[key] = dset[key]
+        self.model_dict['code_version'] = np.array(mbgdml_version)
+        self.model_dict['md5'] = np.array(self.md5)
+    
+    def save(self, path):
+        """Save model dict as npz file.
+
+        Changes in model attributions are not considered.
+
+        Parameters
+        ----------
+        path : :obj:`str`
+            Path to save the npz file.
+        """
+        np.savez_compressed(path, **self.model_dict)

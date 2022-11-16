@@ -29,8 +29,7 @@ log = logging.getLogger(__name__)
 class schnetModel(model):
 
     def __init__(
-        self, model_path, comp_ids, device, criteria_desc_func=None,
-        criteria_cutoff=None
+        self, model_path, comp_ids, device, criteria=None
     ):
         """
         Parameters
@@ -43,18 +42,14 @@ class schnetModel(model):
         device : :obj:`str`
             The device where the model and tensors will be stored. For example,
             ``'cpu'`` and ``'cuda'``.
-        criteria_desc_func : ``callable``, default: ``None``
-            A descriptor used to filter :math:`n`-body structures from being
-            predicted.
-        criteria_cutoff : :obj:`float`, default: ``None``
-            Value of ``criteria_desc_func`` where the mlModel will not predict
-            the :math:`n`-body contribution of. If ``None``, no cutoff will be
-            enforced.
+        criteria : :obj:`mbgdml.descriptors.Criteria`, default: ``None``
+            Initialized descriptor criteria for accepting a structure based on
+            a descriptor and cutoff.
         """
         global schnetpack, torch, ase
         import schnetpack, torch, ase
 
-        super().__init__(criteria_desc_func, criteria_cutoff)
+        super().__init__(criteria)
         self.type = 'schnet'
         self.spk_model = torch.load(
             model_path, map_location=torch.device(device)

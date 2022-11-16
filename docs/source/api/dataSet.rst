@@ -2,4 +2,4 @@
 ===========
 
 .. autoclass:: mbgdml.data.dataSet
-    
+    :members:

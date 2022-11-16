@@ -372,10 +372,10 @@ def decomp_to_total(
     ----------
     E_nbody : :obj:`numpy.ndarray`, ndim: ``1``
         All :math:`n`-body energies. :obj:`numpy.nan` values are allowed for
-        structures that were beyond the criteria cutoff.
+        structures that were beyond the descriptor cutoff.
     F_nbody : :obj:`numpy.ndarray`, ndim: ``3``
         All :math:`n`-body energies. :obj:`numpy.nan` values are allowed for
-        structures that were beyond the criteria cutoff.
+        structures that were beyond the descriptor cutoff.
     entity_ids : :obj:`numpy.ndarray`, ndim: ``1``
         Integers specifying which atoms belong to which entities for the
         supersystem (not the :math:`n`-body structure).
@@ -432,7 +432,8 @@ class mbePredict(object):
 
     def __init__(
         self, models, predict_model, use_ray=False, n_workers=None,
-        wkr_chunk_size=None, alchemy_scalers=None, periodic_cell=None
+        ray_address='auto', wkr_chunk_size=None, alchemy_scalers=None,
+        periodic_cell=None
     ):
         """
         Parameters
@@ -449,6 +450,8 @@ class mbePredict(object):
             Parallelize predictions using ray.
         n_workers : :obj:`int`, default: ``None``
             Total number of workers available for predictions when using ray.
+        ray_address : :obj:`str`, default: ``'auto'``
+            Ray cluster address to connect to.
         wkr_chunk_size : :obj:`int`, default: ``None``
             Number of :math:`n`-body structures to assign to each spawned
             worker with ray. If ``None``, it will divide up the number of
@@ -478,7 +481,7 @@ class mbePredict(object):
             global ray
             import ray
             if not ray.is_initialized():
-                ray.init(address='auto')
+                ray.init(address=ray_address)
             assert ray.is_initialized()
 
             self.models = [ray.put(model) for model in models]
@@ -582,7 +585,7 @@ class mbePredict(object):
             yield array_worker
     
     def compute_nbody(
-        self, z, r, entity_ids, comp_ids, model, ignore_criteria=False
+        self, z, r, entity_ids, comp_ids, model
     ):
         """Compute all :math:`n`-body contributions of a single structure
         using a :obj:`mbgdml.models.model` object.
@@ -603,9 +606,6 @@ class mbePredict(object):
             is the label's ``entity_id``.
         model : :obj:`mbgdml.models.model`
             Model that contains all information needed by ``model_predict``.
-        ignore_criteria : :obj:`bool`, default: ``False``
-            Ignore any criteria for predictions; i.e., all :math:`n`-body
-            structures will be predicted.
 
         Returns
         -------
@@ -651,7 +651,7 @@ class mbePredict(object):
         if not self.use_ray:
             E, F = self.predict_model(
                 z, r, entity_ids, nbody_gen, model, self.periodic_cell,
-                ignore_criteria, **kwargs_pred
+                **kwargs_pred
             )
         else:
             # Put all common data into the ray object store.
@@ -673,7 +673,7 @@ class mbePredict(object):
                 workers.append(
                     predict_model.remote(
                         z, r, entity_ids, chunk, model, self.periodic_cell, 
-                        ignore_criteria, **kwargs_pred
+                        **kwargs_pred
                     )
                 )
             for _ in range(self.n_workers):
@@ -700,15 +700,13 @@ class mbePredict(object):
         
         return E, F
     
-    def compute_nbody_decomp(
-        self, z, r, entity_ids, comp_ids, model, ignore_criteria=False
-    ):
+    def compute_nbody_decomp(self, z, r, entity_ids, comp_ids, model):
         """Compute all :math:`n`-body contributions of a single structure
         using a :obj:`mbgdml.models.model` object.
         
         Stores all individual entity ID combinations, energies and forces.
-        This is more memory intensive. Structures that fall outside the criteria
-        cutoff will have :obj:`numpy.nan` as their energy and forces.
+        This is more memory intensive. Structures that fall outside the
+        descriptor cutoff will have :obj:`numpy.nan` as their energy and forces.
 
         When ``use_ray = True``, this acts as a driver that spawns ray tasks of
         the ``predict_model`` function.
@@ -726,18 +724,15 @@ class mbePredict(object):
             is the label's ``entity_id``.
         model : :obj:`mbgdml.models.model`
             Model that contains all information needed by ``model_predict``.
-        ignore_criteria : :obj:`bool`, default: ``False``
-            Ignore any criteria for predictions; i.e., all :math:`n`-body
-            structures will be predicted.
 
         Returns
         -------
         :obj:`numpy.ndarray`, ndim: ``1``
             Energies of all possible :math:`n`-body structures. Some elements
-            can be :obj:`numpy.nan` if they are beyond the criteria cutoff.
+            can be :obj:`numpy.nan` if they are beyond the descriptor cutoff.
         :obj:`numpy.ndarray`, ndim: ``3``
             Atomic forces of all possible :math:`n`-body structure. Some
-            elements can be :obj:`numpy.nan` if they are beyond the criteria
+            elements can be :obj:`numpy.nan` if they are beyond the descriptor
             cutoff.
         :obj:`numpy.ndarray`, ndim: ``2``
             All possible entity IDs.
@@ -779,7 +774,7 @@ class mbePredict(object):
         # with this model.
         if not self.use_ray:
             E, F, entity_combs = self.predict_model(
-                z, r, entity_ids, entity_combs, model, ignore_criteria
+                z, r, entity_ids, entity_combs, model
             )
         else:
             if entity_combs.ndim == 1:
@@ -811,9 +806,7 @@ class mbePredict(object):
             predict_model = self.predict_model
             def add_worker(workers, chunk):
                 workers.append(
-                    predict_model.remote(
-                        z, r, entity_ids, chunk, model, ignore_criteria
-                    )
+                    predict_model.remote(z, r, entity_ids, chunk, model)
                 )
             for _ in range(self.n_workers):
                 try:
@@ -840,7 +833,7 @@ class mbePredict(object):
         
         return E, F, entity_combs
     
-    def predict(self, z, R, entity_ids, comp_ids, ignore_criteria=False):
+    def predict(self, z, R, entity_ids, comp_ids):
         """Predict the energies and forces of one or multiple structures.
 
         Parameters
@@ -854,9 +847,6 @@ class mbePredict(object):
         comp_ids : :obj:`numpy.ndarray`, shape: ``(N,)``
             Relates each ``entity_id`` to a fragment label. Each item's index
             is the label's ``entity_id``.
-        ignore_criteria : :obj:`bool`, default: ``False``
-            Ignore any criteria for predictions; i.e., all :math:`n`-body
-            structures will be predicted.
         
         Returns
         -------
@@ -877,7 +867,7 @@ class mbePredict(object):
         for i in range(len(E)):
             for model in self.models:
                 E_nbody, F_nbody = self.compute_nbody(
-                    z, R[i], entity_ids, comp_ids, model, ignore_criteria
+                    z, R[i], entity_ids, comp_ids, model
                 )
                 E[i] += E_nbody
                 F[i] += F_nbody
@@ -887,7 +877,7 @@ class mbePredict(object):
         )
         return E, F
     
-    def predict_decomp(self, z, R, entity_ids, comp_ids, ignore_criteria=False):
+    def predict_decomp(self, z, R, entity_ids, comp_ids):
         """Predict the energies and forces of one or multiple structures.
 
         Parameters
@@ -901,9 +891,6 @@ class mbePredict(object):
         comp_ids : :obj:`numpy.ndarray`, shape: ``(N,)``
             Relates each ``entity_id`` to a fragment label. Each item's index
             is the label's ``entity_id``.
-        ignore_criteria : :obj:`bool`, default: ``False``
-            Ignore any criteria for predictions; i.e., all :math:`n`-body
-            structures will be predicted.
         
         Returns
         -------
@@ -946,7 +933,7 @@ class mbePredict(object):
             for model in nbody_models:
                 for i in range(len(R)):
                     E, F, entity_combs = self.compute_nbody_decomp(
-                        z, R[i], entity_ids, comp_ids, model, ignore_criteria
+                        z, R[i], entity_ids, comp_ids, model
                     )
                     entity_combs = np.hstack(
                         (np.array([[i] for _ in range(len(entity_combs))]), entity_combs)

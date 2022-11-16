@@ -3,13 +3,11 @@ API
 
 .. toctree::
    :maxdepth: 4
-
-   Structure sets <structureset/structureset_module>
-   Data sets <dataset/dataset_module>
+   
+   Data sets <dataSet>
    Training <training/training>
    Models <models/models_module>
-   Criteria <criteria/criteria_module>
-   mbModel <mbModel/mbModel_module>
+   Descriptors <descriptors/descriptors_module>
    Losses <losses/losses_module>
    Periodic <periodic/periodic_module>
    Predictors <predictors/predictors_module>
