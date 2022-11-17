@@ -2,13 +2,13 @@
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
 
 <svg
-   width="250"
-   height="250"
-   viewBox="0 0 66.14582 66.145832"
+   width="100"
+   height="82"
+   viewBox="0 0 26.458328 21.695839"
    version="1.1"
    id="svg5"
    inkscape:version="1.2.1 (1:1.2.1+202210291244+9c6d41e410)"
-   sodipodi:docname="1,2,3-body-logo.svg"
+   sodipodi:docname="1,2,3-body-square.svg"
    inkscape:export-filename="1,2,3-body.png"
    inkscape:export-xdpi="1000"
    inkscape:export-ydpi="1000"
@@ -26,13 +26,13 @@
      inkscape:pagecheckerboard="true"
      inkscape:document-units="in"
      showgrid="false"
-     inkscape:zoom="1.9114559"
-     inkscape:cx="66.179921"
-     inkscape:cy="120.58871"
-     inkscape:window-width="1864"
-     inkscape:window-height="1129"
-     inkscape:window-x="467"
-     inkscape:window-y="1114"
+     inkscape:zoom="5.4064137"
+     inkscape:cx="50.218132"
+     inkscape:cy="55.952063"
+     inkscape:window-width="1920"
+     inkscape:window-height="1043"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
      inkscape:window-maximized="1"
      inkscape:current-layer="layer5"
      units="in"
@@ -55,7 +55,7 @@
      inkscape:label="3body">
     <g
        id="g959"
-       transform="translate(0.13792115,5.9470254)">
+       transform="matrix(0.40545227,0,0,0.40545227,-0.12440196,-0.15033572)">
       <g
          id="g1105"
          transform="matrix(0.7674471,0,0,0.7674471,24.360362,0.65017397)">
