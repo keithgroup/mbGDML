@@ -29,7 +29,7 @@
 
 **Disclaimer**: This package is still under active development and not suitable for production.
 
-# Motivation
+## Motivation
 
 Machine learning potentials (i.e., force fields) often rely on local descriptors for size transferability.
 These descriptors partition total properties into atomic contributions; however, they inherently neglect complicated long-range interactions by enforcing atomic radial cutoffs.
@@ -48,7 +48,7 @@ As a result, GDML typically only needs 1000 structures to accurately learn energ
 To date, GDML has been limited to the exact system it was trained on.
 This makes simulations on arbitrarily size systems, like solvents, futile.
 
-# Approach
+## Approach
 
 Many-body expansions (MBEs) rigorously decomposes total (i.e., supersystem) energies into fundamental *n*-body interactions.
 This expansion is formally exact when all *N*-body interactions are accounted for.
@@ -60,33 +60,32 @@ One can then model any system by summing up 1-, 2-, and 3-body contributions.
 MBEs driven by GDML potentials trained on *n*-body interactions is a promising approach for size-transferable potentials.
 Furthermore, GDML model's remarkable data efficiency enables training on highly accurate quantum chemical methods.
 
-# Features
+## Features
 
-## Train
+### Train
 
 - Train GDML models using grid searches, Bayesian optimization, or both on CPUs.
 - Custom loss functions.
 - Iterative training procedure for automated curation of optimal training sets.
 
-## Predict
+### Predict
 
 - Many-body predictions with GDML, [SchNet](https://schnetpack.readthedocs.io/en/stable/) and [GAP](https://libatoms.github.io/GAP/) potentials.
 - Parallel GDML predictions with [ray](https://docs.ray.io/en/latest/) from a laptop to multiple nodes.
 - Periodic structures with the minimum-image convention.
 - Alchemical predictions by tuning out 2- or 3-body contributions of specific entities.
 
-## Analysis
+### Analysis
 
 - Prediction sets that store decomposed predictions for further analysis.
 - Radial distribution functions.
 - Cluster and identify problematic (i.e., high error) structures using [sklearn](https://scikit-learn.org/stable/index.html).
 
-## Interfaces
+### Interfaces
 
 - [Atomic Simulation Environment](https://wiki.fysik.dtu.dk/ase/) (ASE) for geometry optimizations, molecular dynamics simulations, and more.
 
-
-# Installation
+## Installation
 
 You can install mbGDML from [PyPI](https://pypi.org/project/mbGDML/) by using `pip install mbgdml`.
 Or, the latest development version can be installed directly from the [GitHub repository](https://github.com/keithgroup/mbGDML).
@@ -97,6 +96,6 @@ cd mbGDML
 pip install .
 ```
 
-# License
+## License
 
 Distributed under the MIT License. See `LICENSE` for more information.

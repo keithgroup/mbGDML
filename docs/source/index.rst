@@ -86,13 +86,15 @@ Predict
 - Periodic structures with the minimum-image convention.
 - Alchemical predictions by tuning out 2- or 3-body contributions of specific entities.
 
-**Analysis**
+Analysis
+--------
 
 - Prediction sets that store decomposed predictions for further analysis.
 - Radial distribution functions.
 - Cluster and identify problematic (i.e., high error) structures using `sklearn <https://scikit-learn.org/stable/index.html>`__.
 
-**Interfaces**
+Interfaces
+----------
 
 - `Atomic Simulation Environment <https://wiki.fysik.dtu.dk/ase/>`__ (ASE) for geometry optimizations, molecular dynamics simulations, and more.
 
