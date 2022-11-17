@@ -77,16 +77,26 @@ Here's how to set up ``mbgdml`` for local development.
 
 .. code-block:: bash
 
-    $ git clone git@github.com:your_name_here/mbgdml.git
+    $ git clone https://github.com/username/mbGDML
+    $ cd mbGDML
+    $ git remote add upstream https://github.com/keithgroup/mbGDML
+    $ git fetch upstream
 
-3. Install your local copy.
+3. Add upstream and fetch tags.
 
 .. code-block:: bash
 
-    $ cd mbGDML/
+    $ cd mbGDML
+    $ git remote add upstream https://github.com/keithgroup/mbGDML
+    $ git fetch upstream
+
+4. Install your local copy.
+
+.. code-block:: bash
+
     $ pip install .
 
-4. Create a branch for local development.
+5. Create a branch for local development.
 
 .. code-block:: bash
 
@@ -94,7 +104,12 @@ Here's how to set up ``mbgdml`` for local development.
 
 Now you can make your changes locally.
 
-5. When you're done making changes, check that your changes pass the tests.
+6. Add or change any tests in ``tests/`` if fixing a bug, adding a feature, or anything else that changes source code.
+We use `pytest <https://docs.pytest.org/>`__ and store any necessary files in ``tests/data/``.
+Try to reuse any data already present.
+If additional data is required, keep the file size as small as possible.
+
+7. When you're done making changes, check that your changes pass the tests.
 
 .. code-block:: bash
 
@@ -115,7 +130,7 @@ Now you can make your changes locally.
 
     ======================= 12 passed in 29.55s ========================
 
-6. Write any additional documentation in ``docs/source/``.
+8. Write any additional documentation in ``docs/source/``.
 You can easily build and view the documentation locally by running the ``docs/branch-build-docs.sh`` script then opening ``docs/html/index.html`` in your favorite browser.
 
 .. code-block:: bash
@@ -153,10 +168,10 @@ You can easily build and view the documentation locally by running the ``docs/br
 
     The HTML pages are in html.
 
-7. Add a description of the changes in the ``CHANGELOG.md``.
+9. Add a description of the changes in the ``CHANGELOG.md``.
 Please follow the general format specified `here <https://keepachangelog.com/en/1.0.0/>`__.
 
-8. Commit your changes and push your branch to GitHub.
+10. Commit your changes and push your branch to GitHub.
 
 .. code-block:: bash
 
@@ -164,7 +179,7 @@ Please follow the general format specified `here <https://keepachangelog.com/en/
     $ git commit -m "Your detailed description of your changes."
     $ git push origin name-of-your-branch
 
-9. Submit a pull request through the GitHub website.
+11. Submit a pull request through the `GitHub website <https://github.com/keithgroup/mbGDML>`__.
 
 
 
@@ -186,13 +201,26 @@ Deploying
 =========
 
 A reminder for the maintainers on how to deploy.
-Make sure all your changes are committed.
-Then run
+
+Our versions are manged with `versioneer <https://github.com/python-versioneer/python-versioneer>`__.
+This primarily relies on tags and distance from the most recent tag.
+Creating a new version is automated with ``bump2version`` (which can be installed with ``pip install bump2version``) and controlled with ``.bumpversion.cfg``.
+Then, the `Upload Python Package <https://github.com/keithgroup/mbGDML/actions/workflows/python-publish.yml>`__ GitHub Action will take care of deploying to PyPI.
+
+.. note::
+
+    Each push to ``main`` will trigger a TestPyPI deployment `here <https://test.pypi.org/project/mbGDML/>`__.
+    Tags will trigger a PyPI deployment `here <https://pypi.org/project/mbGDML/>`__.
+
+Create a new version of ``mbgdml`` by running the following command while in the repository root.
 
 .. code-block:: bash
 
     $ bump2version patch # possible: major / minor / patch
-    $ git push
-    $ git push --tags
 
+Then, push the commit and tags.
+
+.. code-block:: bash
+
+    $ git push --follow-tags
 
