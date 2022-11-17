@@ -17,7 +17,7 @@ mbGDML
 .. image:: https://img.shields.io/github/license/keithgroup/mbGDML
    :target: https://github.com/keithgroup/mbGDML/blob/main/LICENSE
 
-Many-body gradient-domain machine learning (mbGDML) is a Python package that can create, use, and analyze machine learning potentials within the many-body expansion framework.
+Create, use, and analyze machine learning potentials within the many-body expansion framework.
 
 **Disclaimer:** This package is still under active development and not suitable for production.
 
