@@ -27,6 +27,7 @@ import logging
 import math
 import numpy as np
 import os
+from .utils import chunk_array, chunk_iterable
 
 log = logging.getLogger(__name__)
 
@@ -72,7 +73,7 @@ def mbe_worker(
     r_shape, entity_ids, r_prov_specs, r_idxs, E_lower, Deriv_lower,
     entity_ids_lower, r_prov_specs_lower
 ):
-    """Work for computing many-body contributions.
+    """Worker for computing many-body contributions.
 
     This does not take into account if many-body contributions are being 
     ``'added'`` or ``'removed'``. This just sums up all possible contributions.
@@ -198,7 +199,7 @@ def gen_r_idxs_worker(r_prov_specs, r_prov_ids_lower, n_workers):
         should always be ``md5_structures``. For example,
         ``{0: '6038e101da7fc0085978741832ebc7ad', 1: 'eeaf93dec698de3ecb55e9292bd9dfcb'}``.
     n_workers : :obj:`int`
-        Number of parallel workers. Can range from ``1`` to the umber of CPUs
+        Number of parallel workers. Can range from ``1`` to the number of CPUs
         available.
 
     Yields
@@ -220,7 +221,7 @@ def gen_r_idxs_worker(r_prov_specs, r_prov_ids_lower, n_workers):
 def mbe_contrib(
     E, Deriv, entity_ids, r_prov_ids, r_prov_specs, E_lower, Deriv_lower,
     entity_ids_lower, r_prov_ids_lower, r_prov_specs_lower, operation='remove',
-    n_workers=1
+    n_workers=1, ray_address='auto'
 ):
     """Adds or removes energy and derivative (i.e., gradients or forces)
     contributions from a reference.
@@ -230,7 +231,7 @@ def mbe_contrib(
     reference.
 
     Making :math:`n`-body predictions (i.e., ``operation = 'add'``) will often
-    not have ``r_prov_ids`` or ``r_prov_specs``as all lower contributions are
+    not have ``r_prov_ids`` or ``r_prov_specs`` as all lower contributions are
     derived exclusively from these structures. Use ``None`` for both of these
     and this function will assume that all ``_lower`` properties apply.
 
@@ -549,41 +550,6 @@ class mbePredict(object):
             if sorted(combination) == list(combination):
                 yield combination
     
-    def chunk(self, iterable, n):
-        """Chunk an iterable into ``n`` objects.
-
-        Parameters
-        ----------
-        iterable : ``iterable``
-            Iterable to chunk.
-        n : :obj:`int`
-            Size of each chunk.
-        
-        Yields
-        ------
-        :obj:`tuple`
-            ``n`` objects.
-        """
-        iterator = iter(iterable)
-        for first in iterator:
-            yield tuple(
-                itertools.chain([first], itertools.islice(iterator, n - 1))
-            )
-    
-    def chunk_array(self, array, n):
-        """Chunk an array.
-
-        Parameters
-        ----------
-        array : :obj:`numpy.ndarray`
-            Array to chunk.
-        n : :obj:`int`
-            Size of each chunk.
-        """
-        for i in range(0, len(array), n):
-            array_worker = array[i:i + n]
-            yield array_worker
-    
     def compute_nbody(
         self, z, r, entity_ids, comp_ids, model
     ):
@@ -664,7 +630,7 @@ class mbePredict(object):
                 wkr_chunk_size = math.ceil(len(nbody_gen)/self.n_workers)
             else:
                 wkr_chunk_size = self.wkr_chunk_size
-            nbody_chunker = self.chunk(nbody_gen, wkr_chunk_size)
+            nbody_chunker = chunk_iterable(nbody_gen, wkr_chunk_size)
             workers = []
 
             # Initialize workers 
@@ -799,7 +765,7 @@ class mbePredict(object):
                 wkr_chunk_size = math.ceil(len(entity_combs)/self.n_workers)
             else:
                 wkr_chunk_size = self.wkr_chunk_size
-            nbody_chunker = self.chunk_array(entity_combs, wkr_chunk_size)
+            nbody_chunker = chunk_array(entity_combs, wkr_chunk_size)
             workers = []
 
             # Initialize workers 

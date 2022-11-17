@@ -498,3 +498,17 @@ def chunk_iterable(iterable, n):
     iterator = iter(iterable)
     for first in iterator:
         yield tuple(itertools.chain([first], itertools.islice(iterator, n - 1)))
+
+def chunk_array(array, n):
+    """Chunk an array.
+
+    Parameters
+    ----------
+    array : :obj:`numpy.ndarray`
+        Array to chunk.
+    n : :obj:`int`
+        Size of each chunk.
+    """
+    for i in range(0, len(array), n):
+        array_worker = array[i:i + n]
+        yield array_worker

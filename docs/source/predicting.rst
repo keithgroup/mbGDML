@@ -2,7 +2,7 @@
 Predicting
 ==========
 
-The mbGDML package was originally designed for GDML models.
+mbGDML was originally designed just for GDML models; hence the name.
 However, other ML models or even QC methods can be used to make many-body predictions.
 We designed an extensible, modular framework for many-body predictions using :class:`~mbgdml.mbe.mbePredict`.
 
