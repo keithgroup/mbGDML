@@ -87,7 +87,7 @@ Furthermore, GDML model's remarkable data efficiency enables training on highly 
 
 ## Installation
 
-You can install mbGDML from [PyPI](https://pypi.org/project/mbGDML/) by using `pip install mbgdml`.
+You can install mbGDML from [PyPI](https://pypi.org/project/mbGDML/) by using `pip install mbGDML`.
 Or, the latest development version can be installed directly from the [GitHub repository](https://github.com/keithgroup/mbGDML).
 
 ```text
