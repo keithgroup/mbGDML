@@ -23,7 +23,7 @@ project = 'mbGDML'
 copyright = '2020-2022 Alex M. Maldonado'
 author = 'Alex M. Maldonado'
 html_title = 'mbGDML'
-html_logo = './images/1,2,3-body-square-small.svg'
+html_logo = './images/1,2,3-body-square.svg'
 
 
 
