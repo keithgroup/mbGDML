@@ -101,8 +101,8 @@ class RDF(object):
         inter_only : :obj:`bool`, default: ``True``
             Only intermolecular distances are allowed. If ``True``, atoms that
             have the same ``entity_id`` are ignored.
-        n_workers : :obj:`int`, default: ``None``
-            Number workers we can use for ray tasks. If ``None`` results in
+        n_workers : :obj:`int`, default: :obj:`None`
+            Number workers we can use for ray tasks. If :obj:`None` results in
             serial operation.
         """
         # Store data

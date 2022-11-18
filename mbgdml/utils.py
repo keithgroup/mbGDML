@@ -462,7 +462,18 @@ def gen_combs(sets, replacement=False):
     Yields
     ------
     :obj:`tuple`
-        Entity IDs to retrieve cartesian coordinates for ML prediction.
+        Combination of one element per set in ``sets``.
+    
+    Examples
+    --------
+    >>> sets = ((0,) (1, 2), (1, 2, 3))
+    >>> combs = gen_combs(sets)
+    >>> for comb in combs:
+    ...     print(comb)
+    ... 
+    (0, 1, 2)
+    (0, 1, 3)
+    (0, 2, 3)
     """
     combs = itertools.product(*sets)
     # Excludes combinations that have repeats (e.g., (0, 0) and (1, 1. 2)).

@@ -27,7 +27,14 @@ import logging
 import math
 import numpy as np
 import os
-from .utils import chunk_array, chunk_iterable
+from .utils import chunk_array, chunk_iterable, gen_combs
+
+try:
+    import ray
+except (ModuleNotFoundError, ImportError):
+    _has_ray = False
+except:
+    _has_ray = True
 
 log = logging.getLogger(__name__)
 
@@ -221,7 +228,7 @@ def gen_r_idxs_worker(r_prov_specs, r_prov_ids_lower, n_workers):
 def mbe_contrib(
     E, Deriv, entity_ids, r_prov_ids, r_prov_specs, E_lower, Deriv_lower,
     entity_ids_lower, r_prov_ids_lower, r_prov_specs_lower, operation='remove',
-    n_workers=1, ray_address='auto'
+    use_ray=False, ray_address='auto', n_workers=2
 ):
     """Adds or removes energy and derivative (i.e., gradients or forces)
     contributions from a reference.
@@ -232,7 +239,7 @@ def mbe_contrib(
 
     Making :math:`n`-body predictions (i.e., ``operation = 'add'``) will often
     not have ``r_prov_ids`` or ``r_prov_specs`` as all lower contributions are
-    derived exclusively from these structures. Use ``None`` for both of these
+    derived exclusively from these structures. Use :obj:`None` for both of these
     and this function will assume that all ``_lower`` properties apply.
 
     Parameters
@@ -247,12 +254,12 @@ def mbe_contrib(
         which entities for reference structures. Entities can be a related
         set of atoms, molecules, or functional group. For example, a water and
         methanol molecule could be ``[0, 0, 0, 1, 1, 1, 1, 1, 1]``.
-    r_prov_ids : :obj:`dict` {:obj:`int`: :obj:`str`} or ``None``
+    r_prov_ids : :obj:`dict` {:obj:`int`: :obj:`str`} or :obj:`None`
         Species an ID (:obj:`int`) to uniquely identifying labels for each
         structure if it originated from another reptar file. Labels should
         always be ``md5_structures``. For example,
         ``{0: '6038e101da7fc0085978741832ebc7ad', 1: 'eeaf93dec698de3ecb55e9292bd9dfcb'}``.
-    r_prov_specs : :obj:`numpy.ndarray`, ndim: ``2`` or ``None``
+    r_prov_specs : :obj:`numpy.ndarray`, ndim: ``2`` or :obj:`None`
         Structure provenance IDs. This specifies the ``r_prov_id``, structure
         index from the ``r_prov_id`` source, and ``entity_ids`` making up
         the structure.
@@ -277,9 +284,14 @@ def mbe_contrib(
         lower-order structures.
     operation : :obj:`str`, default: ``'remove'``
         ``'add'`` or ``'remove'`` the contributions.
-    n_workers : :obj:`int`, default: ``1``
-        Number of workers. Can range from ``1`` to the total number of CPUs
-        available. If larger than ``1``, ray tasks are spawned.
+    use_ray : :obj:`bool`, default: ``False``
+        Use `ray <https://docs.ray.io/en/latest/>`__ to parallelize
+        calculations.
+    n_workers : :obj:`int`, default: ``2``
+        Number of ray workers to use. This is ignored if ``use_ray`` is
+        ``False``.
+    ray_address : :obj:`str`, default: ``'auto'``
+        Ray cluster address to connect to.
     
     Returns
     -------
@@ -362,12 +374,13 @@ def mbe_contrib(
     return E, Deriv
 
 def decomp_to_total(
-    E_nbody, F_nbody, entity_ids, entity_combs, n_workers=1
+    E_nbody, F_nbody, entity_ids, entity_combs, use_ray=False,
+    ray_address='auto', n_workers=2
 ):
     """Sum decomposed :math:`n`-body energies and forces for total
     :math:`n`-body contribution.
 
-    This is a wrapper around :obj:`mbgdml.mbe.mbe_contrib`.
+    This is a wrapper around :func:`mbgdml.mbe.mbe_contrib`.
 
     Parameters
     ----------
@@ -384,9 +397,14 @@ def decomp_to_total(
         Structure indices and Entity IDs of all structures in increasing
         order of :math:`n`. Column 0 is the structure index and
         the remaining columns are entity IDs.
-    n_workers : :obj:`int`, default: ``1``
-        Number of workers. Can range from ``1`` to the total number of CPUs
-        available. If larger than ``1``, ray tasks are spawned.
+    use_ray : :obj:`bool`, default: ``False``
+        Use `ray <https://docs.ray.io/en/latest/>`__ to parallelize
+        calculations.
+    n_workers : :obj:`int`, default: ``2``
+        Number of ray workers to use. This is ignored if ``use_ray`` is
+        ``False``.
+    ray_address : :obj:`str`, default: ``'auto'``
+        Ray cluster address to connect to.
     
     Returns
     -------
@@ -416,7 +434,7 @@ def decomp_to_total(
     E, F = mbe_contrib(
         E, F, entity_ids, None, None, E_nbody, F_nbody,
         entity_ids_lower, {0: ''}, r_prov_specs_lower, operation='add',
-        n_workers=n_workers
+        use_ray=use_ray, ray_address=ray_address, n_workers=n_workers
     )
     return E, F
     
@@ -432,7 +450,7 @@ class mbePredict(object):
     """
 
     def __init__(
-        self, models, predict_model, use_ray=False, n_workers=None,
+        self, models, predict_model, use_ray=False, n_workers=2,
         ray_address='auto', wkr_chunk_size=None, alchemy_scalers=None,
         periodic_cell=None
     ):
@@ -445,23 +463,24 @@ class mbePredict(object):
         predict_model : ``callable``
             A function that takes ``z, r, entity_ids, nbody_gen, model`` and
             computes energies and forces. This will be turned into a ray remote
-            function if ``use_ray = True``. This can return total properties
+            function if ``use_ray`` is ``True``. This can return total properties
             or all individual :math:`n`-body energies and forces.
         use_ray : :obj:`bool`, default: ``False``
             Parallelize predictions using ray.
-        n_workers : :obj:`int`, default: ``None``
+        n_workers : :obj:`int`, default: ``2``
             Total number of workers available for predictions when using ray.
+            This is ignored if ``use_ray`` is ``False``.
         ray_address : :obj:`str`, default: ``'auto'``
             Ray cluster address to connect to.
-        wkr_chunk_size : :obj:`int`, default: ``None``
+        wkr_chunk_size : :obj:`int`, default: :obj:`None`
             Number of :math:`n`-body structures to assign to each spawned
-            worker with ray. If ``None``, it will divide up the number of
+            worker with ray. If :obj:`None`, it will divide up the number of
             predictions by ``n_workers``.
-        alchemical_scaling : :obj:`list` of ``mbgdml.alchemy.mbeAlchemyScale``, default: ``None``
+        alchemical_scaling : :obj:`list` of ``mbgdml.alchemy.mbeAlchemyScale``, default: :obj:`None`
             Alchemical scaling of :math:`n`-body interactions of entities.
-        periodic_cell : :obj:`mbgdml.periodic.Cell`, default: ``None``
+        periodic_cell : :obj:`mbgdml.periodic.Cell`, default: :obj:`None`
             Use periodic boundary conditions defined by this object. If this
-            is not ``None`` only ``mbePredict.predict()`` can be used.
+            is not :obj:`None` only ``mbePredict.predict()`` can be used.
         """
         self.models = models
         self.predict_model = predict_model
@@ -519,37 +538,6 @@ class mbePredict(object):
             avail_entity_ids.append(matching_entity_ids)
         return avail_entity_ids
     
-    def gen_entity_combinations(self, avail_entity_ids):
-        """Generator for entity combinations where each entity comes from a
-        specified list (i.e., from ``get_avail_entities``).
-
-        Parameters
-        ----------
-        avail_entity_ids : :obj:`list` of :obj:`numpy.ndarray`
-            A list of ``entity_ids`` that match the ``comp_id`` of each
-            model ``entity_id``. Note that the index of the
-            :obj:`numpy.ndarray` is equal to the model ``entity_id`` and the
-            values are ``entity_ids`` that match the ``comp_id``.
-        
-        Yields
-        ------
-        :obj:`tuple`
-            Entity IDs to retrieve cartesian coordinates for ML prediction.
-        """
-        nbody_combinations = itertools.product(*avail_entity_ids)
-        # Excludes combinations that have repeats (e.g., (0, 0) and (1, 1. 2)).
-        nbody_combinations = itertools.filterfalse(
-            lambda x: len(set(x)) <  len(x), nbody_combinations
-        )
-        # At this point, there are still duplicates in this iterator.
-        # For example, (0, 1) and (1, 0) are still included.
-        for combination in nbody_combinations:
-            # Sorts entity is to avoid duplicate structures.
-            # For example, if combination is (1, 0) the sorted version is not
-            # equal and will not be included.
-            if sorted(combination) == list(combination):
-                yield combination
-    
     def compute_nbody(
         self, z, r, entity_ids, comp_ids, model
     ):
@@ -602,7 +590,7 @@ class mbePredict(object):
             model_comp_ids = model.comp_ids
         avail_entity_ids = self.get_avail_entities(comp_ids, model_comp_ids)
         log.debug(f'Available entity IDs: {avail_entity_ids}')
-        nbody_gen = self.gen_entity_combinations(avail_entity_ids)
+        nbody_gen = gen_combs(avail_entity_ids)
 
         kwargs_pred = {}
         if self.alchemy_scalers is not None:
@@ -721,7 +709,7 @@ class mbePredict(object):
         else:
             model_comp_ids = model.comp_ids
         avail_entity_ids = self.get_avail_entities(comp_ids, model_comp_ids)
-        nbody_gen = self.gen_entity_combinations(avail_entity_ids)
+        nbody_gen = gen_combs(avail_entity_ids)
 
         # Explicitly evaluate n-body generator.
         comb0 = next(nbody_gen)

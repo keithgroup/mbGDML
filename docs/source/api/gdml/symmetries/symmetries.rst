@@ -2,6 +2,7 @@ Symmetries
 ==========
 
 .. toctree::
+    :maxdepth: 1
 
     bipartite_match
     complete_sym_group

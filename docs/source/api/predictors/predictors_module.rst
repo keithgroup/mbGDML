@@ -2,6 +2,7 @@
 ==================
 
 .. toctree::
+    :maxdepth: 1
     
     predict_gap
     predict_gap_decomp

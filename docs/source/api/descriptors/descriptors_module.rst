@@ -2,6 +2,7 @@
 ======================
 
 .. toctree::
+    :maxdepth: 1
 
     com_distance_sum
     Criteria <criteria>

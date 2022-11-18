@@ -42,7 +42,7 @@ def _predict_gdml_wkr(
     Note
     ----
     It is sufficient to provide either the parameter ``r`` or ``r_desc_d_desc``.
-    The other one can be set to ``None``.
+    The other one can be set to :obj:`None`.
 
     Returns
     -------
@@ -173,7 +173,7 @@ def predict_gdml(
         to slice ``r`` with ``entity_ids``.
     model : :obj:`mbgdml.models.gdmlModel`
         GDML model containing all information need to make predictions.
-    periodic_cell : :obj:`mbgdml.periodic.Cell`, default: ``None``
+    periodic_cell : :obj:`mbgdml.periodic.Cell`, default: :obj:`None`
         Use periodic boundary conditions defined by this object.
     
     Returns

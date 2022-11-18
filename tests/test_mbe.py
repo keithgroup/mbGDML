@@ -79,7 +79,7 @@ def test_4h2o_mbe_from_data():
     for data in lower_data:
         E_mb, G_mb = mbe_contrib(
             E_mb, G_mb, entity_ids, r_prov_ids, r_prov_specs,
-            *data, operation='add', n_workers=1
+            *data, operation='add', use_ray=False
         )
 
     assert np.allclose(

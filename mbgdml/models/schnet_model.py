@@ -42,7 +42,7 @@ class schnetModel(model):
         device : :obj:`str`
             The device where the model and tensors will be stored. For example,
             ``'cpu'`` and ``'cuda'``.
-        criteria : :obj:`mbgdml.descriptors.Criteria`, default: ``None``
+        criteria : :obj:`mbgdml.descriptors.Criteria`, default: :obj:`None`
             Initialized descriptor criteria for accepting a structure based on
             a descriptor and cutoff.
         """

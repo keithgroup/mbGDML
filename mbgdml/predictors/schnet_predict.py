@@ -44,7 +44,7 @@ def predict_schnet(
         to slice ``r`` with ``entity_ids``.
     model : :obj:`mbgdml.models.schnetModel`
         GAP model containing all information need to make predictions.
-    periodic_cell : :obj:`mbgdml.periodic.Cell`, default: ``None``
+    periodic_cell : :obj:`mbgdml.periodic.Cell`, default: :obj:`None`
         Use periodic boundary conditions defined by this object.
     
     Returns

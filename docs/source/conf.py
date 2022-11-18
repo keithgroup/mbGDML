@@ -78,6 +78,7 @@ intersphinx_mapping = {
     'ase': ('https://wiki.fysik.dtu.dk/ase/', None),
     'torch': ("https://pytorch.org/docs/master/", None),
     'scipy': ('https://docs.scipy.org/doc/scipy/', None),
+    'sgdml': ('http://docs.sgdml.org/', None),
 }
 
 

@@ -58,7 +58,7 @@ class Cell:
 
         Also checks that all atomic pairwise distances are less than
         ``self.cutoff``. If any are equal to greater than the cutoff then it
-        returns ``None``.
+        returns :obj:`None`.
 
         Parameters
         ----------

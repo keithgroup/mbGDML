@@ -79,11 +79,11 @@ class mbGDMLTrain:
             does not need to change.
         solver_tol : :obj:`float`, default: ``1e-4``
            Solver tolerance.
-        interact_cut_off : :obj:`float`, default: ``None``
+        interact_cut_off : :obj:`float`, default: :obj:`None`
             Untested option. Not recommended and turned off.
         use_torch : :obj:`bool`, default: ``False``
             Use PyTorch to enable GPU acceleration.
-        max_processes : :obj:`int`, default: ``None``
+        max_processes : :obj:`int`, default: :obj:`None`
             The maximum number of cores to use for the training process. Will
             automatically calculate if not specified.
         """
@@ -159,16 +159,16 @@ class mbGDMLTrain:
         self.bayes_opt_params_final = None
         """Bayesian optimization parameters for the final iterative model.
 
-        If ``None``, then ``bayes_opt_params`` are used.
+        If :obj:`None`, then ``bayes_opt_params`` are used.
 
-        Default: ``None``
+        Default: :obj:`None`
 
         :type: :obj:`dict`
         """
         self.sigma_bounds = (2, 400)
         """Kernel length scale bounds for the Bayesian optimization.
 
-        This is only used if ``sigma_grid`` if ``None``.
+        This is only used if ``sigma_grid`` if :obj:`None`.
 
         Default: ``(2, 400)``
 
@@ -279,12 +279,12 @@ class mbGDMLTrain:
             The number of validation points to sample, without replacement.
         sigma : :obj:`float` or :obj:`int`
             Kernel length scale of the desired model.
-        train_idxs : :obj:`numpy.ndarray`, default: ``None``
+        train_idxs : :obj:`numpy.ndarray`, default: :obj:`None`
             The specific indices of structures to train the model on. If
-            ``None`` will automatically sample the training data set.
-        valid_idxs : :obj:`numpy.ndarray`, default: ``None``
+            :obj:`None` will automatically sample the training data set.
+        valid_idxs : :obj:`numpy.ndarray`, default: :obj:`None`
             The specific indices of structures to validate models on.
-            If ``None``, structures will be automatically determined.
+            If :obj:`None`, structures will be automatically determined.
         """
         self.task = self.GDMLTrain.create_task(
             train_dataset, n_train, valid_dataset, n_valid, sigma, lam=self.lam,
@@ -483,7 +483,7 @@ class mbGDMLTrain:
             The number of training points to use.
         n_valid : :obj:`int`
             The number of validation points to use.
-        n_test : :obj:`int`, default: ``None``
+        n_test : :obj:`int`, default: :obj:`None`
             The number of test points to test the validated GDML model.
             Defaults to testing all available structures.
         save_dir : :obj:`str`, default: ``'.'``
@@ -496,12 +496,12 @@ class mbGDMLTrain:
             sometimes crashes.
         plot_bo : :obj:`bool`, default: ``True``
             Plot the Bayesian optimization Gaussian process.
-        train_idxs : :obj:`numpy.ndarray`, default: ``None``
+        train_idxs : :obj:`numpy.ndarray`, default: :obj:`None`
             The specific indices of structures to train the model on. If
-            ``None`` will automatically sample the training data set.
-        valid_idxs : :obj:`numpy.ndarray`, default: ``None``
+            :obj:`None` will automatically sample the training data set.
+        valid_idxs : :obj:`numpy.ndarray`, default: :obj:`None`
             The specific indices of structures to validate models on.
-            If ``None``, structures will be automatically determined.
+            If :obj:`None`, structures will be automatically determined.
         overwrite : :obj:`bool`, default: ``False``
             Overwrite existing files.
         write_json : :obj:`bool`, default: ``True``
@@ -815,18 +815,18 @@ class mbGDMLTrain:
             The number of training points to use.
         n_valid : :obj:`int`
             The number of validation points to use.
-        n_test : :obj:`int`, default: ``None``
+        n_test : :obj:`int`, default: :obj:`None`
             The number of test points to test the validated GDML model.
             Defaults to testing all available structures.
         save_dir : :obj:`str`, default: ``'.'``
             Path to train and save the mbGDML model. Defaults to current
             directory.
-        train_idxs : :obj:`numpy.ndarray`, default: ``None``
+        train_idxs : :obj:`numpy.ndarray`, default: :obj:`None`
             The specific indices of structures to train the model on. If
-            ``None`` will automatically sample the training data set.
-        valid_idxs : :obj:`numpy.ndarray`, default: ``None``
+            :obj:`None` will automatically sample the training data set.
+        valid_idxs : :obj:`numpy.ndarray`, default: :obj:`None`
             The specific indices of structures to validate models on.
-            If ``None``, structures will be automatically determined.
+            If :obj:`None`, structures will be automatically determined.
         overwrite : :obj:`bool`, default: ``False``
             Overwrite existing files.
         write_json : :obj:`bool`, default: ``True``
@@ -1005,13 +1005,13 @@ class mbGDMLTrain:
         n_valid : :obj:`int`
             Size of the validation set to be used for each training task.
             Different structures are sampled for each training task.
-        model0 : :obj:`dict`, default: ``None``
+        model0 : :obj:`dict`, default: :obj:`None`
             Initial model to start iterative training with. Training indices
             will be taken from here.
         n_train_step : :obj:`int`, default: ``100``
             Number of problematic structures to add to the training set for
             each iteration.
-        n_test : :obj:`int`, default: ``None``
+        n_test : :obj:`int`, default: :obj:`None`
             The number of test points to test the validated GDML model.
             Defaults to testing all available structures.
         save_dir : :obj:`str`, default: ``'.'``

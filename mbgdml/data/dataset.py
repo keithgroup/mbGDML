@@ -339,7 +339,7 @@ class dataSet(mbGDMLData):
     
     @property
     def mb(self):
-        """Many-body expansion order of this data set. This is ``None`` if the
+        """Many-body expansion order of this data set. This is :obj:`None` if the
         data set does not contain many-body energies and forces.
 
         :type: :obj:`int`

@@ -28,9 +28,9 @@ import psutil
 
 from .sample import draw_strat_sample
 from .perm import find_perms, find_extra_perms, find_frag_perms
-from ..utils import md5_data
+from ..utils import md5_data, chunk_array
 from ..losses import mae, rmse
-from .. import __version__
+from .. import __version__ as mbgdml_version
 
 import multiprocessing as mp
 
@@ -60,8 +60,6 @@ try:
 except (NameError, AttributeError):
     _torch_cuda_is_available = False
 
-from .. import __version__
-
 # TODO: remove exception handling once iterative solver ships
 try:
     from .solvers.iterative import Iterative
@@ -89,7 +87,6 @@ def _share_array(arr_np, typecode_or_type):
     -------
     Array of ``ctype``.
     """
-
     arr = mp.RawArray(typecode_or_type, arr_np.ravel())
     return arr, arr_np.shape
 
@@ -113,8 +110,8 @@ def _assemble_kernel_mat_wkr(
     sig : :obj:`int` or :obj:`float`
         Hyperparameter sigma (kernel length scale).
     use_E_cstr : :obj:`bool`, optional
-        True: include energy constraints in the kernel,
-        False: default (s)GDML kernel.
+        Include energy constraints in the kernel. This can
+        sometimes be helpful in tricky cases.
     exploit_sym : :obj:`bool`, optional
         Do not create symmetric entries of the kernel matrix twice
         (this only works for specific inputs for ``cols_m_limit``)
@@ -299,7 +296,7 @@ class GDMLTrain(object):
 
     This class is used to train models using different closed-form
     and numerical solvers. GPU support is provided
-    through PyTorch (requires optional `torch` dependency to be
+    through PyTorch (requires optional ``torch`` dependency to be
     installed) for some solvers.
 
     """
@@ -307,13 +304,13 @@ class GDMLTrain(object):
         """
         Parameters
         ----------
-        max_memory : :obj:`int`, default: ``None``
+        max_memory : :obj:`int`, default: :obj:`None`
             Limit the maximum memory usage. This is a soft limit that cannot
             always be enforced.
-        max_processes : :obj:`int`, default: ``None``
+        max_processes : :obj:`int`, default: :obj:`None`
             Limit the max. number of processes. Otherwise all CPU cores are
-            used. This parameters has no effect if `use_torch=True`
-        use_torch : boolean, default: ``False``
+            used. This parameters has no effect if ``use_torch=True``
+        use_torch : :obj:`bool`, default: ``False``
             Use PyTorch to calculate predictions (if supported by solver).
 
         Raises
@@ -347,15 +344,15 @@ class GDMLTrain(object):
 
         if use_torch and not _has_torch:
             raise ImportError(
-                'Optional PyTorch dependency not found! Please run \'pip install sgdml[torch]\' to install it or disable the PyTorch option.'
+                'Optional PyTorch dependency not found! Please install PyTorch.'
             )
 
+
     def __del__(self):
-
         global glob
-
         if 'glob' in globals():
             del glob
+
 
     def create_task(
         self,
@@ -375,7 +372,7 @@ class GDMLTrain(object):
         idxs_train=None,
         idxs_valid=None,
     ):
-        """Create a data structure of custom type ``task``.
+        """Create a data structure, :obj:`dict`, of custom type ``task``.
 
         These data structures serve as recipes for model creation,
         summarizing the configuration of one particular training run.
@@ -383,7 +380,7 @@ class GDMLTrain(object):
         without replacement. If the same dataset if given for training
         and testing, the subsets are drawn without overlap.
 
-        Each task also contains a choice for the hyper-parameters of the
+        Each task also contains a choice for the hyperparameters of the
         training process and the MD5 fingerprints of the used datasets.
 
         Parameters
@@ -401,13 +398,17 @@ class GDMLTrain(object):
         sig : :obj:`int`
             Hyperparameter sigma (kernel length scale).
         lam : :obj:`float`, default: ``1e-10``
-            Hyper-parameter lambda (regularization strength).
+            Hyperparameter lambda (regularization strength).
+
+            .. note::
+
+                Early sGDML models used ``1e-15``.
         perms : :obj:`numpy.ndarray`, optional
             An 2D array of size P x N containing P possible permutations
             of the N atoms in the system. This argument takes priority over the ones
             provided in the training dataset. No automatic discovery is run
             when this argument is provided.
-        use_sym : bool, default: ``True``
+        use_sym : :obj:`bool`, default: ``True``
             True: include symmetries (sGDML), False: GDML.
         use_E : :obj:`bool`, optional
             ``True``: reconstruct force field with corresponding potential energy surface,
@@ -416,14 +417,13 @@ class GDMLTrain(object):
             in the dataset. The trained model will still be able to predict
             energies up to an unknown integration constant. Note, that the
             energy predictions accuracy will be untested.
-        use_E_cstr : bool, default: ``False``
-            True: include energy constraints in the kernel,
-            False: default (s)GDML.
-        use_cprsn : bool, default: ``False``
-            True: compress kernel matrix along symmetric degrees of
-            freedom,
-            False: train using full kernel matrix.
-        solver : :obj:`str`, default: ``None``
+        use_E_cstr : :obj:`bool`, default: ``False``
+            Include energy constraints in the kernel. This can
+            sometimes be helpful in tricky cases.
+        use_cprsn : :obj:`bool`, default: ``False``
+            Compress the kernel matrix along symmetric degrees of freedom.
+            If ``False``, training is done on the full kernel matrix.
+        solver : :obj:`str`, default: :obj:`None`
             Type of solver to use for training. ``'analytic'`` is currently the
             only option and defaults to this.
 
@@ -545,7 +545,7 @@ class GDMLTrain(object):
         R_train = train_dataset['R'][idxs_train, :, :]
         task = {
             'type': 't',
-            'code_version': __version__,
+            'code_version': mbgdml_version,
             'dataset_name': train_dataset['name'].astype(str),
             'dataset_theory': train_dataset['theory'].astype(str),
             'z': train_dataset['z'],
@@ -657,7 +657,7 @@ class GDMLTrain(object):
         self, task, solver, R_desc, R_d_desc, tril_perms_lin, std, alphas_F,
         alphas_E=None
     ):
-        """Create a data structure of custom type ``model``.
+        """Create a data structure, :obj:`dict`, of custom type ``model``.
 
         These data structures contain the trained model are everything
         that is needed to generate predictions for new inputs.
@@ -670,26 +670,27 @@ class GDMLTrain(object):
         solver : :obj:`str`
             Identifier string for the solver that has been used to
             train this model.
-        R_desc : :obj:`numpy.ndarray`, optional
-            An 2D array of size M x D containing the descriptors of dimension D
-            for M molecules.
-        R_d_desc : :obj:`numpy.ndarray`, optional
-            A 2D array of size M x D x 3N containing of the descriptor Jacobians
-            for M molecules. The descriptor has dimension D with 3N partial
-            derivatives with respect to the 3N Cartesian coordinates of each
-            atom.
-        tril_perms_lin : :obj:`numpy.ndarray`
-            1D array containing all recovered permutations expanded as one large
+        R_desc : :obj:`numpy.ndarray`, ndim: ``2``
+            An array of size :math:`M \\times D` containing the descriptors of
+            dimension :math:`D` for :math:`M` molecules.
+        R_d_desc : :obj:`numpy.ndarray`, ndim: ``2``
+            An array of size :math:`M \\times D \\times 3N` containing of the
+            descriptor Jacobians for :math:`M` molecules. The descriptor has
+            dimension :math:`D` with :math:`3N` partial derivatives with respect
+            to the :math:`3N` Cartesian coordinates of each atom.
+        tril_perms_lin : :obj:`numpy.ndarray`, ndim: ``1``
+            An array containing all recovered permutations expanded as one large
             permutation to be applied to a tiled copy of the object to be
             permuted.
-        std : float
+        std : :obj:`float`
             Standard deviation of the training labels.
-        alphas_F : :obj:`numpy.ndarray`
-            A 1D array of size 3NM containing of the linear coefficients that
-            correspond to the force constraints.
-        alphas_E : :obj:`numpy.ndarray`, optional
-            A 1D array of size N containing of the linear coefficients that
-            correspond to the energy constraints.
+        alphas_F : :obj:`numpy.ndarray`, ndim: ``1``
+            An array of size :math:`3NM` containing of the linear coefficients
+            that correspond to the force constraints.
+        alphas_E : :obj:`numpy.ndarray`, ndim: ``1``, optional
+            An array of size N containing of the linear coefficients that
+            correspond to the energy constraints. Only used if ``use_E_cstr``
+            is ``True``.
         
         Returns
         -------
@@ -709,7 +710,7 @@ class GDMLTrain(object):
 
         model = {
             'type': 'm',
-            'code_version': __version__,
+            'code_version': mbgdml_version,
             'dataset_name': task['dataset_name'],
             'dataset_theory': task['dataset_theory'],
             'solver_name': solver,
@@ -748,6 +749,54 @@ class GDMLTrain(object):
             model['e_unit'] = task['e_unit']
 
         return model
+    
+    def train_labels(self, F, use_E, use_E_cstr, E=None):
+        """Compute custom train labels.
+
+        By default, they are the raveled forces scaled by the standard
+        deviation. Energy labels are included if ``use_E`` and ``use_E_cstr``
+        are ``True``.
+
+        .. note::
+
+            We use negative energies with the mean removed for training labels
+            (if requested).
+        
+        Parameters
+        ----------
+        F : :obj:`numpy.ndarray`, ndim: ``3``
+            Train set forces.
+        use_E : :obj:`bool`
+            If energies are used during training.
+        use_E_cstr : :obj:`bool`
+            If energy constraints are being added to the kernel.
+        E : :obj:`numpy.ndarray`, default: :obj:`None`
+            Train set energies.
+        
+        Returns
+        -------
+        :obj:`numpy.ndarray`
+            Train labels including forces and possibly energies.
+        :obj:`float`
+            Standard deviation of training labels.
+        :obj:`float`
+            Mean energy. If energy labels are not included then this is
+            :obj:`None`.
+        """
+        y = F.ravel().copy()
+
+        if use_E and use_E_cstr:
+            E_train = E.ravel().copy()
+            E_train_mean = np.mean(E_train)
+
+            y = np.hstack((y, -E_train + E_train_mean))
+        else:
+            E_train_mean = None
+            
+        y_std = np.std(y)
+        y /= y_std
+
+        return y, y_std, E_train_mean
 
     def train(self, task, require_E_eval=False):
         """Train a model based on a task.
@@ -755,14 +804,16 @@ class GDMLTrain(object):
         Parameters
         ----------
         task : :obj:`dict`
-            Data structure of custom type ``task``.
+            Data structure of custom type ``task`` from
+            :meth:`~mbgdml._gdml.train.GDMLTrain.create_task`.
         require_E_eval : :obj:`bool`, default: ``False``
-            Require energy evaluation regardless even if they are terrible.
+            Require energy evaluation.
 
         Returns
         -------
         :obj:`dict`
-            Data structure of custom type ``model``.
+            Data structure of custom type ``model`` from
+            :meth:`~mbgdml._gdml.train.GDMLTrain.create_model`.
 
         Raises
         ------
@@ -805,16 +856,13 @@ class GDMLTrain(object):
         )
 
         # Generate label vector.
-        E_train_mean = None
-        y = task['F_train'].ravel().copy()
-        if task['use_E'] and task['use_E_cstr']:
-            E_train = task['E_train'].ravel().copy()
-            E_train_mean = np.mean(E_train)
-
-            y = np.hstack((y, -E_train + E_train_mean))
-            
-        y_std = np.std(y)
-        y /= y_std
+        if task['use_E']:
+            E_train = task['use_E']
+        else:
+            E_train = None
+        y, y_std, E_train_mean = self.train_labels(
+            task['F_train'], task['use_E'], task['use_E_cstr'], E=E_train
+        )
 
         max_memory_bytes = self._max_memory * 1024 ** 3
 
@@ -956,7 +1004,26 @@ class GDMLTrain(object):
         return est_bytes
     
     def solve_analytic(self, task, desc, R_desc, R_d_desc, tril_perms_lin, y):
-        """Condensed ``sgdml.solvers.analytic.Analytic`` class.
+        """Condensed :class:`sgdml.solvers.analytic.Analytic` class.
+
+        Parameters
+        ----------
+        task : :obj:`dict`
+        
+        R_desc : :obj:`numpy.ndarray`
+            Array containing the descriptor for each training point. 
+            Computed from :func:`~mbgdml._gdml.desc._r_to_desc`.
+        R_d_desc : :obj:`numpy.ndarray`
+            Array containing the gradient of the descriptor for
+            each training point. Computed from
+            :func:`~mbgdml._gdml.desc._r_to_d_desc`.
+        tril_perms_lin : :obj:`numpy.ndarray`, ndim: ``1``
+            An array containing all recovered permutations expanded as one large
+            permutation to be applied to a tiled copy of the object to be
+            permuted.
+        y : :obj:`numpy.ndarray`, ndim: ``1``
+            The train labels computed in
+            :meth:`~mbgdml._gdml.train.GDMLTrain.train_labels`.
         """
 
         log.info(
@@ -1078,14 +1145,14 @@ class GDMLTrain(object):
             Data structure of custom type ``model``.
         task : :obj:`dict`
             Data structure of custom type ``task``.
-        R_desc : :obj:`numpy.ndarray`, optional
-            An 2D array of size M x D containing the descriptors of dimension
-            D for M molecules.
-        R_d_desc : :obj:`numpy.ndarray`, optional
-            A 2D array of size M x D x 3N containing of the
-            descriptor Jacobians for M molecules. The descriptor
-            has dimension D with 3N partial derivatives with
-            respect to the 3N Cartesian coordinates of each atom.
+        R_desc : :obj:`numpy.ndarray`, ndim: ``2``, optional
+            An array of size :math:`M \\times D` containing the descriptors of
+            dimension :math:`D` for :math:`M` molecules.
+        R_d_desc : :obj:`numpy.ndarray`, ndim: ``2``, optional
+            An array of size :math:`M \\times D \\times 3N` containing of the
+            descriptor Jacobians for :math:`M` molecules. The descriptor
+            has dimension :math:`D` with :math:`3N` partial derivatives with
+            respect to the :math:`3N` Cartesian coordinates of each atom.
         require_E_eval : :obj:`bool`, default: ``False``
             Force the computation and return of the integration constant
             regardless if there are significant errors.
@@ -1172,27 +1239,32 @@ class GDMLTrain(object):
 
         Parameters
         ----------
-        R_desc : :obj:`numpy.ndarray`
-            Array containing the descriptor for each training point.
-        R_d_desc : :obj:`numpy.ndarray`
-            Array containing the gradient of the descriptor for
-            each training point.
-        tril_perms_lin : :obj:`numpy.ndarray`
-            1D array containing all recovered permutations
+        R_desc : :obj:`numpy.ndarray`, ndim: ``2``, optional
+            An array of size :math:`M \\times D` containing the descriptors of
+            dimension :math:`D` for :math:`M` molecules.
+        R_d_desc : :obj:`numpy.ndarray`, ndim: ``2``, optional
+            An array of size :math:`M \\times D \\times 3N` containing of the
+            descriptor Jacobians for :math:`M` molecules. The descriptor
+            has dimension :math:`D` with :math:`3N` partial derivatives with
+            respect to the :math:`3N` Cartesian coordinates of each atom.
+        tril_perms_lin : :obj:`numpy.ndarray`, ndim: ``1``
+            An array containing all recovered permutations
             expanded as one large permutation to be applied to a
             tiled copy of the object to be permuted.
         sig : :obj:`int`
             Hyperparameter sigma (kernel length scale).
         use_E_cstr : :obj:`bool`, optional
-            True: include energy constraints in the kernel,
-            False: default (s)GDML kernel.
+            Include energy constraints in the kernel. This can
+            sometimes be helpful in tricky cases.
         cols_m_limit : :obj:`int`, optional
-            Only generate the columns up to index 'cols_m_limit'. This creates
-            a M*3N x cols_m_limit*3N kernel matrix, instead of M*3N x M*3N.
+            Only generate the columns up to index ``cols_m_limit``. This creates
+            a :math:`M3N \\times` ``cols_m_limit``:math:`3N` kernel matrix,
+            instead of :math:`M3N \\times M3N`.
         cols_3n_keep_idxs : :obj:`numpy.ndarray`, optional
-            Only generate columns with the given indices in the 3N x 3N
-            kernel function. The resulting kernel matrix will have dimension
-            M*3N x M*len(cols_3n_keep_idxs).
+            Only generate columns with the given indices in the
+            :math:`3N \\times 3N` kernel function. The resulting kernel matrix
+            will have dimension :math:`M3N \\times M`
+            ``len(cols_3n_keep_idxs)``.
 
         Returns
         -------
@@ -1286,7 +1358,7 @@ class GDMLTrain(object):
         if self._use_torch:
             if not _has_torch:
                 raise ImportError(
-                    'Optional PyTorch dependency not found! Please run \'pip install sgdml[torch]\' to install it or disable the PyTorch option.'
+                    'PyTorch not found! Please install PyTorch.'
                 )
 
             K = np.empty((K_n_rows + alloc_extra_rows, K_n_cols))
@@ -1394,7 +1466,7 @@ def get_test_idxs(model, dataset, n_test=None):
         Model to test.
     dataset : :obj:`dict`
         Dataset to be used for testing.
-    n_test : :obj:`int`, default: ``None``
+    n_test : :obj:`int`, default: :obj:`None`
         Number of points to include in test indices. Defaults to all available
         indices.
     
@@ -1470,11 +1542,8 @@ def add_valid_errors(
     Return
     ------
     :obj:`dict`
-        Validation errors with the following keys.
-
-            ``'force'`` which contains ``'mae'`` and ``'rmse'``
-
-            ``'energy'`` which contains ``'mae'`` and ``'rmse'``
+        Force and energy validation errors as arrays with keys ``'force'`` and
+        ``'energy'``.
     :obj:`dict`
         Model with validation errors.
     """
@@ -1512,8 +1581,10 @@ def add_valid_errors(
         results['energy'] = None
     return results, model
 
+
 def save_model(model, model_path):
     np.savez_compressed(model_path, **model)
+
 
 def model_errors(
     model, dataset, is_valid=False, n_test=None, max_processes=None,
@@ -1530,22 +1601,18 @@ def model_errors(
     is_valid : :obj:`bool`, default: ``False``
         Is this for model validation? Determines how we get the structure
         indices.
-    n_test : :obj:`int`, default: ``None``
-        Number of desired testing indices. ``None`` will test against all
+    n_test : :obj:`int`, default: :obj:`None`
+        Number of desired testing indices. :obj:`None` will test against all
         available structures.
     
     Returns
     -------
     :obj:`int`
         Number of structures predicted.
-    :obj:`float`
-        Energy MAE
-    :obj:`float`
-        Energy RMSE
-    :obj:`float`
-        Force MAE
-    :obj:`float`
-        Force RMSE
+    :obj:`numpy.ndarray`
+        (ndim: ``1``) Energy errors or :obj:`None`.
+    :obj:`numpy.ndarray`
+        (ndim: ``3``) Force errors.
     """
     num_workers, batch_size = 0, 0
 
@@ -1614,7 +1681,7 @@ def model_errors(
     E_pred, F_pred = np.empty(n_R), np.empty(R.shape)
     t_pred = log.t_start()
     n_done = 0
-    for b_range in _batch(list(range(len(test_idxs))), b_size):
+    for b_range in chunk_array(list(range(len(test_idxs))), b_size):
         log.info(f'{n_done} done')
         n_done_step = len(b_range)
         n_done += n_done_step
@@ -1651,8 +1718,3 @@ def model_errors(
         return len(test_idxs), E_errors, F_errors
     else:
         return len(test_idxs), None, F_errors
-
-def _batch(iterable, n=1):
-    l = len(iterable)
-    for ndx in range(0, l, n):
-        yield iterable[ndx : min(ndx + n, l)]

@@ -42,8 +42,8 @@ class Criteria(object):
         desc_kwargs : :obj:`dict`
             Keyword arguments for the descriptor function after ``Z`` and ``R``.
             This can be an empty tuple.
-        cutoff : :obj:`float`, ``None``, or :obj:`tuple`
-            Cutoff to accept or reject a structure. If ``None``, all structures
+        cutoff : :obj:`float`, :obj:`None`, or :obj:`tuple`
+            Cutoff to accept or reject a structure. If :obj:`None`, all structures
             are accepted. If a :obj:`tuple` is provided, structures that are
             within these cutoffs will be accepted.
         bound : :obj:`str`, default: ``'upper'``

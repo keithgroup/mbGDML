@@ -2,11 +2,15 @@
 ================
 
 .. toctree::
+    :maxdepth: 1
 
     atoms_by_element
     atoms_by_number
     center_structures
+    chunk_array
+    chunk_iterable
     convert_forces
+    gen_combs
     get_comp_ids
     get_filename
     get_files

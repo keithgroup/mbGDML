@@ -44,29 +44,30 @@ log = logging.getLogger(__name__)
 
 
 def _pbc_diff(diffs, lat_and_inv, use_torch=False):
-    """
-    Clamp differences of vectors to super cell.
+    """Clamp differences of vectors to super cell.
 
     Parameters
     ----------
     diffs : :obj:`numpy.ndarray`
-        N x 3 matrix of N pairwise differences between vectors `u - v`
+        :math:`N \\times 3` matrix of :math:`N` pairwise differences between
+        vectors :math:`\\boldsymbol{u} - \\boldsymbol{v}`
     lat_and_inv : tuple of :obj:`numpy.ndarray`
-        Tuple of 3 x 3 matrix containing lattice vectors as columns and its inverse.
-    use_torch : :obj:`bool`, optional
+        Tuple of :math:`3 \\times 3` matrix containing lattice vectors as
+        columns and its inverse.
+    use_torch : :obj:`bool`, default: ``False``
         Enable, if the inputs are PyTorch objects.
 
     Returns
     -------
     :obj:`numpy.ndarray`
-        N x 3 matrix clamped differences
+        :math:`N \\times 3` matrix clamped differences
     """
 
     lat, lat_inv = lat_and_inv
 
     if use_torch and not _has_torch:
         raise ImportError(
-            'Optional PyTorch dependency not found! Please run \'pip install sgdml[torch]\' to install it or disable the PyTorch option.'
+            'Optional PyTorch dependency not found! Please install PyTorch.'
         )
 
     if use_torch:
@@ -80,22 +81,21 @@ def _pbc_diff(diffs, lat_and_inv, use_torch=False):
 
 
 def _pdist(r, lat_and_inv=None):
-    """
-    Compute pairwise Euclidean distance matrix between all atoms.
+    """Compute pairwise Euclidean distance matrix between all atoms.
 
     Parameters
     ----------
     r : :obj:`numpy.ndarray`
-        Array of size 3N containing the Cartesian coordinates of
-        each atom.
+        Array of size :math:`3N` containing the Cartesian coordinates of each atom.
     lat_and_inv : :obj:`tuple` of :obj:`numpy.ndarray`, optional
-        Tuple of 3x3 matrix containing lattice vectors as columns and its inverse.
+        Tuple of :math:`3 \\times 3` matrix containing lattice vectors as
+        columns and its inverse.
 
     Returns
     -------
     :obj:`numpy.ndarray`
-        Array of size N(N-1)/2 containing the upper triangle of the pairwise
-        distance matrix between atoms.
+        Array of size :math:`N(N-1)/2` containing the upper triangle of the
+        pairwise distance matrix between atoms.
     """
 
     r = r.reshape(-1, 3)
@@ -137,29 +137,26 @@ def _squareform(vec_or_mat):
         return vec_or_mat[i, j]
 
 def _r_to_desc(r, pdist):
-    """
-    Generate descriptor for a set of atom positions in Cartesian
+    """Generate descriptor for a set of atom positions in Cartesian
     coordinates.
 
     Parameters
     ----------
     r : :obj:`numpy.ndarray`
-        Array of size 3N containing the Cartesian coordinates of
+        Array of size :math:`3N` containing the Cartesian coordinates of
         each atom.
     pdist : :obj:`numpy.ndarray`
-        Array of size N x N containing the Euclidean distance
-        (2-norm) for each pair of atoms.
+        Array of size :math:`N \\times N` containing the Euclidean distance
+        (L2-norm) for each pair of atoms.
 
     Returns
     -------
-        :obj:`numpy.ndarray`
-            Descriptor representation as 1D array of size N(N-1)/2
+    :obj:`numpy.ndarray`
+        Descriptor representation as 1D array of size :math:`N(N-1)/2`.
     """
-
     # Add singleton dimension if input is (,3N).
     if r.ndim == 1:
         r = r[None, :]
-
     return 1.0 / pdist
 
 
@@ -174,21 +171,21 @@ def _r_to_d_desc(r, pdist, lat_and_inv=None):
     Parameters
     ----------
     r : :obj:`numpy.ndarray`
-        Array of size 3N containing the Cartesian coordinates of
+        Array of size :math:`3N` containing the Cartesian coordinates of
         each atom.
     pdist : :obj:`numpy.ndarray`
-        Array of size N x N containing the Euclidean distance
-        (2-norm) for each pair of atoms.
+        Array of size :math:`N \\times N` containing the Euclidean distance
+        (L2-norm) for each pair of atoms.
     lat_and_inv : :obj:`tuple` of :obj:`numpy.ndarray`, optional
-        Tuple of 3x3 matrix containing lattice vectors as columns and its inverse.
+        Tuple of :math:`3 \\times 3` matrix containing lattice vectors as
+        columns and its inverse.
 
     Returns
     -------
     :obj:`numpy.ndarray`
-        Array of size N(N-1)/2 x 3N containing all partial derivatives of the
-        descriptor.
+        Array of size :math:`N(N-1)/2 \\times 3N` containing all partial
+        derivatives of the descriptor.
     """
-
     r = r.reshape(-1, 3)
     pdiff = r[:, None] - r[None, :]  # pairwise differences ri - rj
 
@@ -206,27 +203,26 @@ def _r_to_d_desc(r, pdist, lat_and_inv=None):
 
 
 def _from_r(r, lat_and_inv=None):
-    """
-    Generate descriptor and its Jacobian for one molecular geometry
+    """Generate descriptor and its Jacobian for one molecular geometry
     in Cartesian coordinates.
 
     Parameters
     ----------
     r : :obj:`numpy.ndarray`
-        Array of size 3N containing the Cartesian coordinates of
+        Array of size :math:`3N` containing the Cartesian coordinates of
         each atom.
     lat_and_inv : :obj:`tuple` of :obj:`numpy.ndarray`, optional
-        Tuple of 3 x 3 matrix containing lattice vectors as columns and its inverse.
+        Tuple of :math:`3 \\times 3` matrix containing lattice vectors as
+        columns and its inverse.
 
     Returns
     -------
     :obj:`numpy.ndarray`
-        Descriptor representation as 1D array of size N(N-1)/2
+        Descriptor representation as 1D array of size :math:`N(N-1)/2`.
     :obj:`numpy.ndarray`
-        Array of size N(N-1)/2 x 3N containing all partial
+        Array of size :math:`N(N-1)/2 \\times 3N` containing all partial
         derivatives of the descriptor.
     """
-
     # Add singleton dimension if input is (,3N).
     if r.ndim == 1:
         r = r[None, :]
@@ -250,11 +246,10 @@ class Desc(object):
         ----------
         n_atoms : :obj:`int`
             Number of atoms in the represented system.
-        max_processes : :obj:`int`, optional
+        max_processes : :obj:`int`, default: :obj:`None`
             Limit the max. number of processes. Otherwise all CPU cores are
-            used. This parameters has no effect if ``use_torch=True``.
+            used.
         """
-
         self.n_atoms = n_atoms
         self.dim_i = 3 * n_atoms
 
@@ -263,7 +258,7 @@ class Desc(object):
 
         self.tril_indices = np.tril_indices(n_atoms, k=-1)
 
-        # Precompute indices for nonzero entries in desriptor derivatives.
+        # Precompute indices for nonzero entries in descriptor derivatives.
         self.d_desc_mask = np.zeros((n_atoms, n_atoms - 1), dtype=np.int64)
         for a in range(n_atoms):  # for each partial derivative
             rows, cols = self.tril_indices
@@ -292,24 +287,24 @@ class Desc(object):
         Parameters
         ----------
         R : :obj:`numpy.ndarray`
-            Array of size M x 3N containing the Cartesian coordinates of
-            each atom.
-        lat_and_inv : :obj:`tuple` of :obj:`numpy.ndarray`, optional
-            Tuple of 3 x 3 matrix containing lattice vectors as columns and its
-            inverse.
-        max_processes : :obj:`int`, optional
-            Limit the max. number of processes. Otherwise all CPU cores are
+            Array of size :math:`M \\times 3N` containing the Cartesian
+            coordinates of each atom.
+        lat_and_inv : :obj:`tuple` of :obj:`numpy.ndarray`, default: :obj:`None`
+            Tuple of :math:`3 \\times 3` matrix containing lattice vectors as
+            columns and its inverse.
+        max_processes : :obj:`int`, default: :obj:`None`
+            Limit the max number of processes. Otherwise all CPU cores are
             used. This parameter overwrites the global setting as set during
             initialization.
 
         Returns
         -------
         :obj:`numpy.ndarray`
-            Array of size M x N(N-1)/2 containing the descriptor representation
-            for each geometry.
+            Array of size :math:`M \\times N(N-1)/2` containing the descriptor
+            representation for each geometry.
         :obj:`numpy.ndarray`
-            Array of size M x N(N-1)/2 x 3N containing all partial
-            derivatives of the descriptor for each geometry.
+            Array of size :math:`M \\times N(N-1)/2 \\times 3N` containing all
+            partial derivatives of the descriptor for each geometry.
         """
 
         # Add singleton dimension if input is (,3N).
@@ -401,14 +396,14 @@ class Desc(object):
         """Convert a compressed representation of a descriptor Jacobian back
         to its full representation.
 
-        The compressed representation omits all zeros and scales with N
-        instead of N(N-1)/2.
+        The compressed representation omits all zeros and scales with :math:`N`
+        instead of :math:`N(N-1)/2`.
 
         Parameters
         ----------
         R_d_desc : :obj:`numpy.ndarray` or :obj:`torch.tensor`
-            Array of size M x N x N x 3 containing the compressed
-            descriptor Jacobian.
+            Array of size :math:`M \\times N \\times N \\times 3` containing the
+            compressed descriptor Jacobian.
         out : :obj:`numpy.ndarray` or :obj:`torch.tensor`, optional
             Output argument. This must have the exact kind that would
             be returned if it was not used.
@@ -420,7 +415,8 @@ class Desc(object):
         Returns
         -------
         :obj:`numpy.ndarray` or :obj:`torch.tensor`
-            Array of size M x N(N-1)/2 x 3N containing the full representation.
+            Array of size :math:`M \\times N(N-1)/2 \\times 3N` containing the
+            full representation.
         """
 
         if R_d_desc.ndim == 2:
@@ -449,21 +445,21 @@ class Desc(object):
     def d_desc_to_comp(self, R_d_desc):
         """Convert a descriptor Jacobian to a compressed representation.
 
-        The compressed representation omits all zeros and scales with N
-        instead of N(N-1)/2.
+        The compressed representation omits all zeros and scales with :math:`N`
+        instead of :math:`N(N-1)/2`.
 
         Parameters
         ----------
         R_d_desc : :obj:`numpy.ndarray`
-            Array of size M x N(N-1)/2 x 3N containing the descriptor Jacobian.
+            Array of size :math:`M \\times N(N-1)/2 \\times 3N` containing the
+            descriptor Jacobian.
         
         Returns
         -------
         :obj:`numpy.ndarray`
-            Array of size M x N x N x 3 containing the compressed
-            representation.
+            Array of size :math:`M \\times N \\times N \\times 3` containing the
+            compressed representation.
         """
-
         # Add singleton dimension for single inputs.
         if R_d_desc.ndim == 2:
             R_d_desc = R_d_desc[None, ...]
@@ -484,8 +480,8 @@ class Desc(object):
     def perm(perm):
         """Convert atom permutation to descriptor permutation.
 
-        A permutation of N atoms is converted to a permutation that acts on
-        the corresponding descriptor representation. Applying the converted
+        A permutation of :math:`N` atoms is converted to a permutation that acts
+        on the corresponding descriptor representation. Applying the converted
         permutation to a descriptor is equivalent to permuting the atoms
         first and then generating the descriptor.
 
@@ -497,10 +493,9 @@ class Desc(object):
         Returns
         -------
         :obj:`numpy.ndarray`
-            Array of size N(N-1)/2 containing the corresponding descriptor
-            permutation.
+            Array of size :math:`N(N-1)/2` containing the corresponding
+            descriptor permutation.
         """
-
         n = len(perm)
 
         rest = np.zeros((n, n))

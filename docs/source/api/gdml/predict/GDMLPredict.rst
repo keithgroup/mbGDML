@@ -3,3 +3,4 @@
 
 .. autoclass:: mbgdml._gdml.predict.GDMLPredict
     :members:
+    :private-members:

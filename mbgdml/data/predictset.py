@@ -320,7 +320,7 @@ class predictSet(mbGDMLData):
             comes with some overhead and can make smaller computations much
             slower. Thus, this is only recommended with more than 10 or so
             entities.
-        n_workers : :obj:`int`, default: ``None``
+        n_workers : :obj:`int`, default: :obj:`None`
             Total number of workers available for predictions when using ray.
         wkr_chunk_size : :obj:`int`, default: ``100``
             Number of :math:`n`-body structures to assign to each spawned

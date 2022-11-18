@@ -64,7 +64,7 @@ class prob_structures:
             comes with some overhead and can make smaller computations much
             slower. Thus, this is only recommended with more than 10 or so
             entities.
-        n_workers : :obj:`int`, default: ``None``
+        n_workers : :obj:`int`, default: :obj:`None`
             Total number of workers available for predictions when using ray.
         wkr_chunk_size : :obj:`int`, default: ``100``
             Number of :math:`n`-body structures to assign to each spawned
@@ -311,7 +311,7 @@ class prob_structures:
         dset_is_train : :obj:`bool`, default: ``True``
             If ``dset`` is the training dataset. Training indices will be
             dropped from the analyses.
-        train_idxs : :obj:`numpy.ndarray`, ndim: ``1``, default: ``None``
+        train_idxs : :obj:`numpy.ndarray`, ndim: ``1``, default: :obj:`None`
             Training indices that will be dropped if ``dset_is_train`` is
             ``True``. These do not need to be provided for GDML models (as they
             are already stored in the model).

@@ -91,7 +91,7 @@ def _predict_wkr(
     Note
     ----
     It is sufficient to provide either the parameter ``r`` or ``r_desc_d_desc``.
-    The other one can be set to ``None``.
+    The other one can be set to :obj:`None`.
 
     Parameters
     ----------
@@ -253,14 +253,20 @@ class GDMLPredict(object):
         through PyTorch (requires optional ``torch`` dependency to be
         installed).
 
-        Note
-        ----
-        The parameters ``batch_size`` and ``num_workers`` are only
-        relevant if this code runs on a CPU. Both can be set
-        automatically via the function ``prepare_parallel``.
-        Note: Running calculations via PyTorch is only
-        recommended with available GPU hardware. CPU calculations
-        are faster with our NumPy implementation.
+        .. important::
+
+            This is only used in
+            :meth:`mbgdml._gdml.train.GDMLTrain._recov_int_const`
+            and :func:`mbgdml._gdml.train.model_errors`.
+
+        .. note::
+
+            The parameters ``batch_size`` and ``num_workers`` are only
+            relevant if this code runs on a CPU. Both can be set
+            automatically via the function ``prepare_parallel``.
+            Note: Running calculations via PyTorch is only
+            recommended with available GPU hardware. CPU calculations
+            are faster with our NumPy implementation.
 
         Parameters
         ----------
@@ -279,7 +285,7 @@ class GDMLPredict(object):
             used. This parameters has no effect if `use_torch=True`
         use_torch : :obj:`bool`, optional
             Use PyTorch to calculate predictions
-        log_level : ``logging.level``, default: ``None``
+        log_level : ``logging.level``, default: :obj:`None`
             Set custom logging level (e.g. ``logging.CRITICAL``)
         """
 
@@ -576,7 +582,7 @@ class GDMLPredict(object):
         Parameters
         ----------
         num_workers : :obj:`int`, optional
-            Number of processes (maximum value is set if ``None``).
+            Number of processes (maximum value is set if :obj:`None`).
         force_reset : :obj:`bool`, optional
             Force applying the new setting.
         """
@@ -631,7 +637,7 @@ class GDMLPredict(object):
 
         Parameters
         ----------
-        chunk_size : :obj:`int`, default: ``None``
+        chunk_size : :obj:`int`, default: :obj:`None`
             Chunk size (maximum value is set if `None`).
         """
 
@@ -662,8 +668,8 @@ class GDMLPredict(object):
 
         Parameters
         ----------
-        batch_size : :obj:`int`, default: ``None``
-            Chunk size (maximum value is set if ``None``).
+        batch_size : :obj:`int`, default: :obj:`None`
+            Chunk size (maximum value is set if :obj:`None`).
         """
 
         self._set_chunk_size(batch_size)
@@ -699,29 +705,6 @@ class GDMLPredict(object):
             # Reset data ranges for processes stored in 'wkr_starts_stops'
             self._set_num_workers(self.num_workers)
 
-    def set_opt_num_workers_and_batch_size_fast(self, n_bulk=1, n_reps=1):  # deprecated
-        """
-        Warning
-        -------
-        Deprecated! Please use the function `prepare_parallel` in future projects.
-
-        Parameters
-        ----------
-        n_bulk : int, optional
-            Number of geometries that will be passed to the
-            `predict` function in each call (performance
-            will be optimized for that exact use case).
-        n_reps : int, optional
-            Number of repetitions (bigger value: more
-            accurate, but also slower).
-
-        Returns
-        -------
-        :obj:`int`
-            Force and energy prediction speed in geometries per second.
-        """
-
-        self.prepare_parallel(n_bulk, n_reps)
     
     def prepare_parallel(
         self, n_bulk=1, n_reps=1, return_is_from_cache=False

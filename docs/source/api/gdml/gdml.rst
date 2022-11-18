@@ -2,6 +2,7 @@
 ================
 
 .. toctree::
+    :maxdepth: 2
 
     Descriptor <descriptor/descriptor_module>
     Training <training/training>
