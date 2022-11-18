@@ -300,15 +300,20 @@ def mbe_contrib(
     :obj:`numpy.ndarray`
         Derivatives with lower-order contributions added or removed.
     """
+    log.debug(f'Computing many-body expansion contributions')
     if operation != 'add' and operation != 'remove':
         raise ValueError(f'{operation} is not "add" or "remove"')
+    log.debug(f'MBE operation: {operation}')
     
     # Checks that the r_prov_md5 hashes match the same r_prov_id
     if (r_prov_ids is not None) and (r_prov_ids != {}):
+        log.debug('Checking if r_prov_ids match')
         for r_prov_id_lower, r_prov_md5_lower in r_prov_ids_lower.items():
             assert r_prov_md5_lower == r_prov_ids[r_prov_id_lower]
+        log.debug('All r_prov_ids match')
     # Assume that all lower models apply.
     else:
+        log.debug('No r_prov_ids exist')
         assert r_prov_specs is None or r_prov_specs.shape == (1, 0)
         assert len(set(r_prov_specs_lower[:,0])) == 1
         n_r = len(E)
@@ -320,10 +325,12 @@ def mbe_contrib(
             r_prov_specs[:,entity_id+2] = entity_id
 
     r_shape = Deriv.shape[1:]
+    log.debug(f'Shape of example structure: {r_shape}')
 
-    if n_workers == 1:
+    if not use_ray:
+        log.debug('use_ray is False (using serial operation)')
         r_idxs = next(
-            gen_r_idxs_worker(r_prov_specs, r_prov_ids_lower, n_workers)
+            gen_r_idxs_worker(r_prov_specs, r_prov_ids_lower, 1)
         )
         r_idxs_worker, E_worker, Deriv_worker = mbe_worker(
             r_shape, entity_ids, r_prov_specs, r_idxs, E_lower, Deriv_lower,
@@ -336,24 +343,22 @@ def mbe_contrib(
             E[r_idxs_worker] += E_worker
             Deriv[r_idxs_worker] += Deriv_worker
     else:
-        # Check ray.
-        import os
-        import ray
-        num_cpus = os.cpu_count()
+        log.debug('use_ray is True')
         if not ray.is_initialized():
+            log.debug('ray is not initialized')
             # Try to connect to already running ray service (from ray cli).
             try:
-                ray.init(address='auto')
+                log.debug(f'Trying to connect to ray at address {ray_address}')
+                ray.init(address=ray_address)
             except ConnectionError:
-                ray.init(num_cpus=num_cpus)
+                ray.init(num_cpus=n_workers)
         
         # Generate all workers.
-        num_cpus_worker = math.floor(num_cpus/n_workers)
         worker = ray.remote(mbe_worker)
         worker_list = []
         for r_idxs in gen_r_idxs_worker(r_prov_specs, r_prov_ids_lower, n_workers):
             worker_list.append(
-                worker.options(num_cpus=num_cpus_worker).remote(
+                worker.options(num_cpus=1).remote(
                     r_shape, entity_ids, r_prov_specs, r_idxs, E_lower,
                     Deriv_lower, entity_ids_lower, r_prov_specs_lower
                 )

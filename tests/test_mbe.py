@@ -81,7 +81,6 @@ def test_4h2o_mbe_from_data():
             E_mb, G_mb, entity_ids, r_prov_ids, r_prov_specs,
             *data, operation='add', use_ray=False
         )
-
-    assert np.allclose(
-        E_mb, np.array([-305.30075391, -305.29900387, -305.29489548])
-    )
+    
+    E_ref = np.array([-305.30075391, -305.29900387, -305.29489548])
+    assert np.allclose(E_mb, E_ref)
