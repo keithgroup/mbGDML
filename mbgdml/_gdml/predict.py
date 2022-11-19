@@ -647,33 +647,6 @@ class GDMLPredict(object):
         log.info(f'Set chunk size : {chunk_size}')
         self.chunk_size = chunk_size
 
-    def _set_batch_size(self, batch_size=None):  # deprecated
-        """
-
-        Warning
-        -------
-        Deprecated! Please use the function `_set_chunk_size` in future projects.
-
-        Set chunk size for each worker process. A chunk is a subset
-        of the training data points whose linear combination needs to
-        be evaluated in order to generate a prediction.
-
-        The chunk size determines how much of a processes workload will
-        be passed to Python's underlying low-level routines at once.
-        This parameter is highly hardware dependent.
-
-        Note
-        ----
-        This parameter can be optimally determined using `prepare_parallel`.
-
-        Parameters
-        ----------
-        batch_size : :obj:`int`, default: :obj:`None`
-            Chunk size (maximum value is set if :obj:`None`).
-        """
-
-        self._set_chunk_size(batch_size)
-
     def _set_bulk_mp(self, bulk_mp=False):
         """
         Toggles bulk prediction mode.
