@@ -21,7 +21,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import matplotlib.pyplot as plt
 import numpy as np
 import os
 import shutil
@@ -410,6 +409,8 @@ class mbGDMLTrain:
         ``object``
             A matplotlib figure object.
         """
+        import matplotlib.pyplot as plt
+
         params = optimizer.space.params.flatten()
         losses = -optimizer.space.target
         sigma_bounds = optimizer._space.bounds[0]

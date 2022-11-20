@@ -1222,6 +1222,8 @@ class GDMLTrain(object):
                     'Different scales in energy vs. force labels detected!\n'
                 )
                 return None
+        
+        del gdml_predict
 
         # Least squares estimate for integration constant.
         return np.sum(E_ref - E_pred) / E_ref.shape[0]
@@ -1641,6 +1643,7 @@ def model_errors(
         log.log_model(model)
         test_idxs = get_test_idxs(model, dataset, n_test=n_test)
 
+    # TODO: Can we change to dataSet class to avoid hard-coded keys?
     z = dataset['z']
     R = dataset['R'][test_idxs, :, :]
     F = dataset['F'][test_idxs, :, :]
@@ -1692,6 +1695,7 @@ def model_errors(
         F_pred[b_range] = f_pred.reshape((len(b_range), n_atoms, 3))
         if model['use_E']:
             E_pred[b_range] = e_pred
+    log.info(f'{n_done} done')
 
     t_elapsed = log.t_stop(
         t_pred, message='\nTook {time} s'
@@ -1713,6 +1717,8 @@ def model_errors(
         E_rmse = rmse(E_errors)
         log.info(f"Energy MAE  : {E_mae:.5f}")
         log.info(f"Energy RMSE : {E_rmse:.5f}")
+    
+    del gdml_predict
     
     if model['use_E']:
         return len(test_idxs), E_errors, F_errors

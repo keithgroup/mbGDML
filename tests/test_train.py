@@ -180,14 +180,15 @@ def test_1h2o_train_bayes_opt():
 
     n_train = 50
     n_valid = 100
-    sigmas = [32, 42, 52]
+    sigma_grid = [32, 42, 52]
 
     train = mbGDMLTrain(
         entity_ids=np.array([0, 0, 0]), comp_ids=np.array(['h2o']),
         use_sym=True, use_E=True, use_E_cstr=False, use_cprsn=False,
         solver='analytic', lam=1e-15, solver_tol=1e-4
     )
-    train.bayes_opt_params = {'init_points': 5, 'n_iter': 5, 'alpha': 0.001}
+    train.sigma_grid = sigma_grid
+    train.bayes_opt_params = {'init_points': 5, 'n_iter': 5, 'alpha': 1e-7}
     train.sigma_bounds = (2, 100)
     model, optimizer = train.bayes_opt(
         dset,
@@ -205,6 +206,9 @@ def test_1h2o_train_bayes_opt():
     best_sig = model['sig'].item()
     assert model['perms'].shape[0] == 2
 
+    assert model['f_err'].item()['rmse'] < 0.469
+    assert model['e_err'].item()['rmse'] < 0.0251
+    
     del train
 
 def test_1h2o_prob_indices():

@@ -561,8 +561,7 @@ class GDMLPredict(object):
     def _set_num_workers(
         self, num_workers=None, force_reset=False
     ):
-        """
-        Set number of processes to use during prediction.
+        """Set number of processes to use during prediction.
 
         If ``bulk_mp == True``, each worker handles the whole generation of single
         prediction (this if for querying multiple geometries at once)
@@ -600,6 +599,7 @@ class GDMLPredict(object):
                 self.num_workers = (
                     self.pool._processes
                 )
+        
         log.info(f'Set number of workers : {self.num_workers}')
 
         # Data ranges for processes
@@ -617,6 +617,7 @@ class GDMLPredict(object):
         wkr_stops = wkr_starts[1:] + [self.n_train]
 
         self.wkr_starts_stops = list(zip(wkr_starts, wkr_stops))
+
 
     def _set_chunk_size(self, chunk_size=None):
         """Set chunk size for each worker process.
