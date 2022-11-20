@@ -31,18 +31,18 @@ from mbgdml import descriptors
 
 # Must be run from mbGDML root directory.
 
-Rset_140h2o_path = './tests/data/structuresets/140h2o.sphere.gfn2.md.500k.prod1.npz'
+dset_3h2o_path = './tests/data/datasets/2h2o/16h2o.yoo.etal.boat.b.2h2o-dset.mb.npz'
 
-def load_140h2o_rset():
-    return dict(np.load(Rset_140h2o_path, allow_pickle=True))
+def load_3h2o_dset():
+    return dict(np.load(dset_3h2o_path, allow_pickle=True))
 
 def test_com_distance_sum():
-    rset = load_140h2o_rset()
+    dset = load_3h2o_dset()
     r_criteria = descriptors.Criteria(
         descriptors.com_distance_sum,
-        desc_kwargs={'entity_ids': rset['entity_ids']},
-        cutoff=1001.506
+        desc_kwargs={'entity_ids': np.array([0, 0, 0, 1, 1, 1])},
+        cutoff=5.3809148637976385
     )
-    accept_r, desc_v = r_criteria.accept(rset['z'], rset['R'][42])
+    accept_r, desc_v = r_criteria.accept(dset['z'], dset['R'][42])
     assert accept_r == False
-    assert desc_v == 1001.506707631225
+    assert desc_v == 5.3809148637976385

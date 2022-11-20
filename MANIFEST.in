@@ -1,0 +1,2 @@
+include versioneer.py
+include mbgdml/_version.py
