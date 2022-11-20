@@ -17,6 +17,9 @@ mbGDML
 .. image:: https://img.shields.io/github/license/keithgroup/mbGDML
    :target: https://github.com/keithgroup/mbGDML/blob/main/LICENSE
 
+.. image:: https://img.shields.io/github/repo-size/keithgroup/mbGDML
+   :target: https://github.com/keithgroup/mbGDML
+
 Create, use, and analyze machine learning potentials within the many-body expansion framework.
 
 **Disclaimer:** This package is still under active development and not suitable for production.

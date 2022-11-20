@@ -17,6 +17,9 @@
     <a href="https://github.com/keithgroup/mbGDML/blob/main/LICENSE" target="_blank">
         <img src="https://img.shields.io/github/license/keithgroup/mbGDML" alt="License">
     </a>
+    <a href="https://github.com/keithgroup/mbGDML" target="_blank">
+        <img src="https://img.shields.io/github/repo-size/keithgroup/mbGDML" alt="Repo size">
+    </a>
 </p>
 
 <p align="center">
