@@ -109,7 +109,7 @@ Installation
 ============
 
 You can install mbGDML from `PyPI <https://pypi.org/project/mbGDML/>`__ by using ``pip install mbGDML``.
-Or, the latest development version can be installed directly from the `GitHub repository <https://github.com/keithgroup/mbGDML>`_.
+Or, the latest development version can be installed directly from the `GitHub repository <https://github.com/keithgroup/mbGDML>`__ or from `TestPyPI <https://test.pypi.org/project/mbGDML/>`__.
 
 .. code-block:: bash
 
