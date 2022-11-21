@@ -10,5 +10,6 @@
     mae
     mse
     rmse
+    sse
 
     

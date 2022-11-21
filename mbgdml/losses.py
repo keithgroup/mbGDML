@@ -26,64 +26,141 @@ import logging
 log = logging.getLogger(__name__)
 
 def mae(errors):
-    """Mean absolute error.
+    r"""Mean absolute error (MAE).
+
+    .. math::
+
+        MAE = \frac{1}{n} \sum_{i=1}^n \mid \hat{y}_{i} - y_{i} \mid,
+    
+    where :math:`y_{i}` is the true value, :math:`\hat{y}_{i}` is the
+    predicted value, :math:`\mid \cdots \mid` is the absolute value, and
+    :math:`n` is the number of data points.
 
     Parameters
     ----------
     errors : :obj:`numpy.ndarray`
+        Array of :math:`\hat{y} - y` values. This will be flattened beforehand.
 
-    Return
-    ------
+    Returns
+    -------
     :obj:`float`
         Mean absolute error.
+    
+    See Also
+    --------
+    mse, rmse, sse
     """
     return np.mean(np.abs(errors.flatten()))
 
 def mse(errors):
-    """Mean square error.
+    r"""Mean squared error (MSE).
+
+    .. math::
+
+        MSE = \frac{1}{n} \sum_{i=1}^n \left( \hat{y}_{i} - y_{i} \right)^2,
+    
+    where :math:`y_{i}` is the true value, :math:`\hat{y}_{i}` is the
+    predicted value, and :math:`n` is the number of data points.
 
     Parameters
     ----------
     errors : :obj:`numpy.ndarray`
+        Array of :math:`\hat{y} - y` values. This will be flattened beforehand.
 
-    Return
-    ------
+    Returns
+    -------
     :obj:`float`
-        Mean square error.
+        Mean squared error.
+    
+    See Also
+    --------
+    mae, rmse, sse
     """
     return np.mean(errors.flatten()**2)
 
 def rmse(errors):
-    """Mean square error.
+    r"""Root-mean-squared error.
+
+    .. math::
+
+        RMSE = \sqrt{ \frac{\sum_{i=1}^n \left( \hat{y}_{i} - y_{i} \right)^2}{n} },
+    
+    where :math:`y_{i}` is the true value, :math:`\hat{y}_{i}` is the
+    predicted value, and :math:`n` is the number of data points.
 
     Parameters
     ----------
     errors : :obj:`numpy.ndarray`
+        Array of :math:`\hat{y} - y` values. This will be flattened beforehand.
 
-    Return
-    ------
+    Returns
+    -------
     :obj:`float`
-        Mean square error.
+        Root-mean-squared error.
+    
+    See Also
+    --------
+    mae, mse, sse
     """
     return np.sqrt(mse(errors))
 
+def sse(errors):
+    r"""Sum of squared errors.
+
+    .. math::
+
+        SSE = \sum_{i=1}^n \left( \hat{y}_{i} - y_{i} \right)^2,
+    
+    where :math:`y_{i}` is the true value, :math:`\hat{y}_{i}` is the
+    predicted value, and :math:`n` is the number of data points.
+
+    Parameters
+    ----------
+    errors : :obj:`numpy.ndarray`
+        Array of :math:`\hat{y} - y` values. This will be flattened beforehand.
+
+    Returns
+    -------
+    :obj:`float`
+        Sum of squared errors.
+    
+    See Also
+    --------
+    mae, mse, rmse
+    """
+    return np.dot(errors.flatten(), errors.flatten())
+
 def loss_f_mse(results):
-    """Returns the force RMSE.
+    r"""Force MSE.
 
     Parameters
     ----------
     results : :obj:`dict`
-        Validation results which contain force and energy MAEs and RMSEs.
+        Results which contains at least force errors under the ``'force'`` key.
+    
+    Returns
+    -------
+    :obj:`float`
+        Loss.
+    
+    See Also
+    --------
+    loss_f_rmse, loss_f_e_weighted_mse
     """
     return mse(results['force'])
 
 def loss_f_rmse(results):
-    """Returns the force RMSE.
+    r"""Force RMSE.
 
     Parameters
     ----------
     results : :obj:`dict`
-        Validation results which contain force and energy MAEs and RMSEs.
+        Results which contains at least force errors under the ``'force'`` key.
+    
+    Returns
+    -------
+    :obj:`float`
+        Loss.
     """
     return rmse(results['force'])
 
@@ -104,10 +181,11 @@ def loss_f_e_weighted_mse(results, rho, n_atoms):
     Parameters
     ----------
     results : :obj:`dict`
-        Validation results which contain force and energy MAEs and RMSEs.
+        Results which contains at least force and energy errors under the
+        ``'force'`` and ``'energy'`` keys, respectively.
     rho : :obj:`float`
         Energy and force trade-off, :math:`\rho`. A recommended value would be
-        in the range of ``0.01`` to ``0.1``. Larger values place a higher
+        in the range of ``0.01`` to ``0.1``. Larger values place more
         importance on energy accuracy.
     n_atoms : :obj:`int`
         Number of atoms.
@@ -115,7 +193,7 @@ def loss_f_e_weighted_mse(results, rho, n_atoms):
     Returns
     -------
     :obj:`float`
-        Validation loss.
+        Loss.
     """
     F_mse = mse(results['force'])
     E_mse = mse(results['energy'])
