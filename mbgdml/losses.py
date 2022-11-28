@@ -1,7 +1,7 @@
 # MIT License
-# 
+#
 # Copyright (c) 2020-2022, Alex M. Maldonado
-# 
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
@@ -11,7 +11,7 @@
 #
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -23,7 +23,9 @@
 import numpy as np
 
 import logging
+
 log = logging.getLogger(__name__)
+
 
 def mae(errors):
     r"""Mean absolute error (MAE).
@@ -31,7 +33,7 @@ def mae(errors):
     .. math::
 
         MAE = \frac{1}{n} \sum_{i=1}^n \mid \hat{y}_{i} - y_{i} \mid,
-    
+
     where :math:`y_{i}` is the true value, :math:`\hat{y}_{i}` is the
     predicted value, :math:`\mid \cdots \mid` is the absolute value, and
     :math:`n` is the number of data points.
@@ -45,12 +47,13 @@ def mae(errors):
     -------
     :obj:`float`
         Mean absolute error.
-    
+
     See Also
     --------
     mse, rmse, sse
     """
     return np.mean(np.abs(errors.flatten()))
+
 
 def mse(errors):
     r"""Mean squared error (MSE).
@@ -58,7 +61,7 @@ def mse(errors):
     .. math::
 
         MSE = \frac{1}{n} \sum_{i=1}^n \left( \hat{y}_{i} - y_{i} \right)^2,
-    
+
     where :math:`y_{i}` is the true value, :math:`\hat{y}_{i}` is the
     predicted value, and :math:`n` is the number of data points.
 
@@ -71,12 +74,13 @@ def mse(errors):
     -------
     :obj:`float`
         Mean squared error.
-    
+
     See Also
     --------
     mae, rmse, sse
     """
-    return np.mean(errors.flatten()**2)
+    return np.mean(errors.flatten() ** 2)
+
 
 def rmse(errors):
     r"""Root-mean-squared error.
@@ -84,7 +88,7 @@ def rmse(errors):
     .. math::
 
         RMSE = \sqrt{ \frac{\sum_{i=1}^n \left( \hat{y}_{i} - y_{i} \right)^2}{n} },
-    
+
     where :math:`y_{i}` is the true value, :math:`\hat{y}_{i}` is the
     predicted value, and :math:`n` is the number of data points.
 
@@ -97,12 +101,13 @@ def rmse(errors):
     -------
     :obj:`float`
         Root-mean-squared error.
-    
+
     See Also
     --------
     mae, mse, sse
     """
     return np.sqrt(mse(errors))
+
 
 def sse(errors):
     r"""Sum of squared errors.
@@ -110,7 +115,7 @@ def sse(errors):
     .. math::
 
         SSE = \sum_{i=1}^n \left( \hat{y}_{i} - y_{i} \right)^2,
-    
+
     where :math:`y_{i}` is the true value, :math:`\hat{y}_{i}` is the
     predicted value, and :math:`n` is the number of data points.
 
@@ -123,12 +128,13 @@ def sse(errors):
     -------
     :obj:`float`
         Sum of squared errors.
-    
+
     See Also
     --------
     mae, mse, rmse
     """
     return np.dot(errors.flatten(), errors.flatten())
+
 
 def loss_f_mse(results):
     r"""Force MSE.
@@ -137,17 +143,18 @@ def loss_f_mse(results):
     ----------
     results : :obj:`dict`
         Results which contains at least force errors under the ``'force'`` key.
-    
+
     Returns
     -------
     :obj:`float`
         Loss.
-    
+
     See Also
     --------
     loss_f_rmse, loss_f_e_weighted_mse
     """
-    return mse(results['force'])
+    return mse(results["force"])
+
 
 def loss_f_rmse(results):
     r"""Force RMSE.
@@ -156,13 +163,14 @@ def loss_f_rmse(results):
     ----------
     results : :obj:`dict`
         Results which contains at least force errors under the ``'force'`` key.
-    
+
     Returns
     -------
     :obj:`float`
         Loss.
     """
-    return rmse(results['force'])
+    return rmse(results["force"])
+
 
 def loss_f_e_weighted_mse(results, rho, n_atoms):
     r"""Computes a combined energy and force loss function.
@@ -172,7 +180,7 @@ def loss_f_e_weighted_mse(results, rho, n_atoms):
         l = \frac{\rho}{Q} \left\Vert E - \hat{E} \right\Vert^2
         + \frac{1}{n_{atoms} Q} \sum_{i=0}^{n_{atoms}}
         \left\Vert \bf{F}_i - \widehat{\bf{F}}_i \right\Vert^2,
-    
+
     where :math:`\rho` is a trade-off between energy and force errors,
     :math:`Q` is the number of validation structures, :math:`\Vert \ldots \Vert`
     is the norm, and :math:`\widehat{\;}` is the model prediction of the
@@ -189,12 +197,12 @@ def loss_f_e_weighted_mse(results, rho, n_atoms):
         importance on energy accuracy.
     n_atoms : :obj:`int`
         Number of atoms.
-    
+
     Returns
     -------
     :obj:`float`
         Loss.
     """
-    F_mse = mse(results['force'])
-    E_mse = mse(results['energy'])
-    return rho*E_mse + (1/n_atoms)*F_mse
+    F_mse = mse(results["force"])
+    E_mse = mse(results["energy"])
+    return rho * E_mse + (1 / n_atoms) * F_mse

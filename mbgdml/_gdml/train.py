@@ -1,8 +1,8 @@
 # MIT License
-# 
+#
 # Copyright (c) 2018-2022, Stefan Chmiela
 # Copyright (c) 2022, Alex M. Maldonado
-# 
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
@@ -12,7 +12,7 @@
 #
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -34,7 +34,7 @@ from .. import __version__ as mbgdml_version
 
 import multiprocessing as mp
 
-Pool = mp.get_context('fork').Pool
+Pool = mp.get_context("fork").Pool
 
 from functools import partial
 
@@ -71,6 +71,7 @@ from .desc import Desc
 
 log = logging.getLogger(__name__)
 
+
 def _share_array(arr_np, typecode_or_type):
     """Return a ctypes array allocated from shared memory with data from a
     NumPy array.
@@ -89,6 +90,7 @@ def _share_array(arr_np, typecode_or_type):
     """
     arr = mp.RawArray(typecode_or_type, arr_np.ravel())
     return arr, arr_np.shape
+
 
 def _assemble_kernel_mat_wkr(
     j, tril_perms_lin, sig, use_E_cstr=False, exploit_sym=False, cols_m_limit=None
@@ -128,11 +130,11 @@ def _assemble_kernel_mat_wkr(
 
     global glob
 
-    R_desc = np.frombuffer(glob['R_desc']).reshape(glob['R_desc_shape'])
-    R_d_desc = np.frombuffer(glob['R_d_desc']).reshape(glob['R_d_desc_shape'])
-    K = np.frombuffer(glob['K']).reshape(glob['K_shape'])
+    R_desc = np.frombuffer(glob["R_desc"]).reshape(glob["R_desc_shape"])
+    R_d_desc = np.frombuffer(glob["R_d_desc"]).reshape(glob["R_d_desc_shape"])
+    K = np.frombuffer(glob["K"]).reshape(glob["K_shape"])
 
-    desc_func = glob['desc_func']
+    desc_func = glob["desc_func"]
 
     n_train, dim_d = R_d_desc.shape[:2]
     n_atoms = int((1 + np.sqrt(8 * dim_d + 1)) / 2)
@@ -159,7 +161,7 @@ def _assemble_kernel_mat_wkr(
     rj_desc_perms = np.reshape(
         np.tile(R_desc[j % n_train, :], n_perms)[tril_perms_lin],
         (n_perms, -1),
-        order='F',
+        order="F",
     )
 
     rj_d_desc = desc_func.d_desc_from_comp(R_d_desc[j % n_train, :, :])[0][
@@ -170,9 +172,9 @@ def _assemble_kernel_mat_wkr(
         np.tile(rj_d_desc.T, n_perms)[:, tril_perms_lin], (-1, dim_d, n_perms)
     )
 
-    mat52_base_div = 3 * sig ** 4
+    mat52_base_div = 3 * sig**4
     sqrt5 = np.sqrt(5.0)
-    sig_pow2 = sig ** 2
+    sig_pow2 = sig**2
 
     dim_i_keep = rj_d_desc.shape[1]
     diff_ab_outer_perms = np.empty((dim_d, dim_i_keep))
@@ -194,16 +196,16 @@ def _assemble_kernel_mat_wkr(
 
             norm_ab_perms = sqrt5 * np.linalg.norm(diff_ab_perms, axis=1)
             mat52_base_perms = np.exp(-norm_ab_perms / sig) / mat52_base_div * 5
-            
+
             np.einsum(
-                'ki,kj->ij',
+                "ki,kj->ij",
                 diff_ab_perms * mat52_base_perms[:, None] * 5,
-                np.einsum('ki,jik -> kj', diff_ab_perms, rj_d_desc_perms),
+                np.einsum("ki,jik -> kj", diff_ab_perms, rj_d_desc_perms),
                 out=diff_ab_outer_perms,
             )
 
             diff_ab_outer_perms -= np.einsum(
-                'ikj,j->ki',
+                "ikj,j->ki",
                 rj_d_desc_perms,
                 (sig_pow2 + sig * norm_ab_perms) * mat52_base_perms,
             )
@@ -226,14 +228,14 @@ def _assemble_kernel_mat_wkr(
                 K_fe = (
                     5
                     * diff_ab_perms
-                    / (3 * sig ** 3)
+                    / (3 * sig**3)
                     * (norm_ab_perms[:, None] + sig)
                     * np.exp(-norm_ab_perms / sig)[:, None]
                 )
 
-                K_fe = -np.einsum('ik,jki -> j', K_fe, rj_d_desc_perms)
+                K_fe = -np.einsum("ik,jki -> j", K_fe, rj_d_desc_perms)
 
-                E_off_i = n_train * dim_i#, K.shape[1] - n_train
+                E_off_i = n_train * dim_i  # , K.shape[1] - n_train
                 K[E_off_i + i, blk_j] = K_fe
 
     else:
@@ -256,7 +258,7 @@ def _assemble_kernel_mat_wkr(
                 ri_desc_perms = np.reshape(
                     np.tile(R_desc[i, :], n_perms)[tril_perms_lin],
                     (n_perms, -1),
-                    order='F',
+                    order="F",
                 )
 
                 ri_d_desc = desc_func.d_desc_from_comp(R_d_desc[i, :, :])[
@@ -274,12 +276,12 @@ def _assemble_kernel_mat_wkr(
                 K_fe = (
                     5
                     * diff_ab_perms
-                    / (3 * sig ** 3)
+                    / (3 * sig**3)
                     * (norm_ab_perms[:, None] + sig)
                     * np.exp(-norm_ab_perms / sig)[:, None]
                 )
 
-                K_fe = -np.einsum('ik,jki -> j', K_fe, ri_d_desc_perms)
+                K_fe = -np.einsum("ik,jki -> j", K_fe, ri_d_desc_perms)
 
                 blk_i_full = slice(i * dim_i, (i + 1) * dim_i)
                 K[blk_i_full, K_j] = K_fe  # vertical
@@ -300,6 +302,7 @@ class GDMLTrain(object):
     installed) for some solvers.
 
     """
+
     def __init__(self, max_memory=None, max_processes=None, use_torch=False):
         """
         Parameters
@@ -322,15 +325,15 @@ class GDMLTrain(object):
         """
 
         global glob
-        if 'glob' not in globals():  # Don't allow more than one instance of this class.
+        if "glob" not in globals():  # Don't allow more than one instance of this class.
             glob = {}
         else:
             raise Exception(
-                'You can not create multiple instances of this class. '
-                'Please reuse your first one.'
+                "You can not create multiple instances of this class. "
+                "Please reuse your first one."
             )
-        
-        total_memory = psutil.virtual_memory().total // 2 ** 30  # bytes to GB)
+
+        total_memory = psutil.virtual_memory().total // 2**30  # bytes to GB)
         self._max_memory = (
             min(max_memory, total_memory) if max_memory is not None else total_memory
         )
@@ -344,15 +347,13 @@ class GDMLTrain(object):
 
         if use_torch and not _has_torch:
             raise ImportError(
-                'Optional PyTorch dependency not found! Please install PyTorch.'
+                "Optional PyTorch dependency not found! Please install PyTorch."
             )
-
 
     def __del__(self):
         global glob
-        if 'glob' in globals():
+        if "glob" in globals():
             del glob
-
 
     def create_task(
         self,
@@ -441,151 +442,152 @@ class GDMLTrain(object):
         ###   mbGDML ADD   ###
         t_create_task = log.t_start()
         log.info(
-            '-----------------------------------\n'
-            '|   Creating GDML training task   |\n'
-            '-----------------------------------\n'
+            "-----------------------------------\n"
+            "|   Creating GDML training task   |\n"
+            "-----------------------------------\n"
         )
 
         log.log_model(
-            {'z': train_dataset['z'], 'n_train': n_train, 'n_valid': n_valid,
-            'sig': sig, 'lam': lam, 'use_sym': use_sym, 'use_E': use_E,
-            'use_E_cstr': use_E_cstr, 'use_cprsn': use_cprsn, 'type': 't'}
+            {
+                "z": train_dataset["z"],
+                "n_train": n_train,
+                "n_valid": n_valid,
+                "sig": sig,
+                "lam": lam,
+                "use_sym": use_sym,
+                "use_E": use_E,
+                "use_E_cstr": use_E_cstr,
+                "use_cprsn": use_cprsn,
+                "type": "t",
+            }
         )
         ###   mbGDML ADD END   ###
 
-        if use_E and 'E' not in train_dataset:
+        if use_E and "E" not in train_dataset:
             raise ValueError(
-                'No energy labels found in dataset!\n'
-                + 'By default, force fields are always reconstructed including the\n'
-                + 'corresponding potential energy surface (this can be turned off).\n'
-                + 'However, the energy labels are missing in the provided dataset.\n'
+                "No energy labels found in dataset!\n"
+                + "By default, force fields are always reconstructed including the\n"
+                + "corresponding potential energy surface (this can be turned off).\n"
+                + "However, the energy labels are missing in the provided dataset.\n"
             )
 
         use_E_cstr = use_E and use_E_cstr
 
         # Is not needed in this function (mbGDML CHANGED)
         # n_atoms = train_dataset['R'].shape[1]
-        
+
         ###   mbGDML CHANGE   ###
-        log.info(
-            '\nDataset splitting\n'
-            '-----------------'
-        )
-        md5_train_keys = ['z', 'R', 'F']
-        md5_valid_keys = ['z', 'R', 'F']
-        if 'E' in train_dataset.keys():
-            md5_train_keys.append('E')
-        if 'E' in valid_dataset.keys():
-            md5_valid_keys.append('E')
+        log.info("\nDataset splitting\n" "-----------------")
+        md5_train_keys = ["z", "R", "F"]
+        md5_valid_keys = ["z", "R", "F"]
+        if "E" in train_dataset.keys():
+            md5_train_keys.append("E")
+        if "E" in valid_dataset.keys():
+            md5_valid_keys.append("E")
         md5_train = md5_data(train_dataset, md5_train_keys)
         md5_valid = md5_data(valid_dataset, md5_valid_keys)
-        
-        log.info(
-            '\n#   Training   #'
-        )
-        log.info(f'MD5: {md5_train}')
-        log.info(f'Size : {n_train}')
+
+        log.info("\n#   Training   #")
+        log.info(f"MD5: {md5_train}")
+        log.info(f"Size : {n_train}")
         if idxs_train is None:
-            log.info('Drawing structures from the dataset')
-            if 'E' in train_dataset:
+            log.info("Drawing structures from the dataset")
+            if "E" in train_dataset:
                 log.info(
-                    'Energies are included in the dataset\n'
-                    'Using the Freedman-Diaconis rule'
+                    "Energies are included in the dataset\n"
+                    "Using the Freedman-Diaconis rule"
                 )
-                idxs_train = draw_strat_sample(
-                    train_dataset['E'], n_train
-                )
+                idxs_train = draw_strat_sample(train_dataset["E"], n_train)
             else:
                 log.info(
-                    'Energies are not included in the dataset\n'
-                    'Randomly selecting structures'
+                    "Energies are not included in the dataset\n"
+                    "Randomly selecting structures"
                 )
                 idxs_train = np.random.choice(
-                    np.arange(train_dataset['F'].shape[0]),
+                    np.arange(train_dataset["F"].shape[0]),
                     n_train,
                     replace=False,
                 )
         else:
-            log.info('Training indices were manually specified')
+            log.info("Training indices were manually specified")
             idxs_train = np.array(idxs_train)
             log.log_array(idxs_train, level=10)
 
         # Handles validation indices.
-        log.info(
-            '\n#   Validation   #'
-        )
-        log.info(f'MD5: {md5_valid}')
-        log.info(f'Size : {n_valid}')
+        log.info("\n#   Validation   #")
+        log.info(f"MD5: {md5_valid}")
+        log.info(f"Size : {n_valid}")
         if idxs_valid is not None:
-            log.info('Validation indices were manually specified')
+            log.info("Validation indices were manually specified")
             idxs_valid = np.array(idxs_valid)
             log.log_array(idxs_valid, level=10)
         else:
-            log.info('Drawing structures from the dataset')
+            log.info("Drawing structures from the dataset")
             excl_idxs = (
                 idxs_train if md5_train == md5_valid else np.array([], dtype=np.uint)
             )
-            log.debug(f'Excluded {len(excl_idxs)} structures')
+            log.debug(f"Excluded {len(excl_idxs)} structures")
             log.log_array(excl_idxs, level=10)
 
-            if 'E' in valid_dataset:
+            if "E" in valid_dataset:
                 idxs_valid = draw_strat_sample(
-                    valid_dataset['E'],
+                    valid_dataset["E"],
                     n_valid,
                     excl_idxs=excl_idxs,
                 )
             else:
                 idxs_valid_cands = np.setdiff1d(
-                    np.arange(valid_dataset['F'].shape[0]), excl_idxs,
-                    assume_unique=True
+                    np.arange(valid_dataset["F"].shape[0]),
+                    excl_idxs,
+                    assume_unique=True,
                 )
                 idxs_valid = np.random.choice(idxs_valid_cands, n_valid, replace=False)
         ###   mbGDML CHANGE END   ###
 
-        R_train = train_dataset['R'][idxs_train, :, :]
+        R_train = train_dataset["R"][idxs_train, :, :]
         task = {
-            'type': 't',
-            'code_version': mbgdml_version,
-            'dataset_name': train_dataset['name'].astype(str),
-            'dataset_theory': train_dataset['theory'].astype(str),
-            'z': train_dataset['z'],
-            'R_train': R_train,
-            'F_train': train_dataset['F'][idxs_train, :, :],
-            'idxs_train': idxs_train,
-            'md5_train': md5_train,
-            'idxs_valid': idxs_valid,
-            'md5_valid': md5_valid,
-            'sig': sig,
-            'lam': lam,
-            'use_E': use_E,
-            'use_E_cstr': use_E_cstr,
-            'use_sym': use_sym,
-            'use_cprsn': use_cprsn,
-            'solver_name': solver,
-            'solver_tol': solver_tol,
+            "type": "t",
+            "code_version": mbgdml_version,
+            "dataset_name": train_dataset["name"].astype(str),
+            "dataset_theory": train_dataset["theory"].astype(str),
+            "z": train_dataset["z"],
+            "R_train": R_train,
+            "F_train": train_dataset["F"][idxs_train, :, :],
+            "idxs_train": idxs_train,
+            "md5_train": md5_train,
+            "idxs_valid": idxs_valid,
+            "md5_valid": md5_valid,
+            "sig": sig,
+            "lam": lam,
+            "use_E": use_E,
+            "use_E_cstr": use_E_cstr,
+            "use_sym": use_sym,
+            "use_cprsn": use_cprsn,
+            "solver_name": solver,
+            "solver_tol": solver_tol,
         }
 
         if use_E:
-            task['E_train'] = train_dataset['E'][idxs_train]
+            task["E_train"] = train_dataset["E"][idxs_train]
 
         lat_and_inv = None
-        if 'lattice' in train_dataset:
-            log.info('\nLattice was found in the dataset')
-            log.debug(train_dataset['lattice'])
-            task['lattice'] = train_dataset['lattice']
+        if "lattice" in train_dataset:
+            log.info("\nLattice was found in the dataset")
+            log.debug(train_dataset["lattice"])
+            task["lattice"] = train_dataset["lattice"]
 
             try:
-                lat_and_inv = (task['lattice'], np.linalg.inv(task['lattice']))
+                lat_and_inv = (task["lattice"], np.linalg.inv(task["lattice"]))
             except np.linalg.LinAlgError:
                 raise ValueError(
-                    'Provided dataset contains invalid lattice vectors (not invertible). Note: Only rank 3 lattice vector matrices are supported.'
+                    "Provided dataset contains invalid lattice vectors (not invertible). Note: Only rank 3 lattice vector matrices are supported."
                 )
 
-        if 'r_unit' in train_dataset and 'e_unit' in train_dataset:
+        if "r_unit" in train_dataset and "e_unit" in train_dataset:
             log.info(f'\nCoordinate unit : {train_dataset["r_unit"]}')
             log.info(f'Energy unit : {train_dataset["e_unit"]}')
-            task['r_unit'] = train_dataset['r_unit']
-            task['e_unit'] = train_dataset['e_unit']
+            task["r_unit"] = train_dataset["r_unit"]
+            task["e_unit"] = train_dataset["e_unit"]
 
         if use_sym:
 
@@ -593,15 +595,15 @@ class GDMLTrain(object):
             if perms is None:
 
                 if (
-                    'perms' in train_dataset
+                    "perms" in train_dataset
                 ):  # take perms from training dataset, if available
 
-                    n_perms = train_dataset['perms'].shape[0]
+                    n_perms = train_dataset["perms"].shape[0]
                     log.info(
-                        'Using {:d} permutations included in dataset.'.format(n_perms)
+                        "Using {:d} permutations included in dataset.".format(n_perms)
                     )
 
-                    task['perms'] = train_dataset['perms']
+                    task["perms"] = train_dataset["perms"]
 
                 else:  # find perms from scratch
 
@@ -612,7 +614,7 @@ class GDMLTrain(object):
                             np.random.choice(n_train, 1000, replace=False), :, :
                         ]
                         log.info(
-                            'Symmetry search has been restricted to a random subset of 1000/{:d} training points for faster convergence.'.format(
+                            "Symmetry search has been restricted to a random subset of 1000/{:d} training points for faster convergence.".format(
                                 n_train
                             )
                         )
@@ -621,9 +623,9 @@ class GDMLTrain(object):
                     # task['perms'] = perm.find_perms(
                     #    R_train_sync_mat, train_dataset['z'], lat_and_inv=lat_and_inv, max_processes=self._max_processes,
                     # )
-                    task['perms'] = find_perms(
+                    task["perms"] = find_perms(
                         R_train_sync_mat,
-                        train_dataset['z'],
+                        train_dataset["z"],
                         # lat_and_inv=None,
                         lat_and_inv=lat_and_inv,
                         max_processes=self._max_processes,
@@ -631,31 +633,38 @@ class GDMLTrain(object):
 
             else:  # use provided perms
 
-                n_atoms = len(task['z'])
+                n_atoms = len(task["z"])
                 n_perms, perms_len = perms.shape
 
                 if perms_len != n_atoms:
                     raise ValueError(  # TODO: Document me
-                        'Provided permutations do not match the number of atoms in dataset.'
+                        "Provided permutations do not match the number of atoms in dataset."
                     )
                 else:
 
                     log.info(
-                        'Using {:d} externally provided permutations.'.format(n_perms)
+                        "Using {:d} externally provided permutations.".format(n_perms)
                     )
 
-                    task['perms'] = perms
+                    task["perms"] = perms
 
         else:
-            task['perms'] = np.arange(train_dataset['R'].shape[1])[
+            task["perms"] = np.arange(train_dataset["R"].shape[1])[
                 None, :
             ]  # no symmetries
 
         return task
 
     def create_model(
-        self, task, solver, R_desc, R_d_desc, tril_perms_lin, std, alphas_F,
-        alphas_E=None
+        self,
+        task,
+        solver,
+        R_desc,
+        R_d_desc,
+        tril_perms_lin,
+        std,
+        alphas_F,
+        alphas_E=None,
     ):
         """Create a data structure, :obj:`dict`, of custom type ``model``.
 
@@ -691,7 +700,7 @@ class GDMLTrain(object):
             An array of size N containing of the linear coefficients that
             correspond to the energy constraints. Only used if ``use_E_cstr``
             is ``True``.
-        
+
         Returns
         -------
         :obj:`dict`
@@ -709,47 +718,47 @@ class GDMLTrain(object):
         R_d_desc_alpha = desc.d_desc_dot_vec(R_d_desc, alphas_F.reshape(-1, dim_i))
 
         model = {
-            'type': 'm',
-            'code_version': mbgdml_version,
-            'dataset_name': task['dataset_name'],
-            'dataset_theory': task['dataset_theory'],
-            'solver_name': solver,
-            'z': task['z'],
-            'idxs_train': task['idxs_train'],
-            'md5_train': task['md5_train'],
-            'idxs_valid': task['idxs_valid'],
-            'md5_valid': task['md5_valid'],
-            'n_test': 0,
-            'md5_test': None,
-            'f_err': {'mae': np.nan, 'rmse': np.nan},
-            'R_desc': R_desc.T,
-            'R_d_desc_alpha': R_d_desc_alpha,
-            'c': 0.0,
-            'std': std,
-            'sig': task['sig'],
-            'lam': task['lam'],
-            'alphas_F': alphas_F,
-            'perms': task['perms'],
-            'tril_perms_lin': tril_perms_lin,
-            'use_E': task['use_E'],
-            'use_cprsn': task['use_cprsn'],
+            "type": "m",
+            "code_version": mbgdml_version,
+            "dataset_name": task["dataset_name"],
+            "dataset_theory": task["dataset_theory"],
+            "solver_name": solver,
+            "z": task["z"],
+            "idxs_train": task["idxs_train"],
+            "md5_train": task["md5_train"],
+            "idxs_valid": task["idxs_valid"],
+            "md5_valid": task["md5_valid"],
+            "n_test": 0,
+            "md5_test": None,
+            "f_err": {"mae": np.nan, "rmse": np.nan},
+            "R_desc": R_desc.T,
+            "R_d_desc_alpha": R_d_desc_alpha,
+            "c": 0.0,
+            "std": std,
+            "sig": task["sig"],
+            "lam": task["lam"],
+            "alphas_F": alphas_F,
+            "perms": task["perms"],
+            "tril_perms_lin": tril_perms_lin,
+            "use_E": task["use_E"],
+            "use_cprsn": task["use_cprsn"],
         }
 
-        if task['use_E']:
-            model['e_err'] = {'mae': np.nan, 'rmse': np.nan}
+        if task["use_E"]:
+            model["e_err"] = {"mae": np.nan, "rmse": np.nan}
 
-            if task['use_E_cstr']:
-                model['alphas_E'] = alphas_E
+            if task["use_E_cstr"]:
+                model["alphas_E"] = alphas_E
 
-        if 'lattice' in task:
-            model['lattice'] = task['lattice']
+        if "lattice" in task:
+            model["lattice"] = task["lattice"]
 
-        if 'r_unit' in task and 'e_unit' in task:
-            model['r_unit'] = task['r_unit']
-            model['e_unit'] = task['e_unit']
+        if "r_unit" in task and "e_unit" in task:
+            model["r_unit"] = task["r_unit"]
+            model["e_unit"] = task["e_unit"]
 
         return model
-    
+
     def train_labels(self, F, use_E, use_E_cstr, E=None):
         """Compute custom train labels.
 
@@ -761,7 +770,7 @@ class GDMLTrain(object):
 
             We use negative energies with the mean removed for training labels
             (if requested).
-        
+
         Parameters
         ----------
         F : :obj:`numpy.ndarray`, ndim: ``3``
@@ -772,7 +781,7 @@ class GDMLTrain(object):
             If energy constraints are being added to the kernel.
         E : :obj:`numpy.ndarray`, default: :obj:`None`
             Train set energies.
-        
+
         Returns
         -------
         :obj:`numpy.ndarray`
@@ -792,7 +801,7 @@ class GDMLTrain(object):
             y = np.hstack((y, -E_train + E_train_mean))
         else:
             E_train_mean = None
-            
+
         y_std = np.std(y)
         y /= y_std
 
@@ -823,53 +832,48 @@ class GDMLTrain(object):
 
         task = dict(task)  # make mutable
 
-        n_train, n_atoms = task['R_train'].shape[:2]
+        n_train, n_atoms = task["R_train"].shape[:2]
 
         desc = Desc(
             n_atoms,
             max_processes=self._max_processes,
         )
 
-        n_perms = task['perms'].shape[0]
-        tril_perms = np.array([desc.perm(p) for p in task['perms']])
+        n_perms = task["perms"].shape[0]
+        tril_perms = np.array([desc.perm(p) for p in task["perms"]])
 
         dim_i = 3 * n_atoms
         dim_d = desc.dim
 
         perm_offsets = np.arange(n_perms)[:, None] * dim_d
-        tril_perms_lin = (tril_perms + perm_offsets).flatten('F')
+        tril_perms_lin = (tril_perms + perm_offsets).flatten("F")
 
         lat_and_inv = None
-        if 'lattice' in task:
+        if "lattice" in task:
             try:
-                lat_and_inv = (task['lattice'], np.linalg.inv(task['lattice']))
+                lat_and_inv = (task["lattice"], np.linalg.inv(task["lattice"]))
             except np.linalg.LinAlgError:
                 raise ValueError(
-                    'Provided dataset contains invalid lattice vectors (not invertible).'
-                    'Note: Only rank 3 lattice vector matrices are supported.'
+                    "Provided dataset contains invalid lattice vectors (not invertible)."
+                    "Note: Only rank 3 lattice vector matrices are supported."
                 )
 
-        R = task['R_train'].reshape(n_train, -1)
-        R_desc, R_d_desc = desc.from_R(
-            R,
-            lat_and_inv=lat_and_inv
-        )
+        R = task["R_train"].reshape(n_train, -1)
+        R_desc, R_d_desc = desc.from_R(R, lat_and_inv=lat_and_inv)
 
         # Generate label vector.
-        if task['use_E']:
-            E_train = task['use_E']
+        if task["use_E"]:
+            E_train = task["use_E"]
         else:
             E_train = None
         y, y_std, E_train_mean = self.train_labels(
-            task['F_train'], task['use_E'], task['use_E_cstr'], E=E_train
+            task["F_train"], task["use_E"], task["use_E_cstr"], E=E_train
         )
 
-        max_memory_bytes = self._max_memory * 1024 ** 3
+        max_memory_bytes = self._max_memory * 1024**3
 
         # Memory cost of analytic solver
-        est_bytes_analytic = self.analytic_est_memory_requirement(
-            n_train, n_atoms
-        )
+        est_bytes_analytic = self.analytic_est_memory_requirement(n_train, n_atoms)
 
         # Memory overhead (solver independent)
         est_bytes_overhead = y.nbytes
@@ -884,7 +888,7 @@ class GDMLTrain(object):
         ) < max_memory_bytes
 
         ###   mbGDML CHANGE START   ###
-        if task['solver_name'] is None:
+        if task["solver_name"] is None:
             # Fall back to analytic solver, if iterative solver file is missing.
             # Force analytic solver because iterative solver is not released yet.
             use_analytic_solver = True
@@ -894,21 +898,23 @@ class GDMLTrain(object):
             #     log.debug('Iterative solver not installed.')
             #     use_analytic_solver = True
         else:
-            solver = task['solver_name']
-            if solver == 'analytic':
+            solver = task["solver_name"]
+            if solver == "analytic":
                 use_analytic_solver = True
             else:
-                raise ValueError(f'{solver} is not currently supported')
+                raise ValueError(f"{solver} is not currently supported")
         ###   mbGDML CHANGE END   ###
 
         if use_analytic_solver:
-            mem_req_mb = (est_bytes_analytic + est_bytes_overhead)*1e-6  # MB
+            mem_req_mb = (est_bytes_analytic + est_bytes_overhead) * 1e-6  # MB
             log.info(
-                f'Using analytic solver (expected memory requirement: ~{mem_req_mb:.3f} MB)'
+                f"Using analytic solver (expected memory requirement: ~{mem_req_mb:.3f} MB)"
             )
             ###   mbGDML CHANGE START   ###
-            alphas = self.solve_analytic(task, desc, R_desc, R_d_desc, tril_perms_lin, y)
-            solver_keys['norm_y_train'] = np.linalg.norm(y)
+            alphas = self.solve_analytic(
+                task, desc, R_desc, R_d_desc, tril_perms_lin, y
+            )
+            solver_keys["norm_y_train"] = np.linalg.norm(y)
             ###   mbGDML CHANGE END   ###
 
         else:
@@ -920,11 +926,11 @@ class GDMLTrain(object):
             )
 
             log.info(
-                f'Using iterative solver (expected memory requirement: ~{est_bytes_iterative + est_bytes_overhead})'
+                f"Using iterative solver (expected memory requirement: ~{est_bytes_iterative + est_bytes_overhead})"
             )
 
-            alphas_F = task['alphas0_F'] if 'alphas0_F' in task else None
-            alphas_E = task['alphas0_E'] if 'alphas0_E' in task else None
+            alphas_F = task["alphas0_F"] if "alphas0_F" in task else None
+            alphas_E = task["alphas0_E"] if "alphas0_E" in task else None
 
             iterative = Iterative(
                 self,
@@ -936,13 +942,13 @@ class GDMLTrain(object):
             )
             (
                 alphas,
-                solver_keys['solver_tol'],
+                solver_keys["solver_tol"],
                 solver_keys[
-                    'solver_iters'
+                    "solver_iters"
                 ],  # number of iterations performed (cg solver)
-                solver_keys['solver_resid'],  # residual of solution
+                solver_keys["solver_resid"],  # residual of solution
                 train_rmse,
-                solver_keys['inducing_pts_idxs'],
+                solver_keys["inducing_pts_idxs"],
                 is_conv,
             ) = iterative.solve(
                 task,
@@ -954,24 +960,28 @@ class GDMLTrain(object):
                 save_progr_callback=save_progr_callback,
             )
 
-            solver_keys['norm_y_train'] = np.linalg.norm(y)
-        
+            solver_keys["norm_y_train"] = np.linalg.norm(y)
+
             if not is_conv:
-                log.warning('Iterative solver did not converge!')
-                log.info('Troubleshooting tips:')
-                log.info('(1) Are the provided geometries highly correlated (i.e. very similar to each other)?')
-                log.info('(2) Try a larger length scale (sigma) parameter.')
-                log.warning('We will continue with this unconverged model, but its accuracy will likely be very bad.')
+                log.warning("Iterative solver did not converge!")
+                log.info("Troubleshooting tips:")
+                log.info(
+                    "(1) Are the provided geometries highly correlated (i.e. very similar to each other)?"
+                )
+                log.info("(2) Try a larger length scale (sigma) parameter.")
+                log.warning(
+                    "We will continue with this unconverged model, but its accuracy will likely be very bad."
+                )
 
         alphas_E = None
         alphas_F = alphas
-        if task['use_E_cstr']:
+        if task["use_E_cstr"]:
             alphas_E = alphas[-n_train:]
             alphas_F = alphas[:-n_train]
 
         model = self.create_model(
             task,
-            'analytic' if use_analytic_solver else 'cg',
+            "analytic" if use_analytic_solver else "cg",
             R_desc,
             R_d_desc,
             tril_perms_lin,
@@ -985,33 +995,36 @@ class GDMLTrain(object):
         # Note: if energy constraints are included in the kernel (via 'use_E_cstr'), do not
         # compute the integration constant, but simply set it to the mean of the training energies
         # (which was subtracted from the labels before training).
-        if model['use_E']:
+        if model["use_E"]:
             c = (
                 self._recov_int_const(
-                    model, task, R_desc=R_desc, R_d_desc=R_d_desc,
-                    require_E_eval=require_E_eval
+                    model,
+                    task,
+                    R_desc=R_desc,
+                    R_d_desc=R_d_desc,
+                    require_E_eval=require_E_eval,
                 )
                 if E_train_mean is None
                 else E_train_mean
             )
-            model['c'] = c
+            model["c"] = c
 
         return model
-    
+
     def analytic_est_memory_requirement(self, n_train, n_atoms):
         est_bytes = 3 * (n_train * 3 * n_atoms) ** 2 * 8  # K + factor(s) of K
         est_bytes += (n_train * 3 * n_atoms) * 8  # alpha
         return est_bytes
-    
+
     def solve_analytic(self, task, desc, R_desc, R_d_desc, tril_perms_lin, y):
         """Condensed :class:`sgdml.solvers.analytic.Analytic` class.
 
         Parameters
         ----------
         task : :obj:`dict`
-        
+
         R_desc : :obj:`numpy.ndarray`
-            Array containing the descriptor for each training point. 
+            Array containing the descriptor for each training point.
             Computed from :func:`~mbgdml._gdml.desc._r_to_desc`.
         R_d_desc : :obj:`numpy.ndarray`
             Array containing the gradient of the descriptor for
@@ -1027,14 +1040,14 @@ class GDMLTrain(object):
         """
 
         log.info(
-            '\n-------------------------\n'
-            '|   Analytical solver   |\n'
-            '-------------------------\n'
+            "\n-------------------------\n"
+            "|   Analytical solver   |\n"
+            "-------------------------\n"
         )
 
-        sig = task['sig']
-        lam = task['lam']
-        use_E_cstr = task['use_E_cstr']
+        sig = task["sig"]
+        lam = task["lam"]
+        use_E_cstr = task["use_E_cstr"]
         log.log_model(task)
 
         n_train, dim_d = R_d_desc.shape[:2]
@@ -1043,9 +1056,9 @@ class GDMLTrain(object):
 
         # Compress kernel based on symmetries
         col_idxs = np.s_[:]
-        if 'cprsn_keep_atoms_idxs' in task:
+        if "cprsn_keep_atoms_idxs" in task:
 
-            cprsn_keep_idxs = task['cprsn_keep_atoms_idxs']
+            cprsn_keep_idxs = task["cprsn_keep_atoms_idxs"]
             cprsn_keep_idxs_lin = (
                 np.arange(dim_i).reshape(n_atoms, -1)[cprsn_keep_idxs, :].ravel()
             )
@@ -1054,7 +1067,7 @@ class GDMLTrain(object):
                 cprsn_keep_idxs_lin[:, None] + np.arange(n_train) * dim_i
             ).T.ravel()
 
-        log.info('\nAssembling kernel matrix')
+        log.info("\nAssembling kernel matrix")
         t_assemble = log.t_start()
         K = self._assemble_kernel_mat(
             R_desc,
@@ -1068,7 +1081,7 @@ class GDMLTrain(object):
         log.t_stop(t_assemble)
 
         with warnings.catch_warnings():
-            warnings.simplefilter('ignore')
+            warnings.simplefilter("ignore")
 
             if K.shape[0] == K.shape[1]:
 
@@ -1076,7 +1089,7 @@ class GDMLTrain(object):
 
                 try:
                     t_cholesky = log.t_start()
-                    log.info('Solving linear system (Cholesky factorization)')
+                    log.info("Solving linear system (Cholesky factorization)")
                     # Cholesky
                     L, lower = sp.linalg.cho_factor(
                         -K, overwrite_a=True, check_finite=False
@@ -1084,49 +1097,48 @@ class GDMLTrain(object):
                     alphas = -sp.linalg.cho_solve(
                         (L, lower), y, overwrite_b=True, check_finite=False
                     )
-                    
-                    log.t_stop(
-                        t_cholesky, message='Done in {time} s'
-                    )
+
+                    log.t_stop(t_cholesky, message="Done in {time} s")
                 except np.linalg.LinAlgError:  # try a solver that makes less assumptions
                     log.t_stop(
-                        t_cholesky, message='Cholesky factorization failed in {time} s'
+                        t_cholesky, message="Cholesky factorization failed in {time} s"
                     )
-                    log.info('Solving linear system (LU factorization)')
+                    log.info("Solving linear system (LU factorization)")
 
                     try:
                         # LU
                         t_lu = log.t_start()
                         alphas = sp.linalg.solve(
-                            K, y, overwrite_a=True, overwrite_b=True,
-                            check_finite=False
+                            K, y, overwrite_a=True, overwrite_b=True, check_finite=False
                         )
-                        log.t_stop(
-                            t_lu, message='Done in {time} s'
-                        )
+                        log.t_stop(t_lu, message="Done in {time} s")
                     except MemoryError:
                         log.t_stop(
-                            t_lu, message='LU factorization failed in {time} s', level=50
+                            t_lu,
+                            message="LU factorization failed in {time} s",
+                            level=50,
                         )
                         log.critical(
-                            'Not enough memory to train this system using a closed form solver.\n'
-                            + 'Please reduce the size of the training set or consider one of the approximate solver options.'
+                            "Not enough memory to train this system using a closed form solver.\n"
+                            + "Please reduce the size of the training set or consider one of the approximate solver options."
                         )
                         sys.exit()
 
                 except MemoryError:
                     log.critical(
-                        'Not enough memory to train this system using a closed form solver.\n'
-                        + 'Please reduce the size of the training set or consider one of the approximate solver options.'
+                        "Not enough memory to train this system using a closed form solver.\n"
+                        + "Please reduce the size of the training set or consider one of the approximate solver options."
                     )
                     sys.exit()
             else:
-                log.info('Solving overdetermined linear system (least squares approximation)')
+                log.info(
+                    "Solving overdetermined linear system (least squares approximation)"
+                )
                 t_least_squares = log.t_start()
                 # least squares for non-square K
                 alphas = np.linalg.lstsq(K, y, rcond=-1)[0]
                 log.t_stop(t_least_squares)
-        
+
         return alphas
 
     def _recov_int_const(
@@ -1187,11 +1199,11 @@ class GDMLTrain(object):
         gdml_predict.set_R_desc(R_desc)
         gdml_predict.set_R_d_desc(R_d_desc)
 
-        n_train = task['E_train'].shape[0]
-        R = task['R_train'].reshape(n_train, -1)
+        n_train = task["E_train"].shape[0]
+        R = task["R_train"].reshape(n_train, -1)
 
         E_pred, _ = gdml_predict.predict(R)
-        E_ref = np.squeeze(task['E_train'])
+        E_ref = np.squeeze(task["E_train"])
 
         e_fact = np.linalg.lstsq(
             np.column_stack((E_pred, np.ones(E_ref.shape))), E_ref, rcond=-1
@@ -1201,36 +1213,39 @@ class GDMLTrain(object):
         if not require_E_eval:
             if np.sign(e_fact) == -1:
                 log.warning(
-                    'The provided dataset contains gradients instead of force labels (flipped sign). Please correct!\n'
-                    + 'Note: The energy prediction accuracy of the model will thus neither be validated nor tested in the following steps!'
+                    "The provided dataset contains gradients instead of force labels (flipped sign). Please correct!\n"
+                    + "Note: The energy prediction accuracy of the model will thus neither be validated nor tested in the following steps!"
                 )
                 return None
 
             if corrcoef < 0.95:
+                log.warning("Inconsistent energy labels detected!")
                 log.warning(
-                    'Inconsistent energy labels detected!'
-                )
-                log.warning(
-                    'The predicted energies for the training data are only weakly\n'
-                    f'correlated with the reference labels (correlation coefficient {corrcoef:.2f})\n'
-                    'which indicates that the issue is most likely NOT just a unit conversion error.\n'
+                    "The predicted energies for the training data are only weakly\n"
+                    f"correlated with the reference labels (correlation coefficient {corrcoef:.2f})\n"
+                    "which indicates that the issue is most likely NOT just a unit conversion error.\n"
                 )
                 return None
 
             if np.abs(e_fact - 1) > 1e-1:
-                log.warning(
-                    'Different scales in energy vs. force labels detected!\n'
-                )
+                log.warning("Different scales in energy vs. force labels detected!\n")
                 return None
-        
+
         del gdml_predict
 
         # Least squares estimate for integration constant.
         return np.sum(E_ref - E_pred) / E_ref.shape[0]
 
     def _assemble_kernel_mat(
-        self, R_desc, R_d_desc, tril_perms_lin, sig, desc, use_E_cstr=False,
-        col_idxs=np.s_[:], alloc_extra_rows=0
+        self,
+        R_desc,
+        R_d_desc,
+        tril_perms_lin,
+        sig,
+        desc,
+        use_E_cstr=False,
+        col_idxs=np.s_[:],
+        alloc_extra_rows=0,
     ):
         """Compute force field kernel matrix.
 
@@ -1285,7 +1300,7 @@ class GDMLTrain(object):
         # Account for additional rows (and columns) due to energy constraints in the kernel matrix.
         if use_E_cstr:
             K_n_rows += n_train
-        
+
         if isinstance(col_idxs, slice):  # indexed by slice
             K_n_cols = len(range(*col_idxs.indices(K_n_rows)))
         else:  # indexed by list
@@ -1299,7 +1314,7 @@ class GDMLTrain(object):
 
         # Make sure no indices are outside of the valid range.
         if K_n_cols > K_n_rows:
-            raise ValueError('Columns indexed beyond range.')
+            raise ValueError("Columns indexed beyond range.")
 
         exploit_sym = False
         cols_m_limit = None
@@ -1359,26 +1374,24 @@ class GDMLTrain(object):
 
         if self._use_torch:
             if not _has_torch:
-                raise ImportError(
-                    'PyTorch not found! Please install PyTorch.'
-                )
+                raise ImportError("PyTorch not found! Please install PyTorch.")
 
             K = np.empty((K_n_rows + alloc_extra_rows, K_n_cols))
 
             if J is not list:
                 J = list(J)
-            
+
             global torch_assemble_done
             torch_assemble_todo, torch_assemble_done = K_n_cols, 0
 
             start = timeit.default_timer()
 
             if _torch_cuda_is_available:
-                torch_device = 'cuda'
+                torch_device = "cuda"
             elif _torch_mps_is_available:
-                torch_device = 'mps'
+                torch_device = "mps"
             else:
-                torch_device = 'cpu'
+                torch_device = "cpu"
 
             R_desc_torch = torch.from_numpy(R_desc).to(torch_device)  # N, d
             R_d_desc_torch = torch.from_numpy(R_d_desc).to(torch_device)
@@ -1412,17 +1425,17 @@ class GDMLTrain(object):
 
             if callback is not None:
                 dur_s = stop - start
-                sec_disp_str = 'took {:.1f} s'.format(dur_s) if dur_s >= 0.1 else ''
+                sec_disp_str = "took {:.1f} s".format(dur_s) if dur_s >= 0.1 else ""
                 callback(DONE, sec_disp_str=sec_disp_str)
 
             return K
 
-        K = mp.RawArray('d', (K_n_rows + alloc_extra_rows) * K_n_cols)
-        glob['K'], glob['K_shape'] = K, (K_n_rows + alloc_extra_rows, K_n_cols)
-        glob['R_desc'], glob['R_desc_shape'] = _share_array(R_desc, 'd')
-        glob['R_d_desc'], glob['R_d_desc_shape'] = _share_array(R_d_desc, 'd')
+        K = mp.RawArray("d", (K_n_rows + alloc_extra_rows) * K_n_cols)
+        glob["K"], glob["K_shape"] = K, (K_n_rows + alloc_extra_rows, K_n_cols)
+        glob["R_desc"], glob["R_desc_shape"] = _share_array(R_desc, "d")
+        glob["R_d_desc"], glob["R_d_desc_shape"] = _share_array(R_d_desc, "d")
 
-        glob['desc_func'] = desc
+        glob["desc_func"] = desc
 
         pool = None
         map_func = map
@@ -1452,9 +1465,9 @@ class GDMLTrain(object):
             pool = None
 
         # Release some memory.
-        glob.pop('K', None)
-        glob.pop('R_desc', None)
-        glob.pop('R_d_desc', None)
+        glob.pop("K", None)
+        glob.pop("R_desc", None)
+        glob.pop("R_d_desc", None)
 
         return np.frombuffer(K).reshape((K_n_rows + alloc_extra_rows), K_n_cols)
 
@@ -1471,7 +1484,7 @@ def get_test_idxs(model, dataset, n_test=None):
     n_test : :obj:`int`, default: :obj:`None`
         Number of points to include in test indices. Defaults to all available
         indices.
-    
+
     Returns
     -------
     :obj:`numpy.ndarray`
@@ -1485,45 +1498,37 @@ def get_test_idxs(model, dataset, n_test=None):
             return str(md5_value.item())
         else:
             return str(md5_value)
-    
-    md5_dset = convert_md5(dataset['md5'])
-    md5_train = convert_md5(model['md5_train'])
-    md5_valid = convert_md5(model['md5_valid'])
+
+    md5_dset = convert_md5(dataset["md5"])
+    md5_train = convert_md5(model["md5_train"])
+    md5_valid = convert_md5(model["md5_valid"])
 
     if md5_dset == md5_train:
-        excl_idxs = np.concatenate([excl_idxs, model['idxs_train']]).astype(
-            np.uint
-        )
+        excl_idxs = np.concatenate([excl_idxs, model["idxs_train"]]).astype(np.uint)
     if md5_dset == md5_valid:
-        excl_idxs = np.concatenate([excl_idxs, model['idxs_valid']]).astype(
-            np.uint
-        )
+        excl_idxs = np.concatenate([excl_idxs, model["idxs_valid"]]).astype(np.uint)
 
-    n_data = dataset['F'].shape[0]
+    n_data = dataset["F"].shape[0]
     n_data_eff = n_data - len(excl_idxs)
     if n_test is None:
         n_test = n_data_eff
 
     if n_data_eff == 0:
-        log.warning('No unused points for testing in provided dataset.')
+        log.warning("No unused points for testing in provided dataset.")
         return
-    
-    log.info(
-        f'Test set size was automatically set to {n_data_eff} points.'
-    )
 
-    if 'E' in dataset:
-        test_idxs = draw_strat_sample(
-            dataset['E'], n_test, excl_idxs=excl_idxs
-        )
+    log.info(f"Test set size was automatically set to {n_data_eff} points.")
+
+    if "E" in dataset:
+        test_idxs = draw_strat_sample(dataset["E"], n_test, excl_idxs=excl_idxs)
     else:
         test_idxs = np.delete(np.arange(n_data), excl_idxs)
 
         log.warning(
-            'Test dataset will be sampled with no guidance from energy labels (randomly)!\n'
-            + 'Note: Larger test datasets are recommended due to slower convergence of the error.'
+            "Test dataset will be sampled with no guidance from energy labels (randomly)!\n"
+            + "Note: Larger test datasets are recommended due to slower convergence of the error."
         )
-    
+
     return test_idxs
 
 
@@ -1531,7 +1536,7 @@ def add_valid_errors(
     model, dataset, overwrite=False, max_processes=None, use_torch=False
 ):
     """Calculate and add energy and force validation errors to a model.
-    
+
     Parameters
     ----------
     model : :obj:`dict`
@@ -1540,7 +1545,7 @@ def add_valid_errors(
         Validation dataset.
     overwrite : :obj:`bool`, default: ``False``
         Will overwrite validation errors in model if they already exist.
-    
+
     Return
     ------
     :obj:`dict`
@@ -1550,37 +1555,32 @@ def add_valid_errors(
         Model with validation errors.
     """
     log.info(
-        '\n------------------------\n'
-        '|   Model Validation   |\n'
-        '------------------------'
+        "\n------------------------\n"
+        "|   Model Validation   |\n"
+        "------------------------"
     )
-    if model['use_E']:
-        e_err = np.array(model['e_err']).item()
-    f_err = np.array(model['f_err']).item()
-    is_model_validated = not (np.isnan(f_err['mae']) or np.isnan(f_err['rmse']))
+    if model["use_E"]:
+        e_err = np.array(model["e_err"]).item()
+    f_err = np.array(model["f_err"]).item()
+    is_model_validated = not (np.isnan(f_err["mae"]) or np.isnan(f_err["rmse"]))
     if is_model_validated and not overwrite:
-        log.warning('Model is already validated and overwrite is False.')
+        log.warning("Model is already validated and overwrite is False.")
         return
 
     n_valid, E_errors, F_errors = model_errors(
-        model, dataset, is_valid=True, max_processes=max_processes,
-        use_torch=use_torch
+        model, dataset, is_valid=True, max_processes=max_processes, use_torch=use_torch
     )
 
-    model['n_test'] = 0  # flag the model as not tested
+    model["n_test"] = 0  # flag the model as not tested
 
-    results = {'force': F_errors}
-    model['f_err'] = {
-        'mae': mae(F_errors), 'rmse': rmse(F_errors)
-    }
+    results = {"force": F_errors}
+    model["f_err"] = {"mae": mae(F_errors), "rmse": rmse(F_errors)}
 
-    if model['use_E']:
-        results['energy'] = E_errors
-        model['e_err'] = {
-            'mae': mae(E_errors), 'rmse': rmse(E_errors)
-        }
+    if model["use_E"]:
+        results["energy"] = E_errors
+        model["e_err"] = {"mae": mae(E_errors), "rmse": rmse(E_errors)}
     else:
-        results['energy'] = None
+        results["energy"] = None
     return results, model
 
 
@@ -1589,8 +1589,7 @@ def save_model(model, model_path):
 
 
 def model_errors(
-    model, dataset, is_valid=False, n_test=None, max_processes=None,
-    use_torch=False
+    model, dataset, is_valid=False, n_test=None, max_processes=None, use_torch=False
 ):
     """Computes model errors for either validation or testing purposes.
 
@@ -1606,7 +1605,7 @@ def model_errors(
     n_test : :obj:`int`, default: :obj:`None`
         Number of desired testing indices. :obj:`None` will test against all
         available structures.
-    
+
     Returns
     -------
     :obj:`int`
@@ -1618,39 +1617,40 @@ def model_errors(
     """
     num_workers, batch_size = 0, 0
 
-    if not np.array_equal(model['z'], dataset['z']):
+    if not np.array_equal(model["z"], dataset["z"]):
         raise AssistantError(
-            'Atom composition or order in dataset does not match the one in model'
+            "Atom composition or order in dataset does not match the one in model"
         )
 
-    if ('lattice' in model) is not ('lattice' in dataset):
-        if 'lattice' in model:
+    if ("lattice" in model) is not ("lattice" in dataset):
+        if "lattice" in model:
             raise AssistantError(
-                'Model contains lattice vectors, but dataset does not.'
+                "Model contains lattice vectors, but dataset does not."
             )
-        elif 'lattice' in dataset:
+        elif "lattice" in dataset:
             raise AssistantError(
-                'Dataset contains lattice vectors, but model does not.'
+                "Dataset contains lattice vectors, but model does not."
             )
 
     if is_valid:
-        test_idxs = model['idxs_valid']
+        test_idxs = model["idxs_valid"]
     else:
-        log.info('\n---------------------\n'
-            '|   Model Testing   |\n'
-            '---------------------\n'
+        log.info(
+            "\n---------------------\n"
+            "|   Model Testing   |\n"
+            "---------------------\n"
         )
         log.log_model(model)
         test_idxs = get_test_idxs(model, dataset, n_test=n_test)
 
     # TODO: Can we change to dataSet class to avoid hard-coded keys?
-    z = dataset['z']
-    R = dataset['R'][test_idxs, :, :]
-    F = dataset['F'][test_idxs, :, :]
+    z = dataset["z"]
+    R = dataset["R"][test_idxs, :, :]
+    F = dataset["F"][test_idxs, :, :]
     n_R = R.shape[0]
 
-    if model['use_E']:
-        E = dataset['E'][test_idxs]
+    if model["use_E"]:
+        E = dataset["E"][test_idxs]
 
     try:
         gdml_predict = GDMLPredict(
@@ -1658,13 +1658,13 @@ def model_errors(
         )
     except:
         raise
-    
-    log.info(f'\nPredicting {len(test_idxs)} structures')
+
+    log.info(f"\nPredicting {len(test_idxs)} structures")
     b_size = min(1000, len(test_idxs))
-    log.info(f'Batch size : {b_size} structures\n')
+    log.info(f"Batch size : {b_size} structures\n")
 
     if not use_torch:
-        log.debug('Using CPU (use_torch = False)')
+        log.debug("Using CPU (use_torch = False)")
         if num_workers == 0 or batch_size == 0:
             gps, is_from_cache = gdml_predict.prepare_parallel(
                 n_bulk=b_size, return_is_from_cache=True
@@ -1680,12 +1680,12 @@ def model_errors(
             gdml_predict._set_bulk_mp(bulk_mp)
 
     n_atoms = z.shape[0]
-    
+
     E_pred, F_pred = np.empty(n_R), np.empty(R.shape)
     t_pred = log.t_start()
     n_done = 0
     for b_range in chunk_array(list(range(len(test_idxs))), b_size):
-        log.info(f'{n_done} done')
+        log.info(f"{n_done} done")
         n_done_step = len(b_range)
         n_done += n_done_step
 
@@ -1693,17 +1693,15 @@ def model_errors(
         e_pred, f_pred = gdml_predict.predict(r)
 
         F_pred[b_range] = f_pred.reshape((len(b_range), n_atoms, 3))
-        if model['use_E']:
+        if model["use_E"]:
             E_pred[b_range] = e_pred
-    log.info(f'{n_done} done')
+    log.info(f"{n_done} done")
 
-    t_elapsed = log.t_stop(
-        t_pred, message='\nTook {time} s'
-    )
-    log.info(f'Prediction rate : {n_R/t_elapsed:.2f} structures per second')
+    t_elapsed = log.t_stop(t_pred, message="\nTook {time} s")
+    log.info(f"Prediction rate : {n_R/t_elapsed:.2f} structures per second")
 
     # Force errors
-    log.info('Computing force (and energy) errors')
+    log.info("Computing force (and energy) errors")
     F_errors = F_pred - F
     F_mae = mae(F_errors)
     F_rmse = rmse(F_errors)
@@ -1711,16 +1709,16 @@ def model_errors(
     log.info(f"Force RMSE : {F_rmse:.5f}")
 
     # Energy errors
-    if model['use_E']:
+    if model["use_E"]:
         E_errors = E_pred - E
         E_mae = mae(E_errors)
         E_rmse = rmse(E_errors)
         log.info(f"Energy MAE  : {E_mae:.5f}")
         log.info(f"Energy RMSE : {E_rmse:.5f}")
-    
+
     del gdml_predict
-    
-    if model['use_E']:
+
+    if model["use_E"]:
         return len(test_idxs), E_errors, F_errors
     else:
         return len(test_idxs), None, F_errors

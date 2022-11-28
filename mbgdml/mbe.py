@@ -1,7 +1,7 @@
 # MIT License
-# 
+#
 # Copyright (c) 2022, Alex M. Maldonado
-# 
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
@@ -11,7 +11,7 @@
 #
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -38,6 +38,7 @@ except:
 
 log = logging.getLogger(__name__)
 
+
 def gen_r_entity_combs(r_prov_spec, entity_ids_lower):
     """Generate ``entity_id`` combinations of a specific size for a single
     structure.
@@ -50,9 +51,9 @@ def gen_r_entity_combs(r_prov_spec, entity_ids_lower):
 
     ``gen_r_entity_combs`` generates all combinations (without replacement)
     based on the number of entities in ``entity_ids_lower``.
-    If ``entity_ids_lower`` is ``[0, 0, 0, 1, 1, 1]`` (i.e., number of 
+    If ``entity_ids_lower`` is ``[0, 0, 0, 1, 1, 1]`` (i.e., number of
     lower-order entities is 2), then ``gen_r_entity_combs`` produces all 3
-    choose 2 combinations. 
+    choose 2 combinations.
 
     Parameters
     ----------
@@ -63,26 +64,31 @@ def gen_r_entity_combs(r_prov_spec, entity_ids_lower):
         which entities for lower-order structures. Entities can be a related
         set of atoms, molecules, or functional group. For example, a water and
         methanol molecule could be ``[0, 0, 0, 1, 1, 1, 1, 1, 1]``.
-    
+
     Yield
     -----
     :obj:`tuple`
         Entity combinations of a single structure.
     """
     n_entities_lower = len(set(entity_ids_lower))
-    entity_combs = itertools.combinations(
-        r_prov_spec[2:], n_entities_lower
-    )
+    entity_combs = itertools.combinations(r_prov_spec[2:], n_entities_lower)
     for comb in entity_combs:
         yield comb
 
+
 def mbe_worker(
-    r_shape, entity_ids, r_prov_specs, r_idxs, E_lower, Deriv_lower,
-    entity_ids_lower, r_prov_specs_lower
+    r_shape,
+    entity_ids,
+    r_prov_specs,
+    r_idxs,
+    E_lower,
+    Deriv_lower,
+    entity_ids_lower,
+    r_prov_specs_lower,
 ):
     """Worker for computing many-body contributions.
 
-    This does not take into account if many-body contributions are being 
+    This does not take into account if many-body contributions are being
     ``'added'`` or ``'removed'``. This just sums up all possible contributions.
 
     Parameters
@@ -116,7 +122,7 @@ def mbe_worker(
         Structure provenance IDs. This specifies the ``r_prov_id``, structure
         index from the ``r_prov_id`` source, and ``entity_ids`` making up
         lower-order structures.
-    
+
     Returns
     -------
     :obj:`list`
@@ -130,7 +136,7 @@ def mbe_worker(
     """
     E = np.zeros(len(r_idxs))
     Deriv = np.zeros((len(r_idxs), *r_shape))
-    
+
     # Loop through every structure in the reference data set.
     for i in range(len(r_idxs)):
         i_r = r_idxs[i]
@@ -143,17 +149,15 @@ def mbe_worker(
         for entity_comb in gen_r_entity_combs(r_prov_spec, entity_ids_lower):
             # r_prov_spec of the lower-order structure.
             # Combines [r_prov_id, r_idx] with the entity combination.
-            r_prov_spec_lower_comb = np.block(
-                [r_prov_spec[:2], np.array(entity_comb)]
-            )
-            
+            r_prov_spec_lower_comb = np.block([r_prov_spec[:2], np.array(entity_comb)])
+
             # Index of the structure in the lower data set.
             try:
                 i_r_lower = np.where(
                     np.all(r_prov_specs_lower == r_prov_spec_lower_comb, axis=1)
                 )[0][0]
             except IndexError as e:
-                if 'for axis 0 with size 0' in str(e):
+                if "for axis 0 with size 0" in str(e):
                     continue
                 else:
                     raise
@@ -162,13 +166,13 @@ def mbe_worker(
 
             # Adding or removing energy contributions.
             E[i] += E_lower[i_r_lower]
-            
+
             # Adding or removing derivative contributions.
             # We have to determine the corresponding atom indices of both the
             # reference and lower-order structure.
             # This is done by matching the entity_id_prov between the two r_prov_specs.
             # The position of entity_id_prov in r_prov_specs (with r_prov_id and
-            # r_idx removed) specifies the entity_id of the 
+            # r_idx removed) specifies the entity_id of the
 
             # entity_id_prov: the original entity_id of the structure provenance.
             # entity_id: the entity_id in the reference structure.
@@ -183,13 +187,12 @@ def mbe_worker(
                 entity_id_lower = np.where(
                     r_prov_spec_lower_comb[2:] == entity_id_prov
                 )[0][0]
-                i_z_lower = np.where(
-                    entity_ids_lower == entity_id_lower
-                )[0]
-                
+                i_z_lower = np.where(entity_ids_lower == entity_id_lower)[0]
+
                 Deriv[i][i_z] += deriv_lower[i_z_lower]
-                
+
     return r_idxs, E, Deriv
+
 
 def gen_r_idxs_worker(r_prov_specs, r_prov_ids_lower, n_workers):
     """Generates the assigned structures for each worker.
@@ -218,17 +221,29 @@ def gen_r_idxs_worker(r_prov_specs, r_prov_ids_lower, n_workers):
     # r_prov_ids in the lower contributions.
     r_idxs = []
     for r_prov_id_lower in r_prov_ids_lower.keys():
-        r_idxs.extend(np.where(r_prov_specs[:,0] == r_prov_id_lower)[0].tolist())
-    
-    task_size = math.ceil(len(r_idxs)/n_workers)
+        r_idxs.extend(np.where(r_prov_specs[:, 0] == r_prov_id_lower)[0].tolist())
+
+    task_size = math.ceil(len(r_idxs) / n_workers)
     for i in range(0, len(r_idxs), task_size):
-        r_idxs_worker = r_idxs[i:i + task_size]
+        r_idxs_worker = r_idxs[i : i + task_size]
         yield r_idxs_worker
 
+
 def mbe_contrib(
-    E, Deriv, entity_ids, r_prov_ids, r_prov_specs, E_lower, Deriv_lower,
-    entity_ids_lower, r_prov_ids_lower, r_prov_specs_lower, operation='remove',
-    use_ray=False, ray_address='auto', n_workers=2
+    E,
+    Deriv,
+    entity_ids,
+    r_prov_ids,
+    r_prov_specs,
+    E_lower,
+    Deriv_lower,
+    entity_ids_lower,
+    r_prov_ids_lower,
+    r_prov_specs_lower,
+    operation="remove",
+    use_ray=False,
+    ray_address="auto",
+    n_workers=2,
 ):
     """Adds or removes energy and derivative (i.e., gradients or forces)
     contributions from a reference.
@@ -292,7 +307,7 @@ def mbe_contrib(
         ``False``.
     ray_address : :obj:`str`, default: ``'auto'``
         Ray cluster address to connect to.
-    
+
     Returns
     -------
     :obj:`numpy.ndarray`
@@ -300,87 +315,103 @@ def mbe_contrib(
     :obj:`numpy.ndarray`
         Derivatives with lower-order contributions added or removed.
     """
-    log.debug(f'Computing many-body expansion contributions')
-    if operation != 'add' and operation != 'remove':
+    log.debug(f"Computing many-body expansion contributions")
+    if operation != "add" and operation != "remove":
         raise ValueError(f'{operation} is not "add" or "remove"')
-    log.debug(f'MBE operation: {operation}')
-    
+    log.debug(f"MBE operation: {operation}")
+
     # Checks that the r_prov_md5 hashes match the same r_prov_id
     if (r_prov_ids is not None) and (r_prov_ids != {}):
-        log.debug('Checking if r_prov_ids match')
+        log.debug("Checking if r_prov_ids match")
         for r_prov_id_lower, r_prov_md5_lower in r_prov_ids_lower.items():
             assert r_prov_md5_lower == r_prov_ids[r_prov_id_lower]
-        log.debug('All r_prov_ids match')
+        log.debug("All r_prov_ids match")
     # Assume that all lower models apply.
     else:
-        log.debug('No r_prov_ids exist')
+        log.debug("No r_prov_ids exist")
         assert r_prov_specs is None or r_prov_specs.shape == (1, 0)
-        assert len(set(r_prov_specs_lower[:,0])) == 1
+        assert len(set(r_prov_specs_lower[:, 0])) == 1
         n_r = len(E)
         n_entities = len(set(entity_ids))
         r_prov_specs = np.empty((n_r, 2 + n_entities), dtype=int)
-        r_prov_specs[:,0] = r_prov_specs_lower[0][0]
-        r_prov_specs[:,1] = np.array([i for i in range(n_r)])
+        r_prov_specs[:, 0] = r_prov_specs_lower[0][0]
+        r_prov_specs[:, 1] = np.array([i for i in range(n_r)])
         for entity_id in range(n_entities):
-            r_prov_specs[:,entity_id+2] = entity_id
+            r_prov_specs[:, entity_id + 2] = entity_id
 
     r_shape = Deriv.shape[1:]
-    log.debug(f'Shape of example structure: {r_shape}')
+    log.debug(f"Shape of example structure: {r_shape}")
 
     if not use_ray:
-        log.debug('use_ray is False (using serial operation)')
-        r_idxs = next(
-            gen_r_idxs_worker(r_prov_specs, r_prov_ids_lower, 1)
-        )
+        log.debug("use_ray is False (using serial operation)")
+        r_idxs = next(gen_r_idxs_worker(r_prov_specs, r_prov_ids_lower, 1))
         r_idxs_worker, E_worker, Deriv_worker = mbe_worker(
-            r_shape, entity_ids, r_prov_specs, r_idxs, E_lower, Deriv_lower,
-            entity_ids_lower, r_prov_specs_lower
+            r_shape,
+            entity_ids,
+            r_prov_specs,
+            r_idxs,
+            E_lower,
+            Deriv_lower,
+            entity_ids_lower,
+            r_prov_specs_lower,
         )
-        if operation == 'remove':
+        if operation == "remove":
             E[r_idxs_worker] -= E_worker
             Deriv[r_idxs_worker] -= Deriv_worker
-        elif operation == 'add':
+        elif operation == "add":
             E[r_idxs_worker] += E_worker
             Deriv[r_idxs_worker] += Deriv_worker
     else:
-        log.debug('use_ray is True')
+        log.debug("use_ray is True")
         if not ray.is_initialized():
-            log.debug('ray is not initialized')
+            log.debug("ray is not initialized")
             # Try to connect to already running ray service (from ray cli).
             try:
-                log.debug(f'Trying to connect to ray at address {ray_address}')
+                log.debug(f"Trying to connect to ray at address {ray_address}")
                 ray.init(address=ray_address)
             except ConnectionError:
                 ray.init(num_cpus=n_workers)
-        
+
         # Generate all workers.
         worker = ray.remote(mbe_worker)
         worker_list = []
         for r_idxs in gen_r_idxs_worker(r_prov_specs, r_prov_ids_lower, n_workers):
             worker_list.append(
                 worker.options(num_cpus=1).remote(
-                    r_shape, entity_ids, r_prov_specs, r_idxs, E_lower,
-                    Deriv_lower, entity_ids_lower, r_prov_specs_lower
+                    r_shape,
+                    entity_ids,
+                    r_prov_specs,
+                    r_idxs,
+                    E_lower,
+                    Deriv_lower,
+                    entity_ids_lower,
+                    r_prov_specs_lower,
                 )
             )
 
         # Run all workers.
         while len(worker_list) != 0:
             done_id, worker_list = ray.wait(worker_list)
-            
+
             r_idxs_worker, E_worker, Deriv_worker = ray.get(done_id)[0]
-            if operation == 'remove':
+            if operation == "remove":
                 E[r_idxs_worker] -= E_worker
                 Deriv[r_idxs_worker] -= Deriv_worker
-            elif operation == 'add':
+            elif operation == "add":
                 E[r_idxs_worker] += E_worker
                 Deriv[r_idxs_worker] += Deriv_worker
-    
+
     return E, Deriv
 
+
 def decomp_to_total(
-    E_nbody, F_nbody, entity_ids, entity_combs, use_ray=False,
-    ray_address='auto', n_workers=2
+    E_nbody,
+    F_nbody,
+    entity_ids,
+    entity_combs,
+    use_ray=False,
+    ray_address="auto",
+    n_workers=2,
 ):
     """Sum decomposed :math:`n`-body energies and forces for total
     :math:`n`-body contribution.
@@ -410,7 +441,7 @@ def decomp_to_total(
         ``False``.
     ray_address : :obj:`str`, default: ``'auto'``
         Ray cluster address to connect to.
-    
+
     Returns
     -------
     :obj:`numpy.ndarray`, ndim: ``1``
@@ -418,31 +449,39 @@ def decomp_to_total(
     """
     # Allocating arrays
     n_atoms = len(entity_ids)
-    n_r = len(np.unique(entity_combs[:,0]))
+    n_r = len(np.unique(entity_combs[:, 0]))
     E = np.zeros((n_r,))
     F = np.zeros((n_r, n_atoms, 3))
 
     entity_ids_lower = []
     for i in range(len(entity_combs[0][1:])):
-        entity_ids_lower.extend(
-           [i for j in range(np.count_nonzero(entity_ids == i))]
-        )
+        entity_ids_lower.extend([i for j in range(np.count_nonzero(entity_ids == i))])
     entity_ids_lower = np.array(entity_ids_lower)
 
     r_prov_specs_lower = np.zeros((len(entity_combs), 1))
     r_prov_specs_lower = np.hstack((r_prov_specs_lower, entity_combs))
-    
 
     E_nbody = np.nan_to_num(E_nbody, copy=False, nan=0.0)
     F_nbody = np.nan_to_num(F_nbody, copy=False, nan=0.0)
-    
+
     E, F = mbe_contrib(
-        E, F, entity_ids, None, None, E_nbody, F_nbody,
-        entity_ids_lower, {0: ''}, r_prov_specs_lower, operation='add',
-        use_ray=use_ray, ray_address=ray_address, n_workers=n_workers
+        E,
+        F,
+        entity_ids,
+        None,
+        None,
+        E_nbody,
+        F_nbody,
+        entity_ids_lower,
+        {0: ""},
+        r_prov_specs_lower,
+        operation="add",
+        use_ray=use_ray,
+        ray_address=ray_address,
+        n_workers=n_workers,
     )
     return E, F
-    
+
 
 class mbePredict(object):
     """Predict energies and forces of structures using machine learning
@@ -455,9 +494,15 @@ class mbePredict(object):
     """
 
     def __init__(
-        self, models, predict_model, use_ray=False, n_workers=2,
-        ray_address='auto', wkr_chunk_size=None, alchemy_scalers=None,
-        periodic_cell=None
+        self,
+        models,
+        predict_model,
+        use_ray=False,
+        n_workers=2,
+        ray_address="auto",
+        wkr_chunk_size=None,
+        alchemy_scalers=None,
+        periodic_cell=None,
     ):
         """
         Parameters
@@ -490,9 +535,9 @@ class mbePredict(object):
         self.models = models
         self.predict_model = predict_model
 
-        if models[0].type == 'gap':
+        if models[0].type == "gap":
             assert use_ray == False
-        elif models[0].type == 'schnet':
+        elif models[0].type == "schnet":
             assert use_ray == False
 
         self.use_ray = use_ray
@@ -505,12 +550,13 @@ class mbePredict(object):
         if use_ray:
             global ray
             import ray
+
             if not ray.is_initialized():
                 ray.init(address=ray_address)
             assert ray.is_initialized()
 
             self.models = [ray.put(model) for model in models]
-            #if alchemy_scalers is not None:
+            # if alchemy_scalers is not None:
             #    self.alchemy_scalers = [
             #        ray.put(scaler) for scaler in alchemy_scalers
             #    ]
@@ -528,7 +574,7 @@ class mbePredict(object):
             Component IDs of the structure to predict.
         comp_ids_model : :obj:`numpy.ndarray`, ndim: ``1``
             Component IDs of the model.
-        
+
         Returns
         -------
         :obj:`list`, length: ``len(comp_ids_r)``
@@ -542,10 +588,8 @@ class mbePredict(object):
             matching_entity_ids = np.where(comp_id == comp_ids_r)[0]
             avail_entity_ids.append(matching_entity_ids)
         return avail_entity_ids
-    
-    def compute_nbody(
-        self, z, r, entity_ids, comp_ids, model
-    ):
+
+    def compute_nbody(self, z, r, entity_ids, comp_ids, model):
         """Compute all :math:`n`-body contributions of a single structure
         using a :obj:`mbgdml.models.model` object.
 
@@ -575,16 +619,14 @@ class mbePredict(object):
         """
         # Unify r shape.
         if r.ndim == 3:
-            log.debug('r has three dimensions (instead of two)')
+            log.debug("r has three dimensions (instead of two)")
             if r.shape[0] == 1:
-                log.debug('r[0] was selected to proceed')
+                log.debug("r[0] was selected to proceed")
                 r = r[0]
             else:
-                raise ValueError(
-                    'r.ndim is not 2 (only one structure is allowed)'
-                )
-        
-        E = 0.
+                raise ValueError("r.ndim is not 2 (only one structure is allowed)")
+
+        E = 0.0
         F = np.zeros(r.shape, dtype=np.double)
 
         # Creates a generator for all possible n-body combinations regardless
@@ -594,23 +636,23 @@ class mbePredict(object):
         else:
             model_comp_ids = model.comp_ids
         avail_entity_ids = self.get_avail_entities(comp_ids, model_comp_ids)
-        log.debug(f'Available entity IDs: {avail_entity_ids}')
+        log.debug(f"Available entity IDs: {avail_entity_ids}")
         nbody_gen = gen_combs(avail_entity_ids)
 
         kwargs_pred = {}
         if self.alchemy_scalers is not None:
             nbody_order = len(model_comp_ids)
-            kwargs_pred['alchemy_scalers'] = [
-                alchemy_scaler for alchemy_scaler in self.alchemy_scalers \
+            kwargs_pred["alchemy_scalers"] = [
+                alchemy_scaler
+                for alchemy_scaler in self.alchemy_scalers
                 if alchemy_scaler.order == nbody_order
             ]
-        
+
         # Runs the predict_model function to calculate all n-body energies
         # with this model.
         if not self.use_ray:
             E, F = self.predict_model(
-                z, r, entity_ids, nbody_gen, model, self.periodic_cell,
-                **kwargs_pred
+                z, r, entity_ids, nbody_gen, model, self.periodic_cell, **kwargs_pred
             )
         else:
             # Put all common data into the ray object store.
@@ -620,28 +662,35 @@ class mbePredict(object):
 
             nbody_gen = tuple(nbody_gen)
             if self.wkr_chunk_size is None:
-                wkr_chunk_size = math.ceil(len(nbody_gen)/self.n_workers)
+                wkr_chunk_size = math.ceil(len(nbody_gen) / self.n_workers)
             else:
                 wkr_chunk_size = self.wkr_chunk_size
             nbody_chunker = chunk_iterable(nbody_gen, wkr_chunk_size)
             workers = []
 
-            # Initialize workers 
+            # Initialize workers
             predict_model = self.predict_model
+
             def add_worker(workers, chunk):
                 workers.append(
                     predict_model.remote(
-                        z, r, entity_ids, chunk, model, self.periodic_cell, 
-                        **kwargs_pred
+                        z,
+                        r,
+                        entity_ids,
+                        chunk,
+                        model,
+                        self.periodic_cell,
+                        **kwargs_pred,
                     )
                 )
+
             for _ in range(self.n_workers):
                 try:
                     chunk = next(nbody_chunker)
                     add_worker(workers, chunk)
                 except StopIteration:
                     break
-            
+
             # Start workers and collect results.
             while len(workers) != 0:
                 done_id, workers = ray.wait(workers)
@@ -653,16 +702,16 @@ class mbePredict(object):
                     add_worker(workers, chunk)
                 except StopIteration:
                     pass
-            
+
             # Cleanup object store
             del z, r, entity_ids
-        
+
         return E, F
-    
+
     def compute_nbody_decomp(self, z, r, entity_ids, comp_ids, model):
         """Compute all :math:`n`-body contributions of a single structure
         using a :obj:`mbgdml.models.model` object.
-        
+
         Stores all individual entity ID combinations, energies and forces.
         This is more memory intensive. Structures that fall outside the
         descriptor cutoff will have :obj:`numpy.nan` as their energy and forces.
@@ -698,14 +747,12 @@ class mbePredict(object):
         """
         # Unify r shape.
         if r.ndim == 3:
-            log.debug('r has three dimensions (instead of two)')
+            log.debug("r has three dimensions (instead of two)")
             if r.shape[0] == 1:
-                log.debug('r[0] was selected to proceed')
+                log.debug("r[0] was selected to proceed")
                 r = r[0]
             else:
-                raise ValueError(
-                    'r.ndim is not 2 (only one structure is allowed)'
-                )
+                raise ValueError("r.ndim is not 2 (only one structure is allowed)")
 
         # Creates a generator for all possible n-body combinations regardless
         # of cutoffs.
@@ -719,16 +766,14 @@ class mbePredict(object):
         # Explicitly evaluate n-body generator.
         comb0 = next(nbody_gen)
         n_entities = len(comb0)
-        entity_combs = np.fromiter(
-            itertools.chain.from_iterable(nbody_gen), np.int64
-        )
+        entity_combs = np.fromiter(itertools.chain.from_iterable(nbody_gen), np.int64)
         # Reshape and add initial combination back.
         if len(comb0) == 1:
             entity_combs.shape = len(entity_combs), 1
         else:
-            entity_combs.shape = int(len(entity_combs)/n_entities), n_entities
+            entity_combs.shape = int(len(entity_combs) / n_entities), n_entities
         entity_combs = np.vstack((np.array(comb0), entity_combs))
-        
+
         # Runs the predict_model function to calculate all n-body energies
         # with this model.
         if not self.use_ray:
@@ -742,56 +787,56 @@ class mbePredict(object):
                 n_atoms = 0
                 for i in entity_combs[0]:
                     n_atoms += np.count_nonzero(entity_ids == i)
-            
+
             # Put all common data into the ray object store.
             z = ray.put(z)
             r = ray.put(r)
             entity_ids = ray.put(entity_ids)
-            
+
             # Allocate memory for energies and forces.
             E = np.empty(len(entity_combs), dtype=np.float64)
             F = np.empty((len(entity_combs), n_atoms, 3), dtype=np.float64)
             E[:] = np.nan
             F[:] = np.nan
-            
+
             if self.wkr_chunk_size is None:
-                wkr_chunk_size = math.ceil(len(entity_combs)/self.n_workers)
+                wkr_chunk_size = math.ceil(len(entity_combs) / self.n_workers)
             else:
                 wkr_chunk_size = self.wkr_chunk_size
             nbody_chunker = chunk_array(entity_combs, wkr_chunk_size)
             workers = []
 
-            # Initialize workers 
+            # Initialize workers
             predict_model = self.predict_model
+
             def add_worker(workers, chunk):
-                workers.append(
-                    predict_model.remote(z, r, entity_ids, chunk, model)
-                )
+                workers.append(predict_model.remote(z, r, entity_ids, chunk, model))
+
             for _ in range(self.n_workers):
                 try:
                     chunk = next(nbody_chunker)
                     add_worker(workers, chunk)
                 except StopIteration:
                     break
-            
+
             # Start workers and collect results.
             while len(workers) != 0:
                 done_id, workers = ray.wait(workers)
                 E_wkr, F_wkr, entity_combs_wkr = ray.get(done_id)[0]
-                
+
                 i_start = np.where((entity_combs_wkr[0] == entity_combs).all(1))[0][0]
                 i_end = i_start + len(entity_combs_wkr)
                 E[i_start:i_end] = E_wkr
                 F[i_start:i_end] = F_wkr
-                
+
                 try:
                     chunk = next(nbody_chunker)
                     add_worker(workers, chunk)
                 except StopIteration:
                     pass
-        
+
         return E, F, entity_combs
-    
+
     def predict(self, z, R, entity_ids, comp_ids):
         """Predict the energies and forces of one or multiple structures.
 
@@ -806,7 +851,7 @@ class mbePredict(object):
         comp_ids : :obj:`numpy.ndarray`, shape: ``(N,)``
             Relates each ``entity_id`` to a fragment label. Each item's index
             is the label's ``entity_id``.
-        
+
         Returns
         -------
         :obj:`numpy.ndarray`, shape: ``(N,)``
@@ -817,7 +862,7 @@ class mbePredict(object):
         t_predict = log.t_start()
         if R.ndim == 2:
             R = np.array([R])
-        
+
         # Preallocate memory for energies and forces.
         E = np.zeros((R.shape[0],), dtype=np.double)
         F = np.zeros(R.shape, dtype=np.double)
@@ -831,11 +876,10 @@ class mbePredict(object):
                 E[i] += E_nbody
                 F[i] += F_nbody
         log.t_stop(
-            t_predict, message='Predictions took {time} s', precision=3,
-            level=10
+            t_predict, message="Predictions took {time} s", precision=3, level=10
         )
         return E, F
-    
+
     def predict_decomp(self, z, R, entity_ids, comp_ids):
         """Predict the energies and forces of one or multiple structures.
 
@@ -850,7 +894,7 @@ class mbePredict(object):
         comp_ids : :obj:`numpy.ndarray`, shape: ``(N,)``
             Relates each ``entity_id`` to a fragment label. Each item's index
             is the label's ``entity_id``.
-        
+
         Returns
         -------
         :obj:`list`
@@ -878,9 +922,7 @@ class mbePredict(object):
         else:
             models_ = self.models
 
-        model_nbody_orders = [
-            model.nbody_order for model in models_
-        ]
+        model_nbody_orders = [model.nbody_order for model in models_]
         nbody_orders = sorted(set(model_nbody_orders))
         for nbody_order in nbody_orders:
             E_nbody, F_nbody, entity_comb_nbody = [], [], []
@@ -888,24 +930,29 @@ class mbePredict(object):
             for i in range(len(model_nbody_orders)):
                 if models_[i].nbody_order == nbody_order:
                     nbody_models.append(self.models[i])
-            
+
             for model in nbody_models:
                 for i in range(len(R)):
                     E, F, entity_combs = self.compute_nbody_decomp(
                         z, R[i], entity_ids, comp_ids, model
                     )
                     entity_combs = np.hstack(
-                        (np.array([[i] for _ in range(len(entity_combs))]), entity_combs)
+                        (
+                            np.array([[i] for _ in range(len(entity_combs))]),
+                            entity_combs,
+                        )
                     )
                     E_nbody.extend(E)
                     F_nbody.extend(F)
                     entity_comb_nbody.extend(entity_combs)
-            
+
             E_data.append(np.array(E_nbody))
             F_data.append(np.array(F_nbody))
             entity_comb_data.append(np.array(entity_comb_nbody))
         log.t_stop(
-            t_predict, message='Decomposed predictions took {time} s',
-            precision=3, level=10
+            t_predict,
+            message="Decomposed predictions took {time} s",
+            precision=3,
+            level=10,
         )
         return E_data, F_data, entity_comb_data, nbody_orders

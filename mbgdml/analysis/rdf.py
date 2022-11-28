@@ -1,7 +1,7 @@
 # MIT License
-# 
+#
 # Copyright (c) 2022, Alex M. Maldonado
-# 
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
@@ -11,7 +11,7 @@
 #
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -28,9 +28,7 @@ from ..utils import gen_combs, chunk_iterable
 import numpy as np
 
 # Possible ray task.
-def _bin_distances(
-    R, R_idxs, atom_pairs, rdf_settings, cell_vectors
-):
+def _bin_distances(R, R_idxs, atom_pairs, rdf_settings, cell_vectors):
     r"""Compute relevant RDF data for one or more structures.
 
     Parameters
@@ -46,7 +44,7 @@ def _bin_distances(
     cell_vectors : :obj:`numpy.ndarray`
         The three periodic cell vectors. For example, a cube of length 16.0 would
         be ``[[16.0, 0.0, 0.0], [0.0, 16.0, 0.0], [0.0, 0.0, 16.0]]``.
-    
+
     Returns
     -------
     :obj:`numpy.ndarray`
@@ -61,10 +59,10 @@ def _bin_distances(
         R = R[None, ...]
     n_R = R.shape[0]
 
-    cell = Cell(cell_vectors, cell_vectors[0][0]/2, True)
+    cell = Cell(cell_vectors, cell_vectors[0][0] / 2, True)
 
     # Compute histogram of distances for structure(s)
-    D = R[:,atom_pairs[:,1]] - R[:,atom_pairs[:,0]]
+    D = R[:, atom_pairs[:, 1]] - R[:, atom_pairs[:, 0]]
     new_shape = (np.prod(D.shape[:2]), 3)
     D = D.reshape(new_shape)
     D = cell.d_mic(D, check_cutoff=False)  # Should check_cutoff be false?
@@ -76,14 +74,22 @@ def _bin_distances(
 
     return count, vol_contrib, n_R
 
+
 class RDF(object):
     r"""Handles calculating the radial distribution function (RDF),
     :math:`g(r)`, of a constant volume simulation.
     """
 
     def __init__(
-        self, Z, entity_ids, comp_ids, cell_vectors, bin_width=0.05,
-        rdf_range=(0.0, 15.0), inter_only=True, n_workers=None
+        self,
+        Z,
+        entity_ids,
+        comp_ids,
+        cell_vectors,
+        bin_width=0.05,
+        rdf_range=(0.0, 15.0),
+        inter_only=True,
+        n_workers=None,
     ):
         r"""
         Parameters
@@ -119,8 +125,9 @@ class RDF(object):
         if n_workers is not None:
             global ray
             import ray
+
             if not ray.is_initialized():
-                ray.init(address='auto')
+                ray.init(address="auto")
             assert ray.is_initialized()
             self._max_chunk_size = 300
 
@@ -136,8 +143,8 @@ class RDF(object):
         """
         # Setup histogram
         rdf_span = self.rdf_range[-1] - self.rdf_range[0]
-        nbins = int(rdf_span/self.bin_width)
-        self._hist_settings = {'bins': nbins, 'range': self.rdf_range}
+        nbins = int(rdf_span / self.bin_width)
+        self._hist_settings = {"bins": nbins, "range": self.rdf_range}
         count, edges = np.histogram([-1], **self._hist_settings)
         count = count.astype(np.float64)
         count *= 0.0
@@ -170,8 +177,7 @@ class RDF(object):
 
         # Invalid or unwanted values will be labeled with -1 to drop later.
         atom_pairs = np.empty(
-            (len(tuple(gen_combs(atom_sets))), len(atom_sets)),
-            dtype=np.int32
+            (len(tuple(gen_combs(atom_sets))), len(atom_sets)), dtype=np.int32
         )
         self._n_pairs, self._n_sets = atom_pairs.shape
         i = 0
@@ -186,7 +192,7 @@ class RDF(object):
             i += 1
         atom_pairs = atom_pairs[atom_pairs >= 0]
         self._atom_pairs = atom_pairs.reshape(
-            (int(len(atom_pairs)/self._n_sets), self._n_sets)
+            (int(len(atom_pairs) / self._n_sets), self._n_sets)
         )
 
     def run(self, R, comp_id_pair, entity_idxs, step=1):
@@ -197,11 +203,11 @@ class RDF(object):
         R : :obj:`numpy.ndarray`, ndim: ``3``
             Cartesian coordinates of all atoms in the system under periodic
             boundary conditions.
-            
+
             .. tip::
                 We recommend a memory-map for large ``R`` to reduce memory
                 requirements.
-            
+
         comp_id_pair : :obj:`tuple`
             The component ID of the entities to consider. For example,
             ``('h2o', 'h2o')`` or ``('h2o', 'meoh')``.
@@ -209,14 +215,14 @@ class RDF(object):
             The atom indices in each component to compute distances from.
         step : :obj:`int`
             Number of structures/frames to skip between each analyzed frame.
-        
+
         Returns
         -------
         :obj:`numpy.ndarray`
             ``self.bins``: :math:`r` as the midpoint of each histogram bin.
         :obj:`numpy.ndarray`
             ``self.results``: :math:`g(r)` with respect to ``bins``.
-        
+
         Examples
         --------
         Suppose we want to compute the :math:`O_{w}`-:math:`O_{m}` RDF where
@@ -293,7 +299,7 @@ class RDF(object):
             _bin_distances_remote = ray.remote(_bin_distances)
             chunk_size = min(
                 self._max_chunk_size,
-                int(len(tuple(range(0, len(R), step)))/self.n_workers)
+                int(len(tuple(range(0, len(R), step))) / self.n_workers),
             )
             chunker = chunk_iterable(range(0, len(R), step), chunk_size)
 
@@ -304,6 +310,7 @@ class RDF(object):
 
             # Initialize ray workers
             workers = []
+
             def add_worker(workers, chunker):
                 try:
                     chunk = list(next(chunker))
@@ -315,13 +322,13 @@ class RDF(object):
                     )
                 )
                 return
-            
+
             for _ in range(self.n_workers):
                 add_worker(workers, chunker)
-            
+
             while len(workers) != 0:
                 done_id, workers = ray.wait(workers)
-                
+
                 count, volume_contrib, n_R = ray.get(done_id)[0]
                 self._count += count
                 self._cuml_volume += volume_contrib
@@ -329,18 +336,16 @@ class RDF(object):
 
                 add_worker(workers, chunker)
 
-        
         # Normalize the RDF
         norm = self._n_analyzed  # Number of analyzed frames
         # Volume in each radial shell
         vols = np.power(self.edges, 3)
-        norm *= 4/3 * np.pi * np.diff(vols)  # Array of shape self.edges
+        norm *= 4 / 3 * np.pi * np.diff(vols)  # Array of shape self.edges
         # Average number density
         N = self._n_pairs
-        avg_volume = self._cuml_volume/self._n_analyzed
+        avg_volume = self._cuml_volume / self._n_analyzed
         norm *= N / avg_volume
 
-        self.results = self._count/norm
-        
-        return self.bins, self.results
+        self.results = self._count / norm
 
+        return self.bins, self.results

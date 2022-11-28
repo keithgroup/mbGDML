@@ -1,7 +1,7 @@
 # MIT License
-# 
+#
 # Copyright (c) 2022, Alex M. Maldonado
-# 
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
@@ -11,7 +11,7 @@
 #
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -25,6 +25,7 @@
 from ase.geometry import find_mic
 import numpy as np
 from scipy.spatial.distance import pdist
+
 
 class Cell:
     r"""Enables :math:`n`-body predictions under periodic boundary conditions.
@@ -52,7 +53,7 @@ class Cell:
         self.cell_v = cell_v
         self.cutoff = cutoff
         self.pbc = pbc
-    
+
     def d_mic(self, d, check_cutoff=True):
         r"""Applies the minimum-image convention to distance vectors.
 
@@ -64,7 +65,7 @@ class Cell:
         ----------
         d : :obj:`numpy.ndarray`, ndim: ``2``
             Distances computed within the periodic cell.
-        
+
         Returns
         -------
         :obj:`numpy.ndarray`
@@ -73,7 +74,7 @@ class Cell:
         d_periodic, _ = find_mic(d, self.cell_v, pbc=self.pbc)
         # Check cutoff
         if check_cutoff:
-            d_pd = pdist(d_periodic, metric='euclidean')
+            d_pd = pdist(d_periodic, metric="euclidean")
             if np.any(np.ravel(d_pd >= self.cutoff)):
                 return None
         return d_periodic
@@ -89,7 +90,7 @@ class Cell:
         ----------
         r : :obj:`numpy.ndarray`, ndim: ``2``
             Cartesian coordinates of atoms under periodic boundary conditions.
-        
+
         Returns
         -------
         :obj:`numpy.ndarray`
@@ -98,19 +99,19 @@ class Cell:
         """
         # Computes the distance from the first atom.
         assert r.ndim == 2
-        d = np.subtract(r, r[0,:])
+        d = np.subtract(r, r[0, :])
         return self.d_mic(d)
-    
+
     @property
     def volume(self):
         r"""Volume of the periodic cell.
-        
+
         The volume of the parallelepiped described by ``cell_v``
         (:math:`\boldsymbol{v}`) is computed with
-        
+
         .. math::
             \text{Volume} = (v_1 \times v_2) \cdot v_3.
-        
+
         """
         vec = self.cell_v
         return np.dot(vec[2], np.cross(vec[0], vec[1]))

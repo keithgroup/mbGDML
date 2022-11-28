@@ -1,8 +1,8 @@
 # MIT License
-# 
+#
 # Copyright (c) 2018-2020, Stefan Chmiela
 # Copyright (c) 2020-2022, Alex M. Maldonado
-# 
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
@@ -12,7 +12,7 @@
 #
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -35,16 +35,27 @@ from .utils import save_json
 from .losses import loss_f_rmse, mae, rmse
 
 import logging
+
 log = logging.getLogger(__name__)
 
+
 class mbGDMLTrain:
-    """Train many-body GDML models.
-    """
+    """Train many-body GDML models."""
 
     def __init__(
-        self, entity_ids, comp_ids, use_sym=True, use_E=True, use_E_cstr=False,
-        use_cprsn=False, solver='analytic', lam=1e-10, solver_tol=1e-4,
-        interact_cut_off=None, use_torch=False, max_processes=None
+        self,
+        entity_ids,
+        comp_ids,
+        use_sym=True,
+        use_E=True,
+        use_E_cstr=False,
+        use_cprsn=False,
+        solver="analytic",
+        lam=1e-10,
+        solver_tol=1e-4,
+        interact_cut_off=None,
+        use_torch=False,
+        max_processes=None,
     ):
         """
         Parameters
@@ -100,13 +111,33 @@ class mbGDMLTrain:
         self.use_torch = use_torch
         self.max_processes = max_processes
 
-        self.GDMLTrain = GDMLTrain(
-            max_processes=max_processes, use_torch=use_torch
-        )
+        self.GDMLTrain = GDMLTrain(max_processes=max_processes, use_torch=use_torch)
         self.sigma_grid = [
-            2, 25, 50, 100, 200, 300, 400, 500, 700, 900, 1100, 1500, 2000,
-            2500, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 50000,
-            100000
+            2,
+            25,
+            50,
+            100,
+            200,
+            300,
+            400,
+            500,
+            700,
+            900,
+            1100,
+            1500,
+            2000,
+            2500,
+            3000,
+            4000,
+            5000,
+            6000,
+            7000,
+            8000,
+            9000,
+            10000,
+            20000,
+            50000,
+            100000,
         ]
         """Determining reasonable ``sigma_bounds`` is difficult without some
         prior experience with the system. Even then, the optimal ``sigma``
@@ -138,8 +169,11 @@ class mbGDMLTrain:
         :type: :obj:`list`
         """
         self.bayes_opt_params = {
-            'init_points': 10, 'n_iter': 10, 'alpha': 1e-7, 'acq': 'ucb',
-            'kappa': 1.5
+            "init_points": 10,
+            "n_iter": 10,
+            "alpha": 1e-7,
+            "acq": "ucb",
+            "kappa": 1.5,
         }
         """Bayesian optimization parameters.
 
@@ -230,7 +264,7 @@ class mbGDMLTrain:
 
         :type: :obj:`int`
         """
-    
+
     def min_memory_analytic(self, n_train, n_atoms):
         r"""Minimum memory recommendation for training analytically.
 
@@ -245,23 +279,29 @@ class mbGDMLTrain:
             Number of training structures.
         n_atoms : :obj:`int`
             Number of atoms in a single structure.
-        
+
         Returns
         -------
         :obj:`float`
             Minimum memory requirements in MB.
         """
-        return (8*((n_train * 3*n_atoms)**2))*1e-6
-    
+        return (8 * ((n_train * 3 * n_atoms) ** 2)) * 1e-6
+
     def __del__(self):
         global glob
 
-        if 'glob' in globals():
+        if "glob" in globals():
             del glob
-    
+
     def create_task(
-        self, train_dataset, n_train, valid_dataset, n_valid, sigma,
-        train_idxs=None, valid_idxs=None
+        self,
+        train_dataset,
+        n_train,
+        valid_dataset,
+        n_valid,
+        sigma,
+        train_idxs=None,
+        valid_idxs=None,
     ):
         """Create a single training task that can be used as a template for
         hyperparameter searches.
@@ -286,14 +326,23 @@ class mbGDMLTrain:
             If :obj:`None`, structures will be automatically determined.
         """
         self.task = self.GDMLTrain.create_task(
-            train_dataset, n_train, valid_dataset, n_valid, sigma, lam=self.lam,
-            use_sym=self.use_sym, use_E=self.use_E, use_E_cstr=self.use_E_cstr,
-            use_cprsn=self.use_cprsn, solver=self.solver,
-            solver_tol=self.solver_tol, idxs_train=train_idxs,
-            idxs_valid=valid_idxs
+            train_dataset,
+            n_train,
+            valid_dataset,
+            n_valid,
+            sigma,
+            lam=self.lam,
+            use_sym=self.use_sym,
+            use_E=self.use_E,
+            use_E_cstr=self.use_E_cstr,
+            use_cprsn=self.use_cprsn,
+            solver=self.solver,
+            solver_tol=self.solver_tol,
+            idxs_train=train_idxs,
+            idxs_valid=valid_idxs,
         )
         return self.task
-    
+
     def train_model(self, task):
         """Trains a GDML model from a task.
 
@@ -303,7 +352,7 @@ class mbGDMLTrain:
             Training task.
         n_train : :obj:`int`
             The number of training points to sample.
-        
+
         Returns
         -------
         :obj:`dict`
@@ -311,41 +360,45 @@ class mbGDMLTrain:
         """
         model = self.GDMLTrain.train(task, require_E_eval=self.require_E_eval)
         return model
-    
+
     def test_model(self, model, dataset, n_test=None):
         """Test model and add mbGDML modifications.
-        
+
         Parameters
         ----------
         model : :obj:`mbgdml.models.gdmlModel`
             Model to test.
         dataset : :obj:`dict`
             Test dataset.
-        
+
         Returns
         -------
         :obj:`mbgdml.models.gdmlModel`
             Tested and finalized many-body GDML model.
         """
         n_test, E_errors, F_errors = model_errors(
-            model.model_dict, dataset, is_valid=False, n_test=n_test,
-            max_processes=self.max_processes, use_torch=self.use_torch
+            model.model_dict,
+            dataset,
+            is_valid=False,
+            n_test=n_test,
+            max_processes=self.max_processes,
+            use_torch=self.use_torch,
         )
-        model.model_dict['n_test'] = np.array(n_test)
+        model.model_dict["n_test"] = np.array(n_test)
 
-        results_test = {'force': {'mae': mae(F_errors), 'rmse': rmse(F_errors)}}
+        results_test = {"force": {"mae": mae(F_errors), "rmse": rmse(F_errors)}}
         if E_errors is not None:
-            results_test['energy'] = {'mae': mae(E_errors), 'rmse': rmse(E_errors)}
-        
+            results_test["energy"] = {"mae": mae(E_errors), "rmse": rmse(E_errors)}
+
         # Adding mbGDML-specific modifications to model.
         model.add_modifications(dataset)
-        if 'mb' in dataset.keys():
-            model.model_dict['mb'] = int(dataset['mb'][()])
-        if 'mb_models_md5' in dataset.keys():
-            model_best.model_dict['mb_models_md5'] = dataset['mb_models_md5']
-        
+        if "mb" in dataset.keys():
+            model.model_dict["mb"] = int(dataset["mb"][()])
+        if "mb_models_md5" in dataset.keys():
+            model_best.model_dict["mb_models_md5"] = dataset["mb_models_md5"]
+
         return model, results_test
-    
+
     def save_valid_csv(self, save_dir, valid_json):
         """Writes a CSV summary file for validation statistics.
 
@@ -360,22 +413,28 @@ class mbGDMLTrain:
         """
         import pandas as pd
 
-        sigmas = np.array(valid_json['sigmas'])
+        sigmas = np.array(valid_json["sigmas"])
         sigma_argsort = np.argsort(sigmas)
 
         sigmas = sigmas[sigma_argsort]
-        losses = np.array(valid_json['losses'])[sigma_argsort]
-        e_mae = np.array(valid_json['energy']['mae'])[sigma_argsort]
-        e_rmse = np.array(valid_json['energy']['rmse'])[sigma_argsort]
-        f_mae = np.array(valid_json['force']['mae'])[sigma_argsort]
-        f_rmse = np.array(valid_json['force']['rmse'])[sigma_argsort]
+        losses = np.array(valid_json["losses"])[sigma_argsort]
+        e_mae = np.array(valid_json["energy"]["mae"])[sigma_argsort]
+        e_rmse = np.array(valid_json["energy"]["rmse"])[sigma_argsort]
+        f_mae = np.array(valid_json["force"]["mae"])[sigma_argsort]
+        f_rmse = np.array(valid_json["force"]["rmse"])[sigma_argsort]
 
         df = pd.DataFrame(
-            {'sigma': sigmas, 'losses': losses, 'e_mae': e_mae, 'e_rmse': e_rmse,
-            'f_mae': f_mae, 'f_rmse': f_rmse}
+            {
+                "sigma": sigmas,
+                "losses": losses,
+                "e_mae": e_mae,
+                "e_rmse": e_rmse,
+                "f_mae": f_mae,
+                "f_rmse": f_rmse,
+            }
         )
-        df.to_csv(os.path.join(save_dir, 'valid.csv'), index=False)
-    
+        df.to_csv(os.path.join(save_dir, "valid.csv"), index=False)
+
     def save_idxs(self, model, dataset, save_dir, n_test):
         """Saves npy files of the dataset splits (training, validation, and
         test).
@@ -387,16 +446,16 @@ class mbGDMLTrain:
         dataset : :obj:`dict`
             Dataset used for training, validation, and testing.
         """
-        log.info('\n#   Writing train, valid, and test indices   #')
-        train_idxs = model.model_dict['idxs_train']
-        valid_idxs = model.model_dict['idxs_valid']
+        log.info("\n#   Writing train, valid, and test indices   #")
+        train_idxs = model.model_dict["idxs_train"]
+        valid_idxs = model.model_dict["idxs_valid"]
 
-        np.save(os.path.join(save_dir, 'train_idxs'), train_idxs)
-        np.save(os.path.join(save_dir, 'valid_idxs'), valid_idxs)
+        np.save(os.path.join(save_dir, "train_idxs"), train_idxs)
+        np.save(os.path.join(save_dir, "valid_idxs"), valid_idxs)
 
         test_idxs = get_test_idxs(model.model_dict, dataset, n_test=n_test)
-        np.save(os.path.join(save_dir, 'test_idxs'), test_idxs)
-    
+        np.save(os.path.join(save_dir, "test_idxs"), test_idxs)
+
     def plot_bayes_opt_gp(self, optimizer):
         """Prepare a plot of the Bayesian optimization Gaussian process.
 
@@ -417,23 +476,24 @@ class mbGDMLTrain:
         lower_bound = min(min(params), sigma_bounds[0])
         upper_bound = max(max(params), sigma_bounds[1])
 
-        x = np.linspace(lower_bound,upper_bound, 10000)
+        x = np.linspace(lower_bound, upper_bound, 10000)
         mu, sigma = optimizer._gp.predict(x.reshape(-1, 1), return_std=True)
-        
+
         fig, ax = plt.subplots(
             nrows=1, ncols=1, figsize=(5.5, 4), constrained_layout=True
         )
-        
-        ax.plot(x, -mu, label='Prediction')
-        ax.fill_between(
-            x, -mu - 1.9600*sigma, -mu + 1.9600 *sigma, alpha=0.1,
-            label=r'95% confidence'
-        )
-        ax.scatter(
-            params, losses, c="red", s=8, zorder=10, label='Observations'
-        )
 
-        ax.set_xlabel('Sigma')
+        ax.plot(x, -mu, label="Prediction")
+        ax.fill_between(
+            x,
+            -mu - 1.9600 * sigma,
+            -mu + 1.9600 * sigma,
+            alpha=0.1,
+            label=r"95% confidence",
+        )
+        ax.scatter(params, losses, c="red", s=8, zorder=10, label="Observations")
+
+        ax.set_xlabel("Sigma")
         ax.set_ylabel(self.loss_func.__name__)
 
         ax.set_xlim(left=lower_bound, right=upper_bound)
@@ -441,7 +501,7 @@ class mbGDMLTrain:
         plt.legend()
 
         return fig
-    
+
     def _prepare_dset_dict(self, dataset):
         """Prepares dataset dictionary for sGDML training routines from mbGDML
         data set object.
@@ -450,17 +510,28 @@ class mbGDMLTrain:
         ``'E'``, ``'F'``).
         """
         dset_dict = dataset.asdict()
-        dset_dict['z'] = dset_dict.pop(dataset.Z_key)
-        dset_dict['R'] = dset_dict.pop(dataset.R_key)
-        dset_dict['E'] = dset_dict.pop(dataset.E_key)
-        dset_dict['F'] = dset_dict.pop(dataset.F_key)
+        dset_dict["z"] = dset_dict.pop(dataset.Z_key)
+        dset_dict["R"] = dset_dict.pop(dataset.R_key)
+        dset_dict["E"] = dset_dict.pop(dataset.E_key)
+        dset_dict["F"] = dset_dict.pop(dataset.F_key)
         return dset_dict
-    
+
     def bayes_opt(
-        self, dataset, model_name, n_train, n_valid,
-        n_test=None, save_dir='.', is_final=False, use_domain_opt=False,
-        plot_bo=True, train_idxs=None,
-        valid_idxs=None, overwrite=False, write_json=True, write_idxs=True
+        self,
+        dataset,
+        model_name,
+        n_train,
+        n_valid,
+        n_test=None,
+        save_dir=".",
+        is_final=False,
+        use_domain_opt=False,
+        plot_bo=True,
+        train_idxs=None,
+        valid_idxs=None,
+        overwrite=False,
+        write_json=True,
+        write_idxs=True,
     ):
         """Train a GDML model using Bayesian optimization for sigma.
 
@@ -509,7 +580,7 @@ class mbGDMLTrain:
             Write a JSON file containing information about the training job.
         write_idxs : :obj:`bool`, default: ``True``
             Write npy files for training, validation, and test indices.
-        
+
         Returns
         -------
         :obj:`dict`
@@ -522,18 +593,18 @@ class mbGDMLTrain:
         t_job = log.t_start()
 
         log.info(
-            '#############################\n'
-            '#         Training          #\n'
-            '#   Bayesian Optimization   #\n'
-            '#############################\n'
+            "#############################\n"
+            "#         Training          #\n"
+            "#   Bayesian Optimization   #\n"
+            "#############################\n"
         )
 
         if write_json:
             job_json = {
-                'model': {},
-                'testing': {},
-                'validation': {},
-                'training': {'idxs': []},
+                "model": {},
+                "testing": {},
+                "validation": {},
+                "training": {"idxs": []},
             }
 
         if train_idxs is not None:
@@ -542,29 +613,35 @@ class mbGDMLTrain:
         if valid_idxs is not None:
             assert n_valid == len(valid_idxs)
             assert len(set(valid_idxs)) == len(valid_idxs)
-        
+
         dset_dict = self._prepare_dset_dict(dataset)
 
-        task_dir = os.path.join(save_dir, 'tasks')
+        task_dir = os.path.join(save_dir, "tasks")
         if os.path.exists(task_dir):
             if overwrite:
                 shutil.rmtree(task_dir)
             else:
-                raise FileExistsError('Task directory already exists')
+                raise FileExistsError("Task directory already exists")
         os.makedirs(task_dir, exist_ok=overwrite)
 
         task = self.create_task(
-            dset_dict, n_train, dset_dict, n_valid, None,
-            train_idxs=train_idxs, valid_idxs=valid_idxs
+            dset_dict,
+            n_train,
+            dset_dict,
+            n_valid,
+            None,
+            train_idxs=train_idxs,
+            valid_idxs=valid_idxs,
         )
 
         valid_json = {
-            'sigmas': [],
-            'losses': [],
-            'force': {'mae': [], 'rmse': []},
-            'energy': {'mae': [], 'rmse': []},
-            'idxs': [],
+            "sigmas": [],
+            "losses": [],
+            "force": {"mae": [], "rmse": []},
+            "energy": {"mae": [], "rmse": []},
+            "idxs": [],
         }
+
         def opt_func(sigma):
             """Computes the (negative) validation loss that Bayesian
             optimization tries to optimize.
@@ -575,56 +652,48 @@ class mbGDMLTrain:
             ----------
             sigma : :obj:`float`
                 Kernel length scale for a validation run.
-            
+
             Returns
             -------
             :obj:`float`
                 Negative loss.
             """
-            task['sig'] = sigma
+            task["sig"] = sigma
             model_trial = self.train_model(task)
 
-            if len(valid_json['idxs']) == 0:
-                valid_json['idxs'] = model_trial['idxs_valid'].tolist()
+            if len(valid_json["idxs"]) == 0:
+                valid_json["idxs"] = model_trial["idxs_valid"].tolist()
 
             valid_results, model_trial = add_valid_errors(
-                model_trial, dset_dict, overwrite=True,
-                max_processes=self.max_processes, use_torch=self.use_torch
+                model_trial,
+                dset_dict,
+                overwrite=True,
+                max_processes=self.max_processes,
+                use_torch=self.use_torch,
             )
 
             l = self.loss_func(valid_results, **self.loss_kwargs)
-            valid_json['losses'].append(l)
+            valid_json["losses"].append(l)
 
-            valid_json['sigmas'].append(float(model_trial['sig']))
-            valid_json['energy']['mae'].append(
-                mae(valid_results['energy'])
-            )
-            valid_json['energy']['rmse'].append(
-                rmse(valid_results['energy'])
-            )
-            valid_json['force']['mae'].append(
-                mae(valid_results['force'])
-            )
-            valid_json['force']['rmse'].append(
-                rmse(valid_results['force'])
-            )
+            valid_json["sigmas"].append(float(model_trial["sig"]))
+            valid_json["energy"]["mae"].append(mae(valid_results["energy"]))
+            valid_json["energy"]["rmse"].append(rmse(valid_results["energy"]))
+            valid_json["force"]["mae"].append(mae(valid_results["force"]))
+            valid_json["force"]["rmse"].append(rmse(valid_results["force"]))
 
-            model_trail_path = os.path.join(
-                task_dir, f'model-{float(sigma)}.npz'
-            )
+            model_trail_path = os.path.join(task_dir, f"model-{float(sigma)}.npz")
 
             save_model(model_trial, model_trail_path)
 
             return -l
 
         sigma_bounds = self.sigma_bounds
-        opt_kwargs = {
-            'f': opt_func, 'pbounds': {'sigma': sigma_bounds}, 'verbose': 0
-        }
+        opt_kwargs = {"f": opt_func, "pbounds": {"sigma": sigma_bounds}, "verbose": 0}
         if use_domain_opt:
             from bayes_opt import SequentialDomainReductionTransformer
+
             bounds_transformer = SequentialDomainReductionTransformer()
-            opt_kwargs['bounds_transformer'] = bounds_transformer
+            opt_kwargs["bounds_transformer"] = bounds_transformer
         optimizer = BayesianOptimization(**opt_kwargs)
 
         # Use optimizer.probe to run grid search and to update sigma_bounds.
@@ -638,19 +707,20 @@ class mbGDMLTrain:
                 gp_params = self.bayes_opt_params
         else:
             gp_params = self.bayes_opt_params
-        if gp_params is not None and 'init_points' in gp_params.keys():
-            init_points = gp_params['init_points']
+        if gp_params is not None and "init_points" in gp_params.keys():
+            init_points = gp_params["init_points"]
         else:
             init_points = 5  # BayesianOptimization default.
         sigma_grid = self.sigma_grid
         if sigma_grid is not None:
-            log.info('#   Initial grid search   #')
+            log.info("#   Initial grid search   #")
             sigma_grid.sort()
 
             n_sigmas = len(sigma_grid)
+
             def probe_sigma(sigma):
-                optimizer.probe({'sigma': sigma}, lazy=False)
-            
+                optimizer.probe({"sigma": sigma}, lazy=False)
+
             def constant_loss_rising(valid_json, min_idxs_orig):
                 """Checks for sustained rising loss.
 
@@ -660,29 +730,31 @@ class mbGDMLTrain:
                     Data from validation calculations.
                 min_idxs_orig : :obj:`int`
                     Index of the minimum.
-                
+
                 Returns
                 -------
                 :obj:`bool`
-                    If the loss has continued to rise after identifying a 
+                    If the loss has continued to rise after identifying a
                     minimum.
                 """
                 if self.check_energy_pred:
-                    if valid_json['energy']['rmse'][min_idxs_orig] is None:
+                    if valid_json["energy"]["rmse"][min_idxs_orig] is None:
                         # Restart to find a better minimum that predicts energies.
                         return False
-                
-                losses = valid_json['losses']
-                # Check if losses start falling after minimum. 
-                for i in range(min_idxs_orig+1, len(losses)):
-                    if losses[i] < losses[i-1]:
+
+                losses = valid_json["losses"]
+                # Check if losses start falling after minimum.
+                for i in range(min_idxs_orig + 1, len(losses)):
+                    if losses[i] < losses[i - 1]:
                         # We will restart the grid search to find another minimum.
                         return False
-                
+
                 return True
 
             loss_rising = False
-            do_extra = self.bayes_opt_n_check_rising  # Extra sigmas to check after losses rise.
+            do_extra = (
+                self.bayes_opt_n_check_rising
+            )  # Extra sigmas to check after losses rise.
             for i in range(len(sigma_grid)):
                 sigma = sigma_grid[i]
                 probe_sigma(sigma)
@@ -691,18 +763,18 @@ class mbGDMLTrain:
                 # Check to see if losses have started to rise.
                 # Only check if loss_rising is False to avoid changing back
                 # to False if the losses start falling (for do_extra).
-                if len(valid_json['sigmas']) >= 2 and not loss_rising:
-                    if valid_json['losses'][-1] > valid_json['losses'][-2]:
+                if len(valid_json["sigmas"]) >= 2 and not loss_rising:
+                    if valid_json["losses"][-1] > valid_json["losses"][-2]:
                         loss_rising = True
-                        min_idxs_orig = len(valid_json['sigmas'])-2
-                
+                        min_idxs_orig = len(valid_json["sigmas"]) - 2
+
                 if loss_rising:
                     # We do extra sigmas to ensure we did not have premature
                     # rising loss.
-                    if i != len(sigma_grid)-1 and do_extra > 0:
+                    if i != len(sigma_grid) - 1 and do_extra > 0:
                         do_extra -= 1
                         continue
-                
+
                     # Once do_extra is complete we check losses.
                     restart_grid_search = constant_loss_rising(
                         valid_json, min_idxs_orig
@@ -718,30 +790,28 @@ class mbGDMLTrain:
                         # Loss has continued to rise; good chance we found the minimum.
 
                         # Update the sigma upper bound to the largest sigma
-                        # we have already checked.  
-                        sigma_bounds = (
-                            sigma_bounds[0], np.max(valid_json['sigmas'])
-                        )
-                        optimizer.set_bounds({'sigma': sigma_bounds})
+                        # we have already checked.
+                        sigma_bounds = (sigma_bounds[0], np.max(valid_json["sigmas"]))
+                        optimizer.set_bounds({"sigma": sigma_bounds})
 
                         # We stop grid search and start Bayesian optimization.
                         break
-        
+
         if init_points < 0:
             init_points = 0
-            gp_params['init_points'] = init_points
-            
-        log.info('#   Bayesian optimization   #')
+            gp_params["init_points"] = init_points
+
+        log.info("#   Bayesian optimization   #")
         optimizer.maximize(**gp_params)
-        
+
         results = optimizer.res
-        losses = np.array([-res['target'] for res in results])
+        losses = np.array([-res["target"] for res in results])
         min_idxs = np.argsort(losses)
 
         for idx in min_idxs:
-            sigma_best = results[idx]['params']['sigma']
+            sigma_best = results[idx]["params"]["sigma"]
             if self.check_energy_pred:
-                e_rmse = valid_json['energy']['rmse'][idx]
+                e_rmse = valid_json["energy"]["rmse"][idx]
                 if e_rmse is None:
                     # Go to the next lowest loss.
                     continue
@@ -750,35 +820,31 @@ class mbGDMLTrain:
                     break
             else:
                 break
-        
-        model_best_path = os.path.join(
-            task_dir, f'model-{sigma_best}.npz'
-        )
+
+        model_best_path = os.path.join(task_dir, f"model-{sigma_best}.npz")
         model_best = gdmlModel(model_best_path, comp_ids=self.comp_ids)
 
         # Testing model
-        model_best, results_test = self.test_model(
-            model_best, dset_dict, n_test=n_test
-        )
+        model_best, results_test = self.test_model(model_best, dset_dict, n_test=n_test)
 
         # Including final JSON stuff and writing.
         if write_json:
-            job_json['training']['idxs'] = model_best.model_dict['idxs_train'].tolist()
-            job_json['testing']['n_test'] = int(model_best.model_dict['n_test'][()])
-            job_json['testing']['energy'] = results_test['energy']
-            job_json['testing']['force'] = results_test['force']
+            job_json["training"]["idxs"] = model_best.model_dict["idxs_train"].tolist()
+            job_json["testing"]["n_test"] = int(model_best.model_dict["n_test"][()])
+            job_json["testing"]["energy"] = results_test["energy"]
+            job_json["testing"]["force"] = results_test["force"]
 
-            job_json['model']['sigma'] = float(model_best.model_dict['sig'][()])
-            job_json['model']['n_symm'] = len(model_best.model_dict['perms'])
-            job_json['validation'] = valid_json
+            job_json["model"]["sigma"] = float(model_best.model_dict["sig"][()])
+            job_json["model"]["n_symm"] = len(model_best.model_dict["perms"])
+            job_json["validation"] = valid_json
 
-            save_json(os.path.join(save_dir, 'training.json'), job_json)
+            save_json(os.path.join(save_dir, "training.json"), job_json)
 
             self.save_valid_csv(save_dir, valid_json)
 
         if write_idxs:
             self.save_idxs(model_best, dset_dict, save_dir, n_test)
-        
+
         if not self.keep_tasks:
             shutil.rmtree(task_dir)
 
@@ -789,14 +855,23 @@ class mbGDMLTrain:
         # Bayesian optimization plot
         if plot_bo:
             fig = self.plot_bayes_opt_gp(optimizer)
-            fig.savefig(os.path.join(save_dir, 'bayes_opt.png'), dpi=600)
+            fig.savefig(os.path.join(save_dir, "bayes_opt.png"), dpi=600)
 
-        log.t_stop(t_job, message='\nJob duration : {time} s', precision=2)
+        log.t_stop(t_job, message="\nJob duration : {time} s", precision=2)
         return model_best.model_dict, optimizer
-        
+
     def grid_search(
-        self, dataset, model_name, n_train, n_valid, n_test=None, save_dir='.',
-        train_idxs=None, valid_idxs=None, overwrite=False, write_json=True,
+        self,
+        dataset,
+        model_name,
+        n_train,
+        n_valid,
+        n_test=None,
+        save_dir=".",
+        train_idxs=None,
+        valid_idxs=None,
+        overwrite=False,
+        write_json=True,
         write_idxs=True,
     ):
         """Train a GDML model using a grid search for sigma.
@@ -805,7 +880,7 @@ class mbGDMLTrain:
         found then start to increase (overfitting). We sort ``sigmas`` from
         lowest to highest and stop the search once the loss function starts
         increasing.
-        
+
         Parameters
         ----------
         dataset : :obj:`mbgdml.data.dataSet`
@@ -834,7 +909,7 @@ class mbGDMLTrain:
             Write a JSON file containing information about the training job.
         write_idxs : :obj:`bool`, default: ``True``
             Write npy files for training, validation, and test indices.
-        
+
         Returns
         -------
         :obj:`dict`
@@ -842,135 +917,141 @@ class mbGDMLTrain:
         """
         t_job = log.t_start()
         log.info(
-            '###################\n'
-            '#    Training     #\n'
-            '#   Grid Search   #\n'
-            '###################\n'
+            "###################\n"
+            "#    Training     #\n"
+            "#   Grid Search   #\n"
+            "###################\n"
         )
         if write_json:
             write_json = True
             job_json = {
-                'model': {},
-                'testing': {},
-                'validation': {},
-                'training': {'idxs': []},
+                "model": {},
+                "testing": {},
+                "validation": {},
+                "training": {"idxs": []},
             }
         else:
             write_json = False
-        
+
         if train_idxs is not None:
             assert n_train == len(train_idxs)
             assert len(set(train_idxs)) == len(train_idxs)
         if valid_idxs is not None:
             assert n_valid == len(valid_idxs)
             assert len(set(valid_idxs)) == len(valid_idxs)
-        
+
         dset_dict = self._prepare_dset_dict(dataset)
         sigmas = self.sigma_grid
         sigmas.sort()
-        
-        task_dir = os.path.join(save_dir, 'tasks')
+
+        task_dir = os.path.join(save_dir, "tasks")
         if os.path.exists(task_dir):
             if overwrite:
                 shutil.rmtree(task_dir)
             else:
-                raise FileExistsError('Task directory already exists')
+                raise FileExistsError("Task directory already exists")
         os.makedirs(task_dir, exist_ok=overwrite)
 
         task = self.create_task(
-            dset_dict, n_train, dset_dict, n_valid, sigmas[0],
-            train_idxs=train_idxs, valid_idxs=valid_idxs
+            dset_dict,
+            n_train,
+            dset_dict,
+            n_valid,
+            sigmas[0],
+            train_idxs=train_idxs,
+            valid_idxs=valid_idxs,
         )
 
         # Starting grid search
         trial_model_paths = []
         valid_json = {
-            'sigmas': [],
-            'losses': [],
-            'force': {'mae': [], 'rmse': []},
-            'energy': {'mae': [], 'rmse': []},
-            'idxs': [],
+            "sigmas": [],
+            "losses": [],
+            "force": {"mae": [], "rmse": []},
+            "energy": {"mae": [], "rmse": []},
+            "idxs": [],
         }
         model_best_path = None
         for next_sigma in sigmas[1:]:
             model_trial = self.train_model(task)
 
-            if len(valid_json['idxs']) == 0:
-                valid_json['idxs'] = model_trial['idxs_valid'].tolist()
+            if len(valid_json["idxs"]) == 0:
+                valid_json["idxs"] = model_trial["idxs_valid"].tolist()
 
             valid_results, model_trial = add_valid_errors(
-                model_trial, dset_dict, overwrite=True,
-                max_processes=self.max_processes, use_torch=self.use_torch
+                model_trial,
+                dset_dict,
+                overwrite=True,
+                max_processes=self.max_processes,
+                use_torch=self.use_torch,
             )
 
-            valid_json['losses'].append(
+            valid_json["losses"].append(
                 self.loss_func(valid_results, **self.loss_kwargs)
             )
-            valid_json['sigmas'].append(model_trial['sig'])
-            valid_json['energy']['mae'].append(mae(valid_results['energy']))
-            valid_json['energy']['rmse'].append(rmse(valid_results['energy']))
-            valid_json['force']['mae'].append(mae(valid_results['force']))
-            valid_json['force']['rmse'].append(rmse(valid_results['force']))
+            valid_json["sigmas"].append(model_trial["sig"])
+            valid_json["energy"]["mae"].append(mae(valid_results["energy"]))
+            valid_json["energy"]["rmse"].append(rmse(valid_results["energy"]))
+            valid_json["force"]["mae"].append(mae(valid_results["force"]))
+            valid_json["force"]["rmse"].append(rmse(valid_results["force"]))
 
             model_trail_path = os.path.join(
                 task_dir, f'model-trial-sig{model_trial["sig"]}.npz'
             )
             save_model(model_trial, model_trail_path)
             trial_model_paths.append(model_trail_path)
-            
-            if len(valid_json['losses']) > 1:
-                if valid_json['losses'][-1] > valid_json['losses'][-2]:
-                    log.info('\nValidation errors are rising')
-                    log.info('Terminating grid search')
+
+            if len(valid_json["losses"]) > 1:
+                if valid_json["losses"][-1] > valid_json["losses"][-2]:
+                    log.info("\nValidation errors are rising")
+                    log.info("Terminating grid search")
                     model_best_path = trial_model_paths[-2]
                     on_grid_bounds = False
                     break
-            
-            task['sig'] = next_sigma
-        
+
+            task["sig"] = next_sigma
+
         # Determine best model and checking optimal sigma.
         if model_best_path is None:
             model_best_path = trial_model_paths[-1]
             on_grid_bounds = True
-            next_search_sign = '>'
-        
+            next_search_sign = ">"
+
         model_best = gdmlModel(model_best_path, comp_ids=self.comp_ids)
-        sigma_best = model_best.model_dict['sig'].item()
+        sigma_best = model_best.model_dict["sig"].item()
         if sigma_best == sigmas[0]:
             on_grid_bounds = True
-            next_search_sign = '<'
-        
+            next_search_sign = "<"
+
         if on_grid_bounds:
-            log.warning('Optimal sigma is on the bounds of grid search')
-            log.warning('This model is not optimal')
+            log.warning("Optimal sigma is on the bounds of grid search")
+            log.warning("This model is not optimal")
             log.warning(
-                f'Extend your grid search to be {next_search_sign} {sigma_best}'
+                f"Extend your grid search to be {next_search_sign} {sigma_best}"
             )
-        
+
         # Testing model
-        model_best, results_test = self.test_model(
-            model_best, dset_dict, n_test=n_test
-        )
+        model_best, results_test = self.test_model(model_best, dset_dict, n_test=n_test)
 
         # Including final JSON stuff and writing.
         if write_json:
-            job_json['training']['idxs'] = model_best.model_dict['idxs_train'].tolist()
-            job_json['testing']['n_test'] = int(model_best.model_dict['n_test'][()])
-            job_json['testing']['energy'] = results_test['energy']
-            job_json['testing']['force'] = results_test['force']
+            job_json["training"]["idxs"] = model_best.model_dict["idxs_train"].tolist()
+            job_json["testing"]["n_test"] = int(model_best.model_dict["n_test"][()])
+            job_json["testing"]["energy"] = results_test["energy"]
+            job_json["testing"]["force"] = results_test["force"]
 
-            job_json['model']['sigma'] = model_best.model_dict['sig'][()]
-            job_json['model']['n_symm'] = len(model_best.model_dict['perms'])
+            job_json["model"]["sigma"] = model_best.model_dict["sig"][()]
+            job_json["model"]["n_symm"] = len(model_best.model_dict["perms"])
             # TODO: Can we sort validation data to make it easier to follow?
-            job_json['validation'] = valid_json
+            job_json["validation"] = valid_json
 
-            save_json(os.path.join(save_dir, 'training.json'), job_json)
+            save_json(os.path.join(save_dir, "training.json"), job_json)
 
             self.save_valid_csv(save_dir, valid_json)
-        
+
         if write_idxs:
             self.save_idxs(model_best, dset_dict, save_dir, n_test)
-        
+
         if not self.keep_tasks:
             shutil.rmtree(task_dir)
 
@@ -978,13 +1059,23 @@ class mbGDMLTrain:
         save_path = os.path.join(save_dir, model_name)
         model_best.save(save_path)
 
-        log.t_stop(t_job, message='\nJob duration : {time} s', precision=2)
+        log.t_stop(t_job, message="\nJob duration : {time} s", precision=2)
         return model_best.model_dict
-    
+
     def iterative_train(
-        self, dataset, model_name, n_train_init, n_train_final, n_valid,
-        model0=None, n_train_step=100, n_test=None, save_dir='.',
-        overwrite=False, write_json=True, write_idxs=True
+        self,
+        dataset,
+        model_name,
+        n_train_init,
+        n_train_final,
+        n_valid,
+        model0=None,
+        n_train_step=100,
+        n_test=None,
+        save_dir=".",
+        overwrite=False,
+        write_json=True,
+        write_idxs=True,
     ):
         """Iteratively trains a GDML model by using Bayesian optimization and
         adding problematic (high error) structures to the training set.
@@ -1028,64 +1119,70 @@ class mbGDMLTrain:
 
         t_job = log.t_start()
         log.info(
-            '###################\n'
-            '#    Iterative    #\n'
-            '#    Training     #\n'
-            '###################\n'
+            "###################\n"
+            "#    Iterative    #\n"
+            "#    Training     #\n"
+            "###################\n"
         )
-        log.info(f'Initial training set size : {n_train_init}')
+        log.info(f"Initial training set size : {n_train_init}")
         if model0 is not None:
-            log.info('Initial model was provided')
-            log.info('Taking training indices from model')
-            train_idxs = model0['idxs_train']
+            log.info("Initial model was provided")
+            log.info("Taking training indices from model")
+            train_idxs = model0["idxs_train"]
             n_train = len(train_idxs)
             log.log_array(train_idxs, level=10)
-            
+
             prob_s = prob_structures(
                 [gdmlModel(model0, comp_ids=self.comp_ids)], predict_gdml
             )
-            save_dir_i = os.path.join(save_dir, f'train{n_train}')
+            save_dir_i = os.path.join(save_dir, f"train{n_train}")
             os.makedirs(save_dir_i, exist_ok=overwrite)
             prob_idxs = prob_s.find(dataset, n_train_step, save_dir=save_dir_i)
             train_idxs = np.concatenate((train_idxs, prob_idxs))
-            log.info(f'Extended the training set to {len(train_idxs)}')
+            log.info(f"Extended the training set to {len(train_idxs)}")
             n_train = len(train_idxs)
         else:
-            log.info('An initial model will be trained')
+            log.info("An initial model will be trained")
             n_train = n_train_init
             train_idxs = None
-        
+
         sigma_bounds = self.sigma_bounds
         while n_train <= n_train_final:
-            
-            save_dir_i = os.path.join(save_dir, f'train{n_train}')
+
+            save_dir_i = os.path.join(save_dir, f"train{n_train}")
             model, _ = self.bayes_opt(
-                dataset, model_name+f'-train{n_train}', n_train, n_valid,
-                n_test=n_test, save_dir=save_dir_i,
+                dataset,
+                model_name + f"-train{n_train}",
+                n_train,
+                n_valid,
+                n_test=n_test,
+                save_dir=save_dir_i,
                 train_idxs=train_idxs,
-                valid_idxs=None, overwrite=overwrite, write_json=write_json,
-                write_idxs=write_idxs
+                valid_idxs=None,
+                overwrite=overwrite,
+                write_json=write_json,
+                write_idxs=write_idxs,
             )
 
             # Check sigma bounds
             buffer = 5
             lower_buffer = min(sigma_bounds) + buffer
             upper_buffer = max(sigma_bounds) - buffer
-            if (model['sig'] <= lower_buffer):
+            if model["sig"] <= lower_buffer:
                 log.warning(
-                    f'WARNING: Optimal sigma is within {buffer} from the lower sigma bound'
+                    f"WARNING: Optimal sigma is within {buffer} from the lower sigma bound"
                 )
-            elif (model['sig'] >= upper_buffer):
+            elif model["sig"] >= upper_buffer:
                 log.warning(
-                    f'WARNING: Optimal sigma is within {buffer} from the upper sigma bound'
+                    f"WARNING: Optimal sigma is within {buffer} from the upper sigma bound"
                 )
 
-            train_idxs = model['idxs_train']
+            train_idxs = model["idxs_train"]
             prob_s = prob_structures(
                 [gdmlModel(model, comp_ids=self.comp_ids)], predict_gdml
             )
             prob_idxs = prob_s.find(dataset, n_train_step, save_dir=save_dir_i)
-            
+
             train_idxs = np.concatenate((train_idxs, prob_idxs))
             n_train = len(train_idxs)
 

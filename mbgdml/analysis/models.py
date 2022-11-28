@@ -1,7 +1,7 @@
 # MIT License
-# 
+#
 # Copyright (c) 2020-2022, Alex M. Maldonado
-# 
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
@@ -11,7 +11,7 @@
 #
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -23,6 +23,7 @@
 """Analyses for models."""
 
 import numpy as np
+
 
 def gdml_mat52_wrk(r_desc, n_atoms, sig, n_perms, R_desc_perms):
     r"""Compute the Matérn 5/2 covariance function for a single structure with
@@ -77,14 +78,13 @@ def gdml_mat52_wrk(r_desc, n_atoms, sig, n_perms, R_desc_perms):
 
     # Avoid divisions.
     sig_inv = 1.0 / sig
-    mat52_base_fact = 5.0 / (3 * sig ** 2)
+    mat52_base_fact = 5.0 / (3 * sig**2)
     sqrt5 = np.sqrt(5.0)
     diag_scale_fact = sqrt5 / sig
 
     # Computes the difference between the descriptor and the training set.
     diff_ab_perms = np.subtract(
-        np.broadcast_to(r_desc, R_desc_perms.shape),
-        R_desc_perms
+        np.broadcast_to(r_desc, R_desc_perms.shape), R_desc_perms
     )
     # Computes the norm of descriptor difference.
     norm_ab_perms = np.linalg.norm(diff_ab_perms, ord=None, axis=1)
@@ -94,8 +94,9 @@ def gdml_mat52_wrk(r_desc, n_atoms, sig, n_perms, R_desc_perms):
     mat52 += diag_scale_fact * norm_ab_perms
     mat52 += mat52_base_fact * np.power(norm_ab_perms, 2)
     mat52 *= mat52_exp
-    
+
     return mat52
+
 
 def gdml_mat52(model, Z, R):
     r"""Compute the Matérn 5/2 covariance function with respect to a GDML model.
@@ -111,7 +112,7 @@ def gdml_mat52(model, Z, R):
         Atomic numbers of all atoms in ``R`` (in the same order).
     R : :obj:`numpy.ndarray`, ndim: ``2`` or ``3``
         Cartesian coordinates of a single structure to predict.
-    
+
     Returns
     -------
     :obj:`numpy.ndarray`
@@ -124,16 +125,16 @@ def gdml_mat52(model, Z, R):
     n_R = R.shape[0]
     desc_size = model.R_desc_perms.shape[0]
     desc_func = model.desc_func
-    
+
     mat52 = np.empty((n_R, desc_size), dtype=np.float64)
-    R = R.reshape(n_R, n_atoms*3)
-    
+    R = R.reshape(n_R, n_atoms * 3)
+
     for i in range(n_R):
         r_desc, _ = desc_func(R[i], model.lat_and_inv)
         mat52[i] = gdml_mat52_wrk(
             r_desc, n_atoms, model.sig, model.n_perms, model.R_desc_perms
         )
-    
+
     if n_R == 1:
         return mat52[0]
     else:

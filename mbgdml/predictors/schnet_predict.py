@@ -1,7 +1,7 @@
 # MIT License
-# 
+#
 # Copyright (c) 2022, Alex M. Maldonado
-# 
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
@@ -11,7 +11,7 @@
 #
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -25,9 +25,8 @@ import numpy as np
 
 log = logging.getLogger(__name__)
 
-def predict_schnet(
-    z, r, entity_ids, entity_combs, model, periodic_cell, **kwargs
-):
+
+def predict_schnet(z, r, entity_ids, entity_combs, model, periodic_cell, **kwargs):
     """Predict total :math:`n`-body energy and forces of a single structure.
 
     Parameters
@@ -46,7 +45,7 @@ def predict_schnet(
         GAP model containing all information need to make predictions.
     periodic_cell : :obj:`mbgdml.periodic.Cell`, default: :obj:`None`
         Use periodic boundary conditions defined by this object.
-    
+
     Returns
     -------
     :obj:`float`
@@ -55,12 +54,10 @@ def predict_schnet(
         Predicted :math:`n`-body forces.
     """
     assert r.ndim == 2
-    E = 0.
+    E = 0.0
     F = np.zeros(r.shape)
 
-    atom_conv = schnetpack.data.atoms.AtomsConverter(
-        device=torch.device(model.device)
-    )
+    atom_conv = schnetpack.data.atoms.AtomsConverter(device=torch.device(model.device))
 
     if periodic_cell is not None:
         periodic = True
@@ -68,14 +65,14 @@ def predict_schnet(
         periodic = False
 
     for entity_id_comb in entity_combs:
-        log.debug(f'Entity combination: {entity_id_comb}')
+        log.debug(f"Entity combination: {entity_id_comb}")
 
         # Gets indices of all atoms in the combination of molecules.
         # r_slice is a list of the atoms for the entity_id combination.
         r_slice = []
         for entity_id in entity_id_comb:
             r_slice.extend(np.where(entity_ids == entity_id)[0])
-        
+
         z_comb = z[r_slice]
         r_comb = r[r_slice]
 
@@ -93,17 +90,16 @@ def predict_schnet(
             if not accept_r:
                 # Do not include this contribution.
                 continue
-        
+
         # Making predictions
         pred = model.spk_model(atom_conv(ase.Atoms(z_comb, r_comb)))
-        E += pred['energy'].cpu().detach().numpy()[0][0]
-        F[r_slice] += pred['forces'].cpu().detach().numpy()[0]
-    
+        E += pred["energy"].cpu().detach().numpy()[0][0]
+        F[r_slice] += pred["forces"].cpu().detach().numpy()[0]
+
     return E, F
 
-def predict_schnet_decomp(
-    z, r, entity_ids, entity_combs, model, **kwargs
-):
+
+def predict_schnet_decomp(z, r, entity_ids, entity_combs, model, **kwargs):
     """Predict total :math:`n`-body energy and forces of a single structure.
 
     Parameters
@@ -120,7 +116,7 @@ def predict_schnet_decomp(
         to slice ``r`` with ``entity_ids``.
     model : :obj:`mbgdml.models.schnetModel`
         GAP model containing all information need to make predictions.
-    
+
     Returns
     -------
     :obj:`float`
@@ -139,27 +135,25 @@ def predict_schnet_decomp(
         n_atoms = 0
         for i in entity_combs[0]:
             n_atoms += np.count_nonzero(entity_ids == i)
-    
+
     E = np.empty(len(entity_combs), dtype=np.float64)
     F = np.empty((len(entity_combs), n_atoms, 3), dtype=np.float64)
     E[:] = np.nan
     F[:] = np.nan
 
-    atom_conv = schnetpack.data.atoms.AtomsConverter(
-        device=torch.device(model.device)
-    )
+    atom_conv = schnetpack.data.atoms.AtomsConverter(device=torch.device(model.device))
 
     for i in range(len(entity_combs)):
         entity_id_comb = entity_combs[i]
 
-        log.debug(f'Entity combination: {entity_id_comb}')
+        log.debug(f"Entity combination: {entity_id_comb}")
 
         # Gets indices of all atoms in the combination of molecules.
         # r_slice is a list of the atoms for the entity_id combination.
         r_slice = []
         for entity_id in entity_id_comb:
             r_slice.extend(np.where(entity_ids == entity_id)[0])
-        
+
         z_comb = z[r_slice]
         r_comb = r[r_slice]
 
@@ -169,10 +163,10 @@ def predict_schnet_decomp(
             if not accept_r:
                 # Do not include this contribution.
                 continue
-        
+
         # Making predictions
         pred = model.spk_model(atom_conv(ase.Atoms(z_comb, r_comb)))
-        E[i] = pred['energy'].cpu().detach().numpy()[0][0]
-        F[i] = pred['forces'].cpu().detach().numpy()[0]
-    
+        E[i] = pred["energy"].cpu().detach().numpy()[0][0]
+        F[i] = pred["forces"].cpu().detach().numpy()[0]
+
     return E, F, entity_combs

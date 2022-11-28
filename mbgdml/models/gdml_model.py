@@ -1,8 +1,8 @@
 # MIT License
-# 
+#
 # Copyright (c) 2018-2022 Stefan Chmiela, Gregory Fonseca
 # Copyright (c) 2022, Alex M. Maldonado
-# 
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
@@ -12,7 +12,7 @@
 #
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -30,11 +30,9 @@ from .. import __version__ as mbgdml_version
 
 log = logging.getLogger(__name__)
 
-class gdmlModel(model):
 
-    def __init__(
-        self, model, comp_ids=None, criteria=None, for_predict=True
-    ):
+class gdmlModel(model):
+    def __init__(self, model, comp_ids=None, criteria=None, for_predict=True):
         """
         Parameters
         ----------
@@ -52,73 +50,73 @@ class gdmlModel(model):
         """
         super().__init__(criteria)
 
-        self.type = 'gdml'
-        
+        self.type = "gdml"
+
         self._load(model, comp_ids)
         self._unpack()
-    
+
     def _load(self, model, comp_ids):
         if isinstance(model, str):
-            log.debug(f'Loading model from {model}')
+            log.debug(f"Loading model from {model}")
             model = dict(np.load(model, allow_pickle=True))
         elif isinstance(model, dict):
-            log.debug(f'Loading model from dictionary')
+            log.debug(f"Loading model from dictionary")
         else:
-            raise TypeError(f'{type(model)} is not string or dict')
-        
+            raise TypeError(f"{type(model)} is not string or dict")
+
         self.model_dict = model
 
-        self.z = model['z']
-        self.r_unit = model['r_unit'].item()
+        self.z = model["z"]
+        self.r_unit = model["r_unit"].item()
 
-        if 'entity_ids' in model.keys():
-            self.entity_ids = model['entity_ids']
+        if "entity_ids" in model.keys():
+            self.entity_ids = model["entity_ids"]
         else:
             self.entity_ids = None
 
         if comp_ids is not None:
             self.comp_ids = comp_ids
         else:
-            self.comp_ids = model['comp_ids']
+            self.comp_ids = model["comp_ids"]
         self.nbody_order = len(self.comp_ids)
-    
+
     def _unpack(self):
         model = self.model_dict
 
-        self.sig = model['sig']
+        self.sig = model["sig"]
         self.n_atoms = self.z.shape[0]
         self.desc_func = _from_r
 
         self.lat_and_inv = (
-            (model['lattice'], np.linalg.inv(model['lattice']))
-            if 'lattice' in model
+            (model["lattice"], np.linalg.inv(model["lattice"]))
+            if "lattice" in model
             else None
         )
-        self.n_train = model['R_desc'].shape[1]
-        self.stdev = model['std'] if 'std' in model else 1.0
-        self.integ_c = model['c']
-        self.n_perms = model['perms'].shape[0]
-        self.tril_perms_lin = model['tril_perms_lin']
+        self.n_train = model["R_desc"].shape[1]
+        self.stdev = model["std"] if "std" in model else 1.0
+        self.integ_c = model["c"]
+        self.n_perms = model["perms"].shape[0]
+        self.tril_perms_lin = model["tril_perms_lin"]
 
         self.use_torch = False
         self.R_desc_perms = (
-            np.tile(model['R_desc'].T, self.n_perms)[:, self.tril_perms_lin]
-            .reshape(self.n_train, self.n_perms, -1, order='F')
+            np.tile(model["R_desc"].T, self.n_perms)[:, self.tril_perms_lin]
+            .reshape(self.n_train, self.n_perms, -1, order="F")
             .reshape(self.n_train * self.n_perms, -1)
         )
         self.R_d_desc_alpha_perms = (
-            np.tile(model['R_d_desc_alpha'], self.n_perms)[:, self.tril_perms_lin]
-            .reshape(self.n_train, self.n_perms, -1, order='F')
+            np.tile(model["R_d_desc_alpha"], self.n_perms)[:, self.tril_perms_lin]
+            .reshape(self.n_train, self.n_perms, -1, order="F")
             .reshape(self.n_train * self.n_perms, -1)
         )
 
-        if 'alphas_E' in model.keys():
+        if "alphas_E" in model.keys():
             self.alphas_E_lin = np.tile(
-                model['alphas_E'][:, None], (1, n_perms)
+                model["alphas_E"][:, None], (1, n_perms)
             ).ravel()
         else:
             self.alphas_E_lin = None
-    
+
     @property
     def code_version(self):
         """mbGDML version used to train the model.
@@ -129,11 +127,11 @@ class gdmlModel(model):
             If accessing information when no model is loaded.
         """
 
-        if hasattr(self, 'model_dict'):
-            return self.model_dict['code_version'].item()
+        if hasattr(self, "model_dict"):
+            return self.model_dict["code_version"].item()
         else:
-            raise AttributeError('No model is loaded.')
-    
+            raise AttributeError("No model is loaded.")
+
     @property
     def md5(self):
         """Unique MD5 hash of model.
@@ -141,7 +139,12 @@ class gdmlModel(model):
         :type: :obj:`str`
         """
         md5_properties_all = [
-            'md5_train', 'z', 'R_desc', 'R_d_desc_alpha', 'sig', 'alphas_F'
+            "md5_train",
+            "z",
+            "R_desc",
+            "R_d_desc_alpha",
+            "sig",
+            "alphas_F",
         ]
         md5_properties = []
         for key in md5_properties_all:
@@ -160,12 +163,12 @@ class gdmlModel(model):
         dset : :obj:`dict`
             Dictionary of a mbGDML data set.
         """
-        dset_keys = ['entity_ids', 'comp_ids']
+        dset_keys = ["entity_ids", "comp_ids"]
         for key in dset_keys:
             self.model_dict[key] = dset[key]
-        self.model_dict['code_version'] = np.array(mbgdml_version)
-        self.model_dict['md5'] = np.array(self.md5)
-    
+        self.model_dict["code_version"] = np.array(mbgdml_version)
+        self.model_dict["md5"] = np.array(self.md5)
+
     def save(self, path):
         """Save model dict as npz file.
 

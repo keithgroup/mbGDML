@@ -1,7 +1,7 @@
 # MIT License
-# 
+#
 # Copyright (c) 2020-2022, Alex M. Maldonado
-# 
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
@@ -11,7 +11,7 @@
 #
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -25,6 +25,7 @@ import numpy as np
 
 log = logging.getLogger(__name__)
 
+
 def get_clustered_data(cl_idxs, data):
     """Cluster data according to cluster indices.
 
@@ -34,14 +35,14 @@ def get_clustered_data(cl_idxs, data):
         Structure indices stored in clusters.
     data : :obj:`numpy.ndarray`
         Iterative data with respect to structure indices.
-    
+
     Returns
     -------
     :obj:`list` of :obj:`numpy.ndarray`
         ``data`` clustered with respect to ``cl_idxs``.
     """
-    log.info(f'Assembling data into {len(cl_idxs)} clusters')
-    log.debug(f'Example data:')
+    log.info(f"Assembling data into {len(cl_idxs)} clusters")
+    log.debug(f"Example data:")
     log.log_array(np.array(data[0]), level=10)
     data_cl = []
     for idxs in cl_idxs:
@@ -49,7 +50,8 @@ def get_clustered_data(cl_idxs, data):
         data_cl.append(d)
     return data_cl
 
-def agglomerative(data, kwargs={'n_clusters': 10}):
+
+def agglomerative(data, kwargs={"n_clusters": 10}):
     """Cluster data using ``sklearn.cluster.AgglomerativeClustering``.
 
     Parameters
@@ -60,22 +62,24 @@ def agglomerative(data, kwargs={'n_clusters': 10}):
     kwargs : :obj:`dict`, default: ``{'n_clusters': 10}``
         Keyword arguments to pass to ``sklearn.cluster.AgglomerativeClustering``
         with the exception of ``n_clusters``.
-    
+
     Returns
     -------
     :obj:`numpy.ndarray`
         Cluster labels of structures in ``R_desc``.
     """
     from sklearn.cluster import AgglomerativeClustering
-    log.info('Agglomerative clustering')
+
+    log.info("Agglomerative clustering")
     log.debug(kwargs)
-    log.debug(f'Data example: {data[0]}')
+    log.debug(f"Data example: {data[0]}")
     t_cluster = log.t_start()
     cluster_labels = AgglomerativeClustering(**kwargs).fit_predict(data)
     log.t_stop(t_cluster)
     return cluster_labels
 
-def kmeans(data, kwargs={'n_clusters': 5, 'init': 'k-means++'}):
+
+def kmeans(data, kwargs={"n_clusters": 5, "init": "k-means++"}):
     """Cluster data using ``sklearn.cluster.KMeans``.
 
     Parameters
@@ -88,13 +92,15 @@ def kmeans(data, kwargs={'n_clusters': 5, 'init': 'k-means++'}):
         with the exception of ``n_clusters``.
     """
     from sklearn.cluster import KMeans
-    log.info('K-means clustering')
+
+    log.info("K-means clustering")
     log.debug(kwargs)
-    log.debug(f'Data example: {data[0]}')
+    log.debug(f"Data example: {data[0]}")
     t_cluster = log.t_start()
     cluster_labels = KMeans(**kwargs).fit_predict(data)
     log.t_stop(t_cluster)
     return cluster_labels
+
 
 def cluster_structures(cl_data, cl_algs, cl_kwargs):
     """Performs :math:`n`-stage clustering of structures based on features.
@@ -115,8 +121,8 @@ def cluster_structures(cl_data, cl_algs, cl_kwargs):
     """
     n_structures = len(cl_data[0])
     cl_idxs = [np.array(range(n_structures))]
-    log.info(f'Clustering {n_structures} structures')
-    
+    log.info(f"Clustering {n_structures} structures")
+
     t_clustering = log.t_start()
     # Loop through each clustering routine
     for i_cluster in range(len(cl_algs)):
@@ -128,15 +134,16 @@ def cluster_structures(cl_data, cl_algs, cl_kwargs):
         # Loop though every current cluster group.
         for idxs in cl_idxs:
             cl_labels = cl_alg(data[idxs], kwargs)
-            
+
             for label in set(cl_labels):
                 ind = np.concatenate(np.argwhere(cl_labels == label))
                 cl_idxs_new.append(idxs[ind])
 
         cl_idxs = cl_idxs_new
-    
-    log.t_stop(t_clustering, message='Total clustering time : {time} s')
+
+    log.t_stop(t_clustering, message="Total clustering time : {time} s")
     return cl_idxs
+
 
 def get_cluster_losses(loss_func, loss_kwargs):
     """Computes the loss of each group using a loss function with energy
@@ -145,7 +152,7 @@ def get_cluster_losses(loss_func, loss_kwargs):
     Parameters
     ----------
     loss_func : ``callable``
-        Computes the loss of a group with ``E_errors`` and ``F_errors`` as 
+        Computes the loss of a group with ``E_errors`` and ``F_errors`` as
         kwargs.
     loss_kwargs : :obj:`dict`
         Data to pass to ``loss_func``.
@@ -154,15 +161,13 @@ def get_cluster_losses(loss_func, loss_kwargs):
     -------
     :obj:`numpy.ndarray`
     """
-    log.info('Computing cluster losses')
+    log.info("Computing cluster losses")
     loss_kws = list(loss_kwargs.keys())
     n_clusters = len(loss_kwargs[loss_kws[0]])
 
     losses = []
     for i in range(n_clusters):
-        cluster_loss_kwargs = {
-            kwarg: loss_kwargs[kwarg][i] for kwarg in loss_kws
-        }
+        cluster_loss_kwargs = {kwarg: loss_kwargs[kwarg][i] for kwarg in loss_kws}
         losses.append(loss_func(cluster_loss_kwargs))
-    
+
     return np.array(losses)

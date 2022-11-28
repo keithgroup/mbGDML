@@ -1,8 +1,8 @@
 # MIT License
-# 
+#
 # Copyright (c) 2018-2020, Stefan Chmiela
 # Copyright (c) 2020-2022, Alex M. Maldonado
-# 
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
@@ -12,7 +12,7 @@
 #
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -22,6 +22,7 @@
 # SOFTWARE.
 
 import numpy as np
+
 
 def draw_strat_sample(T, n, excl_idxs=None):
     """
@@ -50,7 +51,7 @@ def draw_strat_sample(T, n, excl_idxs=None):
     :obj:`numpy.ndarray`
         Array of indices that form the sample.
     """
-    
+
     if excl_idxs is None or len(excl_idxs) == 0:
         excl_idxs = None
 

@@ -2,6 +2,8 @@
 mbGDML
 ======
 
+Create, use, and analyze machine learning potentials within the many-body expansion framework.
+
 .. image:: https://github.com/keithgroup/mbGDML/actions/workflows/python-package.yml/badge.svg
    :target: https://github.com/keithgroup/mbGDML/actions/workflows/python-package.yml
    :alt: GitHub actions build status
@@ -20,7 +22,8 @@ mbGDML
 .. image:: https://img.shields.io/github/repo-size/keithgroup/mbGDML
    :target: https://github.com/keithgroup/mbGDML
 
-Create, use, and analyze machine learning potentials within the many-body expansion framework.
+.. image:: https://img.shields.io/badge/code%20style-black-000000.svg
+   :target: https://github.com/psf/black
 
 **Disclaimer:** This package is still under active development and not suitable for production.
 

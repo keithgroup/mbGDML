@@ -1,8 +1,8 @@
 # MIT License
-# 
+#
 # Copyright (c) 2018-2022 Stefan Chmiela, Gregory Fonseca
 # Copyright (c) 2022, Alex M. Maldonado
-# 
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
@@ -12,7 +12,7 @@
 #
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -28,9 +28,18 @@ log = logging.getLogger(__name__)
 
 # This calculation is too fast to be a ray task.
 def _predict_gdml_wkr(
-    r_desc, r_d_desc, n_atoms, sig, n_perms, R_desc_perms,
-    R_d_desc_alpha_perms, alphas_E_lin, stdev, integ_c, wkr_start_stop=None,
-    chunk_size=None
+    r_desc,
+    r_d_desc,
+    n_atoms,
+    sig,
+    n_perms,
+    R_desc_perms,
+    R_d_desc_alpha_perms,
+    alphas_E_lin,
+    stdev,
+    integ_c,
+    wkr_start_stop=None,
+    chunk_size=None,
 ):
     """Compute (part) of a GDML prediction.
 
@@ -71,7 +80,7 @@ def _predict_gdml_wkr(
 
     # avoid divisions (slower)
     sig_inv = 1.0 / sig
-    mat52_base_fact = 5.0 / (3 * sig ** 3)
+    mat52_base_fact = 5.0 / (3 * sig**3)
     diag_scale_fact = 5.0 / sig
     sqrt5 = np.sqrt(5.0)
 
@@ -98,14 +107,15 @@ def _predict_gdml_wkr(
 
         np.subtract(
             np.broadcast_to(r_desc, rj_desc_perms.shape),
-            rj_desc_perms, out=diff_ab_perms
+            rj_desc_perms,
+            out=diff_ab_perms,
         )
         norm_ab_perms = sqrt5 * np.linalg.norm(diff_ab_perms, axis=1)
 
         np.exp(-norm_ab_perms * sig_inv, out=mat52_base)
         mat52_base *= mat52_base_fact
         np.einsum(
-            'ji,ji->j', diff_ab_perms, rj_d_desc_alpha_perms, out=a_x2
+            "ji,ji->j", diff_ab_perms, rj_d_desc_alpha_perms, out=a_x2
         )  # colum wise dot product
 
         F += (a_x2 * mat52_base).dot(diff_ab_perms) * diag_scale_fact
@@ -153,10 +163,9 @@ def _predict_gdml_wkr(
 
     return out
 
+
 # Possible ray task.
-def predict_gdml(
-    z, r, entity_ids, entity_combs, model, periodic_cell, **kwargs
-):
+def predict_gdml(z, r, entity_ids, entity_combs, model, periodic_cell, **kwargs):
     """Predict total :math:`n`-body energy and forces of a single structure.
 
     Parameters
@@ -175,7 +184,7 @@ def predict_gdml(
         GDML model containing all information need to make predictions.
     periodic_cell : :obj:`mbgdml.periodic.Cell`, default: :obj:`None`
         Use periodic boundary conditions defined by this object.
-    
+
     Returns
     -------
     :obj:`float`
@@ -184,13 +193,13 @@ def predict_gdml(
         Predicted :math:`n`-body forces.
     """
     assert r.ndim == 2
-    E = 0.
+    E = 0.0
     F = np.zeros(r.shape)
-    if 'alchemy_scalers' in kwargs.keys():
-        alchemy_scalers = kwargs['alchemy_scalers']
+    if "alchemy_scalers" in kwargs.keys():
+        alchemy_scalers = kwargs["alchemy_scalers"]
     else:
         alchemy_scalers = None
-    
+
     if periodic_cell is not None:
         periodic = True
     else:
@@ -215,7 +224,7 @@ def predict_gdml(
             if r_comp is None:
                 # Any atomic pairwise distance was larger than cutoff.
                 continue
-        
+
         # TODO: Check if we can avoid prediction if we have an alchemical factor of zero?
 
         # Checks criteria cutoff if present and desired.
@@ -224,16 +233,21 @@ def predict_gdml(
             if not accept_r:
                 # Do not include this contribution.
                 continue
-        
+
         # Predicts energies and forces.
-        r_desc, r_d_desc = model.desc_func(
-            r_comp.flatten(), model.lat_and_inv
-        )
+        r_desc, r_d_desc = model.desc_func(r_comp.flatten(), model.lat_and_inv)
         wkr_args = (
-            r_desc, r_d_desc, len(z_comp), model.sig, model.n_perms,
-            model.R_desc_perms, model.R_d_desc_alpha_perms,
-            model.alphas_E_lin, model.stdev, model.integ_c
-        ) 
+            r_desc,
+            r_d_desc,
+            len(z_comp),
+            model.sig,
+            model.n_perms,
+            model.R_desc_perms,
+            model.R_d_desc_alpha_perms,
+            model.alphas_E_lin,
+            model.stdev,
+            model.integ_c,
+        )
         out = _predict_gdml_wkr(*wkr_args)
 
         out *= model.stdev
@@ -251,12 +265,11 @@ def predict_gdml(
         # Adds contributions to total energy and forces.
         E += e
         F[r_slice] += f
-    
+
     return E, F
 
-def predict_gdml_decomp(
-    z, r, entity_ids, entity_combs, model, **kwargs
-):
+
+def predict_gdml_decomp(z, r, entity_ids, entity_combs, model, **kwargs):
     """Predict all :math:`n`-body energies and forces of a single structure.
 
     Parameters
@@ -273,7 +286,7 @@ def predict_gdml_decomp(
         to slice ``r`` with ``entity_ids``.
     model : :obj:`mbgdml.models.gdmlModel`
         GDML model containing all information need to make predictions.
-    
+
     Returns
     -------
     :obj:`numpy.ndarray`, ndim: ``1``
@@ -288,14 +301,14 @@ def predict_gdml_decomp(
         combinations).
     """
     assert r.ndim == 2
-    
+
     if entity_combs.ndim == 1:
         n_atoms = np.count_nonzero(entity_ids == entity_combs[0])
     else:
         n_atoms = 0
         for i in entity_combs[0]:
             n_atoms += np.count_nonzero(entity_ids == i)
-    
+
     E = np.empty(len(entity_combs), dtype=np.float64)
     F = np.empty((len(entity_combs), n_atoms, 3), dtype=np.float64)
     E[:] = np.nan
@@ -309,29 +322,34 @@ def predict_gdml_decomp(
         r_slice = []
         for entity_id in entity_id_comb:
             r_slice.extend(np.where(entity_ids == entity_id)[0])
-        
+
         z_comp = z[r_slice]
         r_comp = r[r_slice]
-        
+
         # Checks criteria cutoff if present and desired.
         if model.criteria is not None:
             accept_r, _ = model.criteria.accept(z_comp, r_comp)
             if not accept_r:
                 # Do not include this contribution.
                 continue
-        
+
         # Predicts energies and forces.
-        r_desc, r_d_desc = model.desc_func(
-            r_comp.flatten(), model.lat_and_inv
-        )
+        r_desc, r_d_desc = model.desc_func(r_comp.flatten(), model.lat_and_inv)
         out = _predict_gdml_wkr(
-            r_desc, r_d_desc, n_atoms, model.sig, model.n_perms,
-            model.R_desc_perms, model.R_d_desc_alpha_perms,
-            model.alphas_E_lin, model.stdev, model.integ_c
+            r_desc,
+            r_d_desc,
+            n_atoms,
+            model.sig,
+            model.n_perms,
+            model.R_desc_perms,
+            model.R_d_desc_alpha_perms,
+            model.alphas_E_lin,
+            model.stdev,
+            model.integ_c,
         )
 
         out *= model.stdev
         E[i] = out[0] + model.integ_c
         F[i] = out[1:].reshape((n_atoms, 3))
-    
+
     return E, F, entity_combs

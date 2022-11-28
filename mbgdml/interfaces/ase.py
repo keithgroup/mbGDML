@@ -1,7 +1,7 @@
 # MIT License
-# 
+#
 # Copyright (c) 2020-2022, Alex M. Maldonado
-# 
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
@@ -11,7 +11,7 @@
 #
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -23,15 +23,14 @@
 from ase.calculators.calculator import Calculator
 import numpy as np
 
-class mbeCalculator(Calculator):
-    """ASE calculator using the many-body expansion predictor in mbGDML.
-    """
 
-    implemented_properties = ['energy', 'forces']
+class mbeCalculator(Calculator):
+    """ASE calculator using the many-body expansion predictor in mbGDML."""
+
+    implemented_properties = ["energy", "forces"]
 
     def __init__(
-        self, mbe_pred, parameters=None, e_conv=1.0, f_conv=1.0, atoms=None,
-        **kwargs
+        self, mbe_pred, parameters=None, e_conv=1.0, f_conv=1.0, atoms=None, **kwargs
     ):
         """
         Parameters
@@ -45,35 +44,31 @@ class mbeCalculator(Calculator):
         f_conv : :obj:`float`, default: ``1.0``
             Model forces conversion factor to eV/A (required by ASE).
         """
-        self.name = 'mbGDML'
-        Calculator.__init__(
-            self, restart=None, label=None, atoms=atoms, **kwargs
-        )
+        self.name = "mbGDML"
+        Calculator.__init__(self, restart=None, label=None, atoms=atoms, **kwargs)
 
         self.mbe_pred = mbe_pred
 
         self.e_conv = e_conv
         self.f_conv = f_conv
-        
+
         if parameters is None:
             parameters = {}
         self.parameters = parameters
 
     def calculate(self, atoms=None, *args, **kwargs):
-        """Predicts energy and forces using many-body GDML models.
-        """
+        """Predicts energy and forces using many-body GDML models."""
         if atoms is not None:
             if self.mbe_pred.periodic_cell is not None:
                 atoms.wrap()
             self.atoms = atoms.copy()
-        
+
         parameters = self.parameters
-        entity_ids = parameters['entity_ids']
-        comp_ids = parameters['comp_ids']
+        entity_ids = parameters["entity_ids"]
+        comp_ids = parameters["comp_ids"]
 
         e, f = self.mbe_pred.predict(
-            atoms.get_atomic_numbers(), atoms.get_positions(),
-            entity_ids, comp_ids
+            atoms.get_atomic_numbers(), atoms.get_positions(), entity_ids, comp_ids
         )
         e = e[0]
 
@@ -81,25 +76,24 @@ class mbeCalculator(Calculator):
         e *= self.e_conv
         f *= self.f_conv
 
-        self.results = {'energy': e, 'forces': f.reshape(-1, 3)}
-    
+        self.results = {"energy": e, "forces": f.reshape(-1, 3)}
+
     def todict(self, skip_default=True):
         defaults = self.get_default_parameters()
         dct = {}
         for key, value in self.parameters.items():
-            if hasattr(value, 'todict'):
+            if hasattr(value, "todict"):
                 value = value.todict()
             if skip_default:
-                default = defaults.get(key, '_no_default_')
-                if default != '_no_default_' and equal(value, default):
+                default = defaults.get(key, "_no_default_")
+                if default != "_no_default_" and equal(value, default):
                     continue
             if isinstance(value, np.ndarray):
                 # For some reason ASE does not like loading comp_ids as arrays.
                 # An error like "data type 'str128' not understood" will be
                 # thrown. We just convert all string arrays to lists to avoid
-                # this. 
-                if value.dtype.kind in {'U', 'S'}:
+                # this.
+                if value.dtype.kind in {"U", "S"}:
                     value = value.tolist()
             dct[key] = value
         return dct
-

@@ -1,7 +1,7 @@
 # MIT License
-# 
+#
 # Copyright (c) 2020-2022, Alex M. Maldonado
-# 
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
@@ -11,7 +11,7 @@
 #
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -23,31 +23,31 @@
 import numpy as np
 from .. import utils
 
-class mbGDMLData():
-    """Parent class for mbGDML structure, data, and predict sets.
-    """
+
+class mbGDMLData:
+    """Parent class for mbGDML structure, data, and predict sets."""
 
     def __init__(self):
         pass
-    
+
     @property
     def Z(self):
         """Atomic numbers of all atoms in data set structures.
-        
+
         A ``(n,)`` shape array of type :obj:`numpy.int32` containing atomic
         numbers of atoms in the structures in order as they appear.
 
         :type: :obj:`numpy.ndarray`
         """
-        if hasattr(self, '_Z'):
+        if hasattr(self, "_Z"):
             return self._Z
         else:
             return np.array([], dtype=np.int32)
-    
+
     @Z.setter
     def Z(self, var):
         self._Z = var
-    
+
     @property
     def n_Z(self):
         """Number of atoms.
@@ -62,14 +62,14 @@ class mbGDMLData():
     @property
     def R(self):
         """Atomic coordinates of structure(s).
-        
+
         A :obj:`numpy.ndarray` with shape of ``(m, n, 3)`` where ``m`` is the
-        number of structures and ``n`` is the number of atoms with three 
+        number of structures and ``n`` is the number of atoms with three
         Cartesian components.
 
         :type: :obj:`numpy.ndarray`
         """
-        if hasattr(self, '_R'):
+        if hasattr(self, "_R"):
             return self._R
         else:
             return np.array([[[]]])
@@ -98,14 +98,14 @@ class mbGDMLData():
         :type: :obj:`str`
         """
         return self._r_unit
-    
+
     @r_unit.setter
     def r_unit(self, var):
         self._r_unit = var
 
     def save(self, name, data, save_dir):
         """General save function for GDML data sets and models.
-        
+
         Parameters
         ----------
         name : :obj:`str`
@@ -117,5 +117,5 @@ class mbGDMLData():
         """
         # TODO: Just accept path and data.
         save_dir = utils.norm_path(save_dir)
-        save_path = save_dir + name + '.npz'
+        save_path = save_dir + name + ".npz"
         np.savez_compressed(save_path, **data)

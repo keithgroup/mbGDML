@@ -1,8 +1,8 @@
 # MIT License
-# 
+#
 # Copyright (c) 2018-2021, Stefan Chmiela
 # Copyright (c) 2020-2022, Alex M. Maldonado
-# 
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
@@ -12,7 +12,7 @@
 #
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -25,7 +25,7 @@ from __future__ import print_function
 
 import multiprocessing as mp
 
-Pool = mp.get_context('fork').Pool
+Pool = mp.get_context("fork").Pool
 
 import sys
 from functools import partial
@@ -39,6 +39,7 @@ from scipy.sparse.csgraph import minimum_spanning_tree
 from .desc import Desc
 
 import logging
+
 log = logging.getLogger(__name__)
 
 glob = {}
@@ -53,9 +54,9 @@ def _bipartite_match_wkr(i, n_train, same_z_cost):
 
     global glob
 
-    adj_set = np.frombuffer(glob['adj_set']).reshape(glob['adj_set_shape'])
-    v_set = np.frombuffer(glob['v_set']).reshape(glob['v_set_shape'])
-    match_cost = np.frombuffer(glob['match_cost']).reshape(glob['match_cost_shape'])
+    adj_set = np.frombuffer(glob["adj_set"]).reshape(glob["adj_set_shape"])
+    v_set = np.frombuffer(glob["v_set"]).reshape(glob["v_set_shape"])
+    match_cost = np.frombuffer(glob["match_cost"]).reshape(glob["match_cost_shape"])
 
     adj_i = scipy.spatial.distance.squareform(adj_set[i, :])
     v_i = v_set[i, :, :]
@@ -82,17 +83,18 @@ def _bipartite_match_wkr(i, n_train, same_z_cost):
             match_cost[i, j] = score_before
         elif not np.isclose(score_before, score):  # otherwise perm is identity
             match_perms[i, j] = perm
-        
+
     return match_perms
+
 
 def bipartite_match(R, z, lat_and_inv=None, max_processes=None):
     global glob
-    log.info('Performing Bipartite matching ...')
+    log.info("Performing Bipartite matching ...")
 
     n_train, n_atoms, _ = R.shape
 
     # penalty matrix for mixing atom species
-    log.debug('Atom mixing penalties')
+    log.debug("Atom mixing penalties")
     same_z_cost = np.repeat(z[:, None], len(z), axis=1) - z
     same_z_cost[same_z_cost != 0] = 1
     log.log_array(same_z_cost, level=10)
@@ -107,7 +109,7 @@ def bipartite_match(R, z, lat_and_inv=None, max_processes=None):
         r = np.squeeze(R[i, :, :])
 
         if lat_and_inv is None:
-            adj = scipy.spatial.distance.pdist(r, 'euclidean')
+            adj = scipy.spatial.distance.pdist(r, "euclidean")
 
         else:
             from .desc import _pdist, _squareform
@@ -124,9 +126,9 @@ def bipartite_match(R, z, lat_and_inv=None, max_processes=None):
         adj_set[i, :] = adj
         v_set[i, :, :] = v
 
-    glob['adj_set'], glob['adj_set_shape'] = share_array(adj_set, 'd')
-    glob['v_set'], glob['v_set_shape'] = share_array(v_set, 'd')
-    glob['match_cost'], glob['match_cost_shape'] = share_array(match_cost, 'd')
+    glob["adj_set"], glob["adj_set_shape"] = share_array(adj_set, "d")
+    glob["v_set"], glob["v_set_shape"] = share_array(v_set, "d")
+    glob["match_cost"], glob["match_cost_shape"] = share_array(match_cost, "d")
 
     pool = None
     map_func = map
@@ -148,12 +150,13 @@ def bipartite_match(R, z, lat_and_inv=None, max_processes=None):
         pool.join()  # Wait for the worker processes to terminate (to measure total runtime correctly).
         pool = None
 
-    match_cost = np.frombuffer(glob['match_cost']).reshape(glob['match_cost_shape'])
+    match_cost = np.frombuffer(glob["match_cost"]).reshape(glob["match_cost_shape"])
     match_cost = match_cost + match_cost.T
     match_cost[np.diag_indices_from(match_cost)] = np.inf
     match_cost = csr_matrix(match_cost)
 
     return match_perms_all, match_cost
+
 
 def sync_perm_mat(match_perms_all, match_cost, n_atoms):
 
@@ -168,6 +171,7 @@ def sync_perm_mat(match_perms_all, match_cost, n_atoms):
     perms = np.unique(perms, axis=0)
 
     return perms
+
 
 # convert permutation to dijoined cycles
 def to_cycles(perm):
@@ -192,6 +196,7 @@ def to_cycles(perm):
         cycles.append(cycle)
 
     return cycles
+
 
 # find permutation group with larges cardinality
 # note: this is used if transitive closure fails (to salvage at least some permutations)
@@ -253,14 +258,12 @@ def complete_sym_group(perms, n_perms_max=None):
 
 
 def find_perms(R, z, lat_and_inv=None, max_processes=None):
-    log.info('\n#   Finding symmetries   #')
+    log.info("\n#   Finding symmetries   #")
 
     m, n_atoms = R.shape[:2]
 
     # Find matching for all pairs.
-    match_perms_all, match_cost = bipartite_match(
-        R, z, lat_and_inv, max_processes
-    )
+    match_perms_all, match_cost = bipartite_match(R, z, lat_and_inv, max_processes)
 
     # Remove inconsistencies.
     match_perms = sync_perm_mat(match_perms_all, match_cost, n_atoms)
@@ -277,8 +280,9 @@ def find_perms(R, z, lat_and_inv=None, max_processes=None):
             n_perms_max=100,
         )
 
-    log.info(f'Found {sym_group_perms.shape[0]} symmetries')
+    log.info(f"Found {sym_group_perms.shape[0]} symmetries")
     return sym_group_perms
+
 
 def find_extra_perms(R, z, lat_and_inv=None, max_processes=None):
 
@@ -341,13 +345,14 @@ def find_extra_perms(R, z, lat_and_inv=None, max_processes=None):
 
     return sym_group_perms
 
+
 def find_frags(r, z, lat_and_inv=None):
 
     from ase import Atoms
     from ase.geometry.analysis import Analysis
     from scipy.sparse.csgraph import connected_components
 
-    print('Finding permutable non-bonded fragments... (assumes Ang!)')
+    print("Finding permutable non-bonded fragments... (assumes Ang!)")
 
     lat = None
     if lat_and_inv:
@@ -360,17 +365,17 @@ def find_frags(r, z, lat_and_inv=None):
 
     adj = Analysis(atoms).adjacency_matrix[0]
     _, labels = connected_components(csgraph=adj, directed=False, return_labels=True)
-    
+
     frags = [np.where(labels == label)[0] for label in np.unique(labels)]
     n_frags = len(frags)
 
     if n_frags == n_atoms:
         print(
-            'Skipping fragment symmetry search (something went wrong, e.g. length unit not in Angstroms, etc.)'
+            "Skipping fragment symmetry search (something went wrong, e.g. length unit not in Angstroms, etc.)"
         )
         return None
 
-    print('| Found ' + str(n_frags) + ' disconnected fragments.')
+    print("| Found " + str(n_frags) + " disconnected fragments.")
 
     return frags
 
@@ -396,11 +401,11 @@ def find_frag_perms(R, z, lat_and_inv=None, max_processes=None):
 
     if n_frags == n_atoms:
         print(
-            'Skipping fragment symmetry search (something went wrong, e.g. length unit not in Angstroms, etc.)'
+            "Skipping fragment symmetry search (something went wrong, e.g. length unit not in Angstroms, etc.)"
         )
         return [range(n_atoms)]
 
-    print('| Found ' + str(n_frags) + ' disconnected fragments.')
+    print("| Found " + str(n_frags) + " disconnected fragments.")
 
     # match fragments to find identical ones (allows permutations of fragments)
     swap_perms = [np.arange(n_atoms)]
@@ -448,9 +453,9 @@ def find_frag_perms(R, z, lat_and_inv=None, max_processes=None):
     # complete symmetric group
     sym_group_perms = complete_sym_group(swap_perms)
     print(
-        '| Found '
+        "| Found "
         + str(sym_group_perms.shape[0])
-        + ' fragment permutations after closure.'
+        + " fragment permutations after closure."
     )
 
     # match fragments with themselves (to find symmetries in each fragment)
@@ -470,7 +475,7 @@ def find_frag_perms(R, z, lat_and_inv=None, max_processes=None):
         return perms
 
     if n_frags > 1:
-        print('| Finding symmetries in individual fragments.')
+        print("| Finding symmetries in individual fragments.")
         for f in range(n_frags):
 
             R_frag = R[:, frags[f], :]
@@ -483,13 +488,12 @@ def find_frag_perms(R, z, lat_and_inv=None, max_processes=None):
             perms = _frag_perm_to_perm(n_atoms, frags[f], frag_perms)
             sym_group_perms = np.vstack((perms, sym_group_perms))
 
-            print('{:d} perms'.format(perms.shape[0]))
+            print("{:d} perms".format(perms.shape[0]))
 
         sym_group_perms = np.unique(sym_group_perms, axis=0)
     sym_group_perms = complete_sym_group(sym_group_perms)
 
     return sym_group_perms
-
 
 
 def _frag_perm_to_perm(n_atoms, frag_idxs, frag_perms):
@@ -569,43 +573,43 @@ def find_perms_via_alignment(
 
     R_pair = np.vstack((pts_full[None, :, :], pts_full_R[None, :, :]))
 
-    adj = scipy.spatial.distance.cdist(R_pair[0], R_pair[1], 'euclidean')
+    adj = scipy.spatial.distance.cdist(R_pair[0], R_pair[1], "euclidean")
     _, perm = scipy.optimize.linear_sum_assignment(adj)
 
     # draw selection
     if False:
 
-        print('---')
+        print("---")
 
         from matplotlib import cm
 
-        viridis = cm.get_cmap('prism')
+        viridis = cm.get_cmap("prism")
         colors = viridis(np.linspace(0, 1, len(align_a_idxs)))
 
         for i, idx in enumerate(align_a_idxs):
             color_str = (
-                '['
+                "["
                 + str(int(colors[i, 0] * 255))
-                + ','
+                + ","
                 + str(int(colors[i, 1] * 255))
-                + ','
+                + ","
                 + str(int(colors[i, 2] * 255))
-                + ']'
+                + "]"
             )
-            print('select atomno=' + str(idx + 1) + '; color ' + color_str)
+            print("select atomno=" + str(idx + 1) + "; color " + color_str)
 
         for i, idx in enumerate(align_b_idxs):
             color_str = (
-                '['
+                "["
                 + str(int(colors[i, 0] * 255))
-                + ','
+                + ","
                 + str(int(colors[i, 1] * 255))
-                + ','
+                + ","
                 + str(int(colors[i, 2] * 255))
-                + ']'
+                + "]"
             )
-            print('select atomno=' + str(idx + 1) + '; color ' + color_str)
-        print('---')
+            print("select atomno=" + str(idx + 1) + "; color " + color_str)
+        print("---")
 
     return perm
 
@@ -640,7 +644,7 @@ def find_perms_via_reflection(
     r_R = r.copy()
     r_R[frag_idxs, :] = reflection.dot(r[frag_idxs, :].T).T
 
-    adj = scipy.spatial.distance.cdist(r, r_R, 'euclidean')
+    adj = scipy.spatial.distance.cdist(r, r_R, "euclidean")
     _, perm = scipy.optimize.linear_sum_assignment(adj)
 
     print_perm_colors(perm, r, plane_3idxs)
@@ -660,16 +664,16 @@ def print_perm_colors(perm, pts, plane_3idxs=None):
 
     from matplotlib import cm
 
-    viridis = cm.get_cmap('prism')
+    viridis = cm.get_cmap("prism")
     colors = viridis(np.linspace(0, 1, c + 1))
 
-    print('---')
-    print('select all; color [255,255,255]')
+    print("---")
+    print("select all; color [255,255,255]")
 
     if plane_3idxs is not None:
 
         def pts_str(x):
-            return '{' + str(x[0]) + ', ' + str(x[1]) + ', ' + str(x[2]) + '}'
+            return "{" + str(x[0]) + ", " + str(x[1]) + ", " + str(x[2]) + "}"
 
         is_plane_defined_by_bond_centers = type(plane_3idxs[0]) is tuple
         if is_plane_defined_by_bond_centers:
@@ -682,13 +686,13 @@ def print_perm_colors(perm, pts, plane_3idxs=None):
             c = pts[plane_3idxs[2], :]
 
         print(
-            'draw plane1 300 PLANE '
+            "draw plane1 300 PLANE "
             + pts_str(a)
-            + ' '
+            + " "
             + pts_str(b)
-            + ' '
+            + " "
             + pts_str(c)
-            + ';color $plane1 green'
+            + ";color $plane1 green"
         )
 
     idx_done = []
@@ -698,22 +702,22 @@ def print_perm_colors(perm, pts, plane_3idxs=None):
 
             c += 1
             color_str = (
-                '['
+                "["
                 + str(int(colors[c, 0] * 255))
-                + ','
+                + ","
                 + str(int(colors[c, 1] * 255))
-                + ','
+                + ","
                 + str(int(colors[c, 2] * 255))
-                + ']'
+                + "]"
             )
 
             if i != perm[i]:
-                print('select atomno=' + str(i + 1) + '; color ' + color_str)
-                print('select atomno=' + str(perm[i] + 1) + '; color ' + color_str)
+                print("select atomno=" + str(i + 1) + "; color " + color_str)
+                print("select atomno=" + str(perm[i] + 1) + "; color " + color_str)
             idx_done += [i]
             idx_done += [perm[i]]
 
-    print('---')
+    print("---")
 
 
 def inv_perm(perm):

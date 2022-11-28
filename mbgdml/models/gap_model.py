@@ -1,7 +1,7 @@
 # MIT License
-# 
+#
 # Copyright (c) 2022, Alex M. Maldonado
-# 
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
@@ -11,7 +11,7 @@
 #
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -26,10 +26,13 @@ from .base import model
 
 log = logging.getLogger(__name__)
 
-class gapModel(model):
 
+class gapModel(model):
     def __init__(
-        self, model_path, comp_ids, criteria=None,
+        self,
+        model_path,
+        comp_ids,
+        criteria=None,
     ):
         """
         Parameters
@@ -47,22 +50,19 @@ class gapModel(model):
         import quippy
 
         super().__init__(criteria)
-        self.type = 'gap'
-        self.gap = quippy.potential.Potential(
-            param_filename=model_path
-        )
+        self.type = "gap"
+        self.gap = quippy.potential.Potential(param_filename=model_path)
         if isinstance(comp_ids, list) or isinstance(comp_ids, tuple):
             comp_ids = np.array(comp_ids)
         self.comp_ids = comp_ids
         self.nbody_order = len(comp_ids)
 
         # GAP MD5
-        with open(model_path, 'r') as f:
+        with open(model_path, "r") as f:
             gap_lines = f.readlines()
         import hashlib
+
         md5_hash = hashlib.md5()
         for i in range(len(gap_lines)):
-            md5_hash.update(
-                hashlib.md5(repr(gap_lines[i]).encode()).digest()
-            )
+            md5_hash.update(hashlib.md5(repr(gap_lines[i]).encode()).digest())
         self.md5 = md5_hash.hexdigest()

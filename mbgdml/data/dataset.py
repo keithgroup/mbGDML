@@ -1,7 +1,7 @@
 # MIT License
-# 
+#
 # Copyright (c) 2020-2022, Alex M. Maldonado
-# 
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
@@ -11,7 +11,7 @@
 #
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -27,15 +27,12 @@ from .basedata import mbGDMLData
 from .. import __version__ as mbgdml_version
 from .. import utils
 from ..mbe import mbePredict
-  
+
 
 class dataSet(mbGDMLData):
-    """For creating, loading, manipulating, and using data sets.
-    """
+    """For creating, loading, manipulating, and using data sets."""
 
-    def __init__(
-        self, dset_path=None, Z_key='Z', R_key='R', E_key='E', F_key='F'
-    ):
+    def __init__(self, dset_path=None, Z_key="Z", R_key="R", E_key="E", F_key="F"):
         """
         Parameters
         ----------
@@ -50,8 +47,8 @@ class dataSet(mbGDMLData):
         F_key : :obj:`str`, default: ``F``
             :obj:`dict` key in ``dset_path`` for atomic forces.
         """
-        self.type = 'd'
-        self.name = 'dataset'
+        self.type = "d"
+        self.name = "dataset"
 
         # Set keys for atomic properties.
         self.Z_key = Z_key
@@ -61,18 +58,18 @@ class dataSet(mbGDMLData):
 
         if dset_path is not None:
             self.load(dset_path)
-    
+
     @property
     def name(self):
         """Human-readable label for the data set.
 
         :type: :obj:`str`
         """
-        if hasattr(self, '_name'):
+        if hasattr(self, "_name"):
             return self._name
         else:
             return None
-    
+
     @name.setter
     def name(self, var):
         self._name = str(var)
@@ -83,7 +80,7 @@ class dataSet(mbGDMLData):
 
         Keys are the Rset IDs (:obj:`int`) and values are MD5 hashes
         (:obj:`str`) for the particular structure set.
-        
+
         This is used as a breadcrumb trail that specifies where each structure
         in the data set originates from.
 
@@ -94,15 +91,15 @@ class dataSet(mbGDMLData):
 
         :type: :obj:`dict`
         """
-        if hasattr(self, '_r_prov_ids'):
+        if hasattr(self, "_r_prov_ids"):
             return self._r_prov_ids
         else:
             return {}
-    
+
     @r_prov_ids.setter
     def r_prov_ids(self, var):
         self._r_prov_ids = var
-    
+
     @property
     def r_prov_specs(self):
         """An array specifying where each structure in ``R`` originates from.
@@ -122,11 +119,11 @@ class dataSet(mbGDMLData):
         array([[0, 985, 46, 59, 106],
                [0, 174, 51, 81, 128]])
         """
-        if hasattr(self, '_r_prov_specs'):
+        if hasattr(self, "_r_prov_specs"):
             return self._r_prov_specs
         else:
-            return np.array([[]], dtype='int_')
-    
+            return np.array([[]], dtype="int_")
+
     @r_prov_specs.setter
     def r_prov_specs(self, var):
         self._r_prov_specs = var
@@ -134,14 +131,14 @@ class dataSet(mbGDMLData):
     @property
     def F(self):
         """Atomic forces of atoms in structure(s).
-        
+
         A :obj:`numpy.ndarray` with shape of ``(m, n, 3)`` where ``m`` is the
-        number of structures and ``n`` is the number of atoms with three 
+        number of structures and ``n`` is the number of atoms with three
         Cartesian components.
 
         :type: :obj:`numpy.ndarray`
         """
-        if hasattr(self, '_F'):
+        if hasattr(self, "_F"):
             return self._F
         else:
             return np.array([[[]]])
@@ -153,13 +150,13 @@ class dataSet(mbGDMLData):
     @property
     def E(self):
         """The energies of structure(s).
-        
+
         A :obj:`numpy.ndarray` with shape of ``(n,)`` where ``n`` is the number
         of atoms.
 
         :type: :obj:`numpy.ndarray`
         """
-        if hasattr(self, '_E'):
+        if hasattr(self, "_E"):
             return self._E
         else:
             return np.array([])
@@ -167,7 +164,7 @@ class dataSet(mbGDMLData):
     @E.setter
     def E(self, var):
         self._E = var
-    
+
     @property
     def e_unit(self):
         """Units of energy. Options are ``'eV'``, ``'hartree'``,
@@ -175,15 +172,15 @@ class dataSet(mbGDMLData):
 
         :type: :obj:`str`
         """
-        if hasattr(self, '_e_unit'):
+        if hasattr(self, "_e_unit"):
             return self._e_unit
         else:
-            return 'n/a'
+            return "n/a"
 
     @e_unit.setter
     def e_unit(self, var):
         self._e_unit = var
-    
+
     @property
     def theory(self):
         """The level of theory used to compute energy and gradients of the data
@@ -191,10 +188,10 @@ class dataSet(mbGDMLData):
 
         :type: :obj:`str`
         """
-        if hasattr(self, '_theory'):
+        if hasattr(self, "_theory"):
             return self._theory
         else:
-            return 'n/a'
+            return "n/a"
 
     @theory.setter
     def theory(self, var):
@@ -223,7 +220,7 @@ class dataSet(mbGDMLData):
         :type: :obj:`float`
         """
         return float(np.var(self.E.ravel()))
-    
+
     @property
     def E_mean(self):
         """Mean of all energies.
@@ -276,40 +273,40 @@ class dataSet(mbGDMLData):
         :type: :obj:`str`
         """
         try:
-            return self.asdict()['md5'].item().decode()
+            return self.asdict()["md5"].item().decode()
         except BaseException:
-            print('Not enough information in dset for MD5')
+            print("Not enough information in dset for MD5")
             raise
-    
+
     @property
     def entity_ids(self):
         """1D array specifying which atoms belong to which entities.
-        
+
         An entity represents a related set of atoms such as a single molecule,
         several molecules, or a functional group. For mbGDML, an entity usually
         corresponds to a model trained to predict energies and forces of those
         atoms. Each ``entity_id`` is an :obj:`int` starting from ``0``.
-        
+
         It is conceptually similar to PDBx/mmCIF ``_atom_site.label_entity_ids``
         data item.
 
         Examples
         --------
         A single water molecule would be ``[0, 0, 0]``. A water (three atoms)
-        and methanol (six atoms) molecule in the same structure would be 
+        and methanol (six atoms) molecule in the same structure would be
         ``[0, 0, 0, 1, 1, 1, 1, 1, 1]``.
 
         :type: :obj:`numpy.ndarray`
         """
-        if hasattr(self, '_entity_ids'):
+        if hasattr(self, "_entity_ids"):
             return self._entity_ids
         else:
             return np.array([])
-    
+
     @entity_ids.setter
     def entity_ids(self, var):
         self._entity_ids = np.array(var)
-    
+
     @property
     def comp_ids(self):
         """A 1D array relating ``entity_id`` to a fragment label for chemical
@@ -328,15 +325,15 @@ class dataSet(mbGDMLData):
 
         :type: :obj:`numpy.ndarray`
         """
-        if hasattr(self, '_comp_ids'):
+        if hasattr(self, "_comp_ids"):
             return self._comp_ids
         else:
             return np.array([])
-    
+
     @comp_ids.setter
     def comp_ids(self, var):
         self._comp_ids = np.array(var)
-    
+
     @property
     def mb(self):
         """Many-body expansion order of this data set. This is :obj:`None` if the
@@ -344,15 +341,15 @@ class dataSet(mbGDMLData):
 
         :type: :obj:`int`
         """
-        if hasattr(self, '_mb'):
+        if hasattr(self, "_mb"):
             return self._mb
         else:
             return None
-    
+
     @mb.setter
     def mb(self, var):
         self._mb = int(var)
-    
+
     @property
     def mb_dsets_md5(self):
         """All MD5 hash of data sets used to remove n-body contributions from
@@ -360,15 +357,15 @@ class dataSet(mbGDMLData):
 
         :type: :obj:`numpy.ndarray`
         """
-        if hasattr(self, '_mb_dsets_md5'):
+        if hasattr(self, "_mb_dsets_md5"):
             return self._mb_dsets_md5
         else:
             return np.array([])
-    
+
     @mb_dsets_md5.setter
     def mb_dsets_md5(self, var):
         self._mb_dsets_md5 = var.astype(str)
-    
+
     @property
     def mb_models_md5(self):
         """All MD5 hash of models used to remove n-body contributions from
@@ -376,11 +373,11 @@ class dataSet(mbGDMLData):
 
         :type: :obj:`numpy.ndarray`
         """
-        if hasattr(self, '_mb_models_md5'):
+        if hasattr(self, "_mb_models_md5"):
             return self._mb_models_md5
         else:
             return np.array([])
-    
+
     @mb_models_md5.setter
     def mb_models_md5(self, var):
         self._mb_models_md5 = var.astype(str)
@@ -396,7 +393,7 @@ class dataSet(mbGDMLData):
         """
         self._E = convertor(self.E, self.e_unit, E_units)
         self.e_unit = E_units
-    
+
     def convertR(self, R_units):
         """Convert coordinates and updates ``r_unit``.
 
@@ -442,44 +439,44 @@ class dataSet(mbGDMLData):
         dataset : :obj:`dict`
             Contains all information and arrays stored in data set.
         """
-        self.name = dataset['name'].item()
+        self.name = dataset["name"].item()
         self._Z = dataset[self.Z_key]
         self._R = dataset[self.R_key]
         self._E = dataset[self.E_key]
         self._F = dataset[self.F_key]
-        self._r_unit = dataset['r_unit'].item()
+        self._r_unit = dataset["r_unit"].item()
         try:
-            self._e_unit = dataset['e_unit'].item()
+            self._e_unit = dataset["e_unit"].item()
         except KeyError:
-            self._e_unit = 'n/a'
+            self._e_unit = "n/a"
         try:
-            self.mbgdml_version = dataset['mbgdml_version'].item()
+            self.mbgdml_version = dataset["mbgdml_version"].item()
         except KeyError:
             # Some old data sets do not have this information.
             # This is unessential, so we will just ignore this.
             pass
         try:
-            self.theory = dataset['theory'].item()
+            self.theory = dataset["theory"].item()
         except KeyError:
-            self.theory = 'n/a'
+            self.theory = "n/a"
         # mbGDML added data set information.
-        if 'mb' in dataset.keys():
-            self.mb = dataset['mb'].item()
-        if 'mb_models_md5' in dataset.keys():
-            self.mb_models_md5 = dataset['mb_models_md5']
-        if 'mb_dsets_md5' in dataset.keys():
-            self.mb_dsets_md5 = dataset['mb_dsets_md5']
+        if "mb" in dataset.keys():
+            self.mb = dataset["mb"].item()
+        if "mb_models_md5" in dataset.keys():
+            self.mb_models_md5 = dataset["mb_models_md5"]
+        if "mb_dsets_md5" in dataset.keys():
+            self.mb_dsets_md5 = dataset["mb_dsets_md5"]
 
         try:
-            self.r_prov_specs = dataset['r_prov_specs'][()]
-            self.r_prov_ids = dataset['r_prov_ids'][()]
-            self.entity_ids = dataset['entity_ids']
-            self.comp_ids = dataset['comp_ids']
+            self.r_prov_specs = dataset["r_prov_specs"][()]
+            self.r_prov_ids = dataset["r_prov_ids"][()]
+            self.entity_ids = dataset["entity_ids"]
+            self.comp_ids = dataset["comp_ids"]
         except KeyError:
             pass
-        
-        if 'centered' in dataset.keys():
-            self.centered = dataset['centered'].item()
+
+        if "centered" in dataset.keys():
+            self.centered = dataset["centered"].item()
 
     def load(self, dataset_path):
         """Read data set.
@@ -491,8 +488,8 @@ class dataSet(mbGDMLData):
         """
         dataset_npz = np.load(dataset_path, allow_pickle=True)
         npz_type = dataset_npz.f.type.item()
-        if npz_type != 'd':
-            raise ValueError(f'{npz_type} is not a data set.')
+        if npz_type != "d":
+            raise ValueError(f"{npz_type} is not a data set.")
         else:
             self._update(dict(dataset_npz))
 
@@ -505,16 +502,16 @@ class dataSet(mbGDMLData):
         """
         # Data always available for data sets.
         dataset = {
-            'type': np.array('d'),
-            'mbgdml_version': np.array(mbgdml_version),
-            'name': np.array(self.name),
-            'r_prov_ids': np.array(self.r_prov_ids),
-            'r_prov_specs': np.array(self.r_prov_specs),
+            "type": np.array("d"),
+            "mbgdml_version": np.array(mbgdml_version),
+            "name": np.array(self.name),
+            "r_prov_ids": np.array(self.r_prov_ids),
+            "r_prov_specs": np.array(self.r_prov_specs),
             self.Z_key: np.array(self.Z),
             self.R_key: np.array(self.R),
-            'r_unit': np.array(self.r_unit),
-            'entity_ids': self.entity_ids,
-            'comp_ids': self.comp_ids
+            "r_unit": np.array(self.r_unit),
+            "entity_ids": self.entity_ids,
+            "comp_ids": self.comp_ids,
         }
         md5_properties = [self.Z_key, self.R_key]
 
@@ -523,61 +520,62 @@ class dataSet(mbGDMLData):
         # but will not error out if the data is not available.
         # Theory.
         try:
-            dataset['theory'] = np.array(self.theory)
+            dataset["theory"] = np.array(self.theory)
         except BaseException:
             pass
 
         # Energies.
         try:
             dataset[self.E_key] = np.array(self.E)
-            dataset['e_unit'] = np.array(self.e_unit)
-            dataset['E_min'] = np.array(self.E_min)
-            dataset['E_max'] = np.array(self.E_max)
-            dataset['E_mean'] = np.array(self.E_mean)
-            dataset['E_var'] = np.array(self.E_var)
+            dataset["e_unit"] = np.array(self.e_unit)
+            dataset["E_min"] = np.array(self.E_min)
+            dataset["E_max"] = np.array(self.E_max)
+            dataset["E_mean"] = np.array(self.E_mean)
+            dataset["E_var"] = np.array(self.E_var)
             md5_properties.append(self.E_key)
         except BaseException:
             pass
-        
+
         # Forces.
         try:
             dataset[self.F_key] = np.array(self.F)
-            dataset['F_min'] = np.array(self.F_min)
-            dataset['F_max'] = np.array(self.F_max)
-            dataset['F_mean'] = np.array(self.F_mean)
-            dataset['F_var'] = np.array(self.F_var)
+            dataset["F_min"] = np.array(self.F_min)
+            dataset["F_max"] = np.array(self.F_max)
+            dataset["F_mean"] = np.array(self.F_mean)
+            dataset["F_var"] = np.array(self.F_var)
             md5_properties.append(self.F_key)
         except BaseException:
             pass
 
         # mbGDML information.
-        if hasattr(self, 'mb') and self.mb != None:
-            dataset['mb'] = np.array(self.mb)
+        if hasattr(self, "mb") and self.mb != None:
+            dataset["mb"] = np.array(self.mb)
         if len(self.mb_models_md5) > 0:
-            dataset['mb_models_md5'] = np.array(self.mb_models_md5)
+            dataset["mb_models_md5"] = np.array(self.mb_models_md5)
         if len(self.mb_dsets_md5) > 0:
-            dataset['mb_dsets_md5'] = np.array(self.mb_dsets_md5)
-        
-        if hasattr(self, 'centered'):
-            dataset['centered'] = np.array(self.centered)
-        
-        dataset['md5'] = np.array(utils.md5_data(dataset, md5_properties))
+            dataset["mb_dsets_md5"] = np.array(self.mb_dsets_md5)
+
+        if hasattr(self, "centered"):
+            dataset["centered"] = np.array(self.centered)
+
+        dataset["md5"] = np.array(utils.md5_data(dataset, md5_properties))
         return dataset
 
     def print(self):
-        """Prints all structure coordinates, energies, and forces of a data set.
-        """
+        """Prints all structure coordinates, energies, and forces of a data set."""
         num_config = self.R.shape[0]
         for config in range(num_config):
             r_prov_spec = self.r_prov_specs[config]
-            print(f'-----Configuration {config}-----')
-            print(f'r_prov_id: {int(r_prov_spec[0])}     '
-                  f'Structure index: {int(r_prov_spec[1])}')
-            print(f'Molecule indices: {r_prov_spec[2:]}')
-            print(f'Coordinates:\n{self.R[config]}')
-            print(f'Energy: {self.E[config]}')
-            print(f'Forces:\n{self.F[config]}\n')
-    
+            print(f"-----Configuration {config}-----")
+            print(
+                f"r_prov_id: {int(r_prov_spec[0])}     "
+                f"Structure index: {int(r_prov_spec[1])}"
+            )
+            print(f"Molecule indices: {r_prov_spec[2:]}")
+            print(f"Coordinates:\n{self.R[config]}")
+            print(f"Energy: {self.E[config]}")
+            print(f"Forces:\n{self.F[config]}\n")
+
     def write_xyz(self, save_dir):
         """Saves xyz file of all structures in data set.
 

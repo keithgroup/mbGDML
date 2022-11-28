@@ -1,7 +1,7 @@
 # MIT License
-# 
+#
 # Copyright (c) 2022, Alex M. Maldonado
-# 
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
@@ -11,7 +11,7 @@
 #
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -25,12 +25,10 @@ import numpy as np
 from .base import model
 
 log = logging.getLogger(__name__)
-     
-class schnetModel(model):
 
-    def __init__(
-        self, model_path, comp_ids, device, criteria=None
-    ):
+
+class schnetModel(model):
+    def __init__(self, model_path, comp_ids, device, criteria=None):
         """
         Parameters
         ----------
@@ -50,10 +48,8 @@ class schnetModel(model):
         import schnetpack, torch, ase
 
         super().__init__(criteria)
-        self.type = 'schnet'
-        self.spk_model = torch.load(
-            model_path, map_location=torch.device(device)
-        )
+        self.type = "schnet"
+        self.spk_model = torch.load(model_path, map_location=torch.device(device))
         self.device = device
         if isinstance(comp_ids, list) or isinstance(comp_ids, tuple):
             comp_ids = np.array(comp_ids)
@@ -62,12 +58,10 @@ class schnetModel(model):
 
         # SchNet MD5
         import hashlib
+
         md5_hash = hashlib.md5()
         for param in self.spk_model.parameters():
             md5_hash.update(
-                hashlib.md5(
-                    param.cpu().detach().numpy().flatten()
-                ).digest()
+                hashlib.md5(param.cpu().detach().numpy().flatten()).digest()
             )
         self.md5 = md5_hash.hexdigest()
-

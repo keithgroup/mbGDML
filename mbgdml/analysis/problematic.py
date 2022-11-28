@@ -1,8 +1,8 @@
 # MIT License
-# 
+#
 # Copyright (c) 2020 monopsony
 # Copyright (c) 2020-2022, Alex M. Maldonado
-# 
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
@@ -12,7 +12,7 @@
 #
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -37,16 +37,16 @@ from ..losses import loss_f_mse
 
 log = logging.getLogger(__name__)
 
+
 class prob_structures:
     """Find problematic structures for models in datasets.
-    
+
     Clusters all structures in a dataset using agglomerative and k-means
     algorithms using a structural descriptor and energies.
     """
 
     def __init__(
-        self, models, predict_model, use_ray=False, n_workers=None,
-        wkr_chunk_size=100
+        self, models, predict_model, use_ray=False, n_workers=None, wkr_chunk_size=100
     ):
         """
         Parameters
@@ -75,7 +75,7 @@ class prob_structures:
             models, predict_model, use_ray, n_workers, wkr_chunk_size
         )
 
-        ({'n_clusters': 10}, {'n_clusters': 5})
+        ({"n_clusters": 10}, {"n_clusters": 5})
 
         self.course_n_cl_r = 10
         """Number of clusters used in the course stage for geometries.
@@ -117,9 +117,7 @@ class prob_structures:
 
         :type: :obj:`dict`, default: ``{}``
         """
-        self.kwargs_subplot = {
-            'figsize': (5.5, 3), 'constrained_layout': True
-        }
+        self.kwargs_subplot = {"figsize": (5.5, 3), "constrained_layout": True}
         """``pyplot.subplot`` keyword arguments.
 
         **Default:**
@@ -130,7 +128,7 @@ class prob_structures:
 
         :type: :obj:`dict`
         """
-        self.plot_lolli_color = '#223F4B'
+        self.plot_lolli_color = "#223F4B"
         """Lollipop color.
         
         :type: :obj:`str`, default: ``'#223F4B'``
@@ -140,15 +138,15 @@ class prob_structures:
 
         :type: :obj:`bool`, default: ``False``
         """
-    
+
     def get_pd(self, R):
         """Computes pairwise distances from atomic positions.
-        
+
         Parameters
         ----------
         R : :obj:`numpy.ndarray`, shape: ``(n_samples, n_atoms, 3)``
             Atomic positions.
-        
+
         Returns
         -------
         :obj:`numpy.ndarray`
@@ -157,7 +155,7 @@ class prob_structures:
         """
         assert R.ndim == 3
         n_samples, n_atoms, _ = R.shape
-        n_pd = int(n_atoms*((n_atoms-1)/2))
+        n_pd = int(n_atoms * ((n_atoms - 1) / 2))
         R_pd = np.zeros((n_samples, n_pd))
 
         for i in range(len(R)):
@@ -174,26 +172,26 @@ class prob_structures:
             Clustered dataset indices.
         cl_losses : :obj:`numpy.ndarray`
             Losses for each cluster in ``cl_idxs``.
-        
+
         Returns
         -------
         :obj:`numpy.ndarray`
             Dataset indices from clusters with higher-than-average losses.
         """
-        log.info('Finding problematic structures')
+        log.info("Finding problematic structures")
         loss_bound = np.mean(cl_losses)  # Initial minimum loss
-        loss_step = loss_bound/500
+        loss_step = loss_bound / 500
         loss_bound += loss_step
         idxs = []
-        while len(idxs) < 1.5*self.refine_n_cl:
-            log.info(f'Minimum cluster loss : {loss_bound:.4f}')
+        while len(idxs) < 1.5 * self.refine_n_cl:
+            log.info(f"Minimum cluster loss : {loss_bound:.4f}")
             cl_idxs_prob = np.concatenate(np.argwhere(cl_losses >= loss_bound))
             clusters = np.array(cl_idxs, dtype=object)[cl_idxs_prob]
             idxs = np.concatenate(clusters)
             loss_bound -= loss_step
-            log.info(f'N structures included : {len(idxs)}\n')
+            log.info(f"N structures included : {len(idxs)}\n")
         return idxs
-    
+
     def n_cl_samples(self, n_sample, cl_weights, cl_pop, cl_losses):
         """Number of dataset indices to sample from each cluster.
 
@@ -205,7 +203,7 @@ class prob_structures:
             Normalized cluster weights.
         cl_pop : :obj:`numpy.ndarray`
             Cluster populations.
-        
+
         Returns
         -------
         :obj:`numpy.ndarray`
@@ -227,7 +225,7 @@ class prob_structures:
                 return samples
             if samples[i] == 0:
                 samples[i] = 1
-        
+
         # If there are still not enough samples, we start adding additional
         # samples in order of highest cluster losses.
         for i in arg_max:
@@ -237,7 +235,7 @@ class prob_structures:
                 samples[i] += 1
 
         return samples.astype(int)
-    
+
     def select_prob_indices(self, n_select, cl_idxs, idx_loss_cl):
         """Select ``n`` problematic dataset indices based on weighted cluster
         losses and distribution.
@@ -250,23 +248,23 @@ class prob_structures:
             Clustered dataset indices.
         idx_loss_cl : :obj:`list` of :obj:`numpy.ndarray`
             Clustered individual structure losses. Same shape as ``cl_idxs``.
-        
+
         Returns
         -------
         :obj:`numpy.ndarray``, shape: ``(n_select,)``
             Problematic dataset indices.
         """
-        log.info('\nSelecting problematic structures')
+        log.info("\nSelecting problematic structures")
         cl_losses = np.array([np.mean(losses) for losses in idx_loss_cl])
         cl_pop = np.array([len(_) for _ in cl_idxs])  # Cluster population
 
-        log.info('Computing cluster loss weights')
+        log.info("Computing cluster loss weights")
         cl_weights = (cl_losses / np.sum(cl_losses)) * (cl_pop / np.sum(cl_pop))
         cl_weights_norm = np.array(cl_weights) / np.sum(cl_weights)
 
         Ns = self.n_cl_samples(n_select, cl_weights_norm, cl_pop, cl_losses)
 
-        log.info('Sampling structures')
+        log.info("Sampling structures")
         n_cl = len(cl_losses)
         prob_idxs = []
         for i in range(n_cl):
@@ -278,15 +276,22 @@ class prob_structures:
             prob_idxs.extend(idxs[argmax])
 
         prob_idxs = np.array(prob_idxs)
-        log.debug('Selected dataset indices:')
+        log.debug("Selected dataset indices:")
         log.log_array(prob_idxs, level=10)
         return prob_idxs
-    
+
     def find(
-        self, dset, n_find, dset_is_train=True, train_idxs=None,
-        write_json=True, save_cl_plot=True,
-        kwargs_plot={'lolli_color': '#223F4B', 'annotate_cl_idx': False},
-        image_format='png', image_dpi=600, save_dir='.'
+        self,
+        dset,
+        n_find,
+        dset_is_train=True,
+        train_idxs=None,
+        write_json=True,
+        save_cl_plot=True,
+        kwargs_plot={"lolli_color": "#223F4B", "annotate_cl_idx": False},
+        image_format="png",
+        image_dpi=600,
+        save_dir=".",
     ):
         """Find problematic structures in a dataset.
 
@@ -329,45 +334,43 @@ class prob_structures:
             Directory to save any files.
         """
         log.info(
-            '---------------------------\n'
-            '|   Finding Problematic   |\n'
-            '|       Structures        |\n'
-            '---------------------------\n'
+            "---------------------------\n"
+            "|   Finding Problematic   |\n"
+            "|       Structures        |\n"
+            "---------------------------\n"
         )
         if write_json:
             self.json_dict = {}
 
-        log.info('Loading dataset\n')
+        log.info("Loading dataset\n")
         Z, R, E, F = dset.Z, dset.R, dset.E, dset.F
         entity_ids, comp_ids = dset.entity_ids, dset.comp_ids
-        
+
         # Removing training indices.
         R_idxs_orig = np.array(list(range(len(R))))
         if dset_is_train:
-            log.info('Dropping indices already in training set')
+            log.info("Dropping indices already in training set")
             if len(self.models) != 1:
-                log.warning(
-                    'Cannot drop training indices if there are multiple models'
-                )
-                log.warning('Not dropping any indices')
+                log.warning("Cannot drop training indices if there are multiple models")
+                log.warning("Not dropping any indices")
             assert len(self.models) == 1
 
             if train_idxs is None:
                 try:
-                    train_idxs = self.models[0].model_dict['idxs_train']
+                    train_idxs = self.models[0].model_dict["idxs_train"]
                 except Exception:
-                    raise AttributeError('Training indices were not provided')
+                    raise AttributeError("Training indices were not provided")
             else:
                 assert isinstance(train_idxs, np.ndarray)
-            log.debug('Training indices')
+            log.debug("Training indices")
             log.log_array(train_idxs, level=10)
 
             n_Ri = len(R_idxs_orig)
-            log.info(f'There are a total of {n_Ri} structures')
+            log.info(f"There are a total of {n_Ri} structures")
             R_idxs = np.setdiff1d(R_idxs_orig, train_idxs)
             n_Rf = len(R_idxs)
-            log.info(f'Removed {n_Ri-n_Rf} structures')
-        else: 
+            log.info(f"Removed {n_Ri-n_Rf} structures")
+        else:
             R_idxs = [np.array(range(n_structures))]
         # Note: Indices from this point on do not directly map to their index
         # in the dataset. We have to convert back to their original indices
@@ -378,10 +381,8 @@ class prob_structures:
         R_pd = self.get_pd(R)
         cl_data = (R_pd, E.reshape(-1, 1))
         cl_algos = (clustering.agglomerative, clustering.kmeans)
-        cl_kwargs = ({'n_clusters': 10}, {'n_clusters': 5})
-        cl_idxs = clustering.cluster_structures(
-            cl_data, cl_algos, cl_kwargs
-        )
+        cl_kwargs = ({"n_clusters": 10}, {"n_clusters": 5})
+        cl_idxs = clustering.cluster_structures(cl_data, cl_algos, cl_kwargs)
 
         cl_pop = [len(i) for i in cl_idxs]
         if write_json:
@@ -389,108 +390,97 @@ class prob_structures:
             # The no-train indices is still needed to compute errors and
             # problematic clustering.
             cl_idxs_write = [np.array(R_idxs[idxs]) for idxs in cl_idxs]
-            self.json_dict['clustering'] = {}
-            self.json_dict['clustering']['indices'] = cl_idxs_write
-            self.json_dict['clustering']['population'] = cl_pop
+            self.json_dict["clustering"] = {}
+            self.json_dict["clustering"]["indices"] = cl_idxs_write
+            self.json_dict["clustering"]["population"] = cl_pop
 
-        log.info('\nPredicting structures')
+        log.info("\nPredicting structures")
         t_prediction = log.t_start()
         E_pred, F_pred = self.mbe_pred.predict(Z, R, entity_ids, comp_ids)
-        log.t_stop(t_prediction, message='Took {time} s')
-        log.info('Computing prediction errors')
+        log.t_stop(t_prediction, message="Took {time} s")
+        log.info("Computing prediction errors")
         E_errors = E_pred - E
         F_errors = F_pred - F
-        log.debug('Energy errors')
+        log.debug("Energy errors")
         log.log_array(E_errors, level=10)
-        log.debug('Force errors')
+        log.debug("Force errors")
         log.log_array(F_errors, level=10)
 
-        log.info('\nAggregating errors')
+        log.info("\nAggregating errors")
         E_errors_cl = clustering.get_clustered_data(cl_idxs, E_errors)
         F_errors_cl = clustering.get_clustered_data(cl_idxs, F_errors)
 
         # Computing cluster losses
-        loss_kwargs = {'energy': E_errors_cl, 'force': F_errors_cl}
-        cl_losses = clustering.get_cluster_losses(
-            self.loss_func, loss_kwargs
-        )
+        loss_kwargs = {"energy": E_errors_cl, "force": F_errors_cl}
+        cl_losses = clustering.get_cluster_losses(self.loss_func, loss_kwargs)
         if write_json:
-            self.json_dict['clustering']['loss_function'] = self.loss_func.__name__
-            self.json_dict['clustering']['losses'] = cl_losses
-            
+            self.json_dict["clustering"]["loss_function"] = self.loss_func.__name__
+            self.json_dict["clustering"]["losses"] = cl_losses
 
         prob_indices = self.prob_cl_indices(cl_idxs, cl_losses)
 
         # Problematic clustering
-        log.info('Refine clustering of problematic structures')
+        log.info("Refine clustering of problematic structures")
         # Switching to problematic idxs for clustering.
         R_pd_prob = R_pd[prob_indices]
         cl_data_prob = (R_pd_prob,)
         cl_algos_prob = (clustering.agglomerative,)
-        cl_kwargs_prob = ({'n_clusters': self.refine_n_cl},)
+        cl_kwargs_prob = ({"n_clusters": self.refine_n_cl},)
         cl_idxs_prob = clustering.cluster_structures(
             cl_data_prob, cl_algos_prob, cl_kwargs_prob
         )
         # switching back to no-training idxs
-        cl_idxs_prob = [
-            np.array(prob_indices[idxs]) for idxs in cl_idxs_prob
-        ]
+        cl_idxs_prob = [np.array(prob_indices[idxs]) for idxs in cl_idxs_prob]
 
         cl_pop_prob = [len(i) for i in cl_idxs_prob]
         if write_json:
             # Convert back to dataset indices just to write.
             cl_idxs_prob_write = [np.array(R_idxs[idxs]) for idxs in cl_idxs_prob]
-            self.json_dict['problematic_clustering'] = {}
-            self.json_dict['problematic_clustering']['indices'] = cl_idxs_prob_write
-            self.json_dict['problematic_clustering']['population'] = cl_pop_prob
+            self.json_dict["problematic_clustering"] = {}
+            self.json_dict["problematic_clustering"]["indices"] = cl_idxs_prob_write
+            self.json_dict["problematic_clustering"]["population"] = cl_pop_prob
 
-        log.info('Aggregating errors for problematic structures')
-        E_errors_cluster_prob = clustering.get_clustered_data(
-            cl_idxs_prob, E_errors
-        )
-        F_errors_cluster_prob = clustering.get_clustered_data(
-            cl_idxs_prob, F_errors
-        )
-        idx_loss_kwargs = {'energy': E_errors, 'force': F_errors}
+        log.info("Aggregating errors for problematic structures")
+        E_errors_cluster_prob = clustering.get_clustered_data(cl_idxs_prob, E_errors)
+        F_errors_cluster_prob = clustering.get_clustered_data(cl_idxs_prob, F_errors)
+        idx_loss_kwargs = {"energy": E_errors, "force": F_errors}
         structure_loss = np.empty(E_errors.shape)
         for i in range(len(structure_loss)):
-            structure_loss[i] = self.loss_func({
-                'energy': E_errors[i], 'force': F_errors[i]
-            })
+            structure_loss[i] = self.loss_func(
+                {"energy": E_errors[i], "force": F_errors[i]}
+            )
 
-        structure_loss_cl = clustering.get_clustered_data(
-            cl_idxs_prob, structure_loss
-        )
+        structure_loss_cl = clustering.get_clustered_data(cl_idxs_prob, structure_loss)
         if write_json:
-            self.json_dict['problematic_clustering']['loss_function'] = self.loss_func.__name__
-            self.json_dict['problematic_clustering']['losses'] = structure_loss_cl
+            self.json_dict["problematic_clustering"][
+                "loss_function"
+            ] = self.loss_func.__name__
+            self.json_dict["problematic_clustering"]["losses"] = structure_loss_cl
 
-        next_idxs = self.select_prob_indices(
-            n_find, cl_idxs_prob, structure_loss_cl
-        )
+        next_idxs = self.select_prob_indices(n_find, cl_idxs_prob, structure_loss_cl)
         # Convert back to dataset indices.
         next_idxs = R_idxs[next_idxs]
         if write_json:
-            self.json_dict['add_training_indices'] = next_idxs
+            self.json_dict["add_training_indices"] = next_idxs
             save_json(
-                os.path.join(save_dir, 'find_problematic_indices.json'),
-                self.json_dict
+                os.path.join(save_dir, "find_problematic_indices.json"), self.json_dict
             )
-        
+
         if save_cl_plot:
-            fig = self.plot_cl_losses(
-                cl_pop, cl_losses, **kwargs_plot
-            )
+            fig = self.plot_cl_losses(cl_pop, cl_losses, **kwargs_plot)
             fig.savefig(
-                os.path.join(save_dir, f'cl_losses.{image_format}'),
-                dpi=image_dpi
+                os.path.join(save_dir, f"cl_losses.{image_format}"), dpi=image_dpi
             )
 
         return next_idxs
-    
+
     def plot_cl_losses(
-        self, cl_pop, cl_losses, kwargs_subplot={},
-        lolli_color='#223F4B', annotate_cl_idx=False
+        self,
+        cl_pop,
+        cl_losses,
+        kwargs_subplot={},
+        lolli_color="#223F4B",
+        annotate_cl_idx=False,
     ):
         """Plot cluster losses and population histogram using matplotlib.
 
@@ -500,13 +490,14 @@ class prob_structures:
             Cluster populations (unsorted).
         cl_losses : :obj:`numpy.ndarray`
             Cluster losses (unsorted).
-        
+
         Returns
         -------
         ``object``
             A matplotlib figure object.
         """
         import matplotlib.pyplot as plt
+
         cl_width = 1
 
         cl_losses = np.array(cl_losses)
@@ -517,15 +508,15 @@ class prob_structures:
         cl_losses = cl_losses[loss_sort]
 
         n_cl = len(cl_pop)
-        cl_plot_x = np.array(range(n_cl))*cl_width
+        cl_plot_x = np.array(range(n_cl)) * cl_width
 
         fig, ax_pop = plt.subplots(nrows=1, ncols=1, **self.kwargs_subplot)
         ax_loss = ax_pop.twinx()
 
-        ax_loss.yaxis.set_ticks_position('left')
-        ax_loss.yaxis.set_label_position('left')
-        ax_pop.yaxis.set_ticks_position('right')
-        ax_pop.yaxis.set_label_position('right')
+        ax_loss.yaxis.set_ticks_position("left")
+        ax_loss.yaxis.set_label_position("left")
+        ax_pop.yaxis.set_ticks_position("right")
+        ax_pop.yaxis.set_label_position("right")
 
         # Cluster losses
         ax_loss.set_ylabel(self.loss_func.__name__)
@@ -536,21 +527,23 @@ class prob_structures:
 
         # Losses mean
         ax_loss.axhline(
-            np.mean(cl_losses), color=lolli_color, alpha=1,
-            linewidth=1.0, linestyle=':'
+            np.mean(cl_losses), color=lolli_color, alpha=1, linewidth=1.0, linestyle=":"
         )
-        ax_loss.text(
-            0.5, np.mean(cl_losses), 'Mean', fontsize=8
-        )
+        ax_loss.text(0.5, np.mean(cl_losses), "Mean", fontsize=8)
 
         # population histogram (bar chart)
-        ax_pop.set_xlabel('Cluster')
-        ax_pop.set_ylabel('Size')
-        edge_shift = cl_width/2
-        edges = [i-edge_shift for i in cl_plot_x] + [cl_plot_x[-1] + edge_shift]
+        ax_pop.set_xlabel("Cluster")
+        ax_pop.set_ylabel("Size")
+        edge_shift = cl_width / 2
+        edges = [i - edge_shift for i in cl_plot_x] + [cl_plot_x[-1] + edge_shift]
         ax_pop.stairs(
-            values=cl_pop, edges=edges, fill=False, baseline=0.0, zorder=-1.0,
-            edgecolor='lightgrey', alpha=1.0
+            values=cl_pop,
+            edges=edges,
+            fill=False,
+            baseline=0.0,
+            zorder=-1.0,
+            edgecolor="lightgrey",
+            alpha=1.0,
         )
 
         # Annotate with cluster index
@@ -563,11 +556,16 @@ class prob_structures:
                 else:
                     x_disp = -2.7
                 ax_loss.annotate(
-                    str(cl_idx), (cl_x, cl_losses[i]), xytext=(x_disp, 3),
-                    xycoords='data', fontsize=4, fontweight='bold',
-                    textcoords='offset points', color=self.plot_lolli_color
+                    str(cl_idx),
+                    (cl_x, cl_losses[i]),
+                    xytext=(x_disp, 3),
+                    xycoords="data",
+                    fontsize=4,
+                    fontweight="bold",
+                    textcoords="offset points",
+                    color=self.plot_lolli_color,
                 )
-        
+
         # Handle axes label
         ax_pop.set_xticks([])
 

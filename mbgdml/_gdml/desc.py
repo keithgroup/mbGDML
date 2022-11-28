@@ -1,8 +1,8 @@
 # MIT License
-# 
+#
 # Copyright (c) 2018-2022 Stefan Chmiela, Luis Galvez
 # Copyright (c) 2022, Alex M. Maldonado
-# 
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
@@ -12,7 +12,7 @@
 #
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -27,7 +27,7 @@ from scipy import spatial
 
 import multiprocessing as mp
 
-Pool = mp.get_context('fork').Pool
+Pool = mp.get_context("fork").Pool
 
 from functools import partial
 import timeit
@@ -40,6 +40,7 @@ else:
     _has_torch = True
 
 import logging
+
 log = logging.getLogger(__name__)
 
 
@@ -67,7 +68,7 @@ def _pbc_diff(diffs, lat_and_inv, use_torch=False):
 
     if use_torch and not _has_torch:
         raise ImportError(
-            'Optional PyTorch dependency not found! Please install PyTorch.'
+            "Optional PyTorch dependency not found! Please install PyTorch."
         )
 
     if use_torch:
@@ -102,7 +103,7 @@ def _pdist(r, lat_and_inv=None):
     n_atoms = r.shape[0]
 
     if lat_and_inv is None:
-        pdist = sp.spatial.distance.pdist(r, 'euclidean')
+        pdist = sp.spatial.distance.pdist(r, "euclidean")
     else:
         pdist = sp.spatial.distance.pdist(
             r, lambda u, v: np.linalg.norm(_pbc_diff(u - v, lat_and_inv))
@@ -110,6 +111,7 @@ def _pdist(r, lat_and_inv=None):
 
     tril_idxs = np.tril_indices(n_atoms, k=-1)
     return sp.spatial.distance.squareform(pdist, checks=False)[tril_idxs]
+
 
 def _squareform(vec_or_mat):
 
@@ -135,6 +137,7 @@ def _squareform(vec_or_mat):
         i, j = np.tril_indices(n, k=-1)
 
         return vec_or_mat[i, j]
+
 
 def _r_to_desc(r, pdist):
     """Generate descriptor for a set of atom positions in Cartesian
@@ -197,7 +200,7 @@ def _r_to_d_desc(r, pdist, lat_and_inv=None):
     if lat_and_inv is not None:
         pdiff = _pbc_diff(pdiff, lat_and_inv)
 
-    d_desc_elem = pdiff / (pdist ** 3)[:, None]
+    d_desc_elem = pdiff / (pdist**3)[:, None]
 
     return d_desc_elem
 
@@ -239,7 +242,7 @@ class Desc(object):
     """Generate descriptors and their Jacobians for molecular geometries,
     including support for periodic boundary conditions.
     """
-    
+
     def __init__(self, n_atoms, max_processes=None):
         """
         Parameters
@@ -355,7 +358,7 @@ class Desc(object):
             assert torch.is_tensor(vecs)
             einsum = torch.einsum
 
-        return einsum('...ij,...ij->...i', R_d_desc, vecs[:, j, :] - vecs[:, i, :])
+        return einsum("...ij,...ij->...i", R_d_desc, vecs[:, j, :] - vecs[:, i, :])
 
     # Multiplies descriptor(s) jacobian with N(N-1)/2-vector(s) from the left side
     def vec_dot_d_desc(self, R_d_desc, vecs, out=None):
@@ -453,7 +456,7 @@ class Desc(object):
         R_d_desc : :obj:`numpy.ndarray`
             Array of size :math:`M \\times N(N-1)/2 \\times 3N` containing the
             descriptor Jacobian.
-        
+
         Returns
         -------
         :obj:`numpy.ndarray`
@@ -489,7 +492,7 @@ class Desc(object):
         ----------
         perm : :obj:`numpy.ndarray`
             Array of size N containing the atom permutation.
-        
+
         Returns
         -------
         :obj:`numpy.ndarray`
@@ -499,7 +502,7 @@ class Desc(object):
         n = len(perm)
 
         rest = np.zeros((n, n))
-        rest[np.tril_indices(n, -1)] = list(range((n ** 2 - n) // 2))
+        rest[np.tril_indices(n, -1)] = list(range((n**2 - n) // 2))
         rest = rest + rest.T
         rest = rest[perm, :]
         rest = rest[:, perm]
