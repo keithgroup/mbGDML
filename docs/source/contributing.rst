@@ -217,6 +217,7 @@ Deploying
 =========
 
 A reminder for the maintainers on how to deploy.
+Make sure you have the most recent tags by running ``git fetch --tags --all``.
 
 Our versions are manged with `versioneer <https://github.com/python-versioneer/python-versioneer>`__.
 This primarily relies on tags and distance from the most recent tag.
@@ -234,9 +235,10 @@ Create a new version of ``mbgdml`` by running the following command while in the
 
     $ bump2version patch # possible: major / minor / patch
 
-Then, push the commit and tags.
+Push the commit and tags.
 
 .. code-block:: bash
 
     $ git push --follow-tags
 
+Then, create a new release on `GitHub <https://github.com/aalexmmaldonado/reptar/releases>`__.
