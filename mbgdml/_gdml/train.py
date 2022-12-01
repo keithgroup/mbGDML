@@ -22,52 +22,50 @@
 # SOFTWARE.
 
 import sys
-import os
 import logging
-import psutil
-
-from .sample import draw_strat_sample
-from .perm import find_perms, find_extra_perms, find_frag_perms
-from ..utils import md5_data, chunk_array
-from ..losses import mae, rmse
-from .. import __version__ as mbgdml_version
-
-import multiprocessing as mp
-
-Pool = mp.get_context("fork").Pool
-
+import warnings
 from functools import partial
-
+import multiprocessing as mp
 import numpy as np
 import scipy as sp
-import warnings
+import psutil
+
+from .predict import GDMLPredict
+from .desc import Desc
+from .sample import draw_strat_sample
+from .perm import find_perms
+from ..utils import md5_data, chunk_array
+from ..losses import mae, rmse
+
+from .. import _version
+
+mbgdml_version = _version.get_versions()["version"]
+
+Pool = mp.get_context("fork").Pool
 
 try:
     import torch
 except ImportError:
-    _has_torch = False
+    _HAS_TORCH = False
 else:
-    _has_torch = True
+    _HAS_TORCH = True
 
 try:
-    _torch_mps_is_available = torch.backends.mps.is_available()
+    _TORCH_MPS_IS_AVAILABLE = torch.backends.mps.is_available()
 except (NameError, AttributeError):
-    _torch_mps_is_available = False
-_torch_mps_is_available = False
+    _TORCH_MPS_IS_AVAILABLE = False
+_TORCH_MPS_IS_AVAILABLE = False
 
 try:
-    _torch_cuda_is_available = torch.cuda.is_available()
+    _TORCH_CUDA_IS_AVAILABLE = torch.cuda.is_available()
 except (NameError, AttributeError):
-    _torch_cuda_is_available = False
+    _TORCH_CUDA_IS_AVAILABLE = False
 
 # TODO: remove exception handling once iterative solver ships
 try:
     from .solvers.iterative import Iterative
 except ImportError:
     pass
-
-from .predict import GDMLPredict
-from .desc import Desc
 
 log = logging.getLogger(__name__)
 
@@ -127,8 +125,8 @@ def _assemble_kernel_mat_wkr(
         Number of kernel matrix blocks created, divided by 2
         (symmetric blocks are always created at together).
     """
-
-    global glob
+    # pylint: disable=invalid-name
+    global glob  # pylint: disable=global-variable-not-assigned
 
     R_desc = np.frombuffer(glob["R_desc"]).reshape(glob["R_desc_shape"])
     R_d_desc = np.frombuffer(glob["R_d_desc"]).reshape(glob["R_d_desc_shape"])
@@ -141,12 +139,13 @@ def _assemble_kernel_mat_wkr(
     dim_i = 3 * n_atoms
     n_perms = int(len(tril_perms_lin) / dim_d)
 
-    if type(j) is tuple:  # Selective/"fancy" indexing
+    # (block index in final K, block index global, indices of partials within block)
+    if isinstance(j, tuple):  # Selective/"fancy" indexing
         (
             K_j,
             j,
             keep_idxs_3n,
-        ) = j  # (block index in final K, block index global, indices of partials within block)
+        ) = j
         blk_j = slice(K_j, K_j + len(keep_idxs_3n))
 
     else:  # Sequential indexing
@@ -154,8 +153,9 @@ def _assemble_kernel_mat_wkr(
         blk_j = slice(K_j, K_j + dim_i) if j < n_train else slice(K_j, K_j + 1)
         keep_idxs_3n = slice(None)  # same as [:]
 
-    # Note: The modulo-operator wraps around the index pointer on the training points when
-    # energy constraints are used in the kernel. In that case each point is accessed twice.
+    # Note: The modulo-operator wraps around the index pointer on the training points
+    # when energy constraints are used in the kernel. In that case each point is
+    # accessed twice.
 
     # Create permutated variants of 'rj_desc' and 'rj_d_desc'.
     rj_desc_perms = np.reshape(
@@ -217,9 +217,9 @@ def _assemble_kernel_mat_wkr(
             np.dot(ri_d_desc[0].T, diff_ab_outer_perms, out=k)
             K[blk_i, blk_j] = k
 
-            if exploit_sym and (
-                cols_m_limit is None or i < cols_m_limit
-            ):  # this will never be called with 'keep_idxs_3n' set to anything else than [:]
+            # this will never be called with 'keep_idxs_3n' set to anything else
+            # than [:]
+            if exploit_sym and (cols_m_limit is None or i < cols_m_limit):
                 K[blk_j, blk_i] = K[blk_i, blk_j].T
 
             # First derivative constraints
@@ -321,10 +321,11 @@ class GDMLTrain(object):
         Exception
             If multiple instances of this class are created.
         ImportError
-            If the optional PyTorch dependency is missing, but PyTorch features are used.
+            If the optional PyTorch dependency is missing, but PyTorch features are
+            used.
         """
 
-        global glob
+        global glob  # pylint: disable=global-variable-undefined
         if "glob" not in globals():  # Don't allow more than one instance of this class.
             glob = {}
         else:
@@ -345,13 +346,13 @@ class GDMLTrain(object):
 
         self._use_torch = use_torch
 
-        if use_torch and not _has_torch:
+        if use_torch and not _HAS_TORCH:
             raise ImportError(
                 "Optional PyTorch dependency not found! Please install PyTorch."
             )
 
     def __del__(self):
-        global glob
+        global glob  # pylint: disable=global-variable-undefined
         if "glob" in globals():
             del glob
 
@@ -412,10 +413,11 @@ class GDMLTrain(object):
         use_sym : :obj:`bool`, default: ``True``
             True: include symmetries (sGDML), False: GDML.
         use_E : :obj:`bool`, optional
-            ``True``: reconstruct force field with corresponding potential energy surface,
+            ``True``: reconstruct force field with corresponding potential energy
+            surface,
 
-            ``False``: ignore energy during training, even if energy labels are available
-            in the dataset. The trained model will still be able to predict
+            ``False``: ignore energy during training, even if energy labels are
+            available in the dataset. The trained model will still be able to predict
             energies up to an unknown integration constant. Note, that the
             energy predictions accuracy will be untested.
         use_E_cstr : :obj:`bool`, default: ``False``
@@ -439,8 +441,8 @@ class GDMLTrain(object):
             If a reconstruction of the potential energy surface is requested,
             but the energy labels are missing in the dataset.
         """
+        # pylint: disable=invalid-name
         ###   mbGDML ADD   ###
-        t_create_task = log.t_start()
         log.info(
             "-----------------------------------\n"
             "|   Creating GDML training task   |\n"
@@ -477,7 +479,7 @@ class GDMLTrain(object):
         # n_atoms = train_dataset['R'].shape[1]
 
         ###   mbGDML CHANGE   ###
-        log.info("\nDataset splitting\n" "-----------------")
+        log.info("\nDataset splitting\n-----------------")
         md5_train_keys = ["z", "R", "F"]
         md5_valid_keys = ["z", "R", "F"]
         if "E" in train_dataset.keys():
@@ -488,8 +490,8 @@ class GDMLTrain(object):
         md5_valid = md5_data(valid_dataset, md5_valid_keys)
 
         log.info("\n#   Training   #")
-        log.info(f"MD5: {md5_train}")
-        log.info(f"Size : {n_train}")
+        log.info("MD5 : %s", md5_train)
+        log.info("Size : %d", n_train)
         if idxs_train is None:
             log.info("Drawing structures from the dataset")
             if "E" in train_dataset:
@@ -515,8 +517,8 @@ class GDMLTrain(object):
 
         # Handles validation indices.
         log.info("\n#   Validation   #")
-        log.info(f"MD5: {md5_valid}")
-        log.info(f"Size : {n_valid}")
+        log.info("MD5 : %s", md5_valid)
+        log.info("Size : %d", n_valid)
         if idxs_valid is not None:
             log.info("Validation indices were manually specified")
             idxs_valid = np.array(idxs_valid)
@@ -526,7 +528,7 @@ class GDMLTrain(object):
             excl_idxs = (
                 idxs_train if md5_train == md5_valid else np.array([], dtype=np.uint)
             )
-            log.debug(f"Excluded {len(excl_idxs)} structures")
+            log.debug("Excluded %r structures", len(excl_idxs))
             log.log_array(excl_idxs, level=10)
 
             if "E" in valid_dataset:
@@ -578,14 +580,16 @@ class GDMLTrain(object):
 
             try:
                 lat_and_inv = (task["lattice"], np.linalg.inv(task["lattice"]))
-            except np.linalg.LinAlgError:
+            except np.linalg.LinAlgError as e:
                 raise ValueError(
-                    "Provided dataset contains invalid lattice vectors (not invertible). Note: Only rank 3 lattice vector matrices are supported."
-                )
+                    "Provided dataset contains invalid lattice vectors "
+                    "(not invertible). Note: Only rank 3 lattice vector matrices "
+                    "are supported."
+                ) from e
 
         if "r_unit" in train_dataset and "e_unit" in train_dataset:
-            log.info(f'\nCoordinate unit : {train_dataset["r_unit"]}')
-            log.info(f'Energy unit : {train_dataset["e_unit"]}')
+            log.info("\nCoordinate unit : %s", train_dataset["r_unit"])
+            log.info("Energy unit : %s", train_dataset["e_unit"])
             task["r_unit"] = train_dataset["r_unit"]
             task["e_unit"] = train_dataset["e_unit"]
 
@@ -599,9 +603,7 @@ class GDMLTrain(object):
                 ):  # take perms from training dataset, if available
 
                     n_perms = train_dataset["perms"].shape[0]
-                    log.info(
-                        "Using {:d} permutations included in dataset.".format(n_perms)
-                    )
+                    log.info("Using %d permutations included in dataset", n_perms)
 
                     task["perms"] = train_dataset["perms"]
 
@@ -614,15 +616,12 @@ class GDMLTrain(object):
                             np.random.choice(n_train, 1000, replace=False), :, :
                         ]
                         log.info(
-                            "Symmetry search has been restricted to a random subset of 1000/{:d} training points for faster convergence.".format(
-                                n_train
-                            )
+                            "Symmetry search has been restricted to a random subset of "
+                            "1000/%d training points for faster convergence.",
+                            n_train,
                         )
 
                     # TODO: PBCs disabled when matching (for now).
-                    # task['perms'] = perm.find_perms(
-                    #    R_train_sync_mat, train_dataset['z'], lat_and_inv=lat_and_inv, max_processes=self._max_processes,
-                    # )
                     task["perms"] = find_perms(
                         R_train_sync_mat,
                         train_dataset["z"],
@@ -638,13 +637,12 @@ class GDMLTrain(object):
 
                 if perms_len != n_atoms:
                     raise ValueError(  # TODO: Document me
-                        "Provided permutations do not match the number of atoms in dataset."
+                        "Provided permutations do not match the number of atoms in "
+                        "dataset."
                     )
                 else:
 
-                    log.info(
-                        "Using {:d} externally provided permutations.".format(n_perms)
-                    )
+                    log.info("Using %d externally provided permutations", n_perms)
 
                     task["perms"] = perms
 
@@ -706,7 +704,8 @@ class GDMLTrain(object):
         :obj:`dict`
             Data structure of custom type ``model``.
         """
-        n_train, dim_d = R_d_desc.shape[:2]
+        # pylint: disable=invalid-name
+        _, dim_d = R_d_desc.shape[:2]
         n_atoms = int((1 + np.sqrt(8 * dim_d + 1)) / 2)
 
         desc = Desc(
@@ -792,6 +791,7 @@ class GDMLTrain(object):
             Mean energy. If energy labels are not included then this is
             :obj:`None`.
         """
+        # pylint: disable=invalid-name
         y = F.ravel().copy()
 
         if use_E and use_E_cstr:
@@ -807,6 +807,7 @@ class GDMLTrain(object):
 
         return y, y_std, E_train_mean
 
+    # pylint: disable-next=invalid-name
     def train(self, task, require_E_eval=False):
         r"""Train a model based on a task.
 
@@ -829,7 +830,7 @@ class GDMLTrain(object):
         ValueError
             If the provided dataset contains invalid lattice vectors.
         """
-
+        # pylint: disable=invalid-name
         task = dict(task)  # make mutable
 
         n_train, n_atoms = task["R_train"].shape[:2]
@@ -842,7 +843,7 @@ class GDMLTrain(object):
         n_perms = task["perms"].shape[0]
         tril_perms = np.array([desc.perm(p) for p in task["perms"]])
 
-        dim_i = 3 * n_atoms
+        # dim_i = 3 * n_atoms
         dim_d = desc.dim
 
         perm_offsets = np.arange(n_perms)[:, None] * dim_d
@@ -852,11 +853,12 @@ class GDMLTrain(object):
         if "lattice" in task:
             try:
                 lat_and_inv = (task["lattice"], np.linalg.inv(task["lattice"]))
-            except np.linalg.LinAlgError:
+            except np.linalg.LinAlgError as e:
                 raise ValueError(
-                    "Provided dataset contains invalid lattice vectors (not invertible)."
-                    "Note: Only rank 3 lattice vector matrices are supported."
-                )
+                    "Provided dataset contains invalid lattice vectors (not "
+                    "invertible). Note: Only rank 3 lattice vector matrices are "
+                    "supported."
+                ) from e
 
         R = task["R_train"].reshape(n_train, -1)
         R_desc, R_d_desc = desc.from_R(R, lat_and_inv=lat_and_inv)
@@ -908,7 +910,8 @@ class GDMLTrain(object):
         if use_analytic_solver:
             mem_req_mb = (est_bytes_analytic + est_bytes_overhead) * 1e-6  # MB
             log.info(
-                f"Using analytic solver (expected memory requirement: ~{mem_req_mb:.3f} MB)"
+                "Using analytic solver (expected memory requirement: ~%.2f MB)",
+                mem_req_mb,
             )
             ###   mbGDML CHANGE START   ###
             alphas = self.solve_analytic(
@@ -924,9 +927,10 @@ class GDMLTrain(object):
             est_bytes_iterative = Iterative.est_memory_requirement(
                 n_train, max_n_inducing_pts, n_atoms
             )
-
+            mem_req_mb = (est_bytes_iterative + est_bytes_overhead) * 1e-6  # MB
             log.info(
-                f"Using iterative solver (expected memory requirement: ~{est_bytes_iterative + est_bytes_overhead})"
+                "Using iterative solver (expected memory requirement: ~%.2f MB)",
+                mem_req_mb,
             )
 
             alphas_F = task["alphas0_F"] if "alphas0_F" in task else None
@@ -938,7 +942,6 @@ class GDMLTrain(object):
                 self._max_memory,
                 self._max_processes,
                 self._use_torch,
-                callback=callback,
             )
             (
                 alphas,
@@ -947,7 +950,7 @@ class GDMLTrain(object):
                     "solver_iters"
                 ],  # number of iterations performed (cg solver)
                 solver_keys["solver_resid"],  # residual of solution
-                train_rmse,
+                _,  # train_rmse
                 solver_keys["inducing_pts_idxs"],
                 is_conv,
             ) = iterative.solve(
@@ -957,7 +960,6 @@ class GDMLTrain(object):
                 tril_perms_lin,
                 y,
                 y_std,
-                save_progr_callback=save_progr_callback,
             )
 
             solver_keys["norm_y_train"] = np.linalg.norm(y)
@@ -966,11 +968,13 @@ class GDMLTrain(object):
                 log.warning("Iterative solver did not converge!")
                 log.info("Troubleshooting tips:")
                 log.info(
-                    "(1) Are the provided geometries highly correlated (i.e. very similar to each other)?"
+                    "(1) Are the provided geometries highly correlated (i.e. very "
+                    "similar to each other)?"
                 )
                 log.info("(2) Try a larger length scale (sigma) parameter.")
                 log.warning(
-                    "We will continue with this unconverged model, but its accuracy will likely be very bad."
+                    "We will continue with this unconverged model, but its accuracy "
+                    "will likely be very bad."
                 )
 
         alphas_E = None
@@ -992,9 +996,9 @@ class GDMLTrain(object):
         model.update(solver_keys)
 
         # Recover integration constant.
-        # Note: if energy constraints are included in the kernel (via 'use_E_cstr'), do not
-        # compute the integration constant, but simply set it to the mean of the training energies
-        # (which was subtracted from the labels before training).
+        # Note: if energy constraints are included in the kernel (via 'use_E_cstr'),
+        # do not compute the integration constant, but simply set it to the mean of
+        # the training energies (which was subtracted from the labels before training).
         if model["use_E"]:
             c = (
                 self._recov_int_const(
@@ -1038,7 +1042,7 @@ class GDMLTrain(object):
             The train labels computed in
             :meth:`~mbgdml._gdml.train.GDMLTrain.train_labels`.
         """
-
+        # pylint: disable=invalid-name
         log.info(
             "\n-------------------------\n"
             "|   Analytical solver   |\n"
@@ -1099,7 +1103,8 @@ class GDMLTrain(object):
                     )
 
                     log.t_stop(t_cholesky, message="Done in {time} s")
-                except np.linalg.LinAlgError:  # try a solver that makes less assumptions
+                except np.linalg.LinAlgError:
+                    # try a solver that makes less assumptions
                     log.t_stop(
                         t_cholesky, message="Cholesky factorization failed in {time} s"
                     )
@@ -1119,15 +1124,17 @@ class GDMLTrain(object):
                             level=50,
                         )
                         log.critical(
-                            "Not enough memory to train this system using a closed form solver.\n"
-                            + "Please reduce the size of the training set or consider one of the approximate solver options."
+                            "Not enough memory to train this system using a closed "
+                            "form solver.\nPlease reduce the size of the training set "
+                            "or consider one of the approximate solver options."
                         )
                         sys.exit()
 
                 except MemoryError:
                     log.critical(
-                        "Not enough memory to train this system using a closed form solver.\n"
-                        + "Please reduce the size of the training set or consider one of the approximate solver options."
+                        "Not enough memory to train this system using a closed "
+                        "form solver.\nPlease reduce the size of the training set "
+                        "or consider one of the approximate solver options."
                     )
                     sys.exit()
             else:
@@ -1187,7 +1194,7 @@ class GDMLTrain(object):
             If different scales in energy vs. force labels are
             detected in the provided dataset.
         """
-
+        # pylint: disable=invalid-name
         gdml_predict = GDMLPredict(
             model,
             max_memory=self._max_memory,
@@ -1213,8 +1220,10 @@ class GDMLTrain(object):
         if not require_E_eval:
             if np.sign(e_fact) == -1:
                 log.warning(
-                    "The provided dataset contains gradients instead of force labels (flipped sign). Please correct!\n"
-                    + "Note: The energy prediction accuracy of the model will thus neither be validated nor tested in the following steps!"
+                    "The provided dataset contains gradients instead of force labels "
+                    "(flipped sign). Please correct!\nNote: The energy prediction "
+                    "accuracy of the model will thus neither be validated nor tested "
+                    "in the following steps!"
                 )
                 return None
 
@@ -1222,8 +1231,10 @@ class GDMLTrain(object):
                 log.warning("Inconsistent energy labels detected!")
                 log.warning(
                     "The predicted energies for the training data are only weakly\n"
-                    f"correlated with the reference labels (correlation coefficient {corrcoef:.2f})\n"
-                    "which indicates that the issue is most likely NOT just a unit conversion error.\n"
+                    "correlated with the reference labels (correlation "
+                    "coefficient %.2f)\nwhich indicates that the issue is most "
+                    "likely NOT just a unit conversion error.\n",
+                    corrcoef,
                 )
                 return None
 
@@ -1288,8 +1299,8 @@ class GDMLTrain(object):
         :obj:`numpy.ndarray`
             Force field kernel matrix.
         """
-
-        global glob
+        # pylint: disable=invalid-name
+        global glob  # pylint: disable=global-variable-not-assigned
 
         n_train, dim_d = R_d_desc.shape[:2]
         dim_i = 3 * int((1 + np.sqrt(8 * dim_d + 1)) / 2)
@@ -1297,7 +1308,8 @@ class GDMLTrain(object):
         # Determine size of kernel matrix.
         K_n_rows = n_train * dim_i
 
-        # Account for additional rows (and columns) due to energy constraints in the kernel matrix.
+        # Account for additional rows (and columns) due to energy constraints in the
+        # kernel matrix.
         if use_E_cstr:
             K_n_rows += n_train
 
@@ -1319,7 +1331,8 @@ class GDMLTrain(object):
         exploit_sym = False
         cols_m_limit = None
 
-        # Check if range is a subset of training points (as opposed to a subset of partials of multiple points).
+        # Check if range is a subset of training points (as opposed to a subset of
+        # partials of multiple points).
         is_M_subset = (
             isinstance(col_idxs, slice)
             and (col_idxs.start is None or col_idxs.start % dim_i == 0)
@@ -1352,9 +1365,11 @@ class GDMLTrain(object):
             # M - number training
             # N - number atoms
 
+            # Column indices that go beyond force-force correlations need a different
+            # treatment.
             n_idxs = np.concatenate(
                 [np.mod(ff_col_idxs, dim_i), np.zeros(fe_col_idxs.shape, dtype=int)]
-            )  # Column indices that go beyond force-force correlations need a different treatment.
+            )
 
             m_idxs = np.concatenate([np.array(ff_col_idxs) // dim_i, fe_col_idxs])
             m_idxs_uniq = np.unique(m_idxs)  # which points to include?
@@ -1369,11 +1384,13 @@ class GDMLTrain(object):
                 np.cumsum(m_n_idxs_lens[:-1])
             )  # index within K at which each block starts
 
-            # tuples: (block index in final K, block index global, indices of partials within block)
+            # tuples: (block index in final K, block index global, indices of partials
+            # within block)
             J = list(zip(blk_start_idxs, m_idxs_uniq, m_n_idxs))
 
         if self._use_torch:
-            if not _has_torch:
+            # pylint: disable=no-member, invalid-name, global-variable-undefined
+            if not _HAS_TORCH:
                 raise ImportError("PyTorch not found! Please install PyTorch.")
 
             K = np.empty((K_n_rows + alloc_extra_rows, K_n_cols))
@@ -1382,13 +1399,11 @@ class GDMLTrain(object):
                 J = list(J)
 
             global torch_assemble_done
-            torch_assemble_todo, torch_assemble_done = K_n_cols, 0
+            _, torch_assemble_done = K_n_cols, 0
 
-            start = timeit.default_timer()
-
-            if _torch_cuda_is_available:
+            if _TORCH_CUDA_IS_AVAILABLE:
                 torch_device = "cuda"
-            elif _torch_mps_is_available:
+            elif _TORCH_MPS_IS_AVAILABLE:
                 torch_device = "mps"
             else:
                 torch_device = "cpu"
@@ -1396,6 +1411,7 @@ class GDMLTrain(object):
             R_desc_torch = torch.from_numpy(R_desc).to(torch_device)  # N, d
             R_d_desc_torch = torch.from_numpy(R_d_desc).to(torch_device)
 
+            # pylint: disable-next=import-outside-toplevel
             from .torchtools import GDMLTorchAssemble
 
             torch_assemble = GDMLTorchAssemble(
@@ -1406,7 +1422,6 @@ class GDMLTrain(object):
                 R_desc_torch,
                 R_d_desc_torch,
                 out=K[:K_n_rows, :],
-                callback=progress_callback,
             )
 
             # Enable data parallelism
@@ -1420,13 +1435,6 @@ class GDMLTrain(object):
 
             del R_desc_torch
             del R_d_desc_torch
-
-            stop = timeit.default_timer()
-
-            if callback is not None:
-                dur_s = stop - start
-                sec_disp_str = "took {:.1f} s".format(dur_s) if dur_s >= 0.1 else ""
-                callback(DONE, sec_disp_str=sec_disp_str)
 
             return K
 
@@ -1445,7 +1453,7 @@ class GDMLTrain(object):
             )  # exclude main process
             map_func = pool.imap_unordered
 
-        todo, done = K_n_cols, 0
+        _, done = K_n_cols, 0
         for done_wkr in map_func(
             partial(
                 _assemble_kernel_mat_wkr,
@@ -1461,7 +1469,9 @@ class GDMLTrain(object):
 
         if pool is not None:
             pool.close()
-            pool.join()  # Wait for the worker processes to terminate (to measure total runtime correctly).
+            # Wait for the worker processes to terminate (to measure total runtime
+            # correctly).
+            pool.join()
             pool = None
 
         # Release some memory.
@@ -1517,7 +1527,7 @@ def get_test_idxs(model, dataset, n_test=None):
         log.warning("No unused points for testing in provided dataset.")
         return
 
-    log.info(f"Test set size was automatically set to {n_data_eff} points.")
+    log.info("Test set size was automatically set to %d points.", n_data_eff)
 
     if "E" in dataset:
         test_idxs = draw_strat_sample(dataset["E"], n_test, excl_idxs=excl_idxs)
@@ -1525,8 +1535,9 @@ def get_test_idxs(model, dataset, n_test=None):
         test_idxs = np.delete(np.arange(n_data), excl_idxs)
 
         log.warning(
-            "Test dataset will be sampled with no guidance from energy labels (randomly)!\n"
-            + "Note: Larger test datasets are recommended due to slower convergence of the error."
+            "Test dataset will be sampled with no guidance from energy labels "
+            "(randomly)!\nNote: Larger test datasets are recommended due to slower "
+            "convergence of the error."
         )
 
     return test_idxs
@@ -1559,15 +1570,13 @@ def add_valid_errors(
         "|   Model Validation   |\n"
         "------------------------"
     )
-    if model["use_E"]:
-        e_err = np.array(model["e_err"]).item()
     f_err = np.array(model["f_err"]).item()
     is_model_validated = not (np.isnan(f_err["mae"]) or np.isnan(f_err["rmse"]))
     if is_model_validated and not overwrite:
         log.warning("Model is already validated and overwrite is False.")
         return
 
-    n_valid, E_errors, F_errors = model_errors(
+    _, E_errors, F_errors = model_errors(
         model, dataset, is_valid=True, max_processes=max_processes, use_torch=use_torch
     )
 
@@ -1615,22 +1624,19 @@ def model_errors(
     :obj:`numpy.ndarray`
         (ndim: ``3``) Force errors.
     """
+    # pylint: disable=protected-access
     num_workers, batch_size = 0, 0
 
     if not np.array_equal(model["z"], dataset["z"]):
-        raise AssistantError(
+        raise ValueError(
             "Atom composition or order in dataset does not match the one in model"
         )
 
     if ("lattice" in model) is not ("lattice" in dataset):
         if "lattice" in model:
-            raise AssistantError(
-                "Model contains lattice vectors, but dataset does not."
-            )
+            raise ValueError("Model contains lattice vectors, but dataset does not.")
         elif "lattice" in dataset:
-            raise AssistantError(
-                "Dataset contains lattice vectors, but model does not."
-            )
+            raise ValueError("Dataset contains lattice vectors, but model does not.")
 
     if is_valid:
         test_idxs = model["idxs_valid"]
@@ -1652,23 +1658,16 @@ def model_errors(
     if model["use_E"]:
         E = dataset["E"][test_idxs]
 
-    try:
-        gdml_predict = GDMLPredict(
-            model, max_processes=max_processes, use_torch=use_torch
-        )
-    except:
-        raise
+    gdml_predict = GDMLPredict(model, max_processes=max_processes, use_torch=use_torch)
 
-    log.info(f"\nPredicting {len(test_idxs)} structures")
+    log.info("\nPredicting %r structures", len(test_idxs))
     b_size = min(1000, len(test_idxs))
-    log.info(f"Batch size : {b_size} structures\n")
+    log.info("Batch size : %d structures\n", b_size)
 
     if not use_torch:
         log.debug("Using CPU (use_torch = False)")
         if num_workers == 0 or batch_size == 0:
-            gps, is_from_cache = gdml_predict.prepare_parallel(
-                n_bulk=b_size, return_is_from_cache=True
-            )
+            gdml_predict.prepare_parallel(n_bulk=b_size, return_is_from_cache=True)
             num_workers, batch_size, bulk_mp = (
                 gdml_predict.num_workers,
                 gdml_predict.chunk_size,
@@ -1676,7 +1675,7 @@ def model_errors(
             )
         else:
             gdml_predict._set_num_workers(num_workers)
-            gdml_predict._set_batch_size(batch_size)
+            gdml_predict._set_chunk_size(batch_size)
             gdml_predict._set_bulk_mp(bulk_mp)
 
     n_atoms = z.shape[0]
@@ -1685,7 +1684,7 @@ def model_errors(
     t_pred = log.t_start()
     n_done = 0
     for b_range in chunk_array(list(range(len(test_idxs))), b_size):
-        log.info(f"{n_done} done")
+        log.info("%d done", n_done)
         n_done_step = len(b_range)
         n_done += n_done_step
 
@@ -1695,30 +1694,31 @@ def model_errors(
         F_pred[b_range] = f_pred.reshape((len(b_range), n_atoms, 3))
         if model["use_E"]:
             E_pred[b_range] = e_pred
-    log.info(f"{n_done} done")
+    log.info("%d done", n_done)
 
     t_elapsed = log.t_stop(t_pred, message="\nTook {time} s")
-    log.info(f"Prediction rate : {n_R/t_elapsed:.2f} structures per second")
+    pred_rate = n_R / t_elapsed
+    log.info("Prediction rate : %.2f structures per second", pred_rate)
 
     # Force errors
     log.info("Computing force (and energy) errors")
     F_errors = F_pred - F
     F_mae = mae(F_errors)
     F_rmse = rmse(F_errors)
-    log.info(f"\nForce MAE  : {F_mae:.5f}")
-    log.info(f"Force RMSE : {F_rmse:.5f}")
+    log.info("\nForce MAE  : %.5f", F_mae)
+    log.info("Force RMSE : %.5f", F_rmse)
 
     # Energy errors
     if model["use_E"]:
         E_errors = E_pred - E
         E_mae = mae(E_errors)
         E_rmse = rmse(E_errors)
-        log.info(f"Energy MAE  : {E_mae:.5f}")
-        log.info(f"Energy RMSE : {E_rmse:.5f}")
+        log.info("Energy MAE  : %.5f", E_mae)
+        log.info("Energy RMSE : %.5f", E_rmse)
 
     del gdml_predict
 
     if model["use_E"]:
         return len(test_idxs), E_errors, F_errors
-    else:
-        return len(test_idxs), None, F_errors
+
+    return len(test_idxs), None, F_errors

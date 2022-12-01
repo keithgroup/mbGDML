@@ -128,7 +128,7 @@ class predictSet(mbGDMLData):
                 self, f"entity_combs_{nbody_order}"
             )
 
-        if self._loaded == False and self._predicted == False:
+        if self._loaded is False and self._predicted is False:
             if not hasattr(self, "dataset") or not hasattr(self, "mbgdml"):
                 raise AttributeError("No data can be predicted or is not loaded.")
             else:

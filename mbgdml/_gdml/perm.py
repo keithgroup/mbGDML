@@ -24,21 +24,18 @@
 from __future__ import print_function
 
 import multiprocessing as mp
-
-Pool = mp.get_context("fork").Pool
-
-import sys
 from functools import partial
-
+import logging
 import numpy as np
 import scipy.optimize
 import scipy.spatial.distance
 from scipy.sparse import csr_matrix
-from scipy.sparse.csgraph import minimum_spanning_tree
+from scipy.sparse.csgraph import minimum_spanning_tree, connected_components
+from ase import Atoms
+from ase.geometry.analysis import Analysis
+from .desc import Desc, _pdist, _squareform
 
-from .desc import Desc
-
-import logging
+Pool = mp.get_context("fork").Pool
 
 log = logging.getLogger(__name__)
 
@@ -52,7 +49,7 @@ def share_array(arr_np, typecode):
 
 def _bipartite_match_wkr(i, n_train, same_z_cost):
 
-    global glob
+    global glob  # pylint: disable=global-variable-not-assigned
 
     adj_set = np.frombuffer(glob["adj_set"]).reshape(glob["adj_set_shape"])
     v_set = np.frombuffer(glob["v_set"]).reshape(glob["v_set_shape"])
@@ -88,7 +85,8 @@ def _bipartite_match_wkr(i, n_train, same_z_cost):
 
 
 def bipartite_match(R, z, lat_and_inv=None, max_processes=None):
-    global glob
+    global glob  # pylint: disable=global-variable-not-assigned
+
     log.info("Performing Bipartite matching ...")
 
     n_train, n_atoms, _ = R.shape
@@ -112,7 +110,6 @@ def bipartite_match(R, z, lat_and_inv=None, max_processes=None):
             adj = scipy.spatial.distance.pdist(r, "euclidean")
 
         else:
-            from .desc import _pdist, _squareform
 
             adj_tri = _pdist(r, lat_and_inv)
             adj = _squareform(adj_tri)  # our vectorized format to full matrix
@@ -147,7 +144,9 @@ def bipartite_match(R, z, lat_and_inv=None, max_processes=None):
 
     if pool is not None:
         pool.close()
-        pool.join()  # Wait for the worker processes to terminate (to measure total runtime correctly).
+        # Wait for the worker processes to terminate (to measure total runtime
+        # correctly).
+        pool.join()
         pool = None
 
     match_cost = np.frombuffer(glob["match_cost"]).reshape(glob["match_cost_shape"])
@@ -175,7 +174,7 @@ def sync_perm_mat(match_perms_all, match_cost, n_atoms):
 
 # convert permutation to dijoined cycles
 def to_cycles(perm):
-    pi = {i: perm[i] for i in range(len(perm))}
+    pi = {i: perm[i] for i in range(len(perm))}  # pylint: disable=invalid-name
     cycles = []
 
     while pi:
@@ -202,15 +201,17 @@ def to_cycles(perm):
 # note: this is used if transitive closure fails (to salvage at least some permutations)
 def salvage_subgroup(perms):
 
-    n_perms, n_atoms = perms.shape
+    n_perms, _ = perms.shape
 
     all_long_cycles = []
     for i in range(n_perms):
         long_cycles = [cy for cy in to_cycles(list(perms[i, :])) if len(cy) > 1]
         all_long_cycles += long_cycles
 
+    # pylint: disable-next=invalid-name
     def _cycle_intersects_with_larger_one(cy):
 
+        # pylint: disable-next=invalid-name
         for ac in all_long_cycles:
             if len(cy) < len(ac):
                 if not set(cy).isdisjoint(ac):
@@ -218,12 +219,12 @@ def salvage_subgroup(perms):
 
         return False
 
-    lcms = []
     keep_idx_many = []
     for i in range(n_perms):
 
         # is this permutation valid?
-        # remove permutations that contain cycles that share elements with larger cycles in other perms
+        # remove permutations that contain cycles that share elements with larger
+        # cycles in other perms
         long_cycles = [cy for cy in to_cycles(list(perms[i, :])) if len(cy) > 1]
 
         ignore_perm = any(list(map(_cycle_intersects_with_larger_one, long_cycles)))
@@ -260,7 +261,7 @@ def complete_sym_group(perms, n_perms_max=None):
 def find_perms(R, z, lat_and_inv=None, max_processes=None):
     log.info("\n#   Finding symmetries   #")
 
-    m, n_atoms = R.shape[:2]
+    _, n_atoms = R.shape[:2]
 
     # Find matching for all pairs.
     match_perms_all, match_cost = bipartite_match(R, z, lat_and_inv, max_processes)
@@ -280,13 +281,13 @@ def find_perms(R, z, lat_and_inv=None, max_processes=None):
             n_perms_max=100,
         )
 
-    log.info(f"Found {sym_group_perms.shape[0]} symmetries")
+    log.info("Found %d symmetries", sym_group_perms.shape[0])
     return sym_group_perms
 
 
-def find_extra_perms(R, z, lat_and_inv=None, max_processes=None):
+def find_extra_perms(R, z, lat_and_inv=None):
 
-    m, n_atoms = R.shape[:2]
+    _, n_atoms = R.shape[:2]
 
     # nanotube
     R = R.copy()
@@ -296,9 +297,7 @@ def find_extra_perms(R, z, lat_and_inv=None, max_processes=None):
     perms = np.arange(n_atoms)[None, :]
 
     plane_3idxs = [280, 281, 273]  # half outer
-    add_perms = find_perms_via_reflection(
-        R[0], z, frags[1], plane_3idxs, lat_and_inv=None, max_processes=None
-    )
+    add_perms = find_perms_via_reflection(R[0], frags[1], plane_3idxs)
     perms = np.vstack((perms, add_perms))
 
     perms = np.unique(perms, axis=0)
@@ -307,50 +306,8 @@ def find_extra_perms(R, z, lat_and_inv=None, max_processes=None):
 
     return sym_group_perms
 
-    # buckycatcher
-    R = R.copy()  # *0.529177
-    frags = find_frags(R[0], z, lat_and_inv=lat_and_inv)
-
-    perms = np.arange(n_atoms)[None, :]
-
-    # syms of catcher
-    plane_3idxs = [54, 47, 17]  # left to right
-    add_perms = find_perms_via_reflection(
-        R[0], z, frags[0], plane_3idxs, lat_and_inv=None, max_processes=None
-    )
-    perms = np.vstack((perms, add_perms))
-
-    plane_3idxs = [(33, 34), (31, 30), (5, 4)]  # top to bottom
-    add_perms = find_perms_via_reflection(
-        R[0], z, frags[0], plane_3idxs, lat_and_inv=None, max_processes=None
-    )
-    perms = np.vstack((perms, add_perms))
-
-    # rotate cells
-    add_perms = find_perms_via_alignment(
-        R[0],
-        frags[1],
-        [129, 128, 127],
-        [128, 127, 135],
-        z,
-        lat_and_inv=lat_and_inv,
-        max_processes=max_processes,
-    )
-    perms = np.vstack((perms, add_perms))
-
-    sym_group_perms = complete_sym_group(perms)
-
-    # print(perms.shape)
-    print(sym_group_perms.shape)
-
-    return sym_group_perms
-
 
 def find_frags(r, z, lat_and_inv=None):
-
-    from ase import Atoms
-    from ase.geometry.analysis import Analysis
-    from scipy.sparse.csgraph import connected_components
 
     print("Finding permutable non-bonded fragments... (assumes Ang!)")
 
@@ -359,9 +316,9 @@ def find_frags(r, z, lat_and_inv=None):
         lat = lat_and_inv[0]
 
     n_atoms = r.shape[0]
-    atoms = Atoms(
-        z, positions=r, cell=lat, pbc=lat is not None
-    )  # only use first molecule in dataset to find connected components (fix me later, maybe) # *0.529177249
+    # only use first molecule in dataset to find connected components (fix me later,
+    # maybe) # *0.529177249
+    atoms = Atoms(z, positions=r, cell=lat, pbc=lat is not None)
 
     adj = Analysis(atoms).adjacency_matrix[0]
     _, labels = connected_components(csgraph=adj, directed=False, return_labels=True)
@@ -371,7 +328,8 @@ def find_frags(r, z, lat_and_inv=None):
 
     if n_frags == n_atoms:
         print(
-            "Skipping fragment symmetry search (something went wrong, e.g. length unit not in Angstroms, etc.)"
+            "Skipping fragment symmetry search (something went wrong, "
+            "e.g. length unit not in Angstroms, etc.)"
         )
         return None
 
@@ -382,16 +340,12 @@ def find_frags(r, z, lat_and_inv=None):
 
 def find_frag_perms(R, z, lat_and_inv=None, max_processes=None):
 
-    from ase import Atoms
-    from ase.geometry.analysis import Analysis
-    from scipy.sparse.csgraph import connected_components
+    _, n_atoms = R.shape[:2]
+    lat, _ = lat_and_inv
 
-    n_train, n_atoms = R.shape[:2]
-    lat, lat_inv = lat_and_inv
-
-    atoms = Atoms(
-        z, positions=R[0], cell=lat, pbc=lat is not None
-    )  # only use first molecule in dataset to find connected components (fix me later, maybe) # *0.529177249
+    # only use first molecule in dataset to find connected components (fix me later,
+    # maybe) # *0.529177249
+    atoms = Atoms(z, positions=R[0], cell=lat, pbc=lat is not None)
 
     adj = Analysis(atoms).adjacency_matrix[0]
     _, labels = connected_components(csgraph=adj, directed=False, return_labels=True)
@@ -401,7 +355,8 @@ def find_frag_perms(R, z, lat_and_inv=None, max_processes=None):
 
     if n_frags == n_atoms:
         print(
-            "Skipping fragment symmetry search (something went wrong, e.g. length unit not in Angstroms, etc.)"
+            "Skipping fragment symmetry search (something went wrong, "
+            "e.g. length unit not in Angstroms, etc.)"
         )
         return [range(n_atoms)]
 
@@ -409,27 +364,29 @@ def find_frag_perms(R, z, lat_and_inv=None, max_processes=None):
 
     # match fragments to find identical ones (allows permutations of fragments)
     swap_perms = [np.arange(n_atoms)]
-    for f1 in range(n_frags):
-        for f2 in range(f1 + 1, n_frags):
+    for f1 in range(n_frags):  # pylint: disable=invalid-name
+        for f2 in range(f1 + 1, n_frags):  # pylint: disable=invalid-name
 
             sort_idx_f1 = np.argsort(z[frags[f1]])
             sort_idx_f2 = np.argsort(z[frags[f2]])
             inv_sort_idx_f2 = inv_perm(sort_idx_f2)
 
-            z1 = z[frags[f1]][sort_idx_f1]
-            z2 = z[frags[f2]][sort_idx_f2]
+            z1 = z[frags[f1]][sort_idx_f1]  # pylint: disable=invalid-name
+            z2 = z[frags[f2]][sort_idx_f2]  # pylint: disable=invalid-name
 
             if np.array_equal(z1, z2):  # fragment have the same composition
 
+                # pylint: disable-next=invalid-name
                 for ri in range(
                     min(10, R.shape[0])
                 ):  # only use first molecule in dataset for matching (fix me later)
 
-                    R_match1 = R[ri, frags[f1], :]
-                    R_match2 = R[ri, frags[f2], :]
+                    R_match1 = R[ri, frags[f1], :]  # pylint: disable=invalid-name
+                    R_match2 = R[ri, frags[f2], :]  # pylint: disable=invalid-name
 
                     # if np.array_equal(z1, z2):
 
+                    # pylint: disable-next=invalid-name
                     R_pair = np.concatenate(
                         (R_match1[None, sort_idx_f1, :], R_match2[None, sort_idx_f2, :])
                     )
@@ -439,6 +396,7 @@ def find_frag_perms(R, z, lat_and_inv=None, max_processes=None):
                     )
 
                     # embed local permutation into global context
+                    # pylint: disable-next=invalid-name
                     for p in perms:
 
                         match_perm = sort_idx_f1[p][inv_sort_idx_f2]
@@ -466,9 +424,9 @@ def find_frag_perms(R, z, lat_and_inv=None, max_processes=None):
         # frag_perms - N fragment permutations (Nxn_atoms)
 
         perms = np.arange(n_atoms)[None, :]
-        for fp in frag_perms:
+        for fp in frag_perms:  # pylint: disable=invalid-name
 
-            p = np.arange(n_atoms)
+            p = np.arange(n_atoms)  # pylint: disable=invalid-name
             p[frag_idxs] = frag_idxs[fp]
             perms = np.vstack((p[None, :], perms))
 
@@ -478,7 +436,7 @@ def find_frag_perms(R, z, lat_and_inv=None, max_processes=None):
         print("| Finding symmetries in individual fragments.")
         for f in range(n_frags):
 
-            R_frag = R[:, frags[f], :]
+            R_frag = R[:, frags[f], :]  # pylint: disable=invalid-name
             z_frag = z[frags[f]]
 
             frag_perms = find_perms(
@@ -488,7 +446,7 @@ def find_frag_perms(R, z, lat_and_inv=None, max_processes=None):
             perms = _frag_perm_to_perm(n_atoms, frags[f], frag_perms)
             sym_group_perms = np.vstack((perms, sym_group_perms))
 
-            print("{:d} perms".format(perms.shape[0]))
+            print(f"{perms.shape[0]} perms")
 
         sym_group_perms = np.unique(sym_group_perms, axis=0)
     sym_group_perms = complete_sym_group(sym_group_perms)
@@ -502,9 +460,9 @@ def _frag_perm_to_perm(n_atoms, frag_idxs, frag_perms):
     # frag_perms - N fragment permutations (Nxn_atoms)
 
     perms = np.arange(n_atoms)[None, :]
-    for fp in frag_perms:
+    for fp in frag_perms:  # pylint: disable=invalid-name
 
-        p = np.arange(n_atoms)
+        p = np.arange(n_atoms)  # pylint: disable=invalid-name
         p[frag_idxs] = frag_idxs[fp]
         perms = np.vstack((p[None, :], perms))
 
@@ -515,7 +473,7 @@ def find_perms_in_frag(R, z, frag_idxs, lat_and_inv=None, max_processes=None):
 
     n_atoms = R.shape[1]
 
-    R_frag = R[:, frag_idxs, :]
+    R_frag = R[:, frag_idxs, :]  # pylint: disable=invalid-name
     z_frag = z[frag_idxs]
 
     frag_perms = find_perms(
@@ -532,10 +490,8 @@ def find_perms_via_alignment(
     frag_idxs,
     align_a_idxs,
     align_b_idxs,
-    z,
-    lat_and_inv=None,
-    max_processes=None,
 ):
+    # pylint: disable=invalid-name
 
     # alignment indices are included in fragment
     assert np.isin(align_a_idxs, frag_idxs).all()
@@ -553,7 +509,7 @@ def find_perms_via_alignment(
     align_b_pts -= ctr
 
     ab_cov = align_a_pts.T.dot(align_b_pts)
-    u, s, vh = np.linalg.svd(ab_cov)
+    u, _, vh = np.linalg.svd(ab_cov)
     R = u.dot(vh)
 
     if np.linalg.det(R) < 0:
@@ -576,51 +532,14 @@ def find_perms_via_alignment(
     adj = scipy.spatial.distance.cdist(R_pair[0], R_pair[1], "euclidean")
     _, perm = scipy.optimize.linear_sum_assignment(adj)
 
-    # draw selection
-    if False:
-
-        print("---")
-
-        from matplotlib import cm
-
-        viridis = cm.get_cmap("prism")
-        colors = viridis(np.linspace(0, 1, len(align_a_idxs)))
-
-        for i, idx in enumerate(align_a_idxs):
-            color_str = (
-                "["
-                + str(int(colors[i, 0] * 255))
-                + ","
-                + str(int(colors[i, 1] * 255))
-                + ","
-                + str(int(colors[i, 2] * 255))
-                + "]"
-            )
-            print("select atomno=" + str(idx + 1) + "; color " + color_str)
-
-        for i, idx in enumerate(align_b_idxs):
-            color_str = (
-                "["
-                + str(int(colors[i, 0] * 255))
-                + ","
-                + str(int(colors[i, 1] * 255))
-                + ","
-                + str(int(colors[i, 2] * 255))
-                + "]"
-            )
-            print("select atomno=" + str(idx + 1) + "; color " + color_str)
-        print("---")
-
     return perm
 
 
-def find_perms_via_reflection(
-    r, z, frag_idxs, plane_3idxs, lat_and_inv=None, max_processes=None
-):
+def find_perms_via_reflection(r, frag_idxs, plane_3idxs):
+    """compute normal of plane defined by atoms in 'plane_idxs'"""
+    # pylint: disable=invalid-name
 
-    # compute normal of plane defined by atoms in 'plane_idxs'
-
-    is_plane_defined_by_bond_centers = type(plane_3idxs[0]) is tuple
+    is_plane_defined_by_bond_centers = isinstance(plane_3idxs[0], tuple)
     if is_plane_defined_by_bond_centers:
         a = (r[plane_3idxs[0][0], :] + r[plane_3idxs[0][1], :]) / 2
         b = (r[plane_3idxs[1][0], :] + r[plane_3idxs[1][1], :]) / 2
@@ -653,7 +572,7 @@ def find_perms_via_reflection(
 
 
 def print_perm_colors(perm, pts, plane_3idxs=None):
-
+    # pylint: disable=invalid-name
     idx_done = []
     c = -1
     for i in range(perm.shape[0]):
@@ -662,7 +581,7 @@ def print_perm_colors(perm, pts, plane_3idxs=None):
             idx_done += [i]
             idx_done += [perm[i]]
 
-    from matplotlib import cm
+    from matplotlib import cm  # pylint: disable=import-outside-toplevel
 
     viridis = cm.get_cmap("prism")
     colors = viridis(np.linspace(0, 1, c + 1))
@@ -675,7 +594,7 @@ def print_perm_colors(perm, pts, plane_3idxs=None):
         def pts_str(x):
             return "{" + str(x[0]) + ", " + str(x[1]) + ", " + str(x[2]) + "}"
 
-        is_plane_defined_by_bond_centers = type(plane_3idxs[0]) is tuple
+        is_plane_defined_by_bond_centers = isinstance(plane_3idxs[0], tuple)
         if is_plane_defined_by_bond_centers:
             a = (pts[plane_3idxs[0][0], :] + pts[plane_3idxs[0][1], :]) / 2
             b = (pts[plane_3idxs[1][0], :] + pts[plane_3idxs[1][1], :]) / 2
@@ -722,7 +641,7 @@ def print_perm_colors(perm, pts, plane_3idxs=None):
 
 def inv_perm(perm):
 
-    inv_perm = np.empty(perm.size, perm.dtype)
-    inv_perm[perm] = np.arange(perm.T.size)
+    inv_perm_array = np.empty(perm.size, perm.dtype)
+    inv_perm_array[perm] = np.arange(perm.T.size)
 
-    return inv_perm
+    return inv_perm_array

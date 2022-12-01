@@ -21,25 +21,20 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+from functools import partial
+import multiprocessing as mp
+import logging
 import numpy as np
 import scipy as sp
-from scipy import spatial
-
-import multiprocessing as mp
-
-Pool = mp.get_context("fork").Pool
-
-from functools import partial
-import timeit
 
 try:
     import torch
 except ImportError:
-    _has_torch = False
+    _HAS_TORCH = False
 else:
-    _has_torch = True
+    _HAS_TORCH = True
 
-import logging
+Pool = mp.get_context("fork").Pool
 
 log = logging.getLogger(__name__)
 
@@ -50,10 +45,10 @@ def _pbc_diff(diffs, lat_and_inv, use_torch=False):
     Parameters
     ----------
     diffs : :obj:`numpy.ndarray`
-        :math:`N \\times 3` matrix of :math:`N` pairwise differences between
-        vectors :math:`\\boldsymbol{u} - \\boldsymbol{v}`
+        :math:`N \times 3` matrix of :math:`N` pairwise differences between
+        vectors :math:`\boldsymbol{u} - \boldsymbol{v}`
     lat_and_inv : tuple of :obj:`numpy.ndarray`
-        Tuple of :math:`3 \\times 3` matrix containing lattice vectors as
+        Tuple of :math:`3 \times 3` matrix containing lattice vectors as
         columns and its inverse.
     use_torch : :obj:`bool`, default: ``False``
         Enable, if the inputs are PyTorch objects.
@@ -61,12 +56,12 @@ def _pbc_diff(diffs, lat_and_inv, use_torch=False):
     Returns
     -------
     :obj:`numpy.ndarray`
-        :math:`N \\times 3` matrix clamped differences
+        :math:`N \times 3` matrix clamped differences
     """
 
     lat, lat_inv = lat_and_inv
 
-    if use_torch and not _has_torch:
+    if use_torch and not _HAS_TORCH:
         raise ImportError(
             "Optional PyTorch dependency not found! Please install PyTorch."
         )
@@ -89,7 +84,7 @@ def _pdist(r, lat_and_inv=None):
     r : :obj:`numpy.ndarray`
         Array of size :math:`3N` containing the Cartesian coordinates of each atom.
     lat_and_inv : :obj:`tuple` of :obj:`numpy.ndarray`, optional
-        Tuple of :math:`3 \\times 3` matrix containing lattice vectors as
+        Tuple of :math:`3 \times 3` matrix containing lattice vectors as
         columns and its inverse.
 
     Returns
@@ -129,14 +124,14 @@ def _squareform(vec_or_mat):
 
         return mat
 
-    else:  # matrix to vector
+    # matrix to vector
 
-        assert vec_or_mat.shape[0] == vec_or_mat.shape[1]  # matrix is square
+    assert vec_or_mat.shape[0] == vec_or_mat.shape[1]  # matrix is square
 
-        n = vec_or_mat.shape[0]
-        i, j = np.tril_indices(n, k=-1)
+    n = vec_or_mat.shape[0]
+    i, j = np.tril_indices(n, k=-1)
 
-        return vec_or_mat[i, j]
+    return vec_or_mat[i, j]
 
 
 def _r_to_desc(r, pdist):
@@ -149,7 +144,7 @@ def _r_to_desc(r, pdist):
         Array of size :math:`3N` containing the Cartesian coordinates of
         each atom.
     pdist : :obj:`numpy.ndarray`
-        Array of size :math:`N \\times N` containing the Euclidean distance
+        Array of size :math:`N \times N` containing the Euclidean distance
         (L2-norm) for each pair of atoms.
 
     Returns
@@ -177,16 +172,16 @@ def _r_to_d_desc(r, pdist, lat_and_inv=None):
         Array of size :math:`3N` containing the Cartesian coordinates of
         each atom.
     pdist : :obj:`numpy.ndarray`
-        Array of size :math:`N \\times N` containing the Euclidean distance
+        Array of size :math:`N \times N` containing the Euclidean distance
         (L2-norm) for each pair of atoms.
     lat_and_inv : :obj:`tuple` of :obj:`numpy.ndarray`, optional
-        Tuple of :math:`3 \\times 3` matrix containing lattice vectors as
+        Tuple of :math:`3 \times 3` matrix containing lattice vectors as
         columns and its inverse.
 
     Returns
     -------
     :obj:`numpy.ndarray`
-        Array of size :math:`N(N-1)/2 \\times 3N` containing all partial
+        Array of size :math:`N(N-1)/2 \times 3N` containing all partial
         derivatives of the descriptor.
     """
     r = r.reshape(-1, 3)
@@ -215,7 +210,7 @@ def _from_r(r, lat_and_inv=None):
         Array of size :math:`3N` containing the Cartesian coordinates of
         each atom.
     lat_and_inv : :obj:`tuple` of :obj:`numpy.ndarray`, optional
-        Tuple of :math:`3 \\times 3` matrix containing lattice vectors as
+        Tuple of :math:`3 \times 3` matrix containing lattice vectors as
         columns and its inverse.
 
     Returns
@@ -223,7 +218,7 @@ def _from_r(r, lat_and_inv=None):
     :obj:`numpy.ndarray`
         Descriptor representation as 1D array of size :math:`N(N-1)/2`.
     :obj:`numpy.ndarray`
-        Array of size :math:`N(N-1)/2 \\times 3N` containing all partial
+        Array of size :math:`N(N-1)/2 \times 3N` containing all partial
         derivatives of the descriptor.
     """
     # Add singleton dimension if input is (,3N).
@@ -290,10 +285,10 @@ class Desc(object):
         Parameters
         ----------
         R : :obj:`numpy.ndarray`
-            Array of size :math:`M \\times 3N` containing the Cartesian
+            Array of size :math:`M \times 3N` containing the Cartesian
             coordinates of each atom.
         lat_and_inv : :obj:`tuple` of :obj:`numpy.ndarray`, default: :obj:`None`
-            Tuple of :math:`3 \\times 3` matrix containing lattice vectors as
+            Tuple of :math:`3 \times 3` matrix containing lattice vectors as
             columns and its inverse.
         max_processes : :obj:`int`, default: :obj:`None`
             Limit the max number of processes. Otherwise all CPU cores are
@@ -303,10 +298,10 @@ class Desc(object):
         Returns
         -------
         :obj:`numpy.ndarray`
-            Array of size :math:`M \\times N(N-1)/2` containing the descriptor
+            Array of size :math:`M \times N(N-1)/2` containing the descriptor
             representation for each geometry.
         :obj:`numpy.ndarray`
-            Array of size :math:`M \\times N(N-1)/2 \\times 3N` containing all
+            Array of size :math:`M \times N(N-1)/2 \times 3N` containing all
             partial derivatives of the descriptor for each geometry.
         """
 
@@ -335,13 +330,15 @@ class Desc(object):
 
         if pool is not None:
             pool.close()
-            pool.join()  # Wait for the worker processes to terminate (to measure total runtime correctly).
+            # Wait for the worker processes to terminate (to measure total runtime
+            # correctly).
+            pool.join()
             pool = None
 
         return R_desc, R_d_desc
 
     # Multiplies descriptor(s) jacobian with 3N-vector(s) from the right side
-    def d_desc_dot_vec(self, R_d_desc, vecs, overwrite_vecs=False):
+    def d_desc_dot_vec(self, R_d_desc, vecs):
 
         if R_d_desc.ndim == 2:
             R_d_desc = R_d_desc[None, ...]
@@ -354,7 +351,7 @@ class Desc(object):
         vecs = vecs.reshape(vecs.shape[0], -1, 3)
 
         einsum = np.einsum
-        if _has_torch and torch.is_tensor(R_d_desc):
+        if _HAS_TORCH and torch.is_tensor(R_d_desc):
             assert torch.is_tensor(vecs)
             einsum = torch.einsum
 
@@ -369,11 +366,13 @@ class Desc(object):
         if vecs.ndim == 1:
             vecs = vecs[None, ...]
 
+        # either multiple descriptors or multiple vectors at once, not both (or the
+        # same number of both, than it will must be a multidot).
         assert (
             R_d_desc.shape[0] == 1
             or vecs.shape[0] == 1
             or R_d_desc.shape[0] == vecs.shape[0]
-        )  # either multiple descriptors or multiple vectors at once, not both (or the same number of both, than it will must be a multidot)
+        )
 
         n = np.max((R_d_desc.shape[0], vecs.shape[0]))
         i, j = self.tril_indices
@@ -405,7 +404,7 @@ class Desc(object):
         Parameters
         ----------
         R_d_desc : :obj:`numpy.ndarray` or :obj:`torch.tensor`
-            Array of size :math:`M \\times N \\times N \\times 3` containing the
+            Array of size :math:`M \times N \times N \times 3` containing the
             compressed descriptor Jacobian.
         out : :obj:`numpy.ndarray` or :obj:`torch.tensor`, optional
             Output argument. This must have the exact kind that would
@@ -418,7 +417,7 @@ class Desc(object):
         Returns
         -------
         :obj:`numpy.ndarray` or :obj:`torch.tensor`
-            Array of size :math:`M \\times N(N-1)/2 \\times 3N` containing the
+            Array of size :math:`M \times N(N-1)/2 \times 3N` containing the
             full representation.
         """
 
@@ -429,9 +428,10 @@ class Desc(object):
         i, j = self.tril_indices
 
         if out is None:
-            if _has_torch and torch.is_tensor(R_d_desc):
+            if _HAS_TORCH and torch.is_tensor(R_d_desc):
                 device = R_d_desc.device
                 dtype = R_d_desc.dtype
+                # pylint: disable-next=no-member
                 out = torch.zeros((n, self.dim, self.n_atoms, 3), device=device).to(
                     dtype
                 )
@@ -454,13 +454,13 @@ class Desc(object):
         Parameters
         ----------
         R_d_desc : :obj:`numpy.ndarray`
-            Array of size :math:`M \\times N(N-1)/2 \\times 3N` containing the
+            Array of size :math:`M \times N(N-1)/2 \times 3N` containing the
             descriptor Jacobian.
 
         Returns
         -------
         :obj:`numpy.ndarray`
-            Array of size :math:`M \\times N \\times N \\times 3` containing the
+            Array of size :math:`M \times N \times N \times 3` containing the
             compressed representation.
         """
         # Add singleton dimension for single inputs.
