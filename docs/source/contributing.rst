@@ -241,4 +241,4 @@ Push the commit and tags.
 
     $ git push --follow-tags
 
-Then, create a new release on `GitHub <https://github.com/aalexmmaldonado/reptar/releases>`__.
+Then, create a new release on `GitHub <https://github.com/keithgroup/mbGDML/releases>`__.
