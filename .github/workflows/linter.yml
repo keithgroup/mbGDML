@@ -1,0 +1,68 @@
+---
+#################################
+#################################
+## Super Linter GitHub Actions ##
+#################################
+#################################
+name: Lint Code Base
+
+#############################
+# Start the job on all push #
+#############################
+on: [push, pull_request]
+
+###############
+# Set the Job #
+###############
+jobs:
+  build:
+    # Name the Job
+    name: Lint Code Base
+    # Set the agent to run on
+    runs-on: ubuntu-latest
+
+    ##################
+    # Load all steps #
+    ##################
+    steps:
+      ##########################
+      # Checkout the code base #
+      ##########################
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          # Full git history is needed to get a proper
+          # list of changed files within `super-linter`
+          fetch-depth: 0
+      
+      ############################
+      # Install the dependencies #
+      ############################
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.10'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install ase cclib matplotlib natsort numpy scipy
+          python -m pip install umap-learn psutil bayesian-optimization qcelemental
+          python -m pip install pandas
+
+      ################################
+      # Run Linter against code base #
+      ################################
+      - name: Lint Code Base
+        uses: github/super-linter@v4
+        env:
+          VALIDATE_ALL_CODEBASE: false
+          DEFAULT_BRANCH: main
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VALIDATE_PYTHON_BLACK: true
+          VALIDATE_PYTHON_PYLINT: true
+          # Linter config files are stored in repository root to make local
+          # usage easier.
+          LINTER_RULES_PATH: .
+          PYTHON_PYLINT_CONFIG_FILE: .pylintrc
+          PYTHONPATH: "/opt/hostedtoolcache/Python/3.10.8/x64/lib/python3.10/site-packages"

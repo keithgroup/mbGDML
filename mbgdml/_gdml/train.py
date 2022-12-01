@@ -73,7 +73,7 @@ log = logging.getLogger(__name__)
 
 
 def _share_array(arr_np, typecode_or_type):
-    """Return a ctypes array allocated from shared memory with data from a
+    r"""Return a ctypes array allocated from shared memory with data from a
     NumPy array.
 
     Parameters
@@ -95,7 +95,7 @@ def _share_array(arr_np, typecode_or_type):
 def _assemble_kernel_mat_wkr(
     j, tril_perms_lin, sig, use_E_cstr=False, exploit_sym=False, cols_m_limit=None
 ):
-    """Compute one row and column of the force field kernel matrix.
+    r"""Compute one row and column of the force field kernel matrix.
 
     The Hessian of the Matern kernel is used with n = 2 (twice
     differentiable). Each row and column consists of matrix-valued
@@ -294,7 +294,7 @@ def _assemble_kernel_mat_wkr(
 
 
 class GDMLTrain(object):
-    """Train GDML force fields.
+    r"""Train GDML force fields.
 
     This class is used to train models using different closed-form
     and numerical solvers. GPU support is provided
@@ -373,7 +373,7 @@ class GDMLTrain(object):
         idxs_train=None,
         idxs_valid=None,
     ):
-        """Create a data structure, :obj:`dict`, of custom type ``task``.
+        r"""Create a data structure, :obj:`dict`, of custom type ``task``.
 
         These data structures serve as recipes for model creation,
         summarizing the configuration of one particular training run.
@@ -666,7 +666,7 @@ class GDMLTrain(object):
         alphas_F,
         alphas_E=None,
     ):
-        """Create a data structure, :obj:`dict`, of custom type ``model``.
+        r"""Create a data structure, :obj:`dict`, of custom type ``model``.
 
         These data structures contain the trained model are everything
         that is needed to generate predictions for new inputs.
@@ -760,7 +760,7 @@ class GDMLTrain(object):
         return model
 
     def train_labels(self, F, use_E, use_E_cstr, E=None):
-        """Compute custom train labels.
+        r"""Compute custom train labels.
 
         By default, they are the raveled forces scaled by the standard
         deviation. Energy labels are included if ``use_E`` and ``use_E_cstr``
@@ -808,7 +808,7 @@ class GDMLTrain(object):
         return y, y_std, E_train_mean
 
     def train(self, task, require_E_eval=False):
-        """Train a model based on a task.
+        r"""Train a model based on a task.
 
         Parameters
         ----------
@@ -1017,7 +1017,7 @@ class GDMLTrain(object):
         return est_bytes
 
     def solve_analytic(self, task, desc, R_desc, R_d_desc, tril_perms_lin, y):
-        """Condensed :class:`sgdml.solvers.analytic.Analytic` class.
+        r"""Condensed :class:`sgdml.solvers.analytic.Analytic` class.
 
         Parameters
         ----------
@@ -1144,7 +1144,7 @@ class GDMLTrain(object):
     def _recov_int_const(
         self, model, task, R_desc=None, R_d_desc=None, require_E_eval=False
     ):
-        """Estimate the integration constant for a force field model.
+        r"""Estimate the integration constant for a force field model.
 
         The offset between the energies predicted for the original training
         data and the true energy labels is computed in the least square sense.
@@ -1247,7 +1247,7 @@ class GDMLTrain(object):
         col_idxs=np.s_[:],
         alloc_extra_rows=0,
     ):
-        """Compute force field kernel matrix.
+        r"""Compute force field kernel matrix.
 
         The Hessian of the Matern kernel is used with n = 2 (twice
         differentiable). Each row and column consists of matrix-valued blocks,
@@ -1473,7 +1473,7 @@ class GDMLTrain(object):
 
 
 def get_test_idxs(model, dataset, n_test=None):
-    """Gets dataset indices for testing a model.
+    r"""Gets dataset indices for testing a model.
 
     Parameters
     ----------
@@ -1535,7 +1535,7 @@ def get_test_idxs(model, dataset, n_test=None):
 def add_valid_errors(
     model, dataset, overwrite=False, max_processes=None, use_torch=False
 ):
-    """Calculate and add energy and force validation errors to a model.
+    r"""Calculate and add energy and force validation errors to a model.
 
     Parameters
     ----------
@@ -1591,7 +1591,7 @@ def save_model(model, model_path):
 def model_errors(
     model, dataset, is_valid=False, n_test=None, max_processes=None, use_torch=False
 ):
-    """Computes model errors for either validation or testing purposes.
+    r"""Computes model errors for either validation or testing purposes.
 
     Parameters
     ----------

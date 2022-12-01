@@ -27,7 +27,7 @@ log = logging.getLogger(__name__)
 
 # Possible ray task.
 def predict_gap(z, r, entity_ids, entity_combs, model, periodic_cell, **kwargs):
-    """Predict total :math:`n`-body energy and forces of a single structure.
+    r"""Predict total :math:`n`-body energy and forces of a single structure.
 
     Parameters
     ----------
@@ -109,7 +109,7 @@ def predict_gap(z, r, entity_ids, entity_combs, model, periodic_cell, **kwargs):
 
 
 def predict_gap_decomp(z, r, entity_ids, entity_combs, model, **kwargs):
-    """Predict all :math:`n`-body energies and forces of a single structure.
+    r"""Predict all :math:`n`-body energies and forces of a single structure.
 
     Parameters
     ----------

@@ -39,7 +39,7 @@ train_dir = "./tests/data/train"
 
 
 def test_train_results_1h2o():
-    """Checks the results of a training task."""
+    r"""Checks the results of a training task."""
     global glob
     if "glob" in globals():
         del glob

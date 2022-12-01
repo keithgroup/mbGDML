@@ -395,7 +395,7 @@ class GDMLTorchAssemble(nn.Module):
 
 
 class GDMLTorchPredict(nn.Module):
-    """PyTorch version of ``predict.GDMLPredict``. Derives from
+    r"""PyTorch version of ``predict.GDMLPredict``. Derives from
     ``torch.nn.Module``. Contains no trainable parameters.
     """
 

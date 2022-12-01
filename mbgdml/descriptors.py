@@ -29,7 +29,7 @@ log = logging.getLogger(__name__)
 
 
 class Criteria(object):
-    """Descriptor criteria for accepting a structure based on a descriptor
+    r"""Descriptor criteria for accepting a structure based on a descriptor
     and cutoff.
     """
 
@@ -63,7 +63,7 @@ class Criteria(object):
         self.bound = bound
 
     def accept(self, Z, R, **kwargs):
-        """Determine if we accept the structure.
+        r"""Determine if we accept the structure.
 
         Parameters
         ----------
@@ -103,7 +103,7 @@ class Criteria(object):
 
 
 def get_center_of_mass(Z, R):
-    """Compute the center of mass.
+    r"""Compute the center of mass.
 
     Parameters
     ----------
@@ -128,7 +128,7 @@ def get_center_of_mass(Z, R):
 
 
 def max_atom_pair_dist(Z, R):
-    """The largest atomic pairwise distance.
+    r"""The largest atomic pairwise distance.
 
     Parameters
     ----------
@@ -156,7 +156,7 @@ def max_atom_pair_dist(Z, R):
 
 
 def com_distance_sum(Z, R, entity_ids):
-    """The sum of pairwise distances from each entity's center of mass to
+    r"""The sum of pairwise distances from each entity's center of mass to
     the total structure center of mass.
 
     This descriptor, :math:`L`, is defined as

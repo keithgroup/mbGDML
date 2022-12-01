@@ -30,7 +30,7 @@ from qcelemental import periodictable as ptable
 
 
 def norm_path(path):
-    """Normalizes directory paths to be consistent.
+    r"""Normalizes directory paths to be consistent.
 
     Parameters
     ----------
@@ -53,7 +53,7 @@ def norm_path(path):
 
 
 def get_files(path, expression, recursive=True):
-    """Returns paths to all files in a given directory that matches a provided
+    r"""Returns paths to all files in a given directory that matches a provided
     expression in the file name.
 
     Parameters
@@ -96,7 +96,7 @@ def get_files(path, expression, recursive=True):
 
 
 def get_filename(path):
-    """The name of the file without the extension from a path.
+    r"""The name of the file without the extension from a path.
 
     If there are periods in the file name with no file extension, will always
     remove the last one.
@@ -115,7 +115,7 @@ def get_filename(path):
 
 
 def natsort_list(unsorted_list):
-    """Basic function that organizes a list based on human (or natural) sorting
+    r"""Basic function that organizes a list based on human (or natural) sorting
     methodology.
 
     Parameters
@@ -136,7 +136,7 @@ def natsort_list(unsorted_list):
 
 
 def string_xyz_arrays(Z, R, *args, precision=10):
-    """Create string of array data in XYZ format for a single structure.
+    r"""Create string of array data in XYZ format for a single structure.
 
     Parameters
     ----------
@@ -177,7 +177,7 @@ def string_xyz_arrays(Z, R, *args, precision=10):
 
 
 def write_xyz(xyz_path, Z, R, comments=None, data_precision=10):
-    """Write standard XYZ file.
+    r"""Write standard XYZ file.
 
     Parameters
     ----------
@@ -207,7 +207,7 @@ def write_xyz(xyz_path, Z, R, comments=None, data_precision=10):
 
 
 def convert_forces(forces, e_units_calc, r_units_calc, e_units, r_units):
-    """Converts forces (or gradients) to specified units.
+    r"""Converts forces (or gradients) to specified units.
 
     Parameters
     ----------
@@ -246,7 +246,7 @@ def convert_forces(forces, e_units_calc, r_units_calc, e_units, r_units):
 
 
 def atoms_by_element(atom_list):
-    """Converts a list of atoms identified by their atomic number to their
+    r"""Converts a list of atoms identified by their atomic number to their
     elemental symbol in the same order.
 
     Parameters
@@ -263,7 +263,7 @@ def atoms_by_element(atom_list):
 
 
 def atoms_by_number(atom_list):
-    """Converts a list of atoms identified by their elemental symbol to their
+    r"""Converts a list of atoms identified by their elemental symbol to their
     atomic number.
 
     Parameters
@@ -280,7 +280,7 @@ def atoms_by_number(atom_list):
 
 
 def md5_data(data, keys):
-    """Creates MD5 hash for a set of data.
+    r"""Creates MD5 hash for a set of data.
 
     Parameters
     ----------
@@ -311,7 +311,7 @@ def md5_data(data, keys):
 
 
 def get_entity_ids(atoms_per_mol, num_mol, starting_idx=0, add_to=None):
-    """Generates entity ids for a single species.
+    r"""Generates entity ids for a single species.
 
     Note that all of the atoms in each molecule must occur in the same order and
     be grouped together.
@@ -345,7 +345,7 @@ def get_entity_ids(atoms_per_mol, num_mol, starting_idx=0, add_to=None):
 
 
 def get_comp_ids(label, num_mol, entity_ids, add_to=None):
-    """Prepares the list of component ids for a system with only one species.
+    r"""Prepares the list of component ids for a system with only one species.
 
     Parameters
     ----------
@@ -376,7 +376,7 @@ def get_comp_ids(label, num_mol, entity_ids, add_to=None):
 
 
 def get_R_slice(entities, entity_ids):
-    """Retrives R slice for specific entities.
+    r"""Retrieves R slice for specific entities.
 
     Parameters
     ----------
@@ -400,7 +400,7 @@ def get_R_slice(entities, entity_ids):
 
 
 def center_structures(Z, R):
-    """Centers each structure's center of mass to the origin.
+    r"""Centers each structure's center of mass to the origin.
 
     Previously centered structures should not be affected by this technique.
 
@@ -437,7 +437,7 @@ def center_structures(Z, R):
 
 
 def save_json(json_path, json_dict):
-    """Save JSON file.
+    r"""Save JSON file.
 
     Parameters
     ----------
@@ -454,7 +454,7 @@ def save_json(json_path, json_dict):
 
 
 def gen_combs(sets, replacement=False):
-    """Generate combinations from multiple sets.
+    r"""Generate combinations from multiple sets.
 
     Parameters
     ----------
@@ -497,7 +497,7 @@ def gen_combs(sets, replacement=False):
 
 
 def chunk_iterable(iterable, n):
-    """Chunk an iterable into ``n`` objects.
+    r"""Chunk an iterable into ``n`` objects.
 
     Parameters
     ----------
@@ -517,7 +517,7 @@ def chunk_iterable(iterable, n):
 
 
 def chunk_array(array, n):
-    """Chunk an array.
+    r"""Chunk an array.
 
     Parameters
     ----------

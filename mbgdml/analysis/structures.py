@@ -29,7 +29,7 @@ from .. import utils
 
 
 class structureEmbedding:
-    """Uses the uniform manifold approximation and projection to embed R
+    r"""Uses the uniform manifold approximation and projection to embed R
     descriptors.
 
     For more information see https://umap-learn.readthedocs.io/en/latest/.
@@ -73,7 +73,7 @@ class structureEmbedding:
 
     @property
     def data_info(self):
-        """Information about the data included in the UMAP npz.
+        r"""Information about the data included in the UMAP npz.
 
         The order of data information needs to be in the same order as the data
         in ``R``, ``R_desc``, etc. was added. Each item in the list provides
@@ -104,7 +104,7 @@ class structureEmbedding:
 
     @property
     def z(self):
-        """Atomic numbers of all atoms in data set structures.
+        r"""Atomic numbers of all atoms in data set structures.
 
         A ``(n,)`` shape array of type :obj:`numpy.int32` containing atomic
         numbers of atoms in the structures in order as they appear.
@@ -122,7 +122,7 @@ class structureEmbedding:
 
     @property
     def R(self):
-        """Atomic coordinates of structure(s).
+        r"""Atomic coordinates of structure(s).
 
         A :obj:`numpy.ndarray` with shape of ``(m, n, 3)`` where ``m`` is the
         number of structures and ``n`` is the number of atoms with three
@@ -141,7 +141,7 @@ class structureEmbedding:
 
     @property
     def R_desc(self):
-        """Inverse pairwise distance descriptors of R from sGDML.
+        r"""Inverse pairwise distance descriptors of R from sGDML.
 
         :type: :obj:`numpy.ndarray`
         """
@@ -156,7 +156,7 @@ class structureEmbedding:
 
     @property
     def E_true(self):
-        """True (or reference) energies of the structures in R.
+        r"""True (or reference) energies of the structures in R.
 
         :type: :obj:`numpy.ndarray`
         """
@@ -171,7 +171,7 @@ class structureEmbedding:
 
     @property
     def E_pred(self):
-        """Predicted energies of the structures in R from a mbGDML model.
+        r"""Predicted energies of the structures in R from a mbGDML model.
 
         :type: :obj:`numpy.ndarray`
         """
@@ -186,7 +186,7 @@ class structureEmbedding:
 
     @property
     def F_true(self):
-        """True (or reference) atomic forces of atoms in structure(s).
+        r"""True (or reference) atomic forces of atoms in structure(s).
 
         A :obj:`numpy.ndarray` with shape of ``(m, n, 3)`` where ``m`` is the
         number of structures and ``n`` is the number of atoms with three
@@ -205,7 +205,7 @@ class structureEmbedding:
 
     @property
     def F_pred(self):
-        """Predicted atomic forces of atoms in structures from a model.
+        r"""Predicted atomic forces of atoms in structures from a model.
 
         A :obj:`numpy.ndarray` with shape of ``(m, n, 3)`` where ``m`` is the
         number of structures and ``n`` is the number of atoms with three
@@ -223,7 +223,7 @@ class structureEmbedding:
         self._F_pred = var
 
     def R_desc_from_model(self, a_model):
-        """Returns the inverse pairwise sGDML descriptor and its Jacobian from
+        r"""Returns the inverse pairwise sGDML descriptor and its Jacobian from
         a mbGDML model.
 
         Parameters
@@ -239,7 +239,7 @@ class structureEmbedding:
         return a_model.model_dict["R_desc"].T
 
     def get_R_desc(self, z, R):
-        """Calculates the inverse pairwise sGDML descriptor and its Jacobian.
+        r"""Calculates the inverse pairwise sGDML descriptor and its Jacobian.
 
         Parameters
         ----------
@@ -264,7 +264,7 @@ class structureEmbedding:
         return (R_desc, R_d_desc)
 
     def embed(self):
-        """Embed the descriptors and derivatives in two dimensions.
+        r"""Embed the descriptors and derivatives in two dimensions.
 
         Will set the ``reducer`` attribute if it does not exist or update it
         if ``n_neighbors``, ``min_dist``, or ``random_state`` have changed.
@@ -303,7 +303,7 @@ class structureEmbedding:
 
     @property
     def umap_data(self):
-        """
+        r"""
 
         :type: :obj:`dict`
         """
@@ -337,7 +337,7 @@ class structureEmbedding:
         return data
 
     def save(self, name, data, save_dir):
-        """Save UMAP data into an npz file.
+        r"""Save UMAP data into an npz file.
 
         Parameters
         ----------
@@ -353,7 +353,7 @@ class structureEmbedding:
         np.savez_compressed(save_path, **data)
 
     def _update(self, umap_data):
-        """Updates UMAP object properties from ``umap_data`` :obj:`dict`.
+        r"""Updates UMAP object properties from ``umap_data`` :obj:`dict`.
 
         Parameters
         ----------
@@ -382,7 +382,7 @@ class structureEmbedding:
         self.embedding = umap_data["embedding"]
 
     def load(self, umap_path):
-        """Load a UMAP npz file.
+        r"""Load a UMAP npz file.
 
         Parameters
         ----------
@@ -394,7 +394,7 @@ class structureEmbedding:
 
 
 class mbExpansion:
-    """Predicts energies and forces of a structure using a many-body expansion.
+    r"""Predicts energies and forces of a structure using a many-body expansion.
 
     Uses data sets with energy and force predictions up to and including
     n molecules from a single structure. Can provide a theoretical maximum
@@ -405,7 +405,7 @@ class mbExpansion:
         pass
 
     def _contribution(self, E, F, mol_info, dsets, operation):
-        """Adds or removes energy and force contributions in data sets.
+        r"""Adds or removes energy and force contributions in data sets.
 
         Forces are currently not updated but still returned.
 
@@ -469,7 +469,7 @@ class mbExpansion:
         return E, F
 
     def create_nbody_dset(self, dset, nbody_dsets):
-        """Creates a n-body data set with < n contributions removed from other data
+        r"""Creates a n-body data set with < n contributions removed from other data
         sets.
 
         Parameters
@@ -499,7 +499,7 @@ class mbExpansion:
         return dset
 
     def nbody_contribution(self, dset, n_molecules, n_atoms_per_molecule):
-        """Calculates contributions for n-body structures where n > 1.
+        r"""Calculates contributions for n-body structures where n > 1.
 
         Only works with data sets containing the same chemical species.
 
@@ -528,7 +528,7 @@ class mbExpansion:
         return E, F
 
     def predict(self, nmer_dsets):
-        """Predict the energy and force of some structure using a many-body
+        r"""Predict the energy and force of some structure using a many-body
         decomposition.
 
         Only works with data sets containing the same chemical species.

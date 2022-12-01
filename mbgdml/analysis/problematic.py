@@ -39,7 +39,7 @@ log = logging.getLogger(__name__)
 
 
 class prob_structures:
-    """Find problematic structures for models in datasets.
+    r"""Find problematic structures for models in datasets.
 
     Clusters all structures in a dataset using agglomerative and k-means
     algorithms using a structural descriptor and energies.
@@ -78,14 +78,14 @@ class prob_structures:
         ({"n_clusters": 10}, {"n_clusters": 5})
 
         self.course_n_cl_r = 10
-        """Number of clusters used in the course stage for geometries.
+        r"""Number of clusters used in the course stage for geometries.
 
         There will be a total of ``course_n_cl_r`` clusters.
 
         :type: :obj:`int`, default: ``10``
         """
         self.course_n_cl_e = 5
-        """Number of clusters used in the course stage for energies.
+        r"""Number of clusters used in the course stage for energies.
         After clustering structures by geometric descriptor (using
         ``course_n_cl_r``), then each cluster is further refined by energies.
 
@@ -95,12 +95,12 @@ class prob_structures:
         :type: :obj:`int`, default: ``5``
         """
         self.refine_n_cl = 100
-        """Number of clusters used in the refine stage.
+        r"""Number of clusters used in the refine stage.
 
         :type: :obj:`int`, default: ``100``
         """
         self.refine_min_r_ratio = 2.0
-        """Minimum ratio of structures to number of clusters in the refine
+        r"""Minimum ratio of structures to number of clusters in the refine
         stage. Will reduce the minimum loss set point for refinement until 
         ``refine_n_cl`` :math:`\\times` ``refine_min_r_ratio`` structures are
         available.
@@ -108,17 +108,17 @@ class prob_structures:
         :type: :obj:`int`, default: ``2.0``
         """
         self.loss_func = loss_f_mse
-        """Loss function used to determine problematic structures.
+        r"""Loss function used to determine problematic structures.
 
         :type: ``callable``, default: :obj:`mbgdml.losses.loss_f_mse`
         """
         self.loss_func_kwargs = {}
-        """Any keyword arguments beyond ``results`` for the loss function.
+        r"""Any keyword arguments beyond ``results`` for the loss function.
 
         :type: :obj:`dict`, default: ``{}``
         """
         self.kwargs_subplot = {"figsize": (5.5, 3), "constrained_layout": True}
-        """``pyplot.subplot`` keyword arguments.
+        r"""``pyplot.subplot`` keyword arguments.
 
         **Default:**
 
@@ -129,18 +129,18 @@ class prob_structures:
         :type: :obj:`dict`
         """
         self.plot_lolli_color = "#223F4B"
-        """Lollipop color.
+        r"""Lollipop color.
         
         :type: :obj:`str`, default: ``'#223F4B'``
         """
         self.plot_annotate_cl_idx = False
-        """Add the cluster index above the cluster loss value.
+        r"""Add the cluster index above the cluster loss value.
 
         :type: :obj:`bool`, default: ``False``
         """
 
     def get_pd(self, R):
-        """Computes pairwise distances from atomic positions.
+        r"""Computes pairwise distances from atomic positions.
 
         Parameters
         ----------
@@ -164,7 +164,7 @@ class prob_structures:
         return R_pd
 
     def prob_cl_indices(self, cl_idxs, cl_losses):
-        """Identify problematic dataset indices.
+        r"""Identify problematic dataset indices.
 
         Parameters
         ----------
@@ -193,7 +193,7 @@ class prob_structures:
         return idxs
 
     def n_cl_samples(self, n_sample, cl_weights, cl_pop, cl_losses):
-        """Number of dataset indices to sample from each cluster.
+        r"""Number of dataset indices to sample from each cluster.
 
         Parameters
         ----------
@@ -237,7 +237,7 @@ class prob_structures:
         return samples.astype(int)
 
     def select_prob_indices(self, n_select, cl_idxs, idx_loss_cl):
-        """Select ``n`` problematic dataset indices based on weighted cluster
+        r"""Select ``n`` problematic dataset indices based on weighted cluster
         losses and distribution.
 
         Parameters
@@ -293,7 +293,7 @@ class prob_structures:
         image_dpi=600,
         save_dir=".",
     ):
-        """Find problematic structures in a dataset.
+        r"""Find problematic structures in a dataset.
 
         Uses agglomerative and k-means clustering on a dataset. First, the
         dataset is split into ``10`` clusters based on atomic pairwise
@@ -482,7 +482,7 @@ class prob_structures:
         lolli_color="#223F4B",
         annotate_cl_idx=False,
     ):
-        """Plot cluster losses and population histogram using matplotlib.
+        r"""Plot cluster losses and population histogram using matplotlib.
 
         Parameters
         ----------

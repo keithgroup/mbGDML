@@ -27,7 +27,7 @@ log = logging.getLogger(__name__)
 
 
 def predict_schnet(z, r, entity_ids, entity_combs, model, periodic_cell, **kwargs):
-    """Predict total :math:`n`-body energy and forces of a single structure.
+    r"""Predict total :math:`n`-body energy and forces of a single structure.
 
     Parameters
     ----------
@@ -100,7 +100,7 @@ def predict_schnet(z, r, entity_ids, entity_combs, model, periodic_cell, **kwarg
 
 
 def predict_schnet_decomp(z, r, entity_ids, entity_combs, model, **kwargs):
-    """Predict total :math:`n`-body energy and forces of a single structure.
+    r"""Predict total :math:`n`-body energy and forces of a single structure.
 
     Parameters
     ----------

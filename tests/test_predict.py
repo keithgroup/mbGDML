@@ -37,7 +37,6 @@ molecule_sizes = {"h2o": 3, "mecn": 6, "meoh": 6}
 
 
 def test_predict_single_16mer():
-    """ """
     dset_16h2o_path = f"{dset_dir}/16h2o/16h2o.yoo.etal.boat.b-dset-mp2.def2tzvp.npz"
     model_h2o_paths = [
         f"{model_dir}/140h2o.sphere.gfn2.md.500k.prod1.3h2o.dset.1h2o-model-train500.npz",

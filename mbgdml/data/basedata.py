@@ -25,14 +25,14 @@ from .. import utils
 
 
 class mbGDMLData:
-    """Parent class for mbGDML structure, data, and predict sets."""
+    r"""Parent class for mbGDML structure, data, and predict sets."""
 
     def __init__(self):
         pass
 
     @property
     def Z(self):
-        """Atomic numbers of all atoms in data set structures.
+        r"""Atomic numbers of all atoms in data set structures.
 
         A ``(n,)`` shape array of type :obj:`numpy.int32` containing atomic
         numbers of atoms in the structures in order as they appear.
@@ -50,7 +50,7 @@ class mbGDMLData:
 
     @property
     def n_Z(self):
-        """Number of atoms.
+        r"""Number of atoms.
 
         :type: :obj:`int`
         """
@@ -61,7 +61,7 @@ class mbGDMLData:
 
     @property
     def R(self):
-        """Atomic coordinates of structure(s).
+        r"""Atomic coordinates of structure(s).
 
         A :obj:`numpy.ndarray` with shape of ``(m, n, 3)`` where ``m`` is the
         number of structures and ``n`` is the number of atoms with three
@@ -82,7 +82,7 @@ class mbGDMLData:
 
     @property
     def n_R(self):
-        """Number of structures.
+        r"""Number of structures.
 
         :type: :obj:`int`
         """
@@ -93,7 +93,7 @@ class mbGDMLData:
 
     @property
     def r_unit(self):
-        """Units of distance. Options are ``'Angstrom'`` or ``'bohr'``.
+        r"""Units of distance. Options are ``'Angstrom'`` or ``'bohr'``.
 
         :type: :obj:`str`
         """
@@ -104,7 +104,7 @@ class mbGDMLData:
         self._r_unit = var
 
     def save(self, name, data, save_dir):
-        """General save function for GDML data sets and models.
+        r"""General save function for GDML data sets and models.
 
         Parameters
         ----------

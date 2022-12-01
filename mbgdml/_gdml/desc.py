@@ -45,7 +45,7 @@ log = logging.getLogger(__name__)
 
 
 def _pbc_diff(diffs, lat_and_inv, use_torch=False):
-    """Clamp differences of vectors to super cell.
+    r"""Clamp differences of vectors to super cell.
 
     Parameters
     ----------
@@ -82,7 +82,7 @@ def _pbc_diff(diffs, lat_and_inv, use_torch=False):
 
 
 def _pdist(r, lat_and_inv=None):
-    """Compute pairwise Euclidean distance matrix between all atoms.
+    r"""Compute pairwise Euclidean distance matrix between all atoms.
 
     Parameters
     ----------
@@ -140,7 +140,7 @@ def _squareform(vec_or_mat):
 
 
 def _r_to_desc(r, pdist):
-    """Generate descriptor for a set of atom positions in Cartesian
+    r"""Generate descriptor for a set of atom positions in Cartesian
     coordinates.
 
     Parameters
@@ -164,7 +164,7 @@ def _r_to_desc(r, pdist):
 
 
 def _r_to_d_desc(r, pdist, lat_and_inv=None):
-    """Generate descriptor Jacobian for a set of atom positions in
+    r"""Generate descriptor Jacobian for a set of atom positions in
     Cartesian coordinates.
 
     This method can apply the minimum-image convention as periodic
@@ -206,7 +206,7 @@ def _r_to_d_desc(r, pdist, lat_and_inv=None):
 
 
 def _from_r(r, lat_and_inv=None):
-    """Generate descriptor and its Jacobian for one molecular geometry
+    r"""Generate descriptor and its Jacobian for one molecular geometry
     in Cartesian coordinates.
 
     Parameters
@@ -239,7 +239,7 @@ def _from_r(r, lat_and_inv=None):
 
 
 class Desc(object):
-    """Generate descriptors and their Jacobians for molecular geometries,
+    r"""Generate descriptors and their Jacobians for molecular geometries,
     including support for periodic boundary conditions.
     """
 
@@ -284,7 +284,7 @@ class Desc(object):
         self.max_processes = max_processes
 
     def from_R(self, R, lat_and_inv=None, max_processes=None):
-        """Generate descriptor and its Jacobian for multiple molecular
+        r"""Generate descriptor and its Jacobian for multiple molecular
         geometries in Cartesian coordinates.
 
         Parameters
@@ -396,7 +396,7 @@ class Desc(object):
         # return out
 
     def d_desc_from_comp(self, R_d_desc, out=None):
-        """Convert a compressed representation of a descriptor Jacobian back
+        r"""Convert a compressed representation of a descriptor Jacobian back
         to its full representation.
 
         The compressed representation omits all zeros and scales with :math:`N`
@@ -446,7 +446,7 @@ class Desc(object):
         return out.reshape(-1, self.dim, self.dim_i)
 
     def d_desc_to_comp(self, R_d_desc):
-        """Convert a descriptor Jacobian to a compressed representation.
+        r"""Convert a descriptor Jacobian to a compressed representation.
 
         The compressed representation omits all zeros and scales with :math:`N`
         instead of :math:`N(N-1)/2`.
@@ -481,7 +481,7 @@ class Desc(object):
 
     @staticmethod
     def perm(perm):
-        """Convert atom permutation to descriptor permutation.
+        r"""Convert atom permutation to descriptor permutation.
 
         A permutation of :math:`N` atoms is converted to a permutation that acts
         on the corresponding descriptor representation. Applying the converted

@@ -36,7 +36,7 @@ h2o_4mer_data = {
 
 
 def test_4h2o_mbe_from_data():
-    """Many-body prediction of water tetramers."""
+    r"""Many-body prediction of water tetramers."""
 
     E_true = h2o_4mer_data["4h2o"]["energy_ele_mp2.def2tzvp_orca"]
     G_true = h2o_4mer_data["4h2o"]["grads_mp2.def2tzvp_orca"]

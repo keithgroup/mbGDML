@@ -27,11 +27,11 @@ import logging
 log = logging.getLogger(__name__)
 
 
-class mbeAlchemyScale(object):
-    """Scale many-body interactions according to an alchemical parameter."""
+class mbeAlchemyScale:
+    r"""Scale many-body interactions according to an alchemical parameter."""
 
     def __init__(self, entity_id, order, factor):
-        """
+        r"""
         Parameters
         ----------
         entity_id : :obj:`int`
@@ -46,7 +46,7 @@ class mbeAlchemyScale(object):
         self.factor = factor
 
     def scale(self, data):
-        """Scale energies and forces.
+        r"""Scale energies and forces.
 
         Parameters
         ----------

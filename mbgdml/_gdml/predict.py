@@ -254,7 +254,7 @@ class GDMLPredict(object):
         use_torch=False,
         log_level=None,
     ):
-        """Query trained sGDML force fields.
+        r"""Query trained sGDML force fields.
 
         This class is used to load a trained model and make energy and
         force predictions for new geometries. GPU support is provided
@@ -473,7 +473,7 @@ class GDMLPredict(object):
     ## Public ##
 
     def set_R_desc(self, R_desc):
-        """Store a reference to the training geometry descriptors.
+        r"""Store a reference to the training geometry descriptors.
 
         This can accelerate iterative model training.
 
@@ -487,7 +487,7 @@ class GDMLPredict(object):
         self.R_desc = R_desc
 
     def set_R_d_desc(self, R_d_desc):
-        """Store a reference to the training geometry descriptor Jacobians.
+        r"""Store a reference to the training geometry descriptor Jacobians.
 
         This function must be called before ``set_alphas()`` can be used.
 
@@ -512,7 +512,7 @@ class GDMLPredict(object):
             model.set_R_d_desc(R_d_desc)
 
     def set_alphas(self, alphas_F, alphas_E=None):
-        """Reconfigure the current model with a new set of regression parameters.
+        r"""Reconfigure the current model with a new set of regression parameters.
         ``R_d_desc`` needs to be set for this function to work.
 
         This routine is used during iterative model training.
@@ -561,7 +561,7 @@ class GDMLPredict(object):
                 np.copyto(alphas_E_lin, alphas_E_lin_new)
 
     def _set_num_workers(self, num_workers=None, force_reset=False):
-        """Set number of processes to use during prediction.
+        r"""Set number of processes to use during prediction.
 
         If ``bulk_mp == True``, each worker handles the whole generation of single
         prediction (this if for querying multiple geometries at once)
@@ -617,7 +617,7 @@ class GDMLPredict(object):
         self.wkr_starts_stops = list(zip(wkr_starts, wkr_stops))
 
     def _set_chunk_size(self, chunk_size=None):
-        """Set chunk size for each worker process.
+        r"""Set chunk size for each worker process.
 
         Every prediction is generated as a linear combination of the training
         points that the model is comprised of. If multiple workers are available
@@ -1002,7 +1002,7 @@ class GDMLPredict(object):
             return model._batch_size()
 
     def predict(self, R=None, return_E=True):
-        """Predict energy and forces for multiple geometries.
+        r"""Predict energy and forces for multiple geometries.
 
         This function can run on the GPU, if the optional PyTorch dependency is
         installed and ``use_torch=True`` was specified during

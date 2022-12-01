@@ -30,7 +30,7 @@ from ..mbe import mbePredict, decomp_to_total
 
 
 class predictSet(mbGDMLData):
-    """A predict set is a data set with mbGDML predicted energy and forces
+    r"""A predict set is a data set with mbGDML predicted energy and forces
     instead of training data.
 
     When analyzing many structures using mbGDML it is easier to
@@ -57,7 +57,7 @@ class predictSet(mbGDMLData):
     """
 
     def __init__(self, pset=None, Z_key="Z", R_key="R", E_key="E", F_key="F"):
-        """
+        r"""
         Parameters
         ----------
         pset : :obj:`str` or :obj:`dict`, optional
@@ -79,7 +79,7 @@ class predictSet(mbGDMLData):
             self.load(pset)
 
     def prepare(self):
-        """Prepares a predict set by calculated the decomposed energy and
+        r"""Prepares a predict set by calculated the decomposed energy and
         force contributions.
 
         Note
@@ -99,7 +99,7 @@ class predictSet(mbGDMLData):
         self._predicted = True
 
     def asdict(self):
-        """Converts object into a custom :obj:`dict`.
+        r"""Converts object into a custom :obj:`dict`.
 
         Returns
         -------
@@ -138,7 +138,7 @@ class predictSet(mbGDMLData):
 
     @property
     def e_unit(self):
-        """Units of energy. Options are ``eV``, ``hartree``, ``kcal/mol``, and
+        r"""Units of energy. Options are ``eV``, ``hartree``, ``kcal/mol``, and
         ``kJ/mol``.
 
         :type: :obj:`str`
@@ -151,7 +151,7 @@ class predictSet(mbGDMLData):
 
     @property
     def E_true(self):
-        """True energies from data set.
+        r"""True energies from data set.
 
         :type: :obj:`numpy.ndarray`
         """
@@ -163,7 +163,7 @@ class predictSet(mbGDMLData):
 
     @property
     def F_true(self):
-        """True forces from data set.
+        r"""True forces from data set.
 
         :type: :obj:`numpy.ndarray`
         """
@@ -174,7 +174,7 @@ class predictSet(mbGDMLData):
         self._F_true = var
 
     def load(self, pset):
-        """Reads predict data set and loads data.
+        r"""Reads predict data set and loads data.
 
         Parameters
         ----------
@@ -209,7 +209,7 @@ class predictSet(mbGDMLData):
         self._loaded = True
 
     def nbody_predictions(self, nbody_orders, n_workers=1):
-        """Energies and forces of all structures including ``nbody_order``
+        r"""Energies and forces of all structures including ``nbody_order``
         contributions.
 
         Predict sets have data that is broken down into many-body contributions.
@@ -251,7 +251,7 @@ class predictSet(mbGDMLData):
         return E, F
 
     def load_dataset(self, dset, Z_key="Z", R_key="R", E_key="E", F_key="F"):
-        """Loads data set in preparation to create a predict set.
+        r"""Loads data set in preparation to create a predict set.
 
         Parameters
         ----------
@@ -299,7 +299,7 @@ class predictSet(mbGDMLData):
     def load_models(
         self, models, predict_model, use_ray=False, n_workers=None, wkr_chunk_size=100
     ):
-        """Loads model(s) in preparation to create a predict set.
+        r"""Loads model(s) in preparation to create a predict set.
 
         Parameters
         ----------

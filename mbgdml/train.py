@@ -40,7 +40,7 @@ log = logging.getLogger(__name__)
 
 
 class mbGDMLTrain:
-    """Train many-body GDML models."""
+    r"""Train many-body GDML models."""
 
     def __init__(
         self,
@@ -139,7 +139,7 @@ class mbGDMLTrain:
             50000,
             100000,
         ]
-        """Determining reasonable ``sigma_bounds`` is difficult without some
+        r"""Determining reasonable ``sigma_bounds`` is difficult without some
         prior experience with the system. Even then, the optimal ``sigma``
         can drastically change depending on the training set size.
 
@@ -175,7 +175,7 @@ class mbGDMLTrain:
             "acq": "ucb",
             "kappa": 1.5,
         }
-        """Bayesian optimization parameters.
+        r"""Bayesian optimization parameters.
 
         **Default**
 
@@ -190,7 +190,7 @@ class mbGDMLTrain:
         :type: :obj:`dict`
         """
         self.bayes_opt_params_final = None
-        """Bayesian optimization parameters for the final iterative model.
+        r"""Bayesian optimization parameters for the final iterative model.
 
         If :obj:`None`, then ``bayes_opt_params`` are used.
 
@@ -199,7 +199,7 @@ class mbGDMLTrain:
         :type: :obj:`dict`
         """
         self.sigma_bounds = (2, 400)
-        """Kernel length scale bounds for the Bayesian optimization.
+        r"""Kernel length scale bounds for the Bayesian optimization.
 
         This is only used if ``sigma_grid`` if :obj:`None`.
 
@@ -208,7 +208,7 @@ class mbGDMLTrain:
         :type: :obj:`tuple`
         """
         self.check_energy_pred = True
-        """Will return the model with the lowest loss that predicts reasonable
+        r"""Will return the model with the lowest loss that predicts reasonable
         energies. If ``False``, the model with the lowest loss is not
         checked for reasonable energy predictions.
 
@@ -222,7 +222,7 @@ class mbGDMLTrain:
         :type: :obj:`bool`
         """
         self.loss_func = loss_f_rmse
-        """Loss function for validation. The input of this function is the
+        r"""Loss function for validation. The input of this function is the
         dictionary of :obj:`mbgdml._gdml.train.add_valid_errors` which
         contains ``force`` and ``energy`` errors.
         
@@ -231,13 +231,13 @@ class mbGDMLTrain:
         :type: ``callable``
         """
         self.loss_kwargs = {}
-        """Loss function keyword arguments with the exception of the validation
+        r"""Loss function keyword arguments with the exception of the validation
         ``results`` dictionary.
         
         :type: :obj:`dict`
         """
         self.require_E_eval = True
-        """Require energy evaluation regardless even if they are terrible.
+        r"""Require energy evaluation regardless even if they are terrible.
 
         If ``False``, it defaults to sGDML behavior (this does not work well
         with n-body training).
@@ -247,13 +247,13 @@ class mbGDMLTrain:
         :type: :obj:`bool`
         """
         self.keep_tasks = False
-        """Keep all models trained during the train task if ``True``. They are
+        r"""Keep all models trained during the train task if ``True``. They are
         removed by default.
         
         :type: :obj:`bool`
         """
         self.bayes_opt_n_check_rising = 4
-        """Number of additional ``sigma_grid`` probes to check if loss
+        r"""Number of additional ``sigma_grid`` probes to check if loss
         continues to rise after finding a minima.
 
         We often perform a grid search prior to Bayesian optimization.
@@ -303,7 +303,7 @@ class mbGDMLTrain:
         train_idxs=None,
         valid_idxs=None,
     ):
-        """Create a single training task that can be used as a template for
+        r"""Create a single training task that can be used as a template for
         hyperparameter searches.
 
         Parameters
@@ -344,7 +344,7 @@ class mbGDMLTrain:
         return self.task
 
     def train_model(self, task):
-        """Trains a GDML model from a task.
+        r"""Trains a GDML model from a task.
 
         Parameters
         ----------
@@ -362,7 +362,7 @@ class mbGDMLTrain:
         return model
 
     def test_model(self, model, dataset, n_test=None):
-        """Test model and add mbGDML modifications.
+        r"""Test model and add mbGDML modifications.
 
         Parameters
         ----------
@@ -400,7 +400,7 @@ class mbGDMLTrain:
         return model, results_test
 
     def save_valid_csv(self, save_dir, valid_json):
-        """Writes a CSV summary file for validation statistics.
+        r"""Writes a CSV summary file for validation statistics.
 
         This is just easier to see the trend of sigma and validation error.
 
@@ -436,7 +436,7 @@ class mbGDMLTrain:
         df.to_csv(os.path.join(save_dir, "valid.csv"), index=False)
 
     def save_idxs(self, model, dataset, save_dir, n_test):
-        """Saves npy files of the dataset splits (training, validation, and
+        r"""Saves npy files of the dataset splits (training, validation, and
         test).
 
         Parameters
@@ -457,7 +457,7 @@ class mbGDMLTrain:
         np.save(os.path.join(save_dir, "test_idxs"), test_idxs)
 
     def plot_bayes_opt_gp(self, optimizer):
-        """Prepare a plot of the Bayesian optimization Gaussian process.
+        r"""Prepare a plot of the Bayesian optimization Gaussian process.
 
         Parameters
         ----------
@@ -503,7 +503,7 @@ class mbGDMLTrain:
         return fig
 
     def _prepare_dset_dict(self, dataset):
-        """Prepares dataset dictionary for sGDML training routines from mbGDML
+        r"""Prepares dataset dictionary for sGDML training routines from mbGDML
         data set object.
 
         Primarily updates keys to the sGDML standard (e.g., ``'z'``, ``'R'``,
@@ -533,7 +533,7 @@ class mbGDMLTrain:
         write_json=True,
         write_idxs=True,
     ):
-        """Train a GDML model using Bayesian optimization for sigma.
+        r"""Train a GDML model using Bayesian optimization for sigma.
 
         Uses the `Bayesian optimization <https://github.com/fmfn/BayesianOptimization>`__
         package to automatically find the optimal sigma. This will maximize
@@ -643,7 +643,7 @@ class mbGDMLTrain:
         }
 
         def opt_func(sigma):
-            """Computes the (negative) validation loss that Bayesian
+            r"""Computes the (negative) validation loss that Bayesian
             optimization tries to optimize.
 
             Also updates ``valid_json``.
@@ -722,7 +722,7 @@ class mbGDMLTrain:
                 optimizer.probe({"sigma": sigma}, lazy=False)
 
             def constant_loss_rising(valid_json, min_idxs_orig):
-                """Checks for sustained rising loss.
+                r"""Checks for sustained rising loss.
 
                 Parameters
                 ----------
@@ -874,7 +874,7 @@ class mbGDMLTrain:
         write_json=True,
         write_idxs=True,
     ):
-        """Train a GDML model using a grid search for sigma.
+        r"""Train a GDML model using a grid search for sigma.
 
         Usually, the validation errors will decrease until an optimal sigma is
         found then start to increase (overfitting). We sort ``sigmas`` from
@@ -1077,7 +1077,7 @@ class mbGDMLTrain:
         write_json=True,
         write_idxs=True,
     ):
-        """Iteratively trains a GDML model by using Bayesian optimization and
+        r"""Iteratively trains a GDML model by using Bayesian optimization and
         adding problematic (high error) structures to the training set.
 
         Trains a GDML model with :meth:`mbgdml.train.mbGDMLTrain.bayes_opt`.

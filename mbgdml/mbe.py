@@ -40,7 +40,7 @@ log = logging.getLogger(__name__)
 
 
 def gen_r_entity_combs(r_prov_spec, entity_ids_lower):
-    """Generate ``entity_id`` combinations of a specific size for a single
+    r"""Generate ``entity_id`` combinations of a specific size for a single
     structure.
 
     ``r_prov_spec[2:]`` provides ``entity_ids`` of a reference structure.
@@ -86,7 +86,7 @@ def mbe_worker(
     entity_ids_lower,
     r_prov_specs_lower,
 ):
-    """Worker for computing many-body contributions.
+    r"""Worker for computing many-body contributions.
 
     This does not take into account if many-body contributions are being
     ``'added'`` or ``'removed'``. This just sums up all possible contributions.
@@ -195,7 +195,7 @@ def mbe_worker(
 
 
 def gen_r_idxs_worker(r_prov_specs, r_prov_ids_lower, n_workers):
-    """Generates the assigned structures for each worker.
+    r"""Generates the assigned structures for each worker.
 
     Parameters
     ----------
@@ -245,7 +245,7 @@ def mbe_contrib(
     ray_address="auto",
     n_workers=2,
 ):
-    """Adds or removes energy and derivative (i.e., gradients or forces)
+    r"""Adds or removes energy and derivative (i.e., gradients or forces)
     contributions from a reference.
 
     We use the term "lower" to refer to the lower-order (i.e., smaller) systems.
@@ -413,7 +413,7 @@ def decomp_to_total(
     ray_address="auto",
     n_workers=2,
 ):
-    """Sum decomposed :math:`n`-body energies and forces for total
+    r"""Sum decomposed :math:`n`-body energies and forces for total
     :math:`n`-body contribution.
 
     This is a wrapper around :func:`mbgdml.mbe.mbe_contrib`.
@@ -484,7 +484,7 @@ def decomp_to_total(
 
 
 class mbePredict(object):
-    """Predict energies and forces of structures using machine learning
+    r"""Predict energies and forces of structures using machine learning
     many-body models.
 
     This can be parallelized with ray but needs to be initialized with
@@ -565,7 +565,7 @@ class mbePredict(object):
                 self.periodic_cell = ray.put(periodic_cell)
 
     def get_avail_entities(self, comp_ids_r, comp_ids_model):
-        """Determines available ``entity_ids`` for each ``comp_id`` in a
+        r"""Determines available ``entity_ids`` for each ``comp_id`` in a
         structure.
 
         Parameters
@@ -590,7 +590,7 @@ class mbePredict(object):
         return avail_entity_ids
 
     def compute_nbody(self, z, r, entity_ids, comp_ids, model):
-        """Compute all :math:`n`-body contributions of a single structure
+        r"""Compute all :math:`n`-body contributions of a single structure
         using a :obj:`mbgdml.models.model` object.
 
         When ``use_ray = True``, this acts as a driver that spawns ray tasks of
@@ -709,7 +709,7 @@ class mbePredict(object):
         return E, F
 
     def compute_nbody_decomp(self, z, r, entity_ids, comp_ids, model):
-        """Compute all :math:`n`-body contributions of a single structure
+        r"""Compute all :math:`n`-body contributions of a single structure
         using a :obj:`mbgdml.models.model` object.
 
         Stores all individual entity ID combinations, energies and forces.
@@ -838,7 +838,7 @@ class mbePredict(object):
         return E, F, entity_combs
 
     def predict(self, z, R, entity_ids, comp_ids):
-        """Predict the energies and forces of one or multiple structures.
+        r"""Predict the energies and forces of one or multiple structures.
 
         Parameters
         ----------
@@ -881,7 +881,7 @@ class mbePredict(object):
         return E, F
 
     def predict_decomp(self, z, R, entity_ids, comp_ids):
-        """Predict the energies and forces of one or multiple structures.
+        r"""Predict the energies and forces of one or multiple structures.
 
         Parameters
         ----------

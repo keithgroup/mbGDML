@@ -27,7 +27,7 @@ log = logging.getLogger(__name__)
 
 
 def get_clustered_data(cl_idxs, data):
-    """Cluster data according to cluster indices.
+    r"""Cluster data according to cluster indices.
 
     Parameters
     ----------
@@ -52,7 +52,7 @@ def get_clustered_data(cl_idxs, data):
 
 
 def agglomerative(data, kwargs={"n_clusters": 10}):
-    """Cluster data using ``sklearn.cluster.AgglomerativeClustering``.
+    r"""Cluster data using ``sklearn.cluster.AgglomerativeClustering``.
 
     Parameters
     ----------
@@ -80,7 +80,7 @@ def agglomerative(data, kwargs={"n_clusters": 10}):
 
 
 def kmeans(data, kwargs={"n_clusters": 5, "init": "k-means++"}):
-    """Cluster data using ``sklearn.cluster.KMeans``.
+    r"""Cluster data using ``sklearn.cluster.KMeans``.
 
     Parameters
     ----------
@@ -103,7 +103,7 @@ def kmeans(data, kwargs={"n_clusters": 5, "init": "k-means++"}):
 
 
 def cluster_structures(cl_data, cl_algs, cl_kwargs):
-    """Performs :math:`n`-stage clustering of structures based on features.
+    r"""Performs :math:`n`-stage clustering of structures based on features.
 
     Parameters
     ----------
@@ -146,7 +146,7 @@ def cluster_structures(cl_data, cl_algs, cl_kwargs):
 
 
 def get_cluster_losses(loss_func, loss_kwargs):
-    """Computes the loss of each group using a loss function with energy
+    r"""Computes the loss of each group using a loss function with energy
     and force errors as inputs.
 
     Parameters

@@ -27,7 +27,7 @@ log = logging.getLogger(__name__)
 
 
 class model(object):
-    """A parent class for machine learning model objects.
+    r"""A parent class for machine learning model objects.
 
     Attributes
     ----------

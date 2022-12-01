@@ -25,7 +25,7 @@ import numpy as np
 
 
 class mbeCalculator(Calculator):
-    """ASE calculator using the many-body expansion predictor in mbGDML."""
+    r"""ASE calculator using the many-body expansion predictor in mbGDML."""
 
     implemented_properties = ["energy", "forces"]
 
@@ -57,7 +57,7 @@ class mbeCalculator(Calculator):
         self.parameters = parameters
 
     def calculate(self, atoms=None, *args, **kwargs):
-        """Predicts energy and forces using many-body GDML models."""
+        r"""Predicts energy and forces using many-body GDML models."""
         if atoms is not None:
             if self.mbe_pred.periodic_cell is not None:
                 atoms.wrap()

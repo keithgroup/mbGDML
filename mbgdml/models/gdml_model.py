@@ -119,7 +119,7 @@ class gdmlModel(model):
 
     @property
     def code_version(self):
-        """mbGDML version used to train the model.
+        r"""mbGDML version used to train the model.
 
         Raises
         ------
@@ -134,7 +134,7 @@ class gdmlModel(model):
 
     @property
     def md5(self):
-        """Unique MD5 hash of model.
+        r"""Unique MD5 hash of model.
 
         :type: :obj:`str`
         """
@@ -154,7 +154,7 @@ class gdmlModel(model):
         return md5_string
 
     def add_modifications(self, dset):
-        """mbGDML-specific modifications of models.
+        r"""mbGDML-specific modifications of models.
 
         Transfers information from data set to model.
 
@@ -170,7 +170,7 @@ class gdmlModel(model):
         self.model_dict["md5"] = np.array(self.md5)
 
     def save(self, path):
-        """Save model dict as npz file.
+        r"""Save model dict as npz file.
 
         Changes in model attributions are not considered.
 

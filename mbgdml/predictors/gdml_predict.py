@@ -41,7 +41,7 @@ def _predict_gdml_wkr(
     wkr_start_stop=None,
     chunk_size=None,
 ):
-    """Compute (part) of a GDML prediction.
+    r"""Compute (part) of a GDML prediction.
 
     Every prediction is a linear combination involving the training points used for
     this model. This function evaluates that combination for the range specified by
@@ -166,7 +166,7 @@ def _predict_gdml_wkr(
 
 # Possible ray task.
 def predict_gdml(z, r, entity_ids, entity_combs, model, periodic_cell, **kwargs):
-    """Predict total :math:`n`-body energy and forces of a single structure.
+    r"""Predict total :math:`n`-body energy and forces of a single structure.
 
     Parameters
     ----------
@@ -270,7 +270,7 @@ def predict_gdml(z, r, entity_ids, entity_combs, model, periodic_cell, **kwargs)
 
 
 def predict_gdml_decomp(z, r, entity_ids, entity_combs, model, **kwargs):
-    """Predict all :math:`n`-body energies and forces of a single structure.
+    r"""Predict all :math:`n`-body energies and forces of a single structure.
 
     Parameters
     ----------

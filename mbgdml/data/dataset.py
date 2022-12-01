@@ -30,7 +30,7 @@ from ..mbe import mbePredict
 
 
 class dataSet(mbGDMLData):
-    """For creating, loading, manipulating, and using data sets."""
+    r"""For creating, loading, manipulating, and using data sets."""
 
     def __init__(self, dset_path=None, Z_key="Z", R_key="R", E_key="E", F_key="F"):
         """
@@ -61,7 +61,7 @@ class dataSet(mbGDMLData):
 
     @property
     def name(self):
-        """Human-readable label for the data set.
+        r"""Human-readable label for the data set.
 
         :type: :obj:`str`
         """
@@ -76,7 +76,7 @@ class dataSet(mbGDMLData):
 
     @property
     def r_prov_ids(self):
-        """Specifies structure sets IDs/labels and corresponding MD5 hashes.
+        r"""Specifies structure sets IDs/labels and corresponding MD5 hashes.
 
         Keys are the Rset IDs (:obj:`int`) and values are MD5 hashes
         (:obj:`str`) for the particular structure set.
@@ -102,7 +102,7 @@ class dataSet(mbGDMLData):
 
     @property
     def r_prov_specs(self):
-        """An array specifying where each structure in ``R`` originates from.
+        r"""An array specifying where each structure in ``R`` originates from.
 
         A ``(n_R, 1 + n_entity)`` array where each row contains the Rset ID
         from ``r_prov_ids`` (e.g., 0, 1, 2, etc.) then the structure index and
@@ -130,7 +130,7 @@ class dataSet(mbGDMLData):
 
     @property
     def F(self):
-        """Atomic forces of atoms in structure(s).
+        r"""Atomic forces of atoms in structure(s).
 
         A :obj:`numpy.ndarray` with shape of ``(m, n, 3)`` where ``m`` is the
         number of structures and ``n`` is the number of atoms with three
@@ -149,7 +149,7 @@ class dataSet(mbGDMLData):
 
     @property
     def E(self):
-        """The energies of structure(s).
+        r"""The energies of structure(s).
 
         A :obj:`numpy.ndarray` with shape of ``(n,)`` where ``n`` is the number
         of atoms.
@@ -167,7 +167,7 @@ class dataSet(mbGDMLData):
 
     @property
     def e_unit(self):
-        """Units of energy. Options are ``'eV'``, ``'hartree'``,
+        r"""Units of energy. Options are ``'eV'``, ``'hartree'``,
         ``'kcal/mol'``, and ``'kJ/mol'``.
 
         :type: :obj:`str`
@@ -183,7 +183,7 @@ class dataSet(mbGDMLData):
 
     @property
     def theory(self):
-        """The level of theory used to compute energy and gradients of the data
+        r"""The level of theory used to compute energy and gradients of the data
         set.
 
         :type: :obj:`str`
@@ -199,7 +199,7 @@ class dataSet(mbGDMLData):
 
     @property
     def E_min(self):
-        """Minimum energy of all structures.
+        r"""Minimum energy of all structures.
 
         :type: :obj:`float`
         """
@@ -207,7 +207,7 @@ class dataSet(mbGDMLData):
 
     @property
     def E_max(self):
-        """Maximum energy of all structures.
+        r"""Maximum energy of all structures.
 
         :type: :obj:`float`
         """
@@ -215,7 +215,7 @@ class dataSet(mbGDMLData):
 
     @property
     def E_var(self):
-        """Energy variance.
+        r"""Energy variance.
 
         :type: :obj:`float`
         """
@@ -223,7 +223,7 @@ class dataSet(mbGDMLData):
 
     @property
     def E_mean(self):
-        """Mean of all energies.
+        r"""Mean of all energies.
 
         :type: :obj:`float`
         """
@@ -231,7 +231,7 @@ class dataSet(mbGDMLData):
 
     @property
     def F_min(self):
-        """Minimum atomic force in all structures.
+        r"""Minimum atomic force in all structures.
 
         :type: :obj:`float`
         """
@@ -239,7 +239,7 @@ class dataSet(mbGDMLData):
 
     @property
     def F_max(self):
-        """Maximum atomic force in all structures.
+        r"""Maximum atomic force in all structures.
 
         :type: :obj:`float`
         """
@@ -247,7 +247,7 @@ class dataSet(mbGDMLData):
 
     @property
     def F_var(self):
-        """Force variance.
+        r"""Force variance.
 
         :type: :obj:`float`
         """
@@ -255,7 +255,7 @@ class dataSet(mbGDMLData):
 
     @property
     def F_mean(self):
-        """Mean of all forces.
+        r"""Mean of all forces.
 
         :type: :obj:`float`
         """
@@ -263,7 +263,7 @@ class dataSet(mbGDMLData):
 
     @property
     def md5(self):
-        """Unique MD5 hash of data set.
+        r"""Unique MD5 hash of data set.
 
         Notes
         -----
@@ -280,7 +280,7 @@ class dataSet(mbGDMLData):
 
     @property
     def entity_ids(self):
-        """1D array specifying which atoms belong to which entities.
+        r"""1D array specifying which atoms belong to which entities.
 
         An entity represents a related set of atoms such as a single molecule,
         several molecules, or a functional group. For mbGDML, an entity usually
@@ -309,7 +309,7 @@ class dataSet(mbGDMLData):
 
     @property
     def comp_ids(self):
-        """A 1D array relating ``entity_id`` to a fragment label for chemical
+        r"""A 1D array relating ``entity_id`` to a fragment label for chemical
         components or species. Labels could be ``WAT`` or ``h2o`` for water,
         ``MeOH`` for methanol, ``bz`` for benzene, etc. There are no
         standardized labels for species. The index of the label is the
@@ -336,7 +336,7 @@ class dataSet(mbGDMLData):
 
     @property
     def mb(self):
-        """Many-body expansion order of this data set. This is :obj:`None` if the
+        r"""Many-body expansion order of this data set. This is :obj:`None` if the
         data set does not contain many-body energies and forces.
 
         :type: :obj:`int`
@@ -352,7 +352,7 @@ class dataSet(mbGDMLData):
 
     @property
     def mb_dsets_md5(self):
-        """All MD5 hash of data sets used to remove n-body contributions from
+        r"""All MD5 hash of data sets used to remove n-body contributions from
         data sets.
 
         :type: :obj:`numpy.ndarray`
@@ -368,7 +368,7 @@ class dataSet(mbGDMLData):
 
     @property
     def mb_models_md5(self):
-        """All MD5 hash of models used to remove n-body contributions from
+        r"""All MD5 hash of models used to remove n-body contributions from
         models.
 
         :type: :obj:`numpy.ndarray`
@@ -383,7 +383,7 @@ class dataSet(mbGDMLData):
         self._mb_models_md5 = var.astype(str)
 
     def convertE(self, E_units):
-        """Convert energies and updates ``e_unit``.
+        r"""Convert energies and updates ``e_unit``.
 
         Parameters
         ----------
@@ -395,7 +395,7 @@ class dataSet(mbGDMLData):
         self.e_unit = E_units
 
     def convertR(self, R_units):
-        """Convert coordinates and updates ``r_unit``.
+        r"""Convert coordinates and updates ``r_unit``.
 
         Parameters
         ----------
@@ -407,7 +407,7 @@ class dataSet(mbGDMLData):
         self.r_unit = R_units
 
     def convertF(self, force_e_units, force_r_units, e_units, r_units):
-        """Convert forces.
+        r"""Convert forces.
 
         Does not change ``e_unit`` or ``r_unit``.
 
@@ -432,7 +432,7 @@ class dataSet(mbGDMLData):
         )
 
     def _update(self, dataset):
-        """Updates object attributes.
+        r"""Updates object attributes.
 
         Parameters
         ----------
@@ -479,7 +479,7 @@ class dataSet(mbGDMLData):
             self.centered = dataset["centered"].item()
 
     def load(self, dataset_path):
-        """Read data set.
+        r"""Read data set.
 
         Parameters
         ----------
@@ -494,7 +494,7 @@ class dataSet(mbGDMLData):
             self._update(dict(dataset_npz))
 
     def asdict(self):
-        """Converts object into a custom :obj:`dict`.
+        r"""Converts object into a custom :obj:`dict`.
 
         Returns
         -------
@@ -562,7 +562,7 @@ class dataSet(mbGDMLData):
         return dataset
 
     def print(self):
-        """Prints all structure coordinates, energies, and forces of a data set."""
+        r"""Prints all structure coordinates, energies, and forces of a data set."""
         num_config = self.R.shape[0]
         for config in range(num_config):
             r_prov_spec = self.r_prov_specs[config]
@@ -577,7 +577,7 @@ class dataSet(mbGDMLData):
             print(f"Forces:\n{self.F[config]}\n")
 
     def write_xyz(self, save_dir):
-        """Saves xyz file of all structures in data set.
+        r"""Saves xyz file of all structures in data set.
 
         Parameters
         ----------
