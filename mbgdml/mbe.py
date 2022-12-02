@@ -331,7 +331,7 @@ def mbe_contrib(
         n_entities = len(set(entity_ids))
         r_prov_specs = np.empty((n_r, 2 + n_entities), dtype=int)
         r_prov_specs[:, 0] = r_prov_specs_lower[0][0]
-        r_prov_specs[:, 1] = np.array(i for i in range(n_r))
+        r_prov_specs[:, 1] = np.array(list(range(n_r)))
         for entity_id in range(n_entities):
             r_prov_specs[:, entity_id + 2] = entity_id
 
