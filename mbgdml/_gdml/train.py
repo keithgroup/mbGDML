@@ -21,6 +21,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+# pylint: disable=too-many-branches, too-many-statements
+
 import sys
 import logging
 import warnings
@@ -293,7 +295,7 @@ def _assemble_kernel_mat_wkr(
     return blk_j.stop - blk_j.start
 
 
-class GDMLTrain(object):
+class GDMLTrain:
     r"""Train GDML force fields.
 
     This class is used to train models using different closed-form
@@ -640,11 +642,9 @@ class GDMLTrain(object):
                         "Provided permutations do not match the number of atoms in "
                         "dataset."
                     )
-                else:
 
-                    log.info("Using %d externally provided permutations", n_perms)
-
-                    task["perms"] = perms
+                log.info("Using %d externally provided permutations", n_perms)
+                task["perms"] = perms
 
         else:
             task["perms"] = np.arange(train_dataset["R"].shape[1])[
@@ -1084,8 +1084,10 @@ class GDMLTrain(object):
         )
         log.t_stop(t_assemble)
 
+        # with warnings.catch_warnings():
+        #     warnings.simplefilter("ignore")
         with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
+            warnings.filterwarnings("ignore", r"Ill-conditioned matrix")
 
             if K.shape[0] == K.shape[1]:
 
@@ -1200,7 +1202,6 @@ class GDMLTrain(object):
             max_memory=self._max_memory,
             max_processes=self._max_processes,
             use_torch=self._use_torch,
-            log_level=logging.CRITICAL,
         )
 
         gdml_predict.set_R_desc(R_desc)
@@ -1506,8 +1507,8 @@ def get_test_idxs(model, dataset, n_test=None):
     def convert_md5(md5_value):
         if isinstance(md5_value, np.ndarray):
             return str(md5_value.item())
-        else:
-            return str(md5_value)
+
+        return str(md5_value)
 
     md5_dset = convert_md5(dataset["md5"])
     md5_train = convert_md5(model["md5_train"])
@@ -1525,7 +1526,7 @@ def get_test_idxs(model, dataset, n_test=None):
 
     if n_data_eff == 0:
         log.warning("No unused points for testing in provided dataset.")
-        return
+        return None
 
     log.info("Test set size was automatically set to %d points.", n_data_eff)
 
@@ -1574,7 +1575,7 @@ def add_valid_errors(
     is_model_validated = not (np.isnan(f_err["mae"]) or np.isnan(f_err["rmse"]))
     if is_model_validated and not overwrite:
         log.warning("Model is already validated and overwrite is False.")
-        return
+        return None
 
     _, E_errors, F_errors = model_errors(
         model, dataset, is_valid=True, max_processes=max_processes, use_torch=use_torch
@@ -1635,7 +1636,8 @@ def model_errors(
     if ("lattice" in model) is not ("lattice" in dataset):
         if "lattice" in model:
             raise ValueError("Model contains lattice vectors, but dataset does not.")
-        elif "lattice" in dataset:
+
+        if "lattice" in dataset:
             raise ValueError("Dataset contains lattice vectors, but model does not.")
 
     if is_valid:
@@ -1695,6 +1697,7 @@ def model_errors(
         if model["use_E"]:
             E_pred[b_range] = e_pred
     log.info("%d done", n_done)
+    del gdml_predict
 
     t_elapsed = log.t_stop(t_pred, message="\nTook {time} s")
     pred_rate = n_R / t_elapsed
@@ -1715,8 +1718,6 @@ def model_errors(
         E_rmse = rmse(E_errors)
         log.info("Energy MAE  : %.5f", E_mae)
         log.info("Energy RMSE : %.5f", E_rmse)
-
-    del gdml_predict
 
     if model["use_E"]:
         return len(test_idxs), E_errors, F_errors

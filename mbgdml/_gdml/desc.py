@@ -233,7 +233,7 @@ def _from_r(r, lat_and_inv=None):
     return r_desc, r_d_desc
 
 
-class Desc(object):
+class Desc:
     r"""Generate descriptors and their Jacobians for molecular geometries,
     including support for periodic boundary conditions.
     """

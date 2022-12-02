@@ -129,7 +129,7 @@ class GDMLLogger(logging.Logger, TimeTracker):
             self.info("n_train : %d", model["n_train"])
             self.info("n_valid : %d", model["n_valid"])
         self.info("sigma : %r", model["sig"])
-        self.info("lambda : %f", model["lam"])
+        self.info("lambda : %r", model["lam"])
         if "perms" in model.keys():
             n_sym = model["perms"].shape[0]
             self.info("Symmetries : %d", n_sym)

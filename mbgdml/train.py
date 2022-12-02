@@ -21,20 +21,19 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import numpy as np
 import os
 import shutil
-from .data import dataSet
+import logging
+import numpy as np
+from bayes_opt import BayesianOptimization, SequentialDomainReductionTransformer
+
 from .models import gdmlModel
 from .analysis.problematic import prob_structures
-from .mbe import mbePredict
 from .predictors import predict_gdml
 from ._gdml.train import GDMLTrain, model_errors, add_valid_errors
 from ._gdml.train import save_model, get_test_idxs
 from .utils import save_json
 from .losses import loss_f_rmse, mae, rmse
-
-import logging
 
 log = logging.getLogger(__name__)
 
@@ -53,7 +52,6 @@ class mbGDMLTrain:
         solver="analytic",
         lam=1e-10,
         solver_tol=1e-4,
-        interact_cut_off=None,
         use_torch=False,
         max_processes=None,
     ):
@@ -89,8 +87,6 @@ class mbGDMLTrain:
             does not need to change.
         solver_tol : :obj:`float`, default: ``1e-4``
            Solver tolerance.
-        interact_cut_off : :obj:`float`, default: :obj:`None`
-            Untested option. Not recommended and turned off.
         use_torch : :obj:`bool`, default: ``False``
             Use PyTorch to enable GPU acceleration.
         max_processes : :obj:`int`, default: :obj:`None`
@@ -185,7 +181,7 @@ class mbGDMLTrain:
                 'init_points': 10, 'n_iter': 10, 'alpha': 1e-7, 'acq': 'ucb',
                 'kappa': 1.5
             }
-            
+
 
         :type: :obj:`dict`
         """
@@ -216,7 +212,7 @@ class mbGDMLTrain:
         energies even if the force predictions are accurate. This is
         sometimes prevalent in many-body models with low and high sigmas
         (i.e., sigmas less than 5 or greater than 500).
-        
+
         Default: ``True``
 
         :type: :obj:`bool`
@@ -225,23 +221,23 @@ class mbGDMLTrain:
         r"""Loss function for validation. The input of this function is the
         dictionary of :obj:`mbgdml._gdml.train.add_valid_errors` which
         contains ``force`` and ``energy`` errors.
-        
+
         Default: :obj:`mbgdml.losses.loss_f_rmse`
-        
+
         :type: ``callable``
         """
         self.loss_kwargs = {}
         r"""Loss function keyword arguments with the exception of the validation
         ``results`` dictionary.
-        
+
         :type: :obj:`dict`
         """
-        self.require_E_eval = True
+        self.require_E_eval = True  # pylint: disable=invalid-name
         r"""Require energy evaluation regardless even if they are terrible.
 
         If ``False``, it defaults to sGDML behavior (this does not work well
         with n-body training).
-        
+
         Default: ``True``
 
         :type: :obj:`bool`
@@ -249,7 +245,7 @@ class mbGDMLTrain:
         self.keep_tasks = False
         r"""Keep all models trained during the train task if ``True``. They are
         removed by default.
-        
+
         :type: :obj:`bool`
         """
         self.bayes_opt_n_check_rising = 4
@@ -288,6 +284,7 @@ class mbGDMLTrain:
         return (8 * ((n_train * 3 * n_atoms) ** 2)) * 1e-6
 
     def __del__(self):
+        # pylint: disable=undefined-variable, global-variable-undefined
         global glob
 
         if "glob" in globals():
@@ -395,7 +392,7 @@ class mbGDMLTrain:
         if "mb" in dataset.keys():
             model.model_dict["mb"] = int(dataset["mb"][()])
         if "mb_models_md5" in dataset.keys():
-            model_best.model_dict["mb_models_md5"] = dataset["mb_models_md5"]
+            model.model_dict["mb_models_md5"] = dataset["mb_models_md5"]
 
         return model, results_test
 
@@ -411,7 +408,7 @@ class mbGDMLTrain:
         valid_json : :obj:`dict`
             The validation json curated during the training routine.
         """
-        import pandas as pd
+        import pandas as pd  # pylint: disable=import-outside-toplevel
 
         sigmas = np.array(valid_json["sigmas"])
         sigma_argsort = np.argsort(sigmas)
@@ -468,6 +465,7 @@ class mbGDMLTrain:
         ``object``
             A matplotlib figure object.
         """
+        # pylint: disable=protected-access, import-outside-toplevel
         import matplotlib.pyplot as plt
 
         params = optimizer.space.params.flatten()
@@ -477,6 +475,7 @@ class mbGDMLTrain:
         upper_bound = max(max(params), sigma_bounds[1])
 
         x = np.linspace(lower_bound, upper_bound, 10000)
+        # pylint: disable-next=invalid-name
         mu, sigma = optimizer._gp.predict(x.reshape(-1, 1), return_std=True)
 
         fig, ax = plt.subplots(
@@ -516,6 +515,7 @@ class mbGDMLTrain:
         dset_dict["F"] = dset_dict.pop(dataset.F_key)
         return dset_dict
 
+    # pylint: disable-next=too-many-branches, too-many-statements
     def bayes_opt(
         self,
         dataset,
@@ -535,7 +535,8 @@ class mbGDMLTrain:
     ):
         r"""Train a GDML model using Bayesian optimization for sigma.
 
-        Uses the `Bayesian optimization <https://github.com/fmfn/BayesianOptimization>`__
+        Uses the `Bayesian optimization
+        <https://github.com/fmfn/BayesianOptimization>`__
         package to automatically find the optimal sigma. This will maximize
         the negative validation loss.
 
@@ -588,8 +589,6 @@ class mbGDMLTrain:
         ``bayes_opt.BayesianOptimization``
             The Bayesian optimizer object.
         """
-        from bayes_opt import BayesianOptimization
-
         t_job = log.t_start()
 
         log.info(
@@ -629,7 +628,7 @@ class mbGDMLTrain:
             n_train,
             dset_dict,
             n_valid,
-            None,
+            None,  # Do not specify sigma; should not have any effect.
             train_idxs=train_idxs,
             valid_idxs=valid_idxs,
         )
@@ -672,6 +671,7 @@ class mbGDMLTrain:
                 use_torch=self.use_torch,
             )
 
+            # pylint: disable-next=invalid-name
             l = self.loss_func(valid_results, **self.loss_kwargs)
             valid_json["losses"].append(l)
 
@@ -690,8 +690,6 @@ class mbGDMLTrain:
         sigma_bounds = self.sigma_bounds
         opt_kwargs = {"f": opt_func, "pbounds": {"sigma": sigma_bounds}, "verbose": 0}
         if use_domain_opt:
-            from bayes_opt import SequentialDomainReductionTransformer
-
             bounds_transformer = SequentialDomainReductionTransformer()
             opt_kwargs["bounds_transformer"] = bounds_transformer
         optimizer = BayesianOptimization(**opt_kwargs)
@@ -707,7 +705,7 @@ class mbGDMLTrain:
                 gp_params = self.bayes_opt_params
         else:
             gp_params = self.bayes_opt_params
-        if gp_params is not None and "init_points" in gp_params.keys():
+        if gp_params is not None and "init_points" in gp_params:
             init_points = gp_params["init_points"]
         else:
             init_points = 5  # BayesianOptimization default.
@@ -715,8 +713,6 @@ class mbGDMLTrain:
         if sigma_grid is not None:
             log.info("#   Initial grid search   #")
             sigma_grid.sort()
-
-            n_sigmas = len(sigma_grid)
 
             def probe_sigma(sigma):
                 optimizer.probe({"sigma": sigma}, lazy=False)
@@ -755,8 +751,7 @@ class mbGDMLTrain:
             do_extra = (
                 self.bayes_opt_n_check_rising
             )  # Extra sigmas to check after losses rise.
-            for i in range(len(sigma_grid)):
-                sigma = sigma_grid[i]
+            for i, sigma in enumerate(sigma_grid):
                 probe_sigma(sigma)
                 init_points -= 1
 
@@ -780,7 +775,7 @@ class mbGDMLTrain:
                         valid_json, min_idxs_orig
                     )
 
-                    if not constant_loss_rising(valid_json, min_idxs_orig):
+                    if not restart_grid_search:
                         # Losses started lowering again.
                         # Or we checked for energy predictions and it failed.
                         # Restart the grid search.
@@ -815,11 +810,9 @@ class mbGDMLTrain:
                 if e_rmse is None:
                     # Go to the next lowest loss.
                     continue
-                else:
-                    # Found the lowest loss.
-                    break
-            else:
+                # Found the lowest loss.
                 break
+            break
 
         model_best_path = os.path.join(task_dir, f"model-{sigma_best}.npz")
         model_best = gdmlModel(model_best_path, comp_ids=self.comp_ids)
@@ -860,6 +853,7 @@ class mbGDMLTrain:
         log.t_stop(t_job, message="\nJob duration : {time} s", precision=2)
         return model_best.model_dict, optimizer
 
+    # pylint: disable-next=too-many-branches, too-many-statements
     def grid_search(
         self,
         dataset,
@@ -1027,7 +1021,7 @@ class mbGDMLTrain:
             log.warning("Optimal sigma is on the bounds of grid search")
             log.warning("This model is not optimal")
             log.warning(
-                f"Extend your grid search to be {next_search_sign} {sigma_best}"
+                "Extend your grid search to be %r %r", next_search_sign, sigma_best
             )
 
         # Testing model
@@ -1124,7 +1118,7 @@ class mbGDMLTrain:
             "#    Training     #\n"
             "###################\n"
         )
-        log.info(f"Initial training set size : {n_train_init}")
+        log.info("Initial training set size : %r", n_train_init)
         if model0 is not None:
             log.info("Initial model was provided")
             log.info("Taking training indices from model")
@@ -1139,7 +1133,7 @@ class mbGDMLTrain:
             os.makedirs(save_dir_i, exist_ok=overwrite)
             prob_idxs = prob_s.find(dataset, n_train_step, save_dir=save_dir_i)
             train_idxs = np.concatenate((train_idxs, prob_idxs))
-            log.info(f"Extended the training set to {len(train_idxs)}")
+            log.info("Extended the training set to %d", len(train_idxs))
             n_train = len(train_idxs)
         else:
             log.info("An initial model will be trained")
@@ -1170,11 +1164,13 @@ class mbGDMLTrain:
             upper_buffer = max(sigma_bounds) - buffer
             if model["sig"] <= lower_buffer:
                 log.warning(
-                    f"WARNING: Optimal sigma is within {buffer} from the lower sigma bound"
+                    "WARNING: Optimal sigma is within %r from the lower sigma bound",
+                    buffer,
                 )
             elif model["sig"] >= upper_buffer:
                 log.warning(
-                    f"WARNING: Optimal sigma is within {buffer} from the upper sigma bound"
+                    "WARNING: Optimal sigma is within %r from the upper sigma bound",
+                    buffer,
                 )
 
             train_idxs = model["idxs_train"]
@@ -1185,5 +1181,7 @@ class mbGDMLTrain:
 
             train_idxs = np.concatenate((train_idxs, prob_idxs))
             n_train = len(train_idxs)
+
+        log.t_stop(t_job, message="\nJob duration : {time} s", precision=2)
 
         return model

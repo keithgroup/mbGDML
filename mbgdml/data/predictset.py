@@ -20,16 +20,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-# pylint: disable=E1101
-
-
+import ray
 import numpy as np
 from .. import __version__ as mbgdml_version
 from .basedata import mbGDMLData
 from ..mbe import mbePredict, decomp_to_total
 
 
-class predictSet(mbGDMLData):
+class PredictSet(mbGDMLData):
     r"""A predict set is a data set with mbGDML predicted energy and forces
     instead of training data.
 
@@ -91,8 +89,7 @@ class predictSet(mbGDMLData):
             self.Z, self.R, self.entity_ids, self.comp_ids
         )
         self.nbody_orders = nbody_orders
-        for i in range(len(nbody_orders)):
-            order = nbody_orders[i]
+        for i, order in enumerate(nbody_orders):
             setattr(self, f"E_{order}", E_nbody[i])
             setattr(self, f"F_{order}", F_nbody[i])
             setattr(self, f"entity_combs_{order}", entity_combs[i])
@@ -131,8 +128,7 @@ class predictSet(mbGDMLData):
         if self._loaded is False and self._predicted is False:
             if not hasattr(self, "dataset") or not hasattr(self, "mbgdml"):
                 raise AttributeError("No data can be predicted or is not loaded.")
-            else:
-                self.prepare(self.Z, self.R, self.entity_ids, self.comp_ids)
+            self.prepare()
 
         return pset
 
@@ -159,7 +155,7 @@ class predictSet(mbGDMLData):
 
     @E_true.setter
     def E_true(self, var):
-        self._E_true = var
+        self._E_true = var  # pylint: disable=invalid-name
 
     @property
     def F_true(self):
@@ -171,7 +167,7 @@ class predictSet(mbGDMLData):
 
     @F_true.setter
     def F_true(self, var):
-        self._F_true = var
+        self._F_true = var  # pylint: disable=invalid-name
 
     def load(self, pset):
         r"""Reads predict data set and loads data.
@@ -230,9 +226,6 @@ class predictSet(mbGDMLData):
             Forces of structures up to an including n-order corrections.
         """
         if n_workers != 1:
-            global ray
-            import ray
-
             ray.is_initialized()
 
         E = np.zeros(self.E_true.shape)
@@ -323,9 +316,6 @@ class predictSet(mbGDMLData):
             worker with ray.
         """
         if use_ray:
-            global ray
-            import ray
-
             assert ray.is_initialized()
         self.mbePredict = mbePredict(
             models, predict_model, use_ray, n_workers, wkr_chunk_size

@@ -251,7 +251,8 @@ def complete_sym_group(perms, n_perms_max=None):
                     perm_added = True
                     perms = np.vstack((perms, new_perm))
 
-                    # Transitive closure is not converging! Give up and return identity permutation.
+                    # Transitive closure is not converging! Give up and return identity
+                    # permutation.
                     if n_perms_max is not None and perms.shape[0] == n_perms_max:
                         return None
 
@@ -273,7 +274,8 @@ def find_perms(R, z, lat_and_inv=None, max_processes=None):
     # Give up, if transitive closure yields more than 100 unique permutations.
     sym_group_perms = complete_sym_group(match_perms, n_perms_max=100)
 
-    # Limit closure to largest cardinality permutation in the set to get at least some symmetries.
+    # Limit closure to largest cardinality permutation in the set to get at least some
+    # symmetries.
     if sym_group_perms is None:
         match_perms_subset = salvage_subgroup(match_perms)
         sym_group_perms = complete_sym_group(

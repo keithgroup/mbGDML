@@ -75,6 +75,7 @@ def share_array(arr_np):
     return arr, arr_np.shape
 
 
+# pylint: disable=too-many-statements
 def _predict_wkr(
     r, r_desc_d_desc, lat_and_inv, glob_id, wkr_start_stop=None, chunk_size=None
 ):
@@ -243,7 +244,9 @@ def _predict_wkr(
     return out
 
 
-class GDMLPredict(object):
+class GDMLPredict:
+
+    # pylint: disable=too-many-branches
     def __init__(
         self,
         model,
@@ -252,7 +255,6 @@ class GDMLPredict(object):
         max_memory=None,
         max_processes=None,
         use_torch=False,
-        log_level=None,
     ):
         r"""Query trained sGDML force fields.
 
@@ -293,12 +295,11 @@ class GDMLPredict(object):
             used. This parameters has no effect if `use_torch=True`
         use_torch : :obj:`bool`, optional
             Use PyTorch to calculate predictions
-        log_level : ``logging.level``, default: :obj:`None`
-            Set custom logging level (e.g. ``logging.CRITICAL``)
         """
-
+        log.debug("Initializing GDMLPredict object")
         global globs  # pylint: disable=global-variable-undefined
         if "globs" not in globals():
+            log.debug("globs not found in globals; creating it now.")
             globs = []
 
         # Create a personal global space for this model at a new index
@@ -309,26 +310,26 @@ class GDMLPredict(object):
         self.glob_id = len(globs) - 1
         glob = globs[self.glob_id]
 
-        self.log = logging.getLogger(__name__)
-        if log_level is not None:
-            self.log.setLevel(log_level)
-
         total_memory = psutil.virtual_memory().total // 2**30  # bytes to GB)
         self.max_memory = (
             min(max_memory, total_memory) if max_memory is not None else total_memory
         )
+        log.debug("max_memory : %r MB", self.max_memory)
 
         total_cpus = mp.cpu_count()
         self.max_processes = (
             min(max_processes, total_cpus) if max_processes is not None else total_cpus
         )
+        log.debug("max_processes : %r", self.max_processes)
 
         if "type" not in model or not (model["type"] == "m" or model["type"] == b"m"):
-            self.log.critical("The provided data structure is not a valid model.")
+            log.critical("The provided data structure is not a valid model.")
             sys.exit()
 
         self.n_atoms = model["z"].shape[0]
+        log.debug("n_atoms in model : %r", self.n_atoms)
 
+        log.debug("Creating Desc object")
         self.desc = Desc(self.n_atoms, max_processes=max_processes)
         glob["desc_func"] = self.desc
 
@@ -342,6 +343,7 @@ class GDMLPredict(object):
             else None
         )
 
+        log.debug("Unpacking model")
         self.n_train = model["R_desc"].shape[1]
         glob["sig"] = model["sig"]
 
@@ -357,7 +359,7 @@ class GDMLPredict(object):
         self.torch_predict = None
         self.use_torch = use_torch
         if use_torch:
-
+            log.debug("use_torch is True; setting up now")
             if not _HAS_TORCH:
                 raise ImportError("Optional PyTorch dependency not found!")
 
@@ -369,7 +371,6 @@ class GDMLPredict(object):
                 self.lat_and_inv,
                 max_memory=max_memory,
                 max_processes=max_processes,
-                log_level=self.log.level,
             )
 
             # Enable data parallelism
@@ -399,15 +400,16 @@ class GDMLPredict(object):
                         if isinstance(self.torch_predict, torch.nn.DataParallel):
                             model = model.module
 
-                        if (
-                            model.get_n_perm_batches() == 1
-                        ):  # model caches the permutations, this could be why it is too large
+                        # model caches the permutations, this could be why it is too
+                        # large
+                        if model.get_n_perm_batches() == 1:
                             model.set_n_perm_batches(
                                 model.get_n_perm_batches() + 1
                             )  # uncache
                         else:
                             self.log.critical(
-                                "Not enough memory on device (RAM or GPU memory). There is no hope!"
+                                "Not enough memory on device (RAM or GPU memory). "
+                                "There is no hope!"
                             )
                             print()
                             os._exit(1)
@@ -444,13 +446,14 @@ class GDMLPredict(object):
                 )
 
         # Parallel processing configuration
+        log.debug("Setting up parallel processing")
 
         self.bulk_mp = False  # Bulk predictions with multiple processes?
-
         self.pool = None
 
         # How many workers in addition to main process?
         num_workers = num_workers or (self.max_processes - 1)  # exclude main process
+        self.num_workers = num_workers
         self._set_num_workers(num_workers, force_reset=True)
 
         # Size of chunks in which each parallel task will be processed
@@ -459,15 +462,18 @@ class GDMLPredict(object):
         # available memory.
         self._set_chunk_size(batch_size)
 
+        log.debug("Done initializing GDMLPredict object")
+
     def __del__(self):
 
         global globs  # pylint: disable=global-variable-not-assigned, invalid-name
 
         try:
-            self.pool.terminate()
+            # Changed from terminate to avoid throwing sigterm during tests.
+            self.pool.close()
             self.pool.join()
             self.pool = None
-        except Exception:
+        except Exception as e:  # pylint: disable=unused-variable
             pass
 
         if "globs" in globals() and globs is not None and self.glob_id < len(globs):
@@ -593,16 +599,29 @@ class GDMLPredict(object):
         force_reset : :obj:`bool`, optional
             Force applying the new setting.
         """
-        # pylint: disable-next=access-member-before-definition
+        # pylint: disable=access-member-before-definition
+
+        log.debug("Setting the number of workers in GDMLPredict")
+        log.debug("force_reset : %r", force_reset)
+        log.debug("Local num_workers : %r", num_workers)
+        log.debug("self.num_workers : %r", self.num_workers)
+        log.debug("self.pool : %r", self.pool)
+
         if force_reset or self.num_workers is not num_workers:
 
             if self.pool is not None:
-                self.pool.terminate()
+                log.debug("Resetting pool")
+                log.debug("Running self.pool.close()")
+                # Changed from terminate to avoid throwing sigterm during tests.
+                self.pool.close()
+                log.debug("Running self.pool.join()")
                 self.pool.join()
                 self.pool = None
+                log.debug("self.pool is now None")
 
             self.num_workers = 0
             if num_workers is None or num_workers > 0:
+                log.debug("Running Pool(%r)", num_workers)
                 self.pool = Pool(num_workers)
                 # pylint: disable-next=protected-access
                 self.num_workers = self.pool._processes
@@ -740,7 +759,7 @@ class GDMLPredict(object):
         if self.use_torch:
             log.info("Skipping multi-CPU benchmark, since torch is enabled.")
             log.t_stop(t_parallel)
-            return
+            return None
 
         # Retrieve cached benchmark results, if available.
         bmark_result = self._load_cached_bmark_result(n_bulk)
@@ -756,9 +775,9 @@ class GDMLPredict(object):
                 is_from_cache = True
                 log.t_stop(t_parallel, message="Parallel optimization took {time} s\n")
                 return gps, is_from_cache
-            else:
-                log.t_stop(t_parallel, message="Parallel optimization took {time} s\n")
-                return gps
+
+            log.t_stop(t_parallel, message="Parallel optimization took {time} s\n")
+            return gps
 
         warm_up_done = False
         log.info("Preparing benchmark runs")
@@ -812,7 +831,7 @@ class GDMLPredict(object):
                 i_dir = 1
                 i = 0 if last_i is None else last_i
 
-                while i >= 0 and i < len(chunk_size_rng_sizes):
+                while 0 <= i < len(chunk_size_rng_sizes):
 
                     chunk_size = chunk_size_rng_sizes[i]
                     self._set_chunk_size(chunk_size)
@@ -845,13 +864,13 @@ class GDMLPredict(object):
                             i -= 2 * i_dir
                             i_dir = -1
                             continue
-                        else:
-                            if chunk_size == chunk_size_rng_sizes[1]:
-                                i -= 1 * i_dir
-                            break
-                    else:
-                        best_gps = gps
-                        best_params = num_workers, chunk_size, bulk_mp
+
+                        if chunk_size == chunk_size_rng_sizes[1]:
+                            i -= 1 * i_dir
+                        break
+
+                    best_gps = gps
+                    best_params = num_workers, chunk_size, bulk_mp
 
                     if (
                         not bulk_mp and n_bulk > 1
@@ -896,9 +915,9 @@ class GDMLPredict(object):
             is_from_cache = False
             log.t_stop(t_parallel, message="Parallel optimization took {time} s\n")
             return gps, is_from_cache
-        else:
-            log.t_stop(t_parallel, message="Parallel optimization took {time} s\n")
-            return gps
+
+        log.t_stop(t_parallel, message="Parallel optimization took {time} s\n")
+        return gps
 
     def _save_cached_bmark_result(self, n_bulk, num_workers, chunk_size, bulk_mp, gps):
 
@@ -984,8 +1003,8 @@ class GDMLPredict(object):
                     "Best config : %r worker(s), %r chunk size", num_workers, chunk_size
                 )
                 return num_workers, chunk_size, bulk_mp, best_gps
-            else:
-                log.info("Not enough runs (need at 3)")
+
+            log.info("Not enough runs (need at 3)")
 
         return None
 
@@ -998,7 +1017,6 @@ class GDMLPredict(object):
         This value is determined on-the-fly depending on the available GPU
         memory.
         """
-
         if self.use_torch:
 
             model = self.torch_predict
@@ -1006,6 +1024,8 @@ class GDMLPredict(object):
                 model = model.module
 
             return model._batch_size()  # pylint: disable=protected-access
+
+        return None
 
     # pylint: disable-next=invalid-name
     def predict(self, R=None, return_E=True):
@@ -1052,7 +1072,7 @@ class GDMLPredict(object):
             R_torch = torch.arange(self.n_train)  # pylint: disable=no-member
             if R is None:
                 if self.R_d_desc is None:
-                    self.log.critical(
+                    log.critical(
                         "A reference to the training geometry descriptors needs to be "
                         "set (using 'set_R_d_desc()') for this function to work "
                         "without arguments (using PyTorch)."
@@ -1088,7 +1108,7 @@ class GDMLPredict(object):
             is_desc_in_cache = self.R_desc is not None and self.R_d_desc is not None
 
             if R is None and not is_desc_in_cache:
-                self.log.critical(
+                log.critical(
                     "A reference to the training geometry descriptors and Jacobians "
                     "needs to be set for this function to work without arguments."
                 )
