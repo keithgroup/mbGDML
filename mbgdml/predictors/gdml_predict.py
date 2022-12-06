@@ -27,6 +27,7 @@ import numpy as np
 log = logging.getLogger(__name__)
 
 # This calculation is too fast to be a ray task.
+# pylint: disable-next=too-many-statements
 def _predict_gdml_wkr(
     r_desc,
     r_d_desc,
@@ -36,8 +37,6 @@ def _predict_gdml_wkr(
     R_desc_perms,
     R_d_desc_alpha_perms,
     alphas_E_lin,
-    stdev,
-    integ_c,
     wkr_start_stop=None,
     chunk_size=None,
 ):
@@ -59,6 +58,7 @@ def _predict_gdml_wkr(
         Partial prediction of all force components and energy (appended to
         array as last element).
     """
+    # pylint: disable=invalid-name
     ###   mbGDML CHANGE   ###
     n_train = int(R_desc_perms.shape[0] / n_perms)
     ###   mbGDML CHANGE END   ###
@@ -165,6 +165,7 @@ def _predict_gdml_wkr(
 
 
 # Possible ray task.
+# pylint: disable-next=too-many-branches
 def predict_gdml(z, r, entity_ids, entity_combs, model, periodic_cell, **kwargs):
     r"""Predict total :math:`n`-body energy and forces of a single structure.
 
@@ -195,15 +196,10 @@ def predict_gdml(z, r, entity_ids, entity_combs, model, periodic_cell, **kwargs)
     assert r.ndim == 2
     E = 0.0
     F = np.zeros(r.shape)
-    if "alchemy_scalers" in kwargs.keys():
-        alchemy_scalers = kwargs["alchemy_scalers"]
-    else:
-        alchemy_scalers = None
 
-    if periodic_cell is not None:
-        periodic = True
-    else:
-        periodic = False
+    alchemy_scalers = kwargs.get("alchemy_scalers", None)
+
+    periodic = bool(periodic_cell)
 
     # Getting all contributions for each molecule combination (comb).
     for entity_id_comb in entity_combs:
@@ -225,7 +221,8 @@ def predict_gdml(z, r, entity_ids, entity_combs, model, periodic_cell, **kwargs)
                 # Any atomic pairwise distance was larger than cutoff.
                 continue
 
-        # TODO: Check if we can avoid prediction if we have an alchemical factor of zero?
+        # TODO: Check if we can avoid prediction if we have an alchemical factor of
+        # zero?
 
         # Checks criteria cutoff if present and desired.
         if model.criteria is not None:
@@ -245,8 +242,6 @@ def predict_gdml(z, r, entity_ids, entity_combs, model, periodic_cell, **kwargs)
             model.R_desc_perms,
             model.R_d_desc_alpha_perms,
             model.alphas_E_lin,
-            model.stdev,
-            model.integ_c,
         )
         out = _predict_gdml_wkr(*wkr_args)
 
@@ -255,9 +250,8 @@ def predict_gdml(z, r, entity_ids, entity_combs, model, periodic_cell, **kwargs)
         f = out[1:].reshape((len(z_comp), 3))
 
         # Scale contribution if entity is included.
-        if alchemy_scalers is not None or alchemy_scalers != list():
-            for i in range(len(alchemy_scalers)):
-                alchemy_scaler = alchemy_scalers[i]
+        if alchemy_scalers not in (None, []):
+            for alchemy_scaler in alchemy_scalers:
                 if alchemy_scaler.entity_id in entity_id_comb:
                     E = alchemy_scaler.scale(E)
                     F = alchemy_scaler.scale(F)
@@ -314,9 +308,10 @@ def predict_gdml_decomp(z, r, entity_ids, entity_combs, model, **kwargs):
     E[:] = np.nan
     F[:] = np.nan
 
+    alchemy_scalers = kwargs.get("alchemy_scalers", None)
+
     # Getting all contributions for each molecule combination (comb).
-    for i in range(len(entity_combs)):
-        entity_id_comb = entity_combs[i]
+    for i, entity_id_comb in enumerate(entity_combs):
         # Gets indices of all atoms in the combination of molecules.
         # r_slice is a list of the atoms for the entity_id combination.
         r_slice = []
@@ -344,12 +339,17 @@ def predict_gdml_decomp(z, r, entity_ids, entity_combs, model, **kwargs):
             model.R_desc_perms,
             model.R_d_desc_alpha_perms,
             model.alphas_E_lin,
-            model.stdev,
-            model.integ_c,
         )
 
         out *= model.stdev
         E[i] = out[0] + model.integ_c
         F[i] = out[1:].reshape((n_atoms, 3))
+
+        # Scale contribution if entity is included.
+        if alchemy_scalers not in (None, []):
+            for alchemy_scaler in alchemy_scalers:
+                if alchemy_scaler.entity_id in entity_id_comb:
+                    E[i] = alchemy_scaler.scale(E[i])
+                    F[i] = alchemy_scaler.scale(F[i])
 
     return E, F, entity_combs

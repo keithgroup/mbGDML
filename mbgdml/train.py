@@ -28,7 +28,7 @@ import numpy as np
 from bayes_opt import BayesianOptimization, SequentialDomainReductionTransformer
 
 from .models import gdmlModel
-from .analysis.problematic import prob_structures
+from .analysis.problematic import ProblematicStructures
 from .predictors import predict_gdml
 from ._gdml.train import GDMLTrain, model_errors, add_valid_errors
 from ._gdml.train import save_model, get_test_idxs
@@ -1126,7 +1126,7 @@ class mbGDMLTrain:
             n_train = len(train_idxs)
             log.log_array(train_idxs, level=10)
 
-            prob_s = prob_structures(
+            prob_s = ProblematicStructures(
                 [gdmlModel(model0, comp_ids=self.comp_ids)], predict_gdml
             )
             save_dir_i = os.path.join(save_dir, f"train{n_train}")
@@ -1174,7 +1174,7 @@ class mbGDMLTrain:
                 )
 
             train_idxs = model["idxs_train"]
-            prob_s = prob_structures(
+            prob_s = ProblematicStructures(
                 [gdmlModel(model, comp_ids=self.comp_ids)], predict_gdml
             )
             prob_idxs = prob_s.find(dataset, n_train_step, save_dir=save_dir_i)

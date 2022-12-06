@@ -17,7 +17,6 @@
     get_entity_ids
     get_R_slice
     md5_data
-    natsort_list
     save_json
     string_xyz_arrays
     write_xyz

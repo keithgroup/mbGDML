@@ -75,7 +75,7 @@ def share_array(arr_np):
     return arr, arr_np.shape
 
 
-# pylint: disable=too-many-statements
+# pylint: disable-next=too-many-statements
 def _predict_wkr(
     r, r_desc_d_desc, lat_and_inv, glob_id, wkr_start_stop=None, chunk_size=None
 ):
@@ -127,7 +127,6 @@ def _predict_wkr(
         Partial prediction of all force components and energy (appended to
         array as last element).
     """
-
     global globs  # pylint: disable=global-variable-not-assigned
     glob = globs[glob_id]
     sig, n_perms = glob["sig"], glob["n_perms"]
@@ -246,7 +245,8 @@ def _predict_wkr(
 
 class GDMLPredict:
 
-    # pylint: disable=too-many-branches
+    # pylint: disable=too-many-branches, too-many-statements
+
     def __init__(
         self,
         model,

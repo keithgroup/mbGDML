@@ -22,10 +22,26 @@
 
 import logging
 import numpy as np
+import ase
+
+try:
+    import schnetpack
+
+    _HAS_SCHNETPACK = True
+except ImportError:
+    _HAS_SCHNETPACK = False
+
+try:
+    import torch
+
+    _HAS_TORCH = True
+except ImportError:
+    _HAS_TORCH = False
 
 log = logging.getLogger(__name__)
 
 
+# pylint: disable-next=unused-argument
 def predict_schnet(z, r, entity_ids, entity_combs, model, periodic_cell, **kwargs):
     r"""Predict total :math:`n`-body energy and forces of a single structure.
 
@@ -53,19 +69,19 @@ def predict_schnet(z, r, entity_ids, entity_combs, model, periodic_cell, **kwarg
     :obj:`numpy.ndarray`
         Predicted :math:`n`-body forces.
     """
+    assert _HAS_SCHNETPACK and _HAS_TORCH
+
     assert r.ndim == 2
     E = 0.0
     F = np.zeros(r.shape)
 
+    # pylint: disable-next=no-member
     atom_conv = schnetpack.data.atoms.AtomsConverter(device=torch.device(model.device))
 
-    if periodic_cell is not None:
-        periodic = True
-    else:
-        periodic = False
+    periodic = bool(periodic_cell)
 
     for entity_id_comb in entity_combs:
-        log.debug(f"Entity combination: {entity_id_comb}")
+        log.debug("Entity combination: %r", entity_id_comb)
 
         # Gets indices of all atoms in the combination of molecules.
         # r_slice is a list of the atoms for the entity_id combination.
@@ -73,8 +89,8 @@ def predict_schnet(z, r, entity_ids, entity_combs, model, periodic_cell, **kwarg
         for entity_id in entity_id_comb:
             r_slice.extend(np.where(entity_ids == entity_id)[0])
 
-        z_comb = z[r_slice]
-        r_comb = r[r_slice]
+        z_comp = z[r_slice]
+        r_comp = r[r_slice]
 
         # If we are using a periodic cell we convert r_comp into coordinates
         # we can use in many-body expansions.
@@ -92,13 +108,14 @@ def predict_schnet(z, r, entity_ids, entity_combs, model, periodic_cell, **kwarg
                 continue
 
         # Making predictions
-        pred = model.spk_model(atom_conv(ase.Atoms(z_comb, r_comb)))
+        pred = model.spk_model(atom_conv(ase.Atoms(z_comp, r_comp)))
         E += pred["energy"].cpu().detach().numpy()[0][0]
         F[r_slice] += pred["forces"].cpu().detach().numpy()[0]
 
     return E, F
 
 
+# pylint: disable-next=unused-argument
 def predict_schnet_decomp(z, r, entity_ids, entity_combs, model, **kwargs):
     r"""Predict total :math:`n`-body energy and forces of a single structure.
 
@@ -141,12 +158,11 @@ def predict_schnet_decomp(z, r, entity_ids, entity_combs, model, **kwargs):
     E[:] = np.nan
     F[:] = np.nan
 
+    # pylint: disable-next=no-member
     atom_conv = schnetpack.data.atoms.AtomsConverter(device=torch.device(model.device))
 
-    for i in range(len(entity_combs)):
-        entity_id_comb = entity_combs[i]
-
-        log.debug(f"Entity combination: {entity_id_comb}")
+    for i, entity_id_comb in enumerate(entity_combs):
+        log.debug("Entity combination: %r", entity_id_comb)
 
         # Gets indices of all atoms in the combination of molecules.
         # r_slice is a list of the atoms for the entity_id combination.
@@ -154,8 +170,8 @@ def predict_schnet_decomp(z, r, entity_ids, entity_combs, model, **kwargs):
         for entity_id in entity_id_comb:
             r_slice.extend(np.where(entity_ids == entity_id)[0])
 
-        z_comb = z[r_slice]
-        r_comb = r[r_slice]
+        z_comp = z[r_slice]
+        r_comp = r[r_slice]
 
         # Checks criteria cutoff if present and desired.
         if model.criteria is not None:
@@ -165,7 +181,7 @@ def predict_schnet_decomp(z, r, entity_ids, entity_combs, model, **kwargs):
                 continue
 
         # Making predictions
-        pred = model.spk_model(atom_conv(ase.Atoms(z_comb, r_comb)))
+        pred = model.spk_model(atom_conv(ase.Atoms(z_comp, r_comp)))
         E[i] = pred["energy"].cpu().detach().numpy()[0][0]
         F[i] = pred["forces"].cpu().detach().numpy()[0]
 

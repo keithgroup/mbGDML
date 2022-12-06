@@ -22,10 +22,12 @@
 
 import logging
 import numpy as np
+import ase
 
 log = logging.getLogger(__name__)
 
 # Possible ray task.
+# pylint: disable-next=unused-argument
 def predict_gap(z, r, entity_ids, entity_combs, model, periodic_cell, **kwargs):
     r"""Predict total :math:`n`-body energy and forces of a single structure.
 
@@ -57,15 +59,12 @@ def predict_gap(z, r, entity_ids, entity_combs, model, periodic_cell, **kwargs):
     E = 0.0
     F = np.zeros(r.shape)
 
-    if periodic_cell is not None:
-        periodic = True
-    else:
-        periodic = False
+    periodic = bool(periodic_cell)
 
     # Getting all contributions for each molecule combination (comb).
     first_r = True
     for entity_id_comb in entity_combs:
-        log.debug(f"Entity combination: {entity_id_comb}")
+        log.debug("Entity combination: %r", entity_id_comb)
 
         # Gets indices of all atoms in the combination of molecules.
         # r_slice is a list of the atoms for the entity_id combination.
@@ -108,6 +107,7 @@ def predict_gap(z, r, entity_ids, entity_combs, model, periodic_cell, **kwargs):
     return E, F
 
 
+# pylint: disable-next=unused-argument
 def predict_gap_decomp(z, r, entity_ids, entity_combs, model, **kwargs):
     r"""Predict all :math:`n`-body energies and forces of a single structure.
 
@@ -155,8 +155,7 @@ def predict_gap_decomp(z, r, entity_ids, entity_combs, model, **kwargs):
 
     # Getting all contributions for each molecule combination (comb).
     first_r = True
-    for i in range(len(entity_combs)):
-        entity_id_comb = entity_combs[i]
+    for i, entity_id_comb in enumerate(entity_combs):
         # Gets indices of all atoms in the combination of molecules.
         # r_slice is a list of the atoms for the entity_id combination.
         r_slice = []

@@ -503,7 +503,7 @@ class mbePredict:
         """
         Parameters
         ----------
-        models : :obj:`list` of :obj:`mbgdml.models.model`
+        models : :obj:`list` of :obj:`mbgdml.models.Model`
             Machine learning model objects that contain all information to make
             predictions using ``predict_model``.
         predict_model : ``callable``
@@ -586,7 +586,7 @@ class mbePredict:
     # pylint: disable=too-many-branches, too-many-statements
     def compute_nbody(self, z, r, entity_ids, comp_ids, model):
         r"""Compute all :math:`n`-body contributions of a single structure
-        using a :obj:`mbgdml.models.model` object.
+        using a :obj:`mbgdml.models.Model` object.
 
         When ``use_ray = True``, this acts as a driver that spawns ray tasks of
         the ``predict_model`` function.
@@ -602,7 +602,7 @@ class mbePredict:
         comp_ids : :obj:`numpy.ndarray`, shape: ``(len(entity_ids),)``
             Relates each ``entity_id`` to a fragment label. Each item's index
             is the label's ``entity_id``.
-        model : :obj:`mbgdml.models.model`
+        model : :obj:`mbgdml.models.Model`
             Model that contains all information needed by ``model_predict``.
 
         Returns
@@ -706,7 +706,7 @@ class mbePredict:
     # pylint: disable=too-many-branches, too-many-statements
     def compute_nbody_decomp(self, z, r, entity_ids, comp_ids, model):
         r"""Compute all :math:`n`-body contributions of a single structure
-        using a :obj:`mbgdml.models.model` object.
+        using a :obj:`mbgdml.models.Model` object.
 
         Stores all individual entity ID combinations, energies and forces.
         This is more memory intensive. Structures that fall outside the
@@ -726,7 +726,7 @@ class mbePredict:
         comp_ids : :obj:`numpy.ndarray`, shape: ``(len(entity_ids),)``
             Relates each ``entity_id`` to a fragment label. Each item's index
             is the label's ``entity_id``.
-        model : :obj:`mbgdml.models.model`
+        model : :obj:`mbgdml.models.Model`
             Model that contains all information needed by ``model_predict``.
 
         Returns

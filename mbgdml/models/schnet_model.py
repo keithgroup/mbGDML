@@ -20,14 +20,23 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import hashlib
 import logging
 import numpy as np
-from .base import model
+from .base import Model
+
+try:
+    import torch
+
+    _HAS_TORCH = True
+except ImportError:
+    _HAS_TORCH = False
 
 log = logging.getLogger(__name__)
 
 
-class schnetModel(model):
+# pylint: disable-next=invalid-name
+class schnetModel(Model):
     def __init__(self, model_path, comp_ids, device, criteria=None):
         """
         Parameters
@@ -44,21 +53,17 @@ class schnetModel(model):
             Initialized descriptor criteria for accepting a structure based on
             a descriptor and cutoff.
         """
-        global schnetpack, torch, ase
-        import schnetpack, torch, ase
-
         super().__init__(criteria)
         self.type = "schnet"
+        # pylint: disable-next=no-member
         self.spk_model = torch.load(model_path, map_location=torch.device(device))
         self.device = device
-        if isinstance(comp_ids, list) or isinstance(comp_ids, tuple):
+        if isinstance(comp_ids, (list, tuple)):
             comp_ids = np.array(comp_ids)
         self.comp_ids = comp_ids
         self.nbody_order = len(comp_ids)
 
         # SchNet MD5
-        import hashlib
-
         md5_hash = hashlib.md5()
         for param in self.spk_model.parameters():
             md5_hash.update(

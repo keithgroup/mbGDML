@@ -1,5 +1,5 @@
-``model``
+``Model``
 =========
 
-.. autoclass:: mbgdml.models.model
+.. autoclass:: mbgdml.models.Model
     :members:

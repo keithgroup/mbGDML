@@ -28,7 +28,7 @@ import numpy as np
 from mbgdml.data import dataSet
 from mbgdml._gdml.train import GDMLTrain, get_test_idxs
 from mbgdml.train import mbGDMLTrain
-from mbgdml.analysis.problematic import prob_structures
+from mbgdml.analysis.problematic import ProblematicStructures
 from mbgdml.models import gdmlModel
 from mbgdml.predictors import predict_gdml
 from mbgdml.descriptors import Criteria, com_distance_sum
@@ -230,7 +230,7 @@ def test_1h2o_prob_indices():
     model = gdmlModel(model_dict, criteria=model_criteria)
     dset = dataSet(dset_path, Z_key="z")
 
-    prob_s = prob_structures([model], predict_gdml)
+    prob_s = ProblematicStructures([model], predict_gdml)
     n_find = 100
     prob_idxs = prob_s.find(dset, n_find, save_dir="./tests/tmp")
     prob_idxs = np.sort(prob_idxs)

@@ -21,9 +21,9 @@
 # SOFTWARE.
 
 import numpy as np
-from .. import utils
 
 
+# pylint: disable-next=invalid-name
 class mbGDMLData:
     r"""Parent class for mbGDML structure, data, and predict sets."""
 
@@ -41,12 +41,12 @@ class mbGDMLData:
         """
         if hasattr(self, "_Z"):
             return self._Z
-        else:
-            return np.array([], dtype=np.int32)
+
+        return np.array([], dtype=np.int32)
 
     @Z.setter
     def Z(self, var):
-        self._Z = var
+        self._Z = var  # pylint: disable=invalid-name
 
     @property
     def n_Z(self):
@@ -54,10 +54,10 @@ class mbGDMLData:
 
         :type: :obj:`int`
         """
-        if self.Z.ndim == 1 or self.Z.ndim == 2:
+        if self.Z.ndim in (1, 2):
             return int(self.Z.shape[0])
-        elif self.Z.ndim == 3:
-            return int(self.Z.shape[1])
+
+        return int(self.Z.shape[1])
 
     @property
     def R(self):
@@ -71,14 +71,14 @@ class mbGDMLData:
         """
         if hasattr(self, "_R"):
             return self._R
-        else:
-            return np.array([[[]]])
+
+        return np.array([[[]]])
 
     @R.setter
     def R(self, var):
         if var.ndim == 2:
             var = np.array([var])
-        self._R = var
+        self._R = var  # pylint: disable=invalid-name
 
     @property
     def n_R(self):
@@ -88,8 +88,8 @@ class mbGDMLData:
         """
         if self.R.ndim == 2:
             return 1
-        elif self.R.ndim == 3:
-            return int(self.R.shape[0])
+
+        return int(self.R.shape[0])
 
     @property
     def r_unit(self):
@@ -103,19 +103,14 @@ class mbGDMLData:
     def r_unit(self, var):
         self._r_unit = var
 
-    def save(self, name, data, save_dir):
+    def save(self, file_path, data):
         r"""General save function for GDML data sets and models.
 
         Parameters
         ----------
-        name : :obj:`str`
-            Name of the file to be saved not including the ``npz`` extension.
+        file_path : :obj:`str`
+            Path to save the file.
         data : :obj:`dict`
             Data to be saved to ``npz`` file.
-        save_dir : :obj:`str`
-            Directory to save the file (with or without the ``'/'`` suffix).
         """
-        # TODO: Just accept path and data.
-        save_dir = utils.norm_path(save_dir)
-        save_path = save_dir + name + ".npz"
-        np.savez_compressed(save_path, **data)
+        np.savez_compressed(file_path, **data)

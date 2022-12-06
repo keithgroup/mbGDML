@@ -20,36 +20,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import cclib
+import os
 import hashlib
 import itertools
 import json
 import numpy as np
-import os
+import cclib
 from qcelemental import periodictable as ptable
-
-
-def norm_path(path):
-    r"""Normalizes directory paths to be consistent.
-
-    Parameters
-    ----------
-    path : str
-        Path to a directory.
-
-    Returns
-    -------
-    str
-        Normalized path.
-    """
-
-    normd_path = path  # Initializes path variable.
-
-    # Makes sure path ends with forward slash.
-    if normd_path[-1] != "/":
-        normd_path = path + "/"
-
-    return normd_path
+from .descriptors import get_center_of_mass
 
 
 def get_files(path, expression, recursive=True):
@@ -114,27 +92,6 @@ def get_filename(path):
     return os.path.splitext(os.path.basename(path))[0]
 
 
-def natsort_list(unsorted_list):
-    r"""Basic function that organizes a list based on human (or natural) sorting
-    methodology.
-
-    Parameters
-    -----------
-    unsorted_list : list
-        List of strings.
-
-    Returns
-    -------
-    list
-        Sorted list of string.
-    """
-    from natsort import natsorted, ns
-
-    sorted_list = natsorted(unsorted_list, alg=ns.IGNORECASE)
-
-    return sorted_list
-
-
 def string_xyz_arrays(Z, R, *args, precision=10):
     r"""Create string of array data in XYZ format for a single structure.
 
@@ -159,8 +116,8 @@ def string_xyz_arrays(Z, R, *args, precision=10):
         of atoms
     """
     struct_string = ""
-    for i in range(len(Z)):
-        atom_string = str(atoms_by_element[Z[i]])
+    atom_strings = atoms_by_element(Z)
+    for i, atom_string in enumerate(atom_strings):
         for arr in (R, *args):
             if arr is not None:
                 atom_string += "    "
@@ -193,8 +150,8 @@ def write_xyz(xyz_path, Z, R, comments=None, data_precision=10):
         Number of decimal points for printing array data. Default is ``13``.
     """
     n_atoms = len(Z)
-    with open(xyz_path, "w") as f:
-        for i in range(len(R)):
+    with open(xyz_path, "w", encoding="utf-8") as f:
+        for i, r in enumerate(R):
             f.write(f"{n_atoms}\n")
             if comments is not None:
                 comment = comments[i]
@@ -203,7 +160,7 @@ def write_xyz(xyz_path, Z, R, comments=None, data_precision=10):
             else:
                 comment = "\n"
             f.write(comment)
-            f.write(string_xyz_arrays(Z, R[i], precision=data_precision))
+            f.write(string_xyz_arrays(Z, r, precision=data_precision))
 
 
 def convert_forces(forces, e_units_calc, r_units_calc, e_units, r_units):
@@ -304,7 +261,7 @@ def md5_data(data, keys):
     md5_hash = hashlib.md5()
     for key in keys:
         d = data[key]
-        if type(d) is np.ndarray:
+        if isinstance(d, np.ndarray):
             d = d.ravel()
         md5_hash.update(hashlib.md5(d).digest())
     return md5_hash.hexdigest()
@@ -340,11 +297,11 @@ def get_entity_ids(atoms_per_mol, num_mol, starting_idx=0, add_to=None):
         if isinstance(add_to, np.ndarray):
             add_to = add_to.tolist()
         return np.array(add_to + entity_ids)
-    else:
-        return np.array(entity_ids)
+
+    return np.array(entity_ids)
 
 
-def get_comp_ids(label, num_mol, entity_ids, add_to=None):
+def get_comp_ids(label, num_mol, add_to=None):
     r"""Prepares the list of component ids for a system with only one species.
 
     Parameters
@@ -353,11 +310,6 @@ def get_comp_ids(label, num_mol, entity_ids, add_to=None):
         Species label.
     num_mol : :obj:`int`
         Number of molecules of this type in the system.
-    entity_ids : :obj:`int`
-        A uniquely identifying integer specifying what atoms belong to
-        which entities. Entities can be a related set of atoms, molecules,
-        or functional group. For example, a water and methanol molecule
-        could be ``[0, 0, 0, 1, 1, 1, 1, 1, 1]``.
     add_to : :obj:`list`
         Component ids to append new ids to.
 
@@ -371,8 +323,8 @@ def get_comp_ids(label, num_mol, entity_ids, add_to=None):
         if isinstance(add_to, np.ndarray):
             add_to = add_to.tolist()
         return np.array(add_to + comp_ids)
-    else:
-        return np.array(comp_ids)
+
+    return np.array(comp_ids)
 
 
 def get_R_slice(entities, entity_ids):
@@ -406,9 +358,9 @@ def center_structures(Z, R):
 
     Parameters
     ----------
-    Z : :obj:`numpy.ndarray`
+    Z : :obj:`numpy.ndarray`, ndim: ``1``
         Atomic numbers of the atoms in every structure.
-    R : :obj:`numpy.ndarray`
+    R : :obj:`numpy.ndarray`, ndim: ``3``
         Cartesian atomic coordinates of data set structures.
 
     Returns
@@ -420,20 +372,12 @@ def center_structures(Z, R):
     if R.ndim == 2:
         R = np.array([R])
 
-    masses = np.empty(R[0].shape)
-
-    for i in range(len(masses)):
-        masses[i, :] = ptable.to_mass(Z[i])
-
-    for i in range(len(R)):
-        r = R[i]
-        cm_r = np.average(r, axis=0, weights=masses)
-        R[i] = r - cm_r
+    R -= np.repeat(get_center_of_mass(Z, R), R.shape[1]).reshape(R.shape)
 
     if R.shape[0] == 1:
-        return R[0]
-    else:
-        return R
+        R = R[0]
+
+    return R
 
 
 def save_json(json_path, json_dict):
@@ -449,7 +393,7 @@ def save_json(json_path, json_dict):
     json_string = json.dumps(
         json_dict, cls=cclib.io.cjsonwriter.JSONIndentEncoder, indent=4
     )
-    with open(json_path, "w") as f:
+    with open(json_path, "w", encoding="utf-8") as f:
         f.write(json_string)
 
 

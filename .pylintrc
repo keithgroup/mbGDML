@@ -241,6 +241,7 @@ good-names=A,
            R_idxs,
            R_key,
            R_masses,
+           R_pd,
            R_sample,
            R_selection,
            R_selection_idx,
@@ -260,6 +261,7 @@ good-names=A,
            ax,
            c,
            d,
+           dataSet,
            db,
            df,
            e,
@@ -538,7 +540,8 @@ disable=raw-checker-failed,
         too-many-locals,
         attribute-defined-outside-init,
         broad-except,
-        import-error
+        import-error,
+        R0801
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option

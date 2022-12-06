@@ -24,9 +24,10 @@ import os
 import numpy as np
 from cclib.parser.utils import convertor
 from .basedata import mbGDMLData
-from .. import __version__ as mbgdml_version
 from .. import utils
-from ..mbe import mbePredict
+from .. import _version
+
+mbgdml_version = _version.get_versions()["version"]
 
 
 class dataSet(mbGDMLData):
@@ -67,8 +68,8 @@ class dataSet(mbGDMLData):
         """
         if hasattr(self, "_name"):
             return self._name
-        else:
-            return None
+
+        return None
 
     @name.setter
     def name(self, var):
@@ -93,8 +94,8 @@ class dataSet(mbGDMLData):
         """
         if hasattr(self, "_r_prov_ids"):
             return self._r_prov_ids
-        else:
-            return {}
+
+        return {}
 
     @r_prov_ids.setter
     def r_prov_ids(self, var):
@@ -121,8 +122,8 @@ class dataSet(mbGDMLData):
         """
         if hasattr(self, "_r_prov_specs"):
             return self._r_prov_specs
-        else:
-            return np.array([[]], dtype="int_")
+
+        return np.array([[]], dtype="int_")
 
     @r_prov_specs.setter
     def r_prov_specs(self, var):
@@ -140,12 +141,12 @@ class dataSet(mbGDMLData):
         """
         if hasattr(self, "_F"):
             return self._F
-        else:
-            return np.array([[[]]])
+
+        return np.array([[[]]])
 
     @F.setter
     def F(self, var):
-        self._F = var
+        self._F = var  # pylint: disable=invalid-name
 
     @property
     def E(self):
@@ -158,12 +159,12 @@ class dataSet(mbGDMLData):
         """
         if hasattr(self, "_E"):
             return self._E
-        else:
-            return np.array([])
+
+        return np.array([])
 
     @E.setter
     def E(self, var):
-        self._E = var
+        self._E = var  # pylint: disable=invalid-name
 
     @property
     def e_unit(self):
@@ -174,8 +175,8 @@ class dataSet(mbGDMLData):
         """
         if hasattr(self, "_e_unit"):
             return self._e_unit
-        else:
-            return "n/a"
+
+        return "n/a"
 
     @e_unit.setter
     def e_unit(self, var):
@@ -190,15 +191,15 @@ class dataSet(mbGDMLData):
         """
         if hasattr(self, "_theory"):
             return self._theory
-        else:
-            return "n/a"
+
+        return "n/a"
 
     @theory.setter
     def theory(self, var):
         self._theory = var
 
     @property
-    def E_min(self):
+    def E_min(self):  # pylint: disable=invalid-name
         r"""Minimum energy of all structures.
 
         :type: :obj:`float`
@@ -206,7 +207,7 @@ class dataSet(mbGDMLData):
         return float(np.min(self.E.ravel()))
 
     @property
-    def E_max(self):
+    def E_max(self):  # pylint: disable=invalid-name
         r"""Maximum energy of all structures.
 
         :type: :obj:`float`
@@ -214,7 +215,7 @@ class dataSet(mbGDMLData):
         return float(np.max(self.E.ravel()))
 
     @property
-    def E_var(self):
+    def E_var(self):  # pylint: disable=invalid-name
         r"""Energy variance.
 
         :type: :obj:`float`
@@ -222,7 +223,7 @@ class dataSet(mbGDMLData):
         return float(np.var(self.E.ravel()))
 
     @property
-    def E_mean(self):
+    def E_mean(self):  # pylint: disable=invalid-name
         r"""Mean of all energies.
 
         :type: :obj:`float`
@@ -230,7 +231,7 @@ class dataSet(mbGDMLData):
         return float(np.mean(self.E.ravel()))
 
     @property
-    def F_min(self):
+    def F_min(self):  # pylint: disable=invalid-name
         r"""Minimum atomic force in all structures.
 
         :type: :obj:`float`
@@ -238,7 +239,7 @@ class dataSet(mbGDMLData):
         return float(np.min(self.F.ravel()))
 
     @property
-    def F_max(self):
+    def F_max(self):  # pylint: disable=invalid-name
         r"""Maximum atomic force in all structures.
 
         :type: :obj:`float`
@@ -246,7 +247,7 @@ class dataSet(mbGDMLData):
         return float(np.max(self.F.ravel()))
 
     @property
-    def F_var(self):
+    def F_var(self):  # pylint: disable=invalid-name
         r"""Force variance.
 
         :type: :obj:`float`
@@ -254,7 +255,7 @@ class dataSet(mbGDMLData):
         return float(np.var(self.F.ravel()))
 
     @property
-    def F_mean(self):
+    def F_mean(self):  # pylint: disable=invalid-name
         r"""Mean of all forces.
 
         :type: :obj:`float`
@@ -300,8 +301,8 @@ class dataSet(mbGDMLData):
         """
         if hasattr(self, "_entity_ids"):
             return self._entity_ids
-        else:
-            return np.array([])
+
+        return np.array([])
 
     @entity_ids.setter
     def entity_ids(self, var):
@@ -327,8 +328,8 @@ class dataSet(mbGDMLData):
         """
         if hasattr(self, "_comp_ids"):
             return self._comp_ids
-        else:
-            return np.array([])
+
+        return np.array([])
 
     @comp_ids.setter
     def comp_ids(self, var):
@@ -343,8 +344,8 @@ class dataSet(mbGDMLData):
         """
         if hasattr(self, "_mb"):
             return self._mb
-        else:
-            return None
+
+        return None
 
     @mb.setter
     def mb(self, var):
@@ -359,8 +360,8 @@ class dataSet(mbGDMLData):
         """
         if hasattr(self, "_mb_dsets_md5"):
             return self._mb_dsets_md5
-        else:
-            return np.array([])
+
+        return np.array([])
 
     @mb_dsets_md5.setter
     def mb_dsets_md5(self, var):
@@ -375,13 +376,14 @@ class dataSet(mbGDMLData):
         """
         if hasattr(self, "_mb_models_md5"):
             return self._mb_models_md5
-        else:
-            return np.array([])
+
+        return np.array([])
 
     @mb_models_md5.setter
     def mb_models_md5(self, var):
         self._mb_models_md5 = var.astype(str)
 
+    # pylint: disable-next=invalid-name
     def convertE(self, E_units):
         r"""Convert energies and updates ``e_unit``.
 
@@ -394,6 +396,7 @@ class dataSet(mbGDMLData):
         self._E = convertor(self.E, self.e_unit, E_units)
         self.e_unit = E_units
 
+    # pylint: disable-next=invalid-name
     def convertR(self, R_units):
         r"""Convert coordinates and updates ``r_unit``.
 
@@ -406,6 +409,7 @@ class dataSet(mbGDMLData):
         self._R = convertor(self.R, self.r_unit, R_units)
         self.r_unit = R_units
 
+    # pylint: disable-next=invalid-name
     def convertF(self, force_e_units, force_r_units, e_units, r_units):
         r"""Convert forces.
 
@@ -488,10 +492,11 @@ class dataSet(mbGDMLData):
         """
         dataset_npz = np.load(dataset_path, allow_pickle=True)
         npz_type = dataset_npz.f.type.item()
+
         if npz_type != "d":
             raise ValueError(f"{npz_type} is not a data set.")
-        else:
-            self._update(dict(dataset_npz))
+
+        self._update(dict(dataset_npz))
 
     def asdict(self):
         r"""Converts object into a custom :obj:`dict`.
@@ -548,7 +553,7 @@ class dataSet(mbGDMLData):
             pass
 
         # mbGDML information.
-        if hasattr(self, "mb") and self.mb != None:
+        if hasattr(self, "mb") and self.mb is not None:
             dataset["mb"] = np.array(self.mb)
         if len(self.mb_models_md5) > 0:
             dataset["mb_models_md5"] = np.array(self.mb_models_md5)

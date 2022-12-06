@@ -21,12 +21,11 @@
 # SOFTWARE.
 
 import logging
-import numpy as np
 
 log = logging.getLogger(__name__)
 
 
-class model(object):
+class Model:
     r"""A parent class for machine learning model objects.
 
     Attributes

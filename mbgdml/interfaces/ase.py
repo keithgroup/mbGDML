@@ -23,7 +23,7 @@
 from ase.calculators.calculator import Calculator
 import numpy as np
 
-
+# pylint: disable-next=invalid-name
 class mbeCalculator(Calculator):
     r"""ASE calculator using the many-body expansion predictor in mbGDML."""
 
@@ -56,6 +56,7 @@ class mbeCalculator(Calculator):
             parameters = {}
         self.parameters = parameters
 
+    # pylint: disable-next=unused-argument, keyword-arg-before-vararg
     def calculate(self, atoms=None, *args, **kwargs):
         r"""Predicts energy and forces using many-body GDML models."""
         if atoms is not None:
@@ -86,7 +87,7 @@ class mbeCalculator(Calculator):
                 value = value.todict()
             if skip_default:
                 default = defaults.get(key, "_no_default_")
-                if default != "_no_default_" and equal(value, default):
+                if default != "_no_default_":
                     continue
             if isinstance(value, np.ndarray):
                 # For some reason ASE does not like loading comp_ids as arrays.
