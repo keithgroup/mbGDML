@@ -13,9 +13,10 @@ requirements = [
     "numpy",
     "scipy",
     "psutil",
-    "bayesian-optimization>=1.3.0",
+    "bayesian-optimization>=1.4.0",
     "pandas",
     "qcelemental>=0.25.1",
+    "ray>=2.1.0",
 ]
 setup_requirements = []
 test_requirements = requirements.append(["pytest"])

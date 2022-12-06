@@ -26,15 +26,9 @@ import itertools
 import logging
 import math
 import numpy as np
-import os
+import ray
 from .utils import chunk_array, chunk_iterable, gen_combs
 
-try:
-    import ray
-except (ModuleNotFoundError, ImportError):
-    _has_ray = False
-except:
-    _has_ray = True
 
 log = logging.getLogger(__name__)
 
@@ -138,8 +132,7 @@ def mbe_worker(
     Deriv = np.zeros((len(r_idxs), *r_shape))
 
     # Loop through every structure in the reference data set.
-    for i in range(len(r_idxs)):
-        i_r = r_idxs[i]
+    for i, i_r in enumerate(r_idxs):
         # We have to match the molecule information for each reference
         # structure to the molecules in this lower-order structure to remove
         # the right contribution.
@@ -159,8 +152,7 @@ def mbe_worker(
             except IndexError as e:
                 if "for axis 0 with size 0" in str(e):
                     continue
-                else:
-                    raise
+                raise
 
             deriv_lower = Deriv_lower[i_r_lower]
 
@@ -207,7 +199,8 @@ def gen_r_idxs_worker(r_prov_specs, r_prov_ids_lower, n_workers):
         Species an ID (:obj:`int`) to uniquely identifying labels for each
         lower-order structure if it originated from another reptar file. Labels
         should always be ``md5_structures``. For example,
-        ``{0: '6038e101da7fc0085978741832ebc7ad', 1: 'eeaf93dec698de3ecb55e9292bd9dfcb'}``.
+        ``{0: '6038e101da7fc0085978741832ebc7ad',
+        1: 'eeaf93dec698de3ecb55e9292bd9dfcb'}``.
     n_workers : :obj:`int`
         Number of parallel workers. Can range from ``1`` to the number of CPUs
         available.
@@ -229,6 +222,7 @@ def gen_r_idxs_worker(r_prov_specs, r_prov_ids_lower, n_workers):
         yield r_idxs_worker
 
 
+# pylint: disable=too-many-branches, too-many-statements
 def mbe_contrib(
     E,
     Deriv,
@@ -273,7 +267,8 @@ def mbe_contrib(
         Species an ID (:obj:`int`) to uniquely identifying labels for each
         structure if it originated from another reptar file. Labels should
         always be ``md5_structures``. For example,
-        ``{0: '6038e101da7fc0085978741832ebc7ad', 1: 'eeaf93dec698de3ecb55e9292bd9dfcb'}``.
+        ``{0: '6038e101da7fc0085978741832ebc7ad', 1:
+        'eeaf93dec698de3ecb55e9292bd9dfcb'}``.
     r_prov_specs : :obj:`numpy.ndarray`, ndim: ``2`` or :obj:`None`
         Structure provenance IDs. This specifies the ``r_prov_id``, structure
         index from the ``r_prov_id`` source, and ``entity_ids`` making up
@@ -292,7 +287,8 @@ def mbe_contrib(
         Species an ID (:obj:`int`) to uniquely identifying labels for each
         lower-order structure if it originated from another reptar file. Labels
         should always be ``md5_structures``. For example,
-        ``{0: '6038e101da7fc0085978741832ebc7ad', 1: 'eeaf93dec698de3ecb55e9292bd9dfcb'}``.
+        ``{0: '6038e101da7fc0085978741832ebc7ad',
+        1: 'eeaf93dec698de3ecb55e9292bd9dfcb'}``.
     r_prov_specs_lower : :obj:`numpy.ndarray`, ndim: ``2``
         Structure provenance IDs. This specifies the ``r_prov_id``, structure
         index from the ``r_prov_id`` source, and ``entity_ids`` making up
@@ -315,10 +311,10 @@ def mbe_contrib(
     :obj:`numpy.ndarray`
         Derivatives with lower-order contributions added or removed.
     """
-    log.debug(f"Computing many-body expansion contributions")
-    if operation != "add" and operation != "remove":
+    log.debug("Computing many-body expansion contributions")
+    if operation not in ("add", "remove"):
         raise ValueError(f'{operation} is not "add" or "remove"')
-    log.debug(f"MBE operation: {operation}")
+    log.debug("MBE operation : %s", operation)
 
     # Checks that the r_prov_md5 hashes match the same r_prov_id
     if (r_prov_ids is not None) and (r_prov_ids != {}):
@@ -335,12 +331,12 @@ def mbe_contrib(
         n_entities = len(set(entity_ids))
         r_prov_specs = np.empty((n_r, 2 + n_entities), dtype=int)
         r_prov_specs[:, 0] = r_prov_specs_lower[0][0]
-        r_prov_specs[:, 1] = np.array([i for i in range(n_r)])
+        r_prov_specs[:, 1] = np.array(list(range(n_r)))
         for entity_id in range(n_entities):
             r_prov_specs[:, entity_id + 2] = entity_id
 
     r_shape = Deriv.shape[1:]
-    log.debug(f"Shape of example structure: {r_shape}")
+    log.debug("Shape of example structure: %r", r_shape)
 
     if not use_ray:
         log.debug("use_ray is False (using serial operation)")
@@ -367,7 +363,7 @@ def mbe_contrib(
             log.debug("ray is not initialized")
             # Try to connect to already running ray service (from ray cli).
             try:
-                log.debug(f"Trying to connect to ray at address {ray_address}")
+                log.debug("Trying to connect to ray at address %r", ray_address)
                 ray.init(address=ray_address)
             except ConnectionError:
                 ray.init(num_cpus=n_workers)
@@ -483,7 +479,7 @@ def decomp_to_total(
     return E, F
 
 
-class mbePredict(object):
+class mbePredict:
     r"""Predict energies and forces of structures using machine learning
     many-body models.
 
@@ -507,7 +503,7 @@ class mbePredict(object):
         """
         Parameters
         ----------
-        models : :obj:`list` of :obj:`mbgdml.models.model`
+        models : :obj:`list` of :obj:`mbgdml.models.Model`
             Machine learning model objects that contain all information to make
             predictions using ``predict_model``.
         predict_model : ``callable``
@@ -526,7 +522,8 @@ class mbePredict(object):
             Number of :math:`n`-body structures to assign to each spawned
             worker with ray. If :obj:`None`, it will divide up the number of
             predictions by ``n_workers``.
-        alchemical_scaling : :obj:`list` of ``mbgdml.alchemy.mbeAlchemyScale``, default: :obj:`None`
+        alchemical_scaling : :obj:`list` of ``mbgdml.alchemy.mbeAlchemyScale``,
+        default: :obj:`None`
             Alchemical scaling of :math:`n`-body interactions of entities.
         periodic_cell : :obj:`mbgdml.periodic.Cell`, default: :obj:`None`
             Use periodic boundary conditions defined by this object. If this
@@ -536,9 +533,9 @@ class mbePredict(object):
         self.predict_model = predict_model
 
         if models[0].type == "gap":
-            assert use_ray == False
+            assert not use_ray
         elif models[0].type == "schnet":
-            assert use_ray == False
+            assert not use_ray
 
         self.use_ray = use_ray
         self.n_workers = n_workers
@@ -548,9 +545,6 @@ class mbePredict(object):
         self.alchemy_scalers = alchemy_scalers
         self.periodic_cell = periodic_cell
         if use_ray:
-            global ray
-            import ray
-
             if not ray.is_initialized():
                 ray.init(address=ray_address)
             assert ray.is_initialized()
@@ -589,9 +583,10 @@ class mbePredict(object):
             avail_entity_ids.append(matching_entity_ids)
         return avail_entity_ids
 
+    # pylint: disable=too-many-branches, too-many-statements
     def compute_nbody(self, z, r, entity_ids, comp_ids, model):
         r"""Compute all :math:`n`-body contributions of a single structure
-        using a :obj:`mbgdml.models.model` object.
+        using a :obj:`mbgdml.models.Model` object.
 
         When ``use_ray = True``, this acts as a driver that spawns ray tasks of
         the ``predict_model`` function.
@@ -607,7 +602,7 @@ class mbePredict(object):
         comp_ids : :obj:`numpy.ndarray`, shape: ``(len(entity_ids),)``
             Relates each ``entity_id`` to a fragment label. Each item's index
             is the label's ``entity_id``.
-        model : :obj:`mbgdml.models.model`
+        model : :obj:`mbgdml.models.Model`
             Model that contains all information needed by ``model_predict``.
 
         Returns
@@ -636,7 +631,7 @@ class mbePredict(object):
         else:
             model_comp_ids = model.comp_ids
         avail_entity_ids = self.get_avail_entities(comp_ids, model_comp_ids)
-        log.debug(f"Available entity IDs: {avail_entity_ids}")
+        log.debug("Available entity IDs: %r", avail_entity_ids)
         nbody_gen = gen_combs(avail_entity_ids)
 
         kwargs_pred = {}
@@ -694,9 +689,9 @@ class mbePredict(object):
             # Start workers and collect results.
             while len(workers) != 0:
                 done_id, workers = ray.wait(workers)
-                E_wkr, F_wkr = ray.get(done_id)[0]
-                E += E_wkr
-                F += F_wkr
+                E_worker, F_worker = ray.get(done_id)[0]
+                E += E_worker
+                F += F_worker
                 try:
                     chunk = next(nbody_chunker)
                     add_worker(workers, chunk)
@@ -708,9 +703,10 @@ class mbePredict(object):
 
         return E, F
 
+    # pylint: disable=too-many-branches, too-many-statements
     def compute_nbody_decomp(self, z, r, entity_ids, comp_ids, model):
         r"""Compute all :math:`n`-body contributions of a single structure
-        using a :obj:`mbgdml.models.model` object.
+        using a :obj:`mbgdml.models.Model` object.
 
         Stores all individual entity ID combinations, energies and forces.
         This is more memory intensive. Structures that fall outside the
@@ -730,7 +726,7 @@ class mbePredict(object):
         comp_ids : :obj:`numpy.ndarray`, shape: ``(len(entity_ids),)``
             Relates each ``entity_id`` to a fragment label. Each item's index
             is the label's ``entity_id``.
-        model : :obj:`mbgdml.models.model`
+        model : :obj:`mbgdml.models.Model`
             Model that contains all information needed by ``model_predict``.
 
         Returns
@@ -822,12 +818,12 @@ class mbePredict(object):
             # Start workers and collect results.
             while len(workers) != 0:
                 done_id, workers = ray.wait(workers)
-                E_wkr, F_wkr, entity_combs_wkr = ray.get(done_id)[0]
+                E_worker, F_worker, entity_combs_wkr = ray.get(done_id)[0]
 
                 i_start = np.where((entity_combs_wkr[0] == entity_combs).all(1))[0][0]
                 i_end = i_start + len(entity_combs_wkr)
-                E[i_start:i_end] = E_wkr
-                F[i_start:i_end] = F_wkr
+                E[i_start:i_end] = E_worker
+                F[i_start:i_end] = F_worker
 
                 try:
                     chunk = next(nbody_chunker)
@@ -868,11 +864,9 @@ class mbePredict(object):
         F = np.zeros(R.shape, dtype=np.double)
 
         # Compute all energies and forces with every model.
-        for i in range(len(E)):
+        for i, r in enumerate(R):
             for model in self.models:
-                E_nbody, F_nbody = self.compute_nbody(
-                    z, R[i], entity_ids, comp_ids, model
-                )
+                E_nbody, F_nbody = self.compute_nbody(z, r, entity_ids, comp_ids, model)
                 E[i] += E_nbody
                 F[i] += F_nbody
         log.t_stop(
@@ -932,9 +926,9 @@ class mbePredict(object):
                     nbody_models.append(self.models[i])
 
             for model in nbody_models:
-                for i in range(len(R)):
+                for i, r in enumerate(R):
                     E, F, entity_combs = self.compute_nbody_decomp(
-                        z, R[i], entity_ids, comp_ids, model
+                        z, r, entity_ids, comp_ids, model
                     )
                     entity_combs = np.hstack(
                         (

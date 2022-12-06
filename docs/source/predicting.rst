@@ -15,7 +15,7 @@ We designed an extensible, modular framework for many-body predictions using :cl
 Model
 =====
 
-Information needed to make quantum chemistry or machine learning predictions are contained in objects that inherit the :class:`~mbgdml.models.model` class.
+Information needed to make quantum chemistry or machine learning predictions are contained in objects that inherit the :class:`~mbgdml.models.Model` class.
 For example, :class:`~mbgdml.models.gdmlModel` stores GDML parameters for use in its predict function.
 
 Predict

@@ -28,7 +28,7 @@ from qcelemental import periodictable as ptable
 log = logging.getLogger(__name__)
 
 
-class Criteria(object):
+class Criteria:
     r"""Descriptor criteria for accepting a structure based on a descriptor
     and cutoff.
     """
@@ -56,7 +56,7 @@ class Criteria(object):
         self.desc = desc
         self.desc_kwargs = desc_kwargs
         self.cutoff = cutoff
-        if isinstance(self.cutoff, tuple) or isinstance(self.cutoff, list):
+        if isinstance(self.cutoff, (tuple, list)):
             self.cutoff = sorted(self.cutoff)  # Will always be a list.
         bound = bound.lower()
         assert bound in ["upper", "lower"]
@@ -84,22 +84,23 @@ class Criteria(object):
         if R.ndim == 2:
             R = R[None, ...]
         n_R = R.shape[0]
+
         if self.cutoff is None:
             accept_r = np.full(n_R, True)
             return accept_r, None
+
+        desc_v = self.desc(Z, R, **self.desc_kwargs, **kwargs)
+        if isinstance(self.cutoff, list):
+            accept_r = (self.cutoff[0] < desc_v) & (desc_v < self.cutoff[1])
         else:
-            desc_v = self.desc(Z, R, **self.desc_kwargs, **kwargs)
-            if isinstance(self.cutoff, list):
-                accept_r = (self.cutoff[0] < desc_v) & (desc_v < self.cutoff[1])
-            else:
-                if self.bound == "upper":
-                    accept_r = desc_v < self.cutoff
-                else:  # lower
-                    accept_r = desc_v > self.cutoff
-            if n_R == 1:
-                accept_r = accept_r[0]
-                desc_v = desc_v[0]
-            return accept_r, desc_v
+            if self.bound == "upper":
+                accept_r = desc_v < self.cutoff
+            else:  # lower
+                accept_r = desc_v > self.cutoff
+        if n_R == 1:
+            accept_r = accept_r[0]
+            desc_v = desc_v[0]
+        return accept_r, desc_v
 
 
 def get_center_of_mass(Z, R):
@@ -118,13 +119,13 @@ def get_center_of_mass(Z, R):
         The center of mass cartesian coordinates.
     """
     if R.ndim == 2:
-        R = R[None, ...]
+        R = np.array([R])
     masses = np.empty(R[0].shape)
     for i in range(len(masses)):
         masses[i, :] = ptable.to_mass(Z[i])
     R_masses = np.full(R.shape, masses)
-    com_structure = np.average(R, axis=1, weights=R_masses)
-    return com_structure
+    cm_structure = np.average(R, axis=1, weights=R_masses)
+    return cm_structure
 
 
 def max_atom_pair_dist(Z, R):

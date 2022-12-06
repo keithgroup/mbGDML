@@ -23,7 +23,7 @@
 
 import logging
 import numpy as np
-from .base import model
+from .base import Model
 from ..utils import md5_data
 from .._gdml.desc import _from_r
 from .. import __version__ as mbgdml_version
@@ -31,7 +31,8 @@ from .. import __version__ as mbgdml_version
 log = logging.getLogger(__name__)
 
 
-class gdmlModel(model):
+# pylint: disable-next=invalid-name
+class gdmlModel(Model):
     def __init__(self, model, comp_ids=None, criteria=None, for_predict=True):
         """
         Parameters
@@ -53,14 +54,15 @@ class gdmlModel(model):
         self.type = "gdml"
 
         self._load(model, comp_ids)
-        self._unpack()
+        if for_predict:
+            self._unpack()
 
     def _load(self, model, comp_ids):
         if isinstance(model, str):
-            log.debug(f"Loading model from {model}")
+            log.debug("Loading model from %r", model)
             model = dict(np.load(model, allow_pickle=True))
         elif isinstance(model, dict):
-            log.debug(f"Loading model from dictionary")
+            log.debug("Loading model from dictionary")
         else:
             raise TypeError(f"{type(model)} is not string or dict")
 
@@ -112,7 +114,7 @@ class gdmlModel(model):
 
         if "alphas_E" in model.keys():
             self.alphas_E_lin = np.tile(
-                model["alphas_E"][:, None], (1, n_perms)
+                model["alphas_E"][:, None], (1, self.n_perms)
             ).ravel()
         else:
             self.alphas_E_lin = None
@@ -129,8 +131,8 @@ class gdmlModel(model):
 
         if hasattr(self, "model_dict"):
             return self.model_dict["code_version"].item()
-        else:
-            raise AttributeError("No model is loaded.")
+
+        raise AttributeError("No model is loaded.")
 
     @property
     def md5(self):

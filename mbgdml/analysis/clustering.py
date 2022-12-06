@@ -23,6 +23,14 @@
 import logging
 import numpy as np
 
+try:
+    from sklearn.cluster import AgglomerativeClustering
+    from sklearn.cluster import KMeans
+
+    _HAS_SKLEARN = True
+except ImportError:
+    _HAS_SKLEARN = False
+
 log = logging.getLogger(__name__)
 
 
@@ -41,8 +49,8 @@ def get_clustered_data(cl_idxs, data):
     :obj:`list` of :obj:`numpy.ndarray`
         ``data`` clustered with respect to ``cl_idxs``.
     """
-    log.info(f"Assembling data into {len(cl_idxs)} clusters")
-    log.debug(f"Example data:")
+    log.info("Assembling data into %d clusters", len(cl_idxs))
+    log.debug("Example data:")
     log.log_array(np.array(data[0]), level=10)
     data_cl = []
     for idxs in cl_idxs:
@@ -51,7 +59,7 @@ def get_clustered_data(cl_idxs, data):
     return data_cl
 
 
-def agglomerative(data, kwargs={"n_clusters": 10}):
+def agglomerative(data, kwargs=None):
     r"""Cluster data using ``sklearn.cluster.AgglomerativeClustering``.
 
     Parameters
@@ -59,7 +67,7 @@ def agglomerative(data, kwargs={"n_clusters": 10}):
     data : :obj:`numpy.ndarray`
         Feature or precomputed distance matrix used to cluster similar
         structures.
-    kwargs : :obj:`dict`, default: ``{'n_clusters': 10}``
+    kwargs : :obj:`dict`, default: ``{"n_clusters": 10}``
         Keyword arguments to pass to ``sklearn.cluster.AgglomerativeClustering``
         with the exception of ``n_clusters``.
 
@@ -68,18 +76,21 @@ def agglomerative(data, kwargs={"n_clusters": 10}):
     :obj:`numpy.ndarray`
         Cluster labels of structures in ``R_desc``.
     """
-    from sklearn.cluster import AgglomerativeClustering
+    assert _HAS_SKLEARN
+
+    if kwargs is None:
+        kwargs = {"n_clusters": 10}
 
     log.info("Agglomerative clustering")
     log.debug(kwargs)
-    log.debug(f"Data example: {data[0]}")
+    log.debug("Data example: %r", data[0])
     t_cluster = log.t_start()
     cluster_labels = AgglomerativeClustering(**kwargs).fit_predict(data)
     log.t_stop(t_cluster)
     return cluster_labels
 
 
-def kmeans(data, kwargs={"n_clusters": 5, "init": "k-means++"}):
+def kmeans(data, kwargs=None):
     r"""Cluster data using ``sklearn.cluster.KMeans``.
 
     Parameters
@@ -91,11 +102,14 @@ def kmeans(data, kwargs={"n_clusters": 5, "init": "k-means++"}):
         Keyword arguments to pass to ``sklearn.cluster.KMeans``
         with the exception of ``n_clusters``.
     """
-    from sklearn.cluster import KMeans
+    assert _HAS_SKLEARN
+
+    if kwargs is None:
+        kwargs = {"n_clusters": 5, "init": "k-means++"}
 
     log.info("K-means clustering")
     log.debug(kwargs)
-    log.debug(f"Data example: {data[0]}")
+    log.debug("Data example: %r", data[0])
     t_cluster = log.t_start()
     cluster_labels = KMeans(**kwargs).fit_predict(data)
     log.t_stop(t_cluster)
@@ -121,13 +135,12 @@ def cluster_structures(cl_data, cl_algs, cl_kwargs):
     """
     n_structures = len(cl_data[0])
     cl_idxs = [np.array(range(n_structures))]
-    log.info(f"Clustering {n_structures} structures")
+    log.info("Clustering %d structures", n_structures)
 
     t_clustering = log.t_start()
     # Loop through each clustering routine
-    for i_cluster in range(len(cl_algs)):
+    for i_cluster, cl_alg in enumerate(cl_algs):
         data = np.array(cl_data[i_cluster])
-        cl_alg = cl_algs[i_cluster]
         kwargs = cl_kwargs[i_cluster]
 
         cl_idxs_new = []

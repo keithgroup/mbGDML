@@ -23,34 +23,38 @@
 
 """Tests for GDML training"""
 
-import pytest
-import numpy as np
 import os
+import numpy as np
 from mbgdml.data import dataSet
 from mbgdml._gdml.train import GDMLTrain, get_test_idxs
 from mbgdml.train import mbGDMLTrain
-from mbgdml.analysis.problematic import prob_structures
+from mbgdml.analysis.problematic import ProblematicStructures
 from mbgdml.models import gdmlModel
 from mbgdml.predictors import predict_gdml
 from mbgdml.descriptors import Criteria, com_distance_sum
 
-dset_dir = "./tests/data/datasets"
-train_dir = "./tests/data/train"
+DSET_DIR = "./tests/data/datasets"
+TRAIN_DIR = "./tests/data/train"
 
 
-def test_train_results_1h2o():
-    r"""Checks the results of a training task."""
+def check_glob():
+    # pylint: disable=undefined-variable, global-variable-undefined
     global glob
     if "glob" in globals():
         del glob
 
+
+def test_train_results_1h2o():
+    r"""Checks the results of a training task."""
+    check_glob()
+
     dset_path = os.path.join(
-        dset_dir, "1h2o/140h2o.sphere.gfn2.md.500k.prod1.3h2o.dset.1h2o-dset.npz"
+        DSET_DIR, "1h2o/140h2o.sphere.gfn2.md.500k.prod1.3h2o.dset.1h2o-dset.npz"
     )
     dset = dataSet(dset_path, Z_key="z")
     dset_dict = dset.asdict()
 
-    train_dir_1h2o = os.path.join(train_dir, "1h2o/")
+    train_dir_1h2o = os.path.join(TRAIN_DIR, "1h2o/")
     train_idxs_path = os.path.join(train_dir_1h2o, "train_idxs.npy")
     valid_idxs_path = os.path.join(train_dir_1h2o, "valid_idxs.npy")
     train_idxs = np.load(train_idxs_path, allow_pickle=True)
@@ -79,14 +83,12 @@ def test_train_results_1h2o():
     )
     model = train.train(task)
 
-    alphas_F = model["alphas_F"]
-    R_desc = model["R_desc"]
-    tril_perms_lin = model["tril_perms_lin"]
-
     # Reference data
+    # pylint: disable-next=invalid-name
     alphas_F_ref = np.load(
         os.path.join(train_dir_1h2o, "alphas_F.npy"), allow_pickle=True
     )
+    # pylint: disable-next=invalid-name
     R_desc_ref = np.load(os.path.join(train_dir_1h2o, "R_desc.npy"), allow_pickle=True)
     tril_perms_lin_ref = np.load(
         os.path.join(train_dir_1h2o, "tril_perms_lin.npy"), allow_pickle=True
@@ -95,25 +97,26 @@ def test_train_results_1h2o():
     del train
 
     # Coefficients will not be exactly the same.
-    assert np.allclose(R_desc, R_desc_ref, rtol=1e-05, atol=1e-08)
-    assert np.allclose(alphas_F, alphas_F_ref, rtol=1e2, atol=0)
+    assert np.allclose(model["R_desc"], R_desc_ref, rtol=1e-05, atol=1e-08)
+    assert np.allclose(model["alphas_F"], alphas_F_ref, rtol=1e2, atol=0)
     assert np.allclose(np.array(model["c"]), np.array(331288.48632617114))
     assert np.allclose(
         np.array(model["norm_y_train"]), np.array(321987215081.7051), rtol=1e-3, atol=0
     )
+    assert np.allclose(
+        np.array(model["tril_perms_lin"]), tril_perms_lin_ref, rtol=1e-3, atol=0
+    )
 
 
 def test_1h2o_train_grid_search():
-    global glob
-    if "glob" in globals():
-        del glob
+    check_glob()
 
     dset_path = os.path.join(
-        dset_dir, "1h2o/140h2o.sphere.gfn2.md.500k.prod1.3h2o.dset.1h2o-dset.npz"
+        DSET_DIR, "1h2o/140h2o.sphere.gfn2.md.500k.prod1.3h2o.dset.1h2o-dset.npz"
     )
     dset = dataSet(dset_path, Z_key="z")
 
-    train_dir_1h2o = os.path.join(train_dir, "1h2o/")
+    train_dir_1h2o = os.path.join(TRAIN_DIR, "1h2o/")
     train_idxs_path = os.path.join(train_dir_1h2o, "train_idxs.npy")
     valid_idxs_path = os.path.join(train_dir_1h2o, "valid_idxs.npy")
     train_idxs = np.load(train_idxs_path, allow_pickle=True)
@@ -161,21 +164,14 @@ def test_1h2o_train_grid_search():
 
 
 def test_1h2o_train_bayes_opt():
-    try:
-        import bayes_opt
-    except ImportError:
-        pytest.skip("bayesian-optimization package not installed")
-
-    global glob
-    if "glob" in globals():
-        del glob
+    check_glob()
 
     dset_path = os.path.join(
-        dset_dir, "1h2o/140h2o.sphere.gfn2.md.500k.prod1.3h2o.dset.1h2o-dset.npz"
+        DSET_DIR, "1h2o/140h2o.sphere.gfn2.md.500k.prod1.3h2o.dset.1h2o-dset.npz"
     )
     dset = dataSet(dset_path, Z_key="z")
 
-    train_dir_1h2o = os.path.join(train_dir, "1h2o/")
+    train_dir_1h2o = os.path.join(TRAIN_DIR, "1h2o/")
     train_idxs_path = os.path.join(train_dir_1h2o, "train_idxs.npy")
     valid_idxs_path = os.path.join(train_dir_1h2o, "valid_idxs.npy")
     train_idxs = np.load(train_idxs_path, allow_pickle=True)
@@ -199,7 +195,7 @@ def test_1h2o_train_bayes_opt():
     train.sigma_grid = sigma_grid
     train.bayes_opt_params = {"init_points": 5, "n_iter": 5, "alpha": 1e-7}
     train.sigma_bounds = (2, 100)
-    model, optimizer = train.bayes_opt(
+    model, _ = train.bayes_opt(
         dset,
         "1h2o",
         n_train,
@@ -212,7 +208,6 @@ def test_1h2o_train_bayes_opt():
         write_idxs=True,
     )
 
-    best_sig = model["sig"].item()
     assert model["perms"].shape[0] == 2
 
     assert model["f_err"].item()["rmse"] < 0.469
@@ -222,12 +217,10 @@ def test_1h2o_train_bayes_opt():
 
 
 def test_1h2o_prob_indices():
-    global glob
-    if "glob" in globals():
-        del glob
+    check_glob()
 
     dset_path = os.path.join(
-        dset_dir, "1h2o/140h2o.sphere.gfn2.md.500k.prod1.3h2o.dset.1h2o-dset.npz"
+        DSET_DIR, "1h2o/140h2o.sphere.gfn2.md.500k.prod1.3h2o.dset.1h2o-dset.npz"
     )
     model_path = os.path.join("./tests/data/models", "1h2o-model.npz")
     model_dict = dict(np.load(model_path, allow_pickle=True))
@@ -237,7 +230,7 @@ def test_1h2o_prob_indices():
     model = gdmlModel(model_dict, criteria=model_criteria)
     dset = dataSet(dset_path, Z_key="z")
 
-    prob_s = prob_structures([model], predict_gdml)
+    prob_s = ProblematicStructures([model], predict_gdml)
     n_find = 100
     prob_idxs = prob_s.find(dset, n_find, save_dir="./tests/tmp")
     prob_idxs = np.sort(prob_idxs)
@@ -354,7 +347,7 @@ def test_1h2o_prob_indices():
 
 def test_getting_test_idxs():
     dset_path = os.path.join(
-        dset_dir, "1h2o/140h2o.sphere.gfn2.md.500k.prod1.3h2o.dset.1h2o-dset.npz"
+        DSET_DIR, "1h2o/140h2o.sphere.gfn2.md.500k.prod1.3h2o.dset.1h2o-dset.npz"
     )
     model_path = os.path.join("./tests/data/models", "1h2o-model.npz")
     dset = dataSet(dset_path, Z_key="z")

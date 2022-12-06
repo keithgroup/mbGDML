@@ -25,7 +25,7 @@
 import numpy as np
 
 
-def gdml_mat52_wrk(r_desc, n_atoms, sig, n_perms, R_desc_perms):
+def gdml_mat52_wrk(r_desc, sig, n_perms, R_desc_perms):
     r"""Compute the Matérn 5/2 covariance function for a single structure with
     respect to a GDML train set.
 
@@ -34,8 +34,6 @@ def gdml_mat52_wrk(r_desc, n_atoms, sig, n_perms, R_desc_perms):
     r_desc : :obj:`numpy.ndarray`, ndim: ``1``
         GDML descriptor of a single structure with permutational symmetries
         specified by the model.
-    n_atoms : :obj:`int`
-        Total number of atoms in the system.
     sig : :obj:`float`
         Trained kernel length scale.
     n_perms : :obj:`int`
@@ -57,19 +55,19 @@ def gdml_mat52_wrk(r_desc, n_atoms, sig, n_perms, R_desc_perms):
     .. math::
 
         k_{5/2} (x_i, x_j) = \left( 1 + \frac{\sqrt{5}}{l} d(x_i, x_j) \
-        + \frac{5}{3l} d(x_i, x_j)^2 \right) \exp \left( - \frac{\sqrt{5}}{l} d (x_i, x_j) \right)
+        + \frac{5}{3l} d(x_i, x_j)^2 \right) \exp \left( - \frac{\sqrt{5}}{l}
+        d (x_i, x_j) \right)
 
     For GDML, sigma (``sig``) is the kernel length-scale parameter :math:`l`.
-    :math:`d(x_i, x_j)` is the Euclidean distance between :math:`x_i` 
+    :math:`d(x_i, x_j)` is the Euclidean distance between :math:`x_i`
     (``r_desc``) and :math:`x_j` (a single training point in ``R_desc_perms``).
 
     .. note::
 
         This can be a ray task if desired.
-    
+
     """
     n_train = int(R_desc_perms.shape[0] / n_perms)
-    dim_d = (n_atoms * (n_atoms - 1)) // 2
     dim_c = n_train * n_perms
 
     # Pre-allocate memory.
@@ -77,7 +75,6 @@ def gdml_mat52_wrk(r_desc, n_atoms, sig, n_perms, R_desc_perms):
     mat52 = np.ones((dim_c,), dtype=np.float64)
 
     # Avoid divisions.
-    sig_inv = 1.0 / sig
     mat52_base_fact = 5.0 / (3 * sig**2)
     sqrt5 = np.sqrt(5.0)
     diag_scale_fact = sqrt5 / sig
@@ -131,11 +128,9 @@ def gdml_mat52(model, Z, R):
 
     for i in range(n_R):
         r_desc, _ = desc_func(R[i], model.lat_and_inv)
-        mat52[i] = gdml_mat52_wrk(
-            r_desc, n_atoms, model.sig, model.n_perms, model.R_desc_perms
-        )
+        mat52[i] = gdml_mat52_wrk(r_desc, model.sig, model.n_perms, model.R_desc_perms)
 
     if n_R == 1:
         return mat52[0]
-    else:
-        return mat52
+
+    return mat52

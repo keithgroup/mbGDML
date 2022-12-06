@@ -23,7 +23,7 @@
 
 import numpy as np
 
-
+# pylint: disable-next=invalid-name
 def draw_strat_sample(T, n, excl_idxs=None):
     """
     Draw sample from dataset that preserves its original distribution.
@@ -69,6 +69,7 @@ def draw_strat_sample(T, n, excl_idxs=None):
         return np.array([np.random.choice(idxs_all_non_excl)])
 
     # Freedman-Diaconis rule
+    # pylint: disable-next=invalid-name
     h = 2 * np.subtract(*np.percentile(T, [75, 25])) / np.cbrt(n)
     n_bins = int(np.ceil((np.max(T) - np.min(T)) / h)) if h > 0 else 1
     n_bins = min(
@@ -101,10 +102,12 @@ def draw_strat_sample(T, n, excl_idxs=None):
 
     while np.abs(reduced_cnts_delta) > 0:
 
-        # How many members can we remove from an arbitrary bucket, without any bucket with more than one member going to zero?
+        # How many members can we remove from an arbitrary bucket, without any bucket
+        # with more than one member going to zero?
         max_bin_reduction = np.min(reduced_cnts[np.where(reduced_cnts > 1)]) - 1
 
-        # Generate additional bin members to fill up/drain bucket counts of subset. This array contains (repeated) bucket IDs.
+        # Generate additional bin members to fill up/drain bucket counts of subset.
+        # This array contains (repeated) bucket IDs.
         outstanding = np.random.choice(
             uniq_all,
             min(max_bin_reduction, np.abs(reduced_cnts_delta)),

@@ -21,32 +21,37 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+# Torch tools chaotic at the moment.
+# This will have to be finalized once sGDML publishes the iterative training routine.
+# Nothing is tested here.
+# pylint: skip-file
+
 import os
 from functools import partial
 import numpy as np
+from .desc import Desc
 
 try:
     import torch
-    import torch.nn as nn
+    from torch import nn
     from torch.utils.data import DataLoader
 except ImportError:
-    _has_torch = False
+    _HAS_TORCH = False
 else:
-    _has_torch = True
+    _HAS_TORCH = True
 
 try:
-    _torch_mps_is_available = torch.backends.mps.is_available()
+    _TORCH_MPS_IS_AVAILABLE = torch.backends.mps.is_available()
 except (NameError, AttributeError):
-    _torch_mps_is_available = False
-_torch_mps_is_available = False
+    _TORCH_MPS_IS_AVAILABLE = False
+_TORCH_MPS_IS_AVAILABLE = False
 
 try:
-    _torch_cuda_is_available = torch.cuda.is_available()
+    _TORCH_CUDA_IS_AVAILABLE = torch.cuda.is_available()
 except (NameError, AttributeError):
-    _torch_cuda_is_available = False
+    _TORCH_CUDA_IS_AVAILABLE = False
 
-
-from .desc import Desc
+# pylint: disable=no-member
 
 _dtype = torch.float64
 
@@ -352,7 +357,7 @@ class GDMLTorchAssemble(nn.Module):
                     done = self._forward(self.J[i])
                 except RuntimeError as e:
                     if "out of memory" in str(e):
-                        if _torch_cuda_is_available:
+                        if _TORCH_CUDA_IS_AVAILABLE:
                             torch.cuda.empty_cache()
 
                         if _n_batches < self.n_train:
@@ -475,7 +480,7 @@ class GDMLTorchPredict(nn.Module):
 
         self.tril_indices = np.tril_indices(self.n_atoms, k=-1)
 
-        if _torch_cuda_is_available:  # Ignore limits and take whatever the GPU has.
+        if _TORCH_CUDA_IS_AVAILABLE:  # Ignore limits and take whatever the GPU has.
             max_memory = (
                 min(
                     [
@@ -487,13 +492,6 @@ class GDMLTorchPredict(nn.Module):
             )  # bytes to GB
         else:  # TODO: what about MPS?
             default_cpu_max_mem = 32
-            if max_memory is None:
-                log.warning(
-                    "PyTorch CPU memory budget is limited to {} by default, which may impact performance.\n".format(
-                        ui.gen_memory_str(2**30 * default_cpu_max_mem)
-                    )
-                    + "If necessary, adjust memory limit with option '-m'."
-                )
             max_memory = (
                 max_memory or default_cpu_max_mem
             )  # 32 GB as default (hardcoded for now...)
@@ -542,7 +540,7 @@ class GDMLTorchPredict(nn.Module):
             self.set_n_perm_batches(n_perm_batches)
         except RuntimeError as e:
             if "out of memory" in str(e):
-                if _torch_cuda_is_available:
+                if _TORCH_CUDA_IS_AVAILABLE:
                     torch.cuda.empty_cache()
 
                 if n_perm_batches == 1:
@@ -567,7 +565,7 @@ class GDMLTorchPredict(nn.Module):
         )
         max_batch_size = (
             self.n_train // torch.cuda.device_count()
-            if _torch_cuda_is_available
+            if _TORCH_CUDA_IS_AVAILABLE
             else self.n_train
         )
         _batch_size = min(_batch_size, max_batch_size)
@@ -713,13 +711,13 @@ class GDMLTorchPredict(nn.Module):
         self.R_d_desc = torch.from_numpy(R_d_desc).type(_dtype)
 
         # Try moving to GPU memory.
-        if _torch_cuda_is_available or _torch_mps_is_available:
+        if _TORCH_CUDA_IS_AVAILABLE or _TORCH_MPS_IS_AVAILABLE:
             try:
                 R_d_desc = self.R_d_desc.to(self._xs_train.device)
             except RuntimeError as e:
                 if "out of memory" in str(e):
 
-                    if _torch_cuda_is_available:
+                    if _TORCH_CUDA_IS_AVAILABLE:
                         torch.cuda.empty_cache()
 
                     log.debug("Failed to cache 'R_d_desc' on GPU.")
@@ -770,8 +768,8 @@ class GDMLTorchPredict(nn.Module):
                 )
                 del alphas_torch
 
-                if (_torch_cuda_is_available and not xs.is_cuda) or (
-                    _torch_mps_is_available and not xs.is_mps
+                if (_TORCH_CUDA_IS_AVAILABLE and not xs.is_cuda) or (
+                    _TORCH_MPS_IS_AVAILABLE and not xs.is_mps
                 ):
                     xs = xs.to(
                         self._xs_train.device
@@ -780,9 +778,9 @@ class GDMLTorchPredict(nn.Module):
             except RuntimeError as e:
                 if "out of memory" in str(e):
 
-                    if _torch_cuda_is_available or _torch_mps_is_available:
+                    if _TORCH_CUDA_IS_AVAILABLE or _TORCH_MPS_IS_AVAILABLE:
 
-                        if _torch_cuda_is_available:
+                        if _TORCH_CUDA_IS_AVAILABLE:
                             torch.cuda.empty_cache()
 
                         self.R_d_desc = self.R_d_desc.cpu()
@@ -822,9 +820,9 @@ class GDMLTorchPredict(nn.Module):
 
                     log.debug(
                         "Setting permutation batch size to {}/{}{}.".format(
-                            self.n_perms // n_perm_batches,
+                            self.n_perms // _n_perm_batches,
                             self.n_perms,
-                            " (no caching)" if n_perm_batches > 1 else "",
+                            " (no caching)" if _n_perm_batches > 1 else "",
                         )
                     )
 
@@ -1009,7 +1007,7 @@ class GDMLTorchPredict(nn.Module):
         Returns
         -------
         E : :obj:`torch.Tensor`
-            (dims M) Molecular energies (unless `return_E == False`)
+            (dims M) Molecular energies (unless `return_E is False`)
         F : :obj:`torch.Tensor`
             (dims M x N x 3) Nuclear gradients of the energy
         """

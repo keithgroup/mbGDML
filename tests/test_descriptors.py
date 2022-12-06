@@ -23,19 +23,16 @@
 
 """Tests for `mbgdml.descriptor`."""
 
-from math import isclose
-import pytest
 import numpy as np
-
 from mbgdml import descriptors
 
 # Must be run from mbGDML root directory.
 
-dset_3h2o_path = "./tests/data/datasets/2h2o/16h2o.yoo.etal.boat.b.2h2o-dset.mb.npz"
+DSET_3H2O_PATH = "./tests/data/datasets/2h2o/16h2o.yoo.etal.boat.b.2h2o-dset.mb.npz"
 
 
 def load_3h2o_dset():
-    return dict(np.load(dset_3h2o_path, allow_pickle=True))
+    return dict(np.load(DSET_3H2O_PATH, allow_pickle=True))
 
 
 def test_com_distance_sum():
@@ -46,5 +43,5 @@ def test_com_distance_sum():
         cutoff=5.3809148637976385,
     )
     accept_r, desc_v = r_criteria.accept(dset["z"], dset["R"][42])
-    assert accept_r == False
+    assert not accept_r
     assert desc_v == 5.3809148637976385

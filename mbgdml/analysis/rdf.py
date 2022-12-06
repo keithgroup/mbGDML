@@ -22,10 +22,10 @@
 
 """Compute RDF curves under periodic boundary conditions."""
 
+import ray
+import numpy as np
 from ..periodic import Cell
 from ..utils import gen_combs, chunk_iterable
-
-import numpy as np
 
 # Possible ray task.
 def _bin_distances(R, R_idxs, atom_pairs, rdf_settings, cell_vectors):
@@ -75,7 +75,7 @@ def _bin_distances(R, R_idxs, atom_pairs, rdf_settings, cell_vectors):
     return count, vol_contrib, n_R
 
 
-class RDF(object):
+class RDF:
     r"""Handles calculating the radial distribution function (RDF),
     :math:`g(r)`, of a constant volume simulation.
     """
@@ -123,9 +123,6 @@ class RDF(object):
 
         # Setup ray
         if n_workers is not None:
-            global ray
-            import ray
-
             if not ray.is_initialized():
                 ray.init(address="auto")
             assert ray.is_initialized()
@@ -158,8 +155,7 @@ class RDF(object):
 
         # Compute atom pairs indices.
         atom_sets = []
-        for i in range(len(comp_id_pair)):
-            comp_id = comp_id_pair[i]
+        for i, comp_id in enumerate(comp_id_pair):
             entity_idx = entity_idxs[i]  # Could contain an int or tuple
             avail_entities = np.where(comp_id == self.comp_ids)[0]
             # Convert entity_ids into atom indices
@@ -233,7 +229,7 @@ class RDF(object):
         >>> Z = np.array([8, 1, 1, 8, 1, 6, 1, 1, 1]*25)
         >>> entity_ids = np.array([0, 0, 0, 1, 1, 1, 1, 1, 1]*25)
         >>> comp_ids = np.array(['h2o', 'meoh']*25)
-        >>> cell_vectors = np.array([[16.0, 0.0, 0.0], [0.0, 16.0, 0.0], [0.0, 0.0, 16.0]])
+        >>> cell_vectors = np.array([[16., 0., 0.], [0., 16., 0.], [0., 0., 16.]])
 
         .. note::
             The above information is an arbitrary system made up of 25 water and

@@ -20,14 +20,22 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import hashlib
 import logging
 import numpy as np
-from .base import model
+from .base import Model
+
+try:
+    import quippy
+
+    _HAS_QUIPPY = True
+except ImportError:
+    _HAS_QUIPPY = False
 
 log = logging.getLogger(__name__)
 
-
-class gapModel(model):
+# pylint: disable-next=invalid-name
+class gapModel(Model):
     def __init__(
         self,
         model_path,
@@ -46,23 +54,21 @@ class gapModel(model):
             Initialized descriptor criteria for accepting a structure based on
             a descriptor and cutoff.
         """
-        global quippy
-        import quippy
+        assert _HAS_QUIPPY
 
         super().__init__(criteria)
         self.type = "gap"
         self.gap = quippy.potential.Potential(param_filename=model_path)
-        if isinstance(comp_ids, list) or isinstance(comp_ids, tuple):
+        if isinstance(comp_ids, (list, tuple)):
             comp_ids = np.array(comp_ids)
         self.comp_ids = comp_ids
         self.nbody_order = len(comp_ids)
 
         # GAP MD5
-        with open(model_path, "r") as f:
+        with open(model_path, "r", encoding="utf-8") as f:
             gap_lines = f.readlines()
-        import hashlib
 
         md5_hash = hashlib.md5()
-        for i in range(len(gap_lines)):
-            md5_hash.update(hashlib.md5(repr(gap_lines[i]).encode()).digest())
+        for gap_line in gap_lines:
+            md5_hash.update(hashlib.md5(repr(gap_line).encode()).digest())
         self.md5 = md5_hash.hexdigest()

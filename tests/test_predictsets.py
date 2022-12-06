@@ -23,26 +23,25 @@
 
 """Tests for `mbgdml` package."""
 
-import pytest
 import numpy as np
-from mbgdml.data.predictset import predictSet
-import mbgdml.data as data
+from mbgdml import data
 from mbgdml.mbe import mbePredict
 from mbgdml.models import gdmlModel
 from mbgdml.predictors import predict_gdml, predict_gdml_decomp
 from mbgdml.descriptors import Criteria, com_distance_sum
 
-dset_dir = "./tests/data/datasets"
-model_dir = "./tests/data/models"
+DSET_DIR = "./tests/data/datasets"
+MODEL_DIR = "./tests/data/models"
 molecule_sizes = {"h2o": 3, "mecn": 6, "meoh": 6}
 
 
 def test_predictset_correct_contribution_predictions():
-    dset_6h2o_path = f"{dset_dir}/6h2o/6h2o.temelso.etal-dset.npz"
+    # pylint: disable=line-too-long
+    dset_6h2o_path = f"{DSET_DIR}/6h2o/6h2o.temelso.etal-dset.npz"
     model_h2o_paths = [
-        f"{model_dir}/140h2o.sphere.gfn2.md.500k.prod1.3h2o.dset.1h2o-model-train500.npz",
-        f"{model_dir}/140h2o.sphere.gfn2.md.500k.prod1.3h2o.dset.2h2o.cm.6-model.mb-train500.npz",
-        f"{model_dir}/140h2o.sphere.gfn2.md.500k.prod1.3h2o-model.mb-train500.npz",
+        f"{MODEL_DIR}/140h2o.sphere.gfn2.md.500k.prod1.3h2o.dset.1h2o-model-train500.npz",
+        f"{MODEL_DIR}/140h2o.sphere.gfn2.md.500k.prod1.3h2o.dset.2h2o.cm.6-model.mb-train500.npz",
+        f"{MODEL_DIR}/140h2o.sphere.gfn2.md.500k.prod1.3h2o-model.mb-train500.npz",
     ]
     model_dicts = (
         dict(np.load(model_path, allow_pickle=True)) for model_path in model_h2o_paths
@@ -61,7 +60,7 @@ def test_predictset_correct_contribution_predictions():
         gdmlModel(model, criteria=criteria)
         for model, criteria in zip(model_dicts, model_criterias)
     ]
-    pset = data.predictSet()
+    pset = data.PredictSet()
     pset.load_dataset(dset_6h2o_path, Z_key="z")
     pset.load_models(models, predict_gdml_decomp, use_ray=False)
     pset.prepare()
@@ -78,9 +77,10 @@ def test_predictset_correct_contribution_predictions():
 
 def test_predictset_nan_for_failed_criteria():
     r"""Checks that energies and forces are NaN for"""
-    dset_16h2o_2h2o_path = f"{dset_dir}/2h2o/16h2o.yoo.etal.boat.b.2h2o-dset.mb.npz"
+    # pylint: disable=line-too-long
+    dset_16h2o_2h2o_path = f"{DSET_DIR}/2h2o/16h2o.yoo.etal.boat.b.2h2o-dset.mb.npz"
     model_h2o_paths = [
-        f"{model_dir}/140h2o.sphere.gfn2.md.500k.prod1.3h2o.dset.2h2o.cm.6-model.mb-train500.npz",
+        f"{MODEL_DIR}/140h2o.sphere.gfn2.md.500k.prod1.3h2o.dset.2h2o.cm.6-model.mb-train500.npz",
     ]
     model_dicts = (
         dict(np.load(model_path, allow_pickle=True)) for model_path in model_h2o_paths
@@ -95,11 +95,11 @@ def test_predictset_nan_for_failed_criteria():
         gdmlModel(model, criteria=criteria)
         for model, criteria in zip(model_dicts, model_criterias)
     ]
-    pset = data.predictSet()
+    pset = data.PredictSet()
     pset.load_dataset(dset_16h2o_2h2o_path, Z_key="z")
     pset.load_models(models, predict_gdml_decomp)
     pset.prepare()
-    E_pset, F_pset = pset.nbody_predictions([2])
+    E_pset, _ = pset.nbody_predictions([2])
     r_isnan = [
         15,
         16,
@@ -132,9 +132,9 @@ def test_predictset_nan_for_failed_criteria():
         115,
         117,
     ]
+    # pylint: disable-next=consider-using-enumerate
     for i in range(len(E_pset)):
         if i in r_isnan:
-            print(E_pset[i])
             assert np.isnan(E_pset[i])
         else:
             assert not np.isnan(E_pset[i])
