@@ -1651,7 +1651,7 @@ def model_errors(
         log.log_model(model)
         test_idxs = get_test_idxs(model, dataset, n_test=n_test)
 
-    # TODO: Can we change to dataSet class to avoid hard-coded keys?
+    # TODO: Can we change to DataSet class to avoid hard-coded keys?
     z = dataset["z"]
     R = dataset["R"][test_idxs, :, :]
     F = dataset["F"][test_idxs, :, :]

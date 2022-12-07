@@ -23,9 +23,11 @@
 
 """Tests for GDML training"""
 
+# pylint: disable=invalid-name
+
 import os
 import numpy as np
-from mbgdml.data import dataSet
+from mbgdml.data import DataSet
 from mbgdml._gdml.train import GDMLTrain, get_test_idxs
 from mbgdml.train import mbGDMLTrain
 from mbgdml.analysis.problematic import ProblematicStructures
@@ -51,7 +53,7 @@ def test_train_results_1h2o():
     dset_path = os.path.join(
         DSET_DIR, "1h2o/140h2o.sphere.gfn2.md.500k.prod1.3h2o.dset.1h2o-dset.npz"
     )
-    dset = dataSet(dset_path, Z_key="z")
+    dset = DataSet(dset_path, Z_key="z")
     dset_dict = dset.asdict()
 
     train_dir_1h2o = os.path.join(TRAIN_DIR, "1h2o/")
@@ -114,7 +116,7 @@ def test_1h2o_train_grid_search():
     dset_path = os.path.join(
         DSET_DIR, "1h2o/140h2o.sphere.gfn2.md.500k.prod1.3h2o.dset.1h2o-dset.npz"
     )
-    dset = dataSet(dset_path, Z_key="z")
+    dset = DataSet(dset_path, Z_key="z")
 
     train_dir_1h2o = os.path.join(TRAIN_DIR, "1h2o/")
     train_idxs_path = os.path.join(train_dir_1h2o, "train_idxs.npy")
@@ -169,7 +171,7 @@ def test_1h2o_train_bayes_opt():
     dset_path = os.path.join(
         DSET_DIR, "1h2o/140h2o.sphere.gfn2.md.500k.prod1.3h2o.dset.1h2o-dset.npz"
     )
-    dset = dataSet(dset_path, Z_key="z")
+    dset = DataSet(dset_path, Z_key="z")
 
     train_dir_1h2o = os.path.join(TRAIN_DIR, "1h2o/")
     train_idxs_path = os.path.join(train_dir_1h2o, "train_idxs.npy")
@@ -228,7 +230,7 @@ def test_1h2o_prob_indices():
     model_desc_cutoff = None
     model_criteria = Criteria(com_distance_sum, model_desc_kwargs, model_desc_cutoff)
     model = gdmlModel(model_dict, criteria=model_criteria)
-    dset = dataSet(dset_path, Z_key="z")
+    dset = DataSet(dset_path, Z_key="z")
 
     prob_s = ProblematicStructures([model], predict_gdml)
     n_find = 100
@@ -350,7 +352,7 @@ def test_getting_test_idxs():
         DSET_DIR, "1h2o/140h2o.sphere.gfn2.md.500k.prod1.3h2o.dset.1h2o-dset.npz"
     )
     model_path = os.path.join("./tests/data/models", "1h2o-model.npz")
-    dset = dataSet(dset_path, Z_key="z")
+    dset = DataSet(dset_path, Z_key="z")
     model = dict(np.load(model_path, allow_pickle=True))
 
     n_R = dset.n_R

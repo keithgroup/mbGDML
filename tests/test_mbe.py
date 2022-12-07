@@ -22,8 +22,8 @@
 
 """Tests many-body utilities"""
 
-import pytest
-import os
+# pylint: disable=invalid-name
+
 import numpy as np
 from mbgdml.mbe import mbe_contrib
 

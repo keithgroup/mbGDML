@@ -305,11 +305,11 @@ class mbGDMLTrain:
 
         Parameters
         ----------
-        train_dataset : :obj:`mbgdml.data.dataSet`
+        train_dataset : :obj:`mbgdml.data.DataSet`
             Dataset for training a model on.
         n_train : :obj:`int`
             The number of training points to sample.
-        valid_dataset : :obj:`mbgdml.data.dataSet`
+        valid_dataset : :obj:`mbgdml.data.DataSet`
             Dataset for validating a model on.
         n_valid : :obj:`int`
             The number of validation points to sample, without replacement.
@@ -548,7 +548,7 @@ class mbGDMLTrain:
 
         Parameters
         ----------
-        dataset : :obj:`mbgdml.data.dataSet`
+        dataset : :obj:`mbgdml.data.DataSet`
             Dataset to train, validate, and test a model on.
         model_name : :obj:`str`
             User-defined model name without the ``'.npz'`` file extension.
@@ -877,7 +877,7 @@ class mbGDMLTrain:
 
         Parameters
         ----------
-        dataset : :obj:`mbgdml.data.dataSet`
+        dataset : :obj:`mbgdml.data.DataSet`
             Dataset to train, validate, and test a model on.
         model_name : :obj:`str`
             User-defined model name without the ``'.npz'`` file extension.
@@ -1078,7 +1078,7 @@ class mbGDMLTrain:
 
         Parameters
         ----------
-        dataset : :obj:`mbgdml.data.dataSet`
+        dataset : :obj:`mbgdml.data.DataSet`
             Data set to split into training, validation, and test sets are
             derived from.
         model_name : :obj:`str`

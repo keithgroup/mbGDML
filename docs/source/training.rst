@@ -44,12 +44,12 @@ Here are some examples of water :download:`1-body <./files/dsets/1h2o.npz>`, :do
 Data set class
 --------------
 
-We use the :class:`~mbgdml.data.dataSet` class to load and provide simple access to data.
+We use the :class:`~mbgdml.data.DataSet` class to load and provide simple access to data.
 
 .. note::
 
     We will frequently use ``Z``, ``R``, ``E``, and ``F`` as the key in the ``npz`` file for their respect data.
-    You can load data sets by passing ``X_key`` when initializing the :class:`~mbgdml.data.dataSet` class.
+    You can load data sets by passing ``X_key`` when initializing the :class:`~mbgdml.data.DataSet` class.
     For example, you can have ``Z_key`` be ``'atomic_numbers'``.
 
 

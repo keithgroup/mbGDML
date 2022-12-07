@@ -23,18 +23,12 @@
 
 """Tests for `mbgdml` package."""
 
-import pytest
-import numpy as np
+# pylint: disable=invalid-name
 
-import mbgdml.data as data
-from mbgdml import descriptors
-from mbgdml import utils
-
-# Must be run from mbGDML root directory.
-
+from mbgdml import data
 
 def test_dset_default_attributes():
-    dset = data.dataSet()
+    dset = data.DataSet()
 
     assert isinstance(dset.r_prov_ids, dict)
     assert len(dset.r_prov_ids) == 0

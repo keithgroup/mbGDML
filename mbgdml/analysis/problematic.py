@@ -308,7 +308,7 @@ class ProblematicStructures:
 
         Parameters
         ----------
-        dset : :obj:`mbgdml.data.dataSet`
+        dset : :obj:`mbgdml.data.DataSet`
             Dataset to cluster and analyze errors.
         n_find : :obj:`int`
             Number of dataset indices to find.

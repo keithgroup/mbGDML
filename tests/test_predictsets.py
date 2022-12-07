@@ -23,6 +23,8 @@
 
 """Tests for `mbgdml` package."""
 
+# pylint: disable=invalid-name
+
 import numpy as np
 from mbgdml import data
 from mbgdml.mbe import mbePredict
@@ -66,7 +68,7 @@ def test_predictset_correct_contribution_predictions():
     pset.prepare()
     E_pset, F_pset = pset.nbody_predictions([1, 2, 3])
 
-    dset_6h2o = data.dataSet(dset_6h2o_path, Z_key="z")
+    dset_6h2o = data.DataSet(dset_6h2o_path, Z_key="z")
     mbe_pred = mbePredict(models, predict_gdml, use_ray=False)
     E_predict, F_predict = mbe_pred.predict(
         dset_6h2o.Z, dset_6h2o.R, dset_6h2o.entity_ids, dset_6h2o.comp_ids

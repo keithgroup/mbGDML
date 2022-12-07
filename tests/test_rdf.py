@@ -23,16 +23,14 @@
 
 """Tests for `mbgdml.analysis.rdf`."""
 
-from math import isclose
-import pytest
-import numpy as np
+# pylint: disable=invalid-name
 
+import numpy as np
 from mbgdml.analysis.rdf import RDF
 
 # Must be run from mbGDML root directory.
 
 rdf_data_dir = "./tests/data/other/meoh-rdf"
-
 
 def test_meoh_gr_OO():
     comp_id_pair = ("meoh", "meoh")

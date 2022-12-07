@@ -2,6 +2,6 @@
 
 from .basedata import mbGDMLData
 from .predictset import PredictSet
-from .dataset import dataSet
+from .dataset import DataSet
 
-__all__ = ["mbGDMLData", "PredictSet", "dataSet"]
+__all__ = ["mbGDMLData", "PredictSet", "DataSet"]

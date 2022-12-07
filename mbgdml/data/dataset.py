@@ -30,7 +30,7 @@ from .. import _version
 mbgdml_version = _version.get_versions()["version"]
 
 
-class dataSet(mbGDMLData):
+class DataSet(mbGDMLData):
     r"""For creating, loading, manipulating, and using data sets."""
 
     def __init__(self, dset_path=None, Z_key="Z", R_key="R", E_key="E", F_key="F"):
@@ -269,7 +269,7 @@ class dataSet(mbGDMLData):
         Notes
         -----
         ``z`` and ``R`` are always used to generate the MD5 hash. If available,
-        :obj:`mbgdml.data.dataSet.E` and :obj:`mbgdml.data.dataSet.F` are used.
+        :obj:`mbgdml.data.DataSet.E` and :obj:`mbgdml.data.DataSet.F` are used.
 
         :type: :obj:`str`
         """
