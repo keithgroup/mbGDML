@@ -16,7 +16,7 @@ requirements = [
     "bayesian-optimization>=1.4.0",
     "pandas",
     "qcelemental>=0.25.1",
-    "ray>=2.1.0",
+    "ray>=2.0.0",
 ]
 setup_requirements = []
 test_requirements = requirements.append(["pytest"])

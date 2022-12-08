@@ -27,6 +27,7 @@
 
 from mbgdml import data
 
+
 def test_dset_default_attributes():
     dset = data.DataSet()
 

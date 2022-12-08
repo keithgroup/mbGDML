@@ -32,6 +32,7 @@ from mbgdml.analysis.rdf import RDF
 
 rdf_data_dir = "./tests/data/other/meoh-rdf"
 
+
 def test_meoh_gr_OO():
     comp_id_pair = ("meoh", "meoh")
     entity_idxs = (0, 0)
