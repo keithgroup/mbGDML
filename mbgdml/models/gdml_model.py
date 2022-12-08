@@ -68,7 +68,12 @@ class gdmlModel(Model):
 
         self.model_dict = model
 
-        self.z = model["z"]
+        if "z" in model:
+            self.Z = model["z"]
+        elif "Z" in model:
+            self.Z = model["Z"]
+        else:
+            raise KeyError("z or Z not found in model")
         self.r_unit = model["r_unit"].item()
 
         if "entity_ids" in model.keys():
@@ -86,7 +91,7 @@ class gdmlModel(Model):
         model = self.model_dict
 
         self.sig = model["sig"]
-        self.n_atoms = self.z.shape[0]
+        self.n_atoms = self.Z.shape[0]
         self.desc_func = _from_r
 
         self.lat_and_inv = (
@@ -142,17 +147,19 @@ class gdmlModel(Model):
         """
         md5_properties_all = [
             "md5_train",
-            "z",
+            "Z",
             "R_desc",
             "R_d_desc_alpha",
             "sig",
             "alphas_F",
         ]
-        md5_properties = []
+        md5_keys = []
+        md5_dict = {}
         for key in md5_properties_all:
-            if key in self.model_dict.keys():
-                md5_properties.append(key)
-        md5_string = md5_data(self.model_dict, md5_properties)
+            if hasattr(self, key):
+                md5_keys.append(key)
+                md5_dict[key] = getattr(self, key)
+        md5_string = md5_data(md5_dict, md5_keys)
         return md5_string
 
     def add_modifications(self, dset):

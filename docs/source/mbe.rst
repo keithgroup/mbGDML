@@ -183,6 +183,7 @@ Basis set errors
 TODO
 
 
+.. _specifying-fragments:
 
 Specifying fragments in mbGDML
 ==============================

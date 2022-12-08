@@ -453,7 +453,7 @@ class GDMLTrain:
 
         log.log_model(
             {
-                "z": train_dataset["z"],
+                "Z": train_dataset["Z"],
                 "n_train": n_train,
                 "n_valid": n_valid,
                 "sig": sig,
@@ -482,8 +482,8 @@ class GDMLTrain:
 
         ###   mbGDML CHANGE   ###
         log.info("\nDataset splitting\n-----------------")
-        md5_train_keys = ["z", "R", "F"]
-        md5_valid_keys = ["z", "R", "F"]
+        md5_train_keys = ["Z", "R", "F"]
+        md5_valid_keys = ["Z", "R", "F"]
         if "E" in train_dataset.keys():
             md5_train_keys.append("E")
         if "E" in valid_dataset.keys():
@@ -554,7 +554,7 @@ class GDMLTrain:
             "code_version": mbgdml_version,
             "dataset_name": train_dataset["name"].astype(str),
             "dataset_theory": train_dataset["theory"].astype(str),
-            "z": train_dataset["z"],
+            "Z": train_dataset["Z"],
             "R_train": R_train,
             "F_train": train_dataset["F"][idxs_train, :, :],
             "idxs_train": idxs_train,
@@ -626,7 +626,7 @@ class GDMLTrain:
                     # TODO: PBCs disabled when matching (for now).
                     task["perms"] = find_perms(
                         R_train_sync_mat,
-                        train_dataset["z"],
+                        train_dataset["Z"],
                         # lat_and_inv=None,
                         lat_and_inv=lat_and_inv,
                         max_processes=self._max_processes,
@@ -634,7 +634,7 @@ class GDMLTrain:
 
             else:  # use provided perms
 
-                n_atoms = len(task["z"])
+                n_atoms = len(task["Z"])
                 n_perms, perms_len = perms.shape
 
                 if perms_len != n_atoms:
@@ -722,7 +722,7 @@ class GDMLTrain:
             "dataset_name": task["dataset_name"],
             "dataset_theory": task["dataset_theory"],
             "solver_name": solver,
-            "z": task["z"],
+            "Z": task["Z"],
             "idxs_train": task["idxs_train"],
             "md5_train": task["md5_train"],
             "idxs_valid": task["idxs_valid"],
@@ -1628,7 +1628,7 @@ def model_errors(
     # pylint: disable=protected-access
     num_workers, batch_size = 0, 0
 
-    if not np.array_equal(model["z"], dataset["z"]):
+    if not np.array_equal(model["Z"], dataset["Z"]):
         raise ValueError(
             "Atom composition or order in dataset does not match the one in model"
         )
@@ -1651,8 +1651,7 @@ def model_errors(
         log.log_model(model)
         test_idxs = get_test_idxs(model, dataset, n_test=n_test)
 
-    # TODO: Can we change to DataSet class to avoid hard-coded keys?
-    z = dataset["z"]
+    Z = dataset["Z"]
     R = dataset["R"][test_idxs, :, :]
     F = dataset["F"][test_idxs, :, :]
     n_R = R.shape[0]
@@ -1680,7 +1679,7 @@ def model_errors(
             gdml_predict._set_chunk_size(batch_size)
             gdml_predict._set_bulk_mp(bulk_mp)
 
-    n_atoms = z.shape[0]
+    n_atoms = Z.shape[0]
 
     E_pred, F_pred = np.empty(n_R), np.empty(R.shape)
     t_pred = log.t_start()

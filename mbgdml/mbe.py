@@ -507,7 +507,7 @@ class mbePredict:
             Machine learning model objects that contain all information to make
             predictions using ``predict_model``.
         predict_model : ``callable``
-            A function that takes ``z, r, entity_ids, nbody_gen, model`` and
+            A function that takes ``Z, R, entity_ids, nbody_gen, model`` and
             computes energies and forces. This will be turned into a ray remote
             function if ``use_ray`` is ``True``. This can return total properties
             or all individual :math:`n`-body energies and forces.
@@ -584,7 +584,7 @@ class mbePredict:
         return avail_entity_ids
 
     # pylint: disable=too-many-branches, too-many-statements
-    def compute_nbody(self, z, r, entity_ids, comp_ids, model):
+    def compute_nbody(self, Z, R, entity_ids, comp_ids, model):
         r"""Compute all :math:`n`-body contributions of a single structure
         using a :obj:`mbgdml.models.Model` object.
 
@@ -593,11 +593,11 @@ class mbePredict:
 
         Parameters
         ----------
-        z : :obj:`numpy.ndarray`, ndim: ``1``
+        Z : :obj:`numpy.ndarray`, ndim: ``1``
             Atomic numbers of all atoms in the system with respect to ``r``.
-        r : :obj:`numpy.ndarray`, shape: ``(len(z), 3)``
+        R : :obj:`numpy.ndarray`, shape: ``(len(Z), 3)``
             Cartesian coordinates of a single structure.
-        entity_ids : :obj:`numpy.ndarray`, shape: ``(len(z),)``
+        entity_ids : :obj:`numpy.ndarray`, shape: ``(len(Z),)``
             Integers specifying which atoms belong to which entities.
         comp_ids : :obj:`numpy.ndarray`, shape: ``(len(entity_ids),)``
             Relates each ``entity_id`` to a fragment label. Each item's index
@@ -609,20 +609,20 @@ class mbePredict:
         -------
         :obj:`float`
             Total :math:`n`-body energy of ``r``.
-        :obj:`numpy.ndarray`, shape: ``(len(z), 3)``
+        :obj:`numpy.ndarray`, shape: ``(len(Z), 3)``
             Total :math:`n`-body atomic forces of ``r``.
         """
         # Unify r shape.
-        if r.ndim == 3:
-            log.debug("r has three dimensions (instead of two)")
-            if r.shape[0] == 1:
-                log.debug("r[0] was selected to proceed")
-                r = r[0]
+        if R.ndim == 3:
+            log.debug("R has three dimensions (instead of two)")
+            if R.shape[0] == 1:
+                log.debug("R[0] was selected to proceed")
+                R = R[0]
             else:
-                raise ValueError("r.ndim is not 2 (only one structure is allowed)")
+                raise ValueError("R.ndim is not 2 (only one structure is allowed)")
 
         E = 0.0
-        F = np.zeros(r.shape, dtype=np.double)
+        F = np.zeros(R.shape, dtype=np.double)
 
         # Creates a generator for all possible n-body combinations regardless
         # of cutoffs.
@@ -647,12 +647,12 @@ class mbePredict:
         # with this model.
         if not self.use_ray:
             E, F = self.predict_model(
-                z, r, entity_ids, nbody_gen, model, self.periodic_cell, **kwargs_pred
+                Z, R, entity_ids, nbody_gen, model, self.periodic_cell, **kwargs_pred
             )
         else:
             # Put all common data into the ray object store.
-            z = ray.put(z)
-            r = ray.put(r)
+            Z = ray.put(Z)
+            R = ray.put(R)
             entity_ids = ray.put(entity_ids)
 
             nbody_gen = tuple(nbody_gen)
@@ -669,8 +669,8 @@ class mbePredict:
             def add_worker(workers, chunk):
                 workers.append(
                     predict_model.remote(
-                        z,
-                        r,
+                        Z,
+                        R,
                         entity_ids,
                         chunk,
                         model,
@@ -699,12 +699,12 @@ class mbePredict:
                     pass
 
             # Cleanup object store
-            del z, r, entity_ids
+            del Z, R, entity_ids
 
         return E, F
 
     # pylint: disable=too-many-branches, too-many-statements
-    def compute_nbody_decomp(self, z, r, entity_ids, comp_ids, model):
+    def compute_nbody_decomp(self, Z, R, entity_ids, comp_ids, model):
         r"""Compute all :math:`n`-body contributions of a single structure
         using a :obj:`mbgdml.models.Model` object.
 
@@ -717,11 +717,11 @@ class mbePredict:
 
         Parameters
         ----------
-        z : :obj:`numpy.ndarray`, ndim: ``1``
+        Z : :obj:`numpy.ndarray`, ndim: ``1``
             Atomic numbers of all atoms in the system with respect to ``r``.
-        r : :obj:`numpy.ndarray`, shape: ``(len(z), 3)``
+        r : :obj:`numpy.ndarray`, shape: ``(len(Z), 3)``
             Cartesian coordinates of a single structure.
-        entity_ids : :obj:`numpy.ndarray`, shape: ``(len(z),)``
+        entity_ids : :obj:`numpy.ndarray`, shape: ``(len(Z),)``
             Integers specifying which atoms belong to which entities.
         comp_ids : :obj:`numpy.ndarray`, shape: ``(len(entity_ids),)``
             Relates each ``entity_id`` to a fragment label. Each item's index
@@ -742,13 +742,13 @@ class mbePredict:
             All possible entity IDs.
         """
         # Unify r shape.
-        if r.ndim == 3:
-            log.debug("r has three dimensions (instead of two)")
-            if r.shape[0] == 1:
-                log.debug("r[0] was selected to proceed")
-                r = r[0]
+        if R.ndim == 3:
+            log.debug("R has three dimensions (instead of two)")
+            if R.shape[0] == 1:
+                log.debug("R[0] was selected to proceed")
+                R = R[0]
             else:
-                raise ValueError("r.ndim is not 2 (only one structure is allowed)")
+                raise ValueError("R.ndim is not 2 (only one structure is allowed)")
 
         # Creates a generator for all possible n-body combinations regardless
         # of cutoffs.
@@ -774,7 +774,7 @@ class mbePredict:
         # with this model.
         if not self.use_ray:
             E, F, entity_combs = self.predict_model(
-                z, r, entity_ids, entity_combs, model
+                Z, R, entity_ids, entity_combs, model
             )
         else:
             if entity_combs.ndim == 1:
@@ -785,8 +785,8 @@ class mbePredict:
                     n_atoms += np.count_nonzero(entity_ids == i)
 
             # Put all common data into the ray object store.
-            z = ray.put(z)
-            r = ray.put(r)
+            Z = ray.put(Z)
+            R = ray.put(R)
             entity_ids = ray.put(entity_ids)
 
             # Allocate memory for energies and forces.
@@ -806,7 +806,7 @@ class mbePredict:
             predict_model = self.predict_model
 
             def add_worker(workers, chunk):
-                workers.append(predict_model.remote(z, r, entity_ids, chunk, model))
+                workers.append(predict_model.remote(Z, R, entity_ids, chunk, model))
 
             for _ in range(self.n_workers):
                 try:
@@ -833,14 +833,14 @@ class mbePredict:
 
         return E, F, entity_combs
 
-    def predict(self, z, R, entity_ids, comp_ids):
+    def predict(self, Z, R, entity_ids, comp_ids):
         r"""Predict the energies and forces of one or multiple structures.
 
         Parameters
         ----------
-        z : :obj:`numpy.ndarray`, ndim: ``1``
+        Z : :obj:`numpy.ndarray`, ndim: ``1``
             Atomic numbers of all atoms in the system with respect to ``R``.
-        R : :obj:`numpy.ndarray`, shape: ``(N, len(z), 3)``
+        R : :obj:`numpy.ndarray`, shape: ``(N, len(Z), 3)``
             Cartesian coordinates of ``N`` structures to predict.
         entity_ids : :obj:`numpy.ndarray`, shape: ``(N,)``
             Integers specifying which atoms belong to which entities.
@@ -852,7 +852,7 @@ class mbePredict:
         -------
         :obj:`numpy.ndarray`, shape: ``(N,)``
             Predicted many-body energy
-        :obj:`numpy.ndarray`, shape: ``(N, len(z), 3)``
+        :obj:`numpy.ndarray`, shape: ``(N, len(Z), 3)``
             Predicted atomic forces.
         """
         t_predict = log.t_start()
@@ -866,7 +866,7 @@ class mbePredict:
         # Compute all energies and forces with every model.
         for i, r in enumerate(R):
             for model in self.models:
-                E_nbody, F_nbody = self.compute_nbody(z, r, entity_ids, comp_ids, model)
+                E_nbody, F_nbody = self.compute_nbody(Z, r, entity_ids, comp_ids, model)
                 E[i] += E_nbody
                 F[i] += F_nbody
         log.t_stop(
@@ -874,14 +874,14 @@ class mbePredict:
         )
         return E, F
 
-    def predict_decomp(self, z, R, entity_ids, comp_ids):
+    def predict_decomp(self, Z, R, entity_ids, comp_ids):
         r"""Predict the energies and forces of one or multiple structures.
 
         Parameters
         ----------
-        z : :obj:`numpy.ndarray`, ndim: ``1``
+        Z : :obj:`numpy.ndarray`, ndim: ``1``
             Atomic numbers of all atoms in the system with respect to ``R``.
-        R : :obj:`numpy.ndarray`, shape: ``(N, len(z), 3)``
+        R : :obj:`numpy.ndarray`, shape: ``(N, len(Z), 3)``
             Cartesian coordinates of ``N`` structures to predict.
         entity_ids : :obj:`numpy.ndarray`, shape: ``(N,)``
             Integers specifying which atoms belong to which entities.
@@ -928,7 +928,7 @@ class mbePredict:
             for model in nbody_models:
                 for i, r in enumerate(R):
                     E, F, entity_combs = self.compute_nbody_decomp(
-                        z, r, entity_ids, comp_ids, model
+                        Z, r, entity_ids, comp_ids, model
                     )
                     entity_combs = np.hstack(
                         (

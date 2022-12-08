@@ -300,7 +300,7 @@ class PredictSet(mbGDMLData):
             Machine learning model objects that contain all information to make
             predictions using ``predict_model``.
         predict_model : ``callable``
-            A function that takes ``z, r, entity_ids, nbody_gen, model`` and
+            A function that takes ``Z, R, entity_ids, nbody_gen, model`` and
             computes energies and forces. This will be turned into a ray remote
             function if ``use_ray = True``. This can return total properties
             or all individual :math:`n`-body energies and forces.

@@ -99,6 +99,7 @@ class GDMLLogger(logging.Logger, TimeTracker):
         self.info(title)
         self.info("%s\n", __version__)
 
+    # pylint: disable-next=too-many-branches
     def log_model(self, model):
         r"""Log the relevant model properties
 
@@ -118,9 +119,14 @@ class GDMLLogger(logging.Logger, TimeTracker):
             self.info("----------------\n")
         else:
             raise ValueError(f"log_model does not support {d_type} type")
-        z = model["z"]
-        atom_string = "".join(atoms_by_element(z))
-        self.info("Atoms : %d", len(z))
+        if "z" in model:
+            Z = model["z"]
+        elif "Z" in model:
+            Z = model["Z"]
+        else:
+            raise ValueError("z or Z does not exist in model")
+        atom_string = "".join(atoms_by_element(Z))
+        self.info("Atoms : %d", len(Z))
         self.info("Elements : %s", atom_string)
         try:
             self.info("n_train : %d", len(model["idxs_train"]))

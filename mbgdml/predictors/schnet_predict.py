@@ -42,14 +42,14 @@ log = logging.getLogger(__name__)
 
 
 # pylint: disable-next=unused-argument
-def predict_schnet(z, r, entity_ids, entity_combs, model, periodic_cell, **kwargs):
+def predict_schnet(Z, R, entity_ids, entity_combs, model, periodic_cell, **kwargs):
     r"""Predict total :math:`n`-body energy and forces of a single structure.
 
     Parameters
     ----------
-    z : :obj:`numpy.ndarray`, ndim: ``1``
+    Z : :obj:`numpy.ndarray`, ndim: ``1``
         Atomic numbers of all atoms in ``r`` (in the same order).
-    r : :obj:`numpy.ndarray`, ndim: ``2``
+    R : :obj:`numpy.ndarray`, ndim: ``2``
         Cartesian coordinates of a single structure to predict.
     entity_ids : :obj:`numpy.ndarray`, ndim: ``1``
         1D array specifying which atoms belong to which entities.
@@ -71,9 +71,9 @@ def predict_schnet(z, r, entity_ids, entity_combs, model, periodic_cell, **kwarg
     """
     assert _HAS_SCHNETPACK and _HAS_TORCH
 
-    assert r.ndim == 2
+    assert R.ndim == 2
     E = 0.0
-    F = np.zeros(r.shape)
+    F = np.zeros(R.shape)
 
     # pylint: disable-next=no-member
     atom_conv = schnetpack.data.atoms.AtomsConverter(device=torch.device(model.device))
@@ -89,8 +89,8 @@ def predict_schnet(z, r, entity_ids, entity_combs, model, periodic_cell, **kwarg
         for entity_id in entity_id_comb:
             r_slice.extend(np.where(entity_ids == entity_id)[0])
 
-        z_comp = z[r_slice]
-        r_comp = r[r_slice]
+        z_comp = Z[r_slice]
+        r_comp = R[r_slice]
 
         # If we are using a periodic cell we convert r_comp into coordinates
         # we can use in many-body expansions.
@@ -116,14 +116,14 @@ def predict_schnet(z, r, entity_ids, entity_combs, model, periodic_cell, **kwarg
 
 
 # pylint: disable-next=unused-argument
-def predict_schnet_decomp(z, r, entity_ids, entity_combs, model, **kwargs):
+def predict_schnet_decomp(Z, R, entity_ids, entity_combs, model, **kwargs):
     r"""Predict total :math:`n`-body energy and forces of a single structure.
 
     Parameters
     ----------
-    z : :obj:`numpy.ndarray`, ndim: ``1``
+    Z : :obj:`numpy.ndarray`, ndim: ``1``
         Atomic numbers of all atoms in ``r`` (in the same order).
-    r : :obj:`numpy.ndarray`, ndim: ``2``
+    R : :obj:`numpy.ndarray`, ndim: ``2``
         Cartesian coordinates of a single structure to predict.
     entity_ids : :obj:`numpy.ndarray`, ndim: ``1``
         1D array specifying which atoms belong to which entities.
@@ -144,7 +144,7 @@ def predict_schnet_decomp(z, r, entity_ids, entity_combs, model, **kwargs):
         All possible :math:`n`-body combinations of ``r`` (i.e., entity ID
         combinations).
     """
-    assert r.ndim == 2
+    assert R.ndim == 2
 
     if entity_combs.ndim == 1:
         n_atoms = np.count_nonzero(entity_ids == entity_combs[0])
@@ -170,8 +170,8 @@ def predict_schnet_decomp(z, r, entity_ids, entity_combs, model, **kwargs):
         for entity_id in entity_id_comb:
             r_slice.extend(np.where(entity_ids == entity_id)[0])
 
-        z_comp = z[r_slice]
-        r_comp = r[r_slice]
+        z_comp = Z[r_slice]
+        r_comp = R[r_slice]
 
         # Checks criteria cutoff if present and desired.
         if model.criteria is not None:

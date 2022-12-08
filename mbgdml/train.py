@@ -501,20 +501,6 @@ class mbGDMLTrain:
 
         return fig
 
-    def _prepare_dset_dict(self, dataset):
-        r"""Prepares dataset dictionary for sGDML training routines from mbGDML
-        data set object.
-
-        Primarily updates keys to the sGDML standard (e.g., ``'z'``, ``'R'``,
-        ``'E'``, ``'F'``).
-        """
-        dset_dict = dataset.asdict()
-        dset_dict["z"] = dset_dict.pop(dataset.Z_key)
-        dset_dict["R"] = dset_dict.pop(dataset.R_key)
-        dset_dict["E"] = dset_dict.pop(dataset.E_key)
-        dset_dict["F"] = dset_dict.pop(dataset.F_key)
-        return dset_dict
-
     # pylint: disable-next=too-many-branches, too-many-statements
     def bayes_opt(
         self,
@@ -613,7 +599,7 @@ class mbGDMLTrain:
             assert n_valid == len(valid_idxs)
             assert len(set(valid_idxs)) == len(valid_idxs)
 
-        dset_dict = self._prepare_dset_dict(dataset)
+        dset_dict = dataset.asdict(gdml_keys=True)
 
         task_dir = os.path.join(save_dir, "tasks")
         if os.path.exists(task_dir):
@@ -934,7 +920,7 @@ class mbGDMLTrain:
             assert n_valid == len(valid_idxs)
             assert len(set(valid_idxs)) == len(valid_idxs)
 
-        dset_dict = self._prepare_dset_dict(dataset)
+        dset_dict = dataset.asdict(gdml_keys=True)
         sigmas = self.sigma_grid
         sigmas.sort()
 

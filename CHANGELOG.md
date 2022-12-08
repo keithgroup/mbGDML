@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Changed
 
+- Unified use of ``Z``, ``z``, ``R``, and ``r``.
 - `dataSet` to `DataSet`
 - Switch to qcelemental for atom properties.
 - Do not restrict ``sigma_bounds`` for Bayesian optimization after initial grid search.

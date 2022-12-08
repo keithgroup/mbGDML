@@ -54,7 +54,7 @@ def test_train_results_1h2o():
         DSET_DIR, "1h2o/140h2o.sphere.gfn2.md.500k.prod1.3h2o.dset.1h2o-dset.npz"
     )
     dset = DataSet(dset_path, Z_key="z")
-    dset_dict = dset.asdict()
+    dset_dict = dset.asdict(gdml_keys=True)
 
     train_dir_1h2o = os.path.join(TRAIN_DIR, "1h2o/")
     train_idxs_path = os.path.join(train_dir_1h2o, "train_idxs.npy")

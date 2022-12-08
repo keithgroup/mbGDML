@@ -70,7 +70,7 @@ If you have any questions, comments, concerns, or criticisms please start a `dis
 
 We use the `Black style <https://black.readthedocs.io/en/stable/index.html>`__ in mbGDML.
 This lets you focus on writing code and hand over formatting control to *Black*.
-You should periodically run *Black* when changing any Python code in reptar.
+You should periodically run *Black* when changing any Python code in mbGDML.
 Installing *Black* can be done with ``pip install black`` and then ran with the following command while in the repository root directory.
 
 .. code-block:: bash
@@ -78,6 +78,34 @@ Installing *Black* can be done with ``pip install black`` and then ran with the 
     $ black ./
     All done! ✨ 🍰 ✨
     50 files left unchanged.
+
+
+Pylint
+======
+
+`Pylint <https://pylint.pycqa.org/en/stable/>`__ is used to lint all new Python code introduced into mbGDML.
+You can install Pylint with ``pip install pylint`` and locally check mbGDML by running ``pylint --rcfile=.pylintrc mbgdml`` in the repository root.
+An example is shown below where some changes do not pass Pylint's checks.
+
+.. code-block:: bash
+
+    $ pylint --rcfile=.pylintrc mbgdml
+    ************* Module mbgdml.logger
+    mbgdml/logger.py:102:4: R0912: Too many branches (13/12) (too-many-branches)
+    ************* Module mbgdml.mbe
+    mbgdml/mbe.py:867:15: W0612: Unused variable 'r' (unused-variable)
+    mbgdml/mbe.py:929:23: W0612: Unused variable 'r' (unused-variable)
+    ************* Module mbgdml.utils
+    mbgdml/utils.py:154:15: W0612: Unused variable 'r' (unused-variable)
+
+    -------------------------------------------------------------------
+    Your code has been rated at 9.99/10 (previous run: 10.00/10, -0.01)
+
+All of these messages need to be corrected before merging into mbGDML.
+
+Sometimes the Pylint suggestion does not make sense or cannot be fixed.
+In these situations, you can tell Pylint to ignore that message with something like ``# pylint: disable-next=too-many-branches``.
+Use this responsibly. 
 
 
 Get Started!
@@ -146,7 +174,9 @@ If additional data is required, keep the file size as small as possible.
 
 8. Check *Black* formatting by running the ``black ./`` command.
 
-9. Write any additional documentation in ``docs/source/``.
+9. Run Pylint locally and fix all errors.
+
+10. Write any additional documentation in ``docs/source/``.
 You can easily build and view the documentation locally by running the ``docs/branch-build-docs.sh`` script then opening ``docs/html/index.html`` in your favorite browser.
 
 .. code-block:: bash
@@ -184,10 +214,10 @@ You can easily build and view the documentation locally by running the ``docs/br
 
     The HTML pages are in html.
 
-10. Add a description of the changes in the ``CHANGELOG.md``.
+11. Add a description of the changes in the ``CHANGELOG.md``.
 Please follow the general format specified `here <https://keepachangelog.com/en/1.0.0/>`__.
 
-11. Commit your changes and push your branch to GitHub.
+12. Commit your changes and push your branch to GitHub.
 
 .. code-block:: bash
 
@@ -195,7 +225,7 @@ Please follow the general format specified `here <https://keepachangelog.com/en/
     $ git commit -m "Your detailed description of your changes."
     $ git push origin name-of-your-branch
 
-12. Submit a pull request through the `GitHub website <https://github.com/keithgroup/mbGDML>`__.
+13. Submit a pull request through the `GitHub website <https://github.com/keithgroup/mbGDML>`__.
 
 
 

@@ -268,7 +268,7 @@ class DataSet(mbGDMLData):
 
         Notes
         -----
-        ``z`` and ``R`` are always used to generate the MD5 hash. If available,
+        ``Z`` and ``R`` are always used to generate the MD5 hash. If available,
         :obj:`mbgdml.data.DataSet.E` and :obj:`mbgdml.data.DataSet.F` are used.
 
         :type: :obj:`str`
@@ -498,8 +498,17 @@ class DataSet(mbGDMLData):
 
         self._update(dict(dataset_npz))
 
-    def asdict(self):
+    # pylint: disable-next=too-many-branches
+    def asdict(self, gdml_keys=True):
         r"""Converts object into a custom :obj:`dict`.
+
+        Parameters
+        ----------
+        gdml_keys : :obj:`bool`, default: ``True``
+            Data sets can use any keys to specify atomic data. However, mbGDML uses
+            the standard of ``Z`` for atomic numbers, ``R`` for structure coordinates,
+            ``E`` for energies, and ``F`` for forces. Using this option changes the
+            data set keys to GDML keys.
 
         Returns
         -------
@@ -518,7 +527,10 @@ class DataSet(mbGDMLData):
             "entity_ids": self.entity_ids,
             "comp_ids": self.comp_ids,
         }
-        md5_properties = [self.Z_key, self.R_key]
+        if gdml_keys:
+            md5_properties = ["Z", "R"]
+        else:
+            md5_properties = [self.Z_key, self.R_key]
 
         # When starting a new data set from a structure set, there will not be
         # any energy or force data. Thus, we try to add the data if available,
@@ -537,7 +549,10 @@ class DataSet(mbGDMLData):
             dataset["E_max"] = np.array(self.E_max)
             dataset["E_mean"] = np.array(self.E_mean)
             dataset["E_var"] = np.array(self.E_var)
-            md5_properties.append(self.E_key)
+            if gdml_keys:
+                md5_properties.append("E")
+            else:
+                md5_properties.append(self.E_key)
         except BaseException:
             pass
 
@@ -548,7 +563,10 @@ class DataSet(mbGDMLData):
             dataset["F_max"] = np.array(self.F_max)
             dataset["F_mean"] = np.array(self.F_mean)
             dataset["F_var"] = np.array(self.F_var)
-            md5_properties.append(self.F_key)
+            if gdml_keys:
+                md5_properties.append("F")
+            else:
+                md5_properties.append(self.F_key)
         except BaseException:
             pass
 
@@ -562,6 +580,12 @@ class DataSet(mbGDMLData):
 
         if hasattr(self, "centered"):
             dataset["centered"] = np.array(self.centered)
+
+        if gdml_keys:
+            dataset["Z"] = dataset.pop(self.Z_key)
+            dataset["R"] = dataset.pop(self.R_key)
+            dataset["E"] = dataset.pop(self.E_key)
+            dataset["F"] = dataset.pop(self.F_key)
 
         dataset["md5"] = np.array(utils.md5_data(dataset, md5_properties))
         return dataset

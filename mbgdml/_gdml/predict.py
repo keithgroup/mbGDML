@@ -326,7 +326,7 @@ class GDMLPredict:
             log.critical("The provided data structure is not a valid model.")
             sys.exit()
 
-        self.n_atoms = model["z"].shape[0]
+        self.n_atoms = model["Z"].shape[0]
         log.debug("n_atoms in model : %r", self.n_atoms)
 
         log.debug("Creating Desc object")
