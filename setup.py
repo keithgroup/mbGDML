@@ -9,7 +9,6 @@ requirements = [
     "ase",
     "cclib>=1.7",
     "matplotlib",
-    "natsort",
     "numpy",
     "scipy",
     "psutil",
