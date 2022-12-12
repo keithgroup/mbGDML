@@ -197,7 +197,7 @@ def gen_r_idxs_worker(r_prov_specs, r_prov_ids_lower, n_workers):
         the structure.
     r_prov_ids_lower : :obj:`dict` {:obj:`int`: :obj:`str`}
         Species an ID (:obj:`int`) to uniquely identifying labels for each
-        lower-order structure if it originated from another reptar file. Labels
+        lower-order structure if it originated from another source. Labels
         should always be ``md5_structures``. For example,
         ``{0: '6038e101da7fc0085978741832ebc7ad',
         1: 'eeaf93dec698de3ecb55e9292bd9dfcb'}``.
@@ -265,7 +265,7 @@ def mbe_contrib(
         methanol molecule could be ``[0, 0, 0, 1, 1, 1, 1, 1, 1]``.
     r_prov_ids : :obj:`dict` {:obj:`int`: :obj:`str`} or :obj:`None`
         Species an ID (:obj:`int`) to uniquely identifying labels for each
-        structure if it originated from another reptar file. Labels should
+        structure if it originated from another source. Labels should
         always be ``md5_structures``. For example,
         ``{0: '6038e101da7fc0085978741832ebc7ad', 1:
         'eeaf93dec698de3ecb55e9292bd9dfcb'}``.
@@ -285,7 +285,7 @@ def mbe_contrib(
         methanol molecule could be ``[0, 0, 0, 1, 1, 1, 1, 1, 1]``.
     r_prov_ids_lower : :obj:`dict` {:obj:`int`: :obj:`str`}
         Species an ID (:obj:`int`) to uniquely identifying labels for each
-        lower-order structure if it originated from another reptar file. Labels
+        lower-order structure if it originated from another source. Labels
         should always be ``md5_structures``. For example,
         ``{0: '6038e101da7fc0085978741832ebc7ad',
         1: 'eeaf93dec698de3ecb55e9292bd9dfcb'}``.
