@@ -77,6 +77,7 @@ Examples
         './2h2o-model-nbody-train1000.npz',
         './3h2o-model-nbody-train1000.npz'
     ]
+    model_comp_ids = [['h2o'], ['h2o', 'h2o'], ['h2o', 'h2o', 'h2o']]
     model_desc_kwargs = (
         {'entity_ids': get_entity_ids(atoms_per_mol=3, num_mol=1)},
         {'entity_ids': get_entity_ids(atoms_per_mol=3, num_mol=2)},
@@ -88,8 +89,9 @@ Examples
         in zip(model_desc_kwargs, model_desc_cutoffs)
     ]
     models = [
-        gdmlModel(path, criteria=criteria) for path, criteria \
-        in zip(model_paths, model_criteria)
+        gdmlModel(path, comp_ids=model_comp_id, criteria=criteria) \
+        for path, model_comp_id, criteria \
+        in zip(model_paths, model_comp_ids, model_criteria)
     ]
     mbe_pred = mbePredict(models, predict_gdml)
 
