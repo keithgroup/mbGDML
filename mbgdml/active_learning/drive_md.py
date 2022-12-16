@@ -27,13 +27,13 @@ import shutil
 import uuid
 import ray
 
+
 @ray.remote
 class MDDriver:
-    """Run MD simulations using the ASE interface.
-    """
+    r"""Run MD simulations using the ASE interface."""
 
     def __init__(self, work_dir, label=None, keep_files=False):
-        """
+        r"""
         Parameters
         ----------
         work_dir : :obj:`str`
@@ -46,18 +46,33 @@ class MDDriver:
         """
         self.work_dir = work_dir
         if not os.path.exists(work_dir):
-            raise RuntimeError(f"The working directory ({work_dir}) does not exist")
+            raise RuntimeError(f"The working directory, {work_dir}, does not exist")
 
         if label is None:
             label = str(uuid.uuid4().hex)
+        self.label = label
         self.temp_dir = os.path.join(work_dir, label)
         os.mkdir(self.temp_dir)
 
         self.keep_files = keep_files
 
+    def getattr(self, attr):
+        """Get attribute.
+
+        Parameters
+        ----------
+        attr : :obj:`str`
+            Attribute name.
+
+        Returns
+        -------
+        Attribute
+        """
+        return getattr(self, attr)
+
     # pylint: disable-next=invalid-name
     def create_starting_R(self, packmol_input):
-        """Create the starting structure for a MD simulation using packmol.
+        r"""Create the starting structure for a MD simulation using packmol.
 
         Parameters
         ----------
@@ -65,9 +80,8 @@ class MDDriver:
             Input file for packmol structure generation.
         """
 
-    @staticmethod
-    def check_md_stability(R, E):
-        """Determines if the MD simulation is unstable and needs to be terminated.
+    def check_md_stability(self, R, E):
+        r"""Determines if the MD simulation is unstable and needs to be terminated.
 
         Parameters
         ----------
@@ -79,7 +93,6 @@ class MDDriver:
         """
 
     def cleanup(self):
-        """Cleanup Actor files and such.
-        """
+        r"""Cleanup Actor files and such."""
         if not self.keep_files:
             shutil.rmtree(self.temp_dir)

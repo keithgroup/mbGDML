@@ -13,5 +13,6 @@ API
    Predictors <predictors/predictors_module>
    MBE <mbe/mbe_module>
    Analysis <analysis/analysis_module>
+   Structure generation <structure_gen/structure_gen>
    Utilities <utils/utils>
    GDML <gdml/gdml>

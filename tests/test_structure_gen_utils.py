@@ -20,12 +20,30 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-"""Drive MD simulations and sample high-error, n-body structures"""
+"""Tests generating structure generation utilities"""
 
-import ray
+# pylint: disable=invalid-name
+
+import numpy as np
+
+from mbgdml.structure_gen.utils import get_num_mols
+
+data_dir = "./tests/data"
 
 
-@ray.remote
-class DriveAndSampleMDSupervisor:
-    """Top supervisor for spawning ray tasks to train mbGDML models, generate
-    structures, monitor MD simulations, and store high-error, n-body structures"""
+def test_packmol_water_num_mols():
+    # defining water properties
+    species_mol_fractions = np.array([1.0])
+    species_molar_masses = np.array([18.01528])  # g/mol
+    species_mass_densities = np.array([996.59])  # kg/m3
+    pm_shape = "box"
+    pm_length_scale = 10.0
+
+    num_mols = get_num_mols(
+        species_mol_fractions,
+        species_molar_masses,
+        species_mass_densities,
+        pm_shape,
+        pm_length_scale,
+    )
+    assert np.allclose(num_mols, np.array([33]))
