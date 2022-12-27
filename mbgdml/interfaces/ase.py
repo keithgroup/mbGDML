@@ -25,7 +25,7 @@ import numpy as np
 
 # pylint: disable-next=invalid-name
 class mbeCalculator(Calculator):
-    r"""ASE calculator using the many-body expansion predictor in mbGDML."""
+    r"""ASE calculator for a many-body expansion predictor."""
 
     implemented_properties = ["energy", "forces"]
 
@@ -58,7 +58,7 @@ class mbeCalculator(Calculator):
 
     # pylint: disable-next=unused-argument, keyword-arg-before-vararg
     def calculate(self, atoms=None, *args, **kwargs):
-        r"""Predicts energy and forces using many-body GDML models."""
+        r"""Predicts all available properties using the MBE predictor."""
         if atoms is not None:
             if self.mbe_pred.periodic_cell is not None:
                 atoms.wrap()

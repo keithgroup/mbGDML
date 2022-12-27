@@ -136,5 +136,6 @@ Distributed under the MIT License. See `LICENSE <https://github.com/keithgroup/m
    Many-body expansions <mbe>
    Training <training>
    Predicting <predicting>
+   Interfaces <interfaces>
    API <api/modules>
    Contributing <contributing>
