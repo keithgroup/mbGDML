@@ -237,7 +237,7 @@ def mbe_contrib(
     operation="remove",
     use_ray=False,
     ray_address="auto",
-    n_workers=2,
+    n_workers=1,
 ):
     r"""Adds or removes energy and derivative (i.e., gradients or forces)
     contributions from a reference.
@@ -246,7 +246,7 @@ def mbe_contrib(
     These are the energy and derivative contributions to remove or add to a
     reference.
 
-    Making :math:`n`-body predictions (i.e., ``operation = 'add'``) will often
+    Making :math:`n`-body predictions (i.e., ``operation = "add"``) will often
     not have ``r_prov_ids`` or ``r_prov_specs`` as all lower contributions are
     derived exclusively from these structures. Use :obj:`None` for both of these
     and this function will assume that all ``_lower`` properties apply.
@@ -297,11 +297,11 @@ def mbe_contrib(
         ``'add'`` or ``'remove'`` the contributions.
     use_ray : :obj:`bool`, default: ``False``
         Use `ray <https://docs.ray.io/en/latest/>`__ to parallelize
-        calculations.
-    n_workers : :obj:`int`, default: ``2``
-        Number of ray workers to use. This is ignored if ``use_ray`` is
-        ``False``.
-    ray_address : :obj:`str`, default: ``'auto'``
+        computations.
+    n_workers : :obj:`int`, default: ``1``
+        Total number of workers available for ray. This is ignored if ``use_ray``
+        is ``False``.
+    ray_address : :obj:`str`, default: ``"auto"``
         Ray cluster address to connect to.
 
     Returns
@@ -311,6 +311,21 @@ def mbe_contrib(
     :obj:`numpy.ndarray`
         Derivatives with lower-order contributions added or removed.
     """
+    if use_ray:
+        if not ray.is_initialized():
+            log.debug("ray is not initialized")
+            # Try to connect to already running ray service (from ray cli).
+            try:
+                log.debug("Trying to connect to ray at address %r", ray_address)
+                ray.init(address=ray_address)
+            except ConnectionError:
+                log.debug("Failed to connect to ray at %r", ray_address)
+                log.debug("Trying to initialize ray with %d cores", n_workers)
+                ray.init(num_cpus=n_workers)
+            log.debug("Successfully initialized ray")
+        else:
+            log.debug("Ray was already initialized")
+
     log.debug("Computing many-body expansion contributions")
     if operation not in ("add", "remove"):
         raise ValueError(f'{operation} is not "add" or "remove"')
@@ -406,8 +421,8 @@ def decomp_to_total(
     entity_ids,
     entity_combs,
     use_ray=False,
+    n_workers=1,
     ray_address="auto",
-    n_workers=2,
 ):
     r"""Sum decomposed :math:`n`-body energies and forces for total
     :math:`n`-body contribution.
@@ -431,11 +446,11 @@ def decomp_to_total(
         the remaining columns are entity IDs.
     use_ray : :obj:`bool`, default: ``False``
         Use `ray <https://docs.ray.io/en/latest/>`__ to parallelize
-        calculations.
-    n_workers : :obj:`int`, default: ``2``
-        Number of ray workers to use. This is ignored if ``use_ray`` is
-        ``False``.
-    ray_address : :obj:`str`, default: ``'auto'``
+        computations.
+    n_workers : :obj:`int`, default: ``1``
+        Total number of workers available for ray. This is ignored if ``use_ray``
+        is ``False``.
+    ray_address : :obj:`str`, default: ``"auto"``
         Ray cluster address to connect to.
 
     Returns
@@ -473,8 +488,8 @@ def decomp_to_total(
         r_prov_specs_lower,
         operation="add",
         use_ray=use_ray,
-        ray_address=ray_address,
         n_workers=n_workers,
+        ray_address=ray_address,
     )
     return E, F
 
@@ -494,7 +509,7 @@ class mbePredict:
         models,
         predict_model,
         use_ray=False,
-        n_workers=2,
+        n_workers=1,
         ray_address="auto",
         wkr_chunk_size=None,
         alchemy_scalers=None,
@@ -507,27 +522,32 @@ class mbePredict:
             Machine learning model objects that contain all information to make
             predictions using ``predict_model``.
         predict_model : ``callable``
-            A function that takes ``Z, R, entity_ids, nbody_gen, model`` and
-            computes energies and forces. This will be turned into a ray remote
+            A function that takes ``Z``, ``R``, ``entity_ids``, ``nbody_gen``, ``model``
+            and computes energies and forces. This will be turned into a ray remote
             function if ``use_ray`` is ``True``. This can return total properties
             or all individual :math:`n`-body energies and forces.
         use_ray : :obj:`bool`, default: ``False``
-            Parallelize predictions using ray.
-        n_workers : :obj:`int`, default: ``2``
-            Total number of workers available for predictions when using ray.
-            This is ignored if ``use_ray`` is ``False``.
-        ray_address : :obj:`str`, default: ``'auto'``
+            Use `ray <https://docs.ray.io/en/latest/>`__ to parallelize
+            computations.
+        n_workers : :obj:`int`, default: ``1``
+            Total number of workers available for ray. This is ignored if ``use_ray``
+            is ``False``.
+        ray_address : :obj:`str`, default: ``"auto"``
             Ray cluster address to connect to.
         wkr_chunk_size : :obj:`int`, default: :obj:`None`
             Number of :math:`n`-body structures to assign to each spawned
             worker with ray. If :obj:`None`, it will divide up the number of
             predictions by ``n_workers``.
-        alchemical_scaling : :obj:`list` of ``mbgdml.alchemy.mbeAlchemyScale``,
+        alchemical_scaling : :obj:`list` of :class:`~mbgdml.alchemy.mbeAlchemyScale`, \
         default: :obj:`None`
             Alchemical scaling of :math:`n`-body interactions of entities.
+
+            .. warning::
+
+                This has not been thoroughly tested.
         periodic_cell : :obj:`mbgdml.periodic.Cell`, default: :obj:`None`
             Use periodic boundary conditions defined by this object. If this
-            is not :obj:`None` only ``mbePredict.predict()`` can be used.
+            is not :obj:`None` only :meth:`~mbgdml.mbe.mbePredict.predict` can be used.
         """
         self.models = models
         self.predict_model = predict_model
@@ -544,10 +564,21 @@ class mbePredict:
             alchemy_scalers = []
         self.alchemy_scalers = alchemy_scalers
         self.periodic_cell = periodic_cell
+
         if use_ray:
             if not ray.is_initialized():
-                ray.init(address=ray_address)
-            assert ray.is_initialized()
+                log.debug("ray is not initialized")
+                # Try to connect to already running ray service (from ray cli).
+                try:
+                    log.debug("Trying to connect to ray at address %r", ray_address)
+                    ray.init(address=ray_address)
+                except ConnectionError:
+                    log.debug("Failed to connect to ray at %r", ray_address)
+                    log.debug("Trying to initialize ray with %d cores", n_workers)
+                    ray.init(num_cpus=n_workers)
+                log.debug("Successfully initialized ray")
+            else:
+                log.debug("Ray was already initialized")
 
             self.models = [ray.put(model) for model in models]
             # if alchemy_scalers is not None:

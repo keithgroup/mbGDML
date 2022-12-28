@@ -6,9 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Added
 
+- Switching function module for alchemical scaling.
 - Documentation example of an ASE optimization under periodic boundary conditions.
 - Structure generation module using packmol.
 - Provide explicit example of model comp ids in documentation.
+
+### Changed
+
+- Updated prediction set documentation.
+- Unified use of ray by always having ``use_ray`` option and defaulting ``n_workers`` to ``1``.
 
 ## [0.0.4] - 2022-12-12
 

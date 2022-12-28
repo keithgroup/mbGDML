@@ -22,10 +22,14 @@
 
 """Compute RDF curves under periodic boundary conditions."""
 
+import logging
 import ray
 import numpy as np
 from ..periodic import Cell
 from ..utils import gen_combs, chunk_iterable
+
+log = logging.getLogger(__name__)
+
 
 # Possible ray task.
 def _bin_distances(R, R_idxs, atom_pairs, rdf_settings, cell_vectors):
@@ -89,7 +93,9 @@ class RDF:
         bin_width=0.05,
         rdf_range=(0.0, 15.0),
         inter_only=True,
-        n_workers=None,
+        use_ray=False,
+        ray_address="auto",
+        n_workers=1,
     ):
         r"""
         Parameters
@@ -107,9 +113,14 @@ class RDF:
         inter_only : :obj:`bool`, default: ``True``
             Only intermolecular distances are allowed. If ``True``, atoms that
             have the same ``entity_id`` are ignored.
-        n_workers : :obj:`int`, default: :obj:`None`
-            Number workers we can use for ray tasks. If :obj:`None` results in
-            serial operation.
+        use_ray : :obj:`bool`, default: ``False``
+            Use `ray <https://docs.ray.io/en/latest/>`__ to parallelize
+            computations.
+        n_workers : :obj:`int`, default: ``1``
+            Total number of workers available for ray. This is ignored if ``use_ray``
+            is ``False``.
+        ray_address : :obj:`str`, default: ``"auto"``
+            Ray cluster address to connect to.
         """
         # Store data
         self.Z = Z
@@ -119,13 +130,24 @@ class RDF:
         self.bin_width = bin_width
         self.rdf_range = rdf_range
         self.inter_only = inter_only
+        self.use_ray = use_ray
         self.n_workers = n_workers
 
         # Setup ray
-        if n_workers is not None:
+        if use_ray:
             if not ray.is_initialized():
-                ray.init(address="auto")
-            assert ray.is_initialized()
+                log.debug("ray is not initialized")
+                # Try to connect to already running ray service (from ray cli).
+                try:
+                    log.debug("Trying to connect to ray at address %r", ray_address)
+                    ray.init(address=ray_address)
+                except ConnectionError:
+                    log.debug("Failed to connect to ray at %r", ray_address)
+                    log.debug("Trying to initialize ray with %d cores", n_workers)
+                    ray.init(num_cpus=n_workers)
+                log.debug("Successfully initialized ray")
+            else:
+                log.debug("Ray was already initialized")
             self._max_chunk_size = 300
 
     def _setup(self, comp_id_pair, entity_idxs):
@@ -282,7 +304,7 @@ class RDF:
 
         # Computing histogram.
         # Serial operation.
-        if self.n_workers is None:
+        if not self.use_ray:
             for i in range(0, len(R), step):
                 count, volume_contrib, n_R = _bin_distances(
                     R, i, self._atom_pairs, self._hist_settings, self.cell_vectors
@@ -291,7 +313,7 @@ class RDF:
                 self._cuml_volume += volume_contrib
                 self._n_analyzed += n_R
         # Parallel operation with ray.
-        elif self.n_workers >= 1:
+        else:
             _bin_distances_remote = ray.remote(_bin_distances)
             chunk_size = min(
                 self._max_chunk_size,
