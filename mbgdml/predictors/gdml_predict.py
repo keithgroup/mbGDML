@@ -173,7 +173,7 @@ def predict_gdml(Z, R, entity_ids, entity_combs, model, periodic_cell, **kwargs)
     ----------
     Z : :obj:`numpy.ndarray`, ndim: ``1``
         Atomic numbers of all atoms in ``r`` (in the same order).
-    r : :obj:`numpy.ndarray`, ndim: ``2``
+    R : :obj:`numpy.ndarray`, ndim: ``2``
         Cartesian coordinates of a single structure to predict.
     entity_ids : :obj:`numpy.ndarray`, ndim: ``1``
         1D array specifying which atoms belong to which entities.
@@ -210,14 +210,14 @@ def predict_gdml(Z, R, entity_ids, entity_combs, model, periodic_cell, **kwargs)
         for entity_id in entity_id_comb:
             r_slice.extend(np.where(entity_ids == entity_id)[0])
 
-        z_comp = Z[r_slice]
-        r_comp = R[r_slice]
+        z = Z[r_slice]
+        r = R[r_slice]
 
         # If we are using a periodic cell we convert r_comp into coordinates
         # we can use in many-body expansions.
         if periodic:
-            r_comp = periodic_cell.r_mic(r_comp)
-            if r_comp is None:
+            r = periodic_cell.r_mic(r)
+            if r is None:
                 # Any atomic pairwise distance was larger than cutoff.
                 continue
 
@@ -226,17 +226,17 @@ def predict_gdml(Z, R, entity_ids, entity_combs, model, periodic_cell, **kwargs)
 
         # Checks criteria cutoff if present and desired.
         if model.criteria is not None:
-            accept_r, _ = model.criteria.accept(z_comp, r_comp)
+            accept_r, _ = model.criteria.accept(z, r)
             if not accept_r:
                 # Do not include this contribution.
                 continue
 
         # Predicts energies and forces.
-        r_desc, r_d_desc = model.desc_func(r_comp.flatten(), model.lat_and_inv)
+        r_desc, r_d_desc = model.desc_func(r.flatten(), model.lat_and_inv)
         wkr_args = (
             r_desc,
             r_d_desc,
-            len(z_comp),
+            len(z),
             model.sig,
             model.n_perms,
             model.R_desc_perms,
@@ -247,14 +247,14 @@ def predict_gdml(Z, R, entity_ids, entity_combs, model, periodic_cell, **kwargs)
 
         out *= model.stdev
         e = out[0] + model.integ_c
-        f = out[1:].reshape((len(z_comp), 3))
+        f = out[1:].reshape((len(z), 3))
 
         # Scale contribution if entity is included.
         if alchemy_scalers not in (None, []):
             for alchemy_scaler in alchemy_scalers:
                 if alchemy_scaler.entity_id in entity_id_comb:
-                    E = alchemy_scaler.scale(E)
-                    F = alchemy_scaler.scale(F)
+                    e = alchemy_scaler.scale(e)
+                    f = alchemy_scaler.scale(f)
 
         # Adds contributions to total energy and forces.
         E += e

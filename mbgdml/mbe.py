@@ -557,7 +557,7 @@ class mbePredict:
         elif models[0].type == "schnet":
             assert not use_ray
 
-        self.use_ray = use_ray
+        self.use_ray = use_ray  # Do early because some setters are dependent on this.
         self.n_workers = n_workers
         self.wkr_chunk_size = wkr_chunk_size
         if alchemy_scalers is None:
@@ -586,8 +586,24 @@ class mbePredict:
             #        ray.put(scaler) for scaler in alchemy_scalers
             #    ]
             self.predict_model = ray.remote(predict_model)
-            if periodic_cell is not None:
-                self.periodic_cell = ray.put(periodic_cell)
+
+    @property
+    def periodic_cell(self):
+        r"""Periodic cell for MBE predictions.
+
+        :type: :obj:`mbgdml.periodic.Cell`
+        """
+        if hasattr(self, "_periodic_cell"):
+            return self._periodic_cell
+
+        return None
+
+    @periodic_cell.setter
+    def periodic_cell(self, var):
+        if var is not None:
+            if self.use_ray:
+                var = ray.put(var)
+        self._periodic_cell = var
 
     def get_avail_entities(self, comp_ids_r, comp_ids_model):
         r"""Determines available ``entity_ids`` for each ``comp_id`` in a
@@ -615,7 +631,7 @@ class mbePredict:
         return avail_entity_ids
 
     # pylint: disable=too-many-branches, too-many-statements
-    def compute_nbody(self, Z, R, entity_ids, comp_ids, model):
+    def compute_nbody(self, Z, R, entity_ids, comp_ids, model, compute_stress=False):
         r"""Compute all :math:`n`-body contributions of a single structure
         using a :obj:`mbgdml.models.Model` object.
 
@@ -635,6 +651,9 @@ class mbePredict:
             is the label's ``entity_id``.
         model : :obj:`mbgdml.models.Model`
             Model that contains all information needed by ``model_predict``.
+        compute_stress : :obj:`bool`, default: ``False``
+            Compute the internal virial contribution to the pressure stress tensor of
+            a periodic box.
 
         Returns
         -------
@@ -651,9 +670,6 @@ class mbePredict:
                 R = R[0]
             else:
                 raise ValueError("R.ndim is not 2 (only one structure is allowed)")
-
-        E = 0.0
-        F = np.zeros(R.shape, dtype=np.double)
 
         # Creates a generator for all possible n-body combinations regardless
         # of cutoffs.
@@ -674,13 +690,18 @@ class mbePredict:
                 if alchemy_scaler.order == nbody_order
             ]
 
+        periodic_cell = self.periodic_cell
+
         # Runs the predict_model function to calculate all n-body energies
         # with this model.
         if not self.use_ray:
             E, F = self.predict_model(
-                Z, R, entity_ids, nbody_gen, model, self.periodic_cell, **kwargs_pred
+                Z, R, entity_ids, nbody_gen, model, periodic_cell, **kwargs_pred
             )
         else:
+            E = 0.0
+            F = np.zeros(R.shape, dtype=np.float64)
+
             # Put all common data into the ray object store.
             Z = ray.put(Z)
             R = ray.put(R)
@@ -705,7 +726,7 @@ class mbePredict:
                         entity_ids,
                         chunk,
                         model,
-                        self.periodic_cell,
+                        periodic_cell,
                         **kwargs_pred,
                     )
                 )
@@ -730,7 +751,21 @@ class mbePredict:
                     pass
 
             # Cleanup object store
-            del Z, R, entity_ids
+            del Z, entity_ids
+
+        # Computes virial stress if requested.
+        if compute_stress and bool(periodic_cell):
+            if self.use_ray:
+                R = ray.get(R)
+                periodic_cell = ray.get(periodic_cell)
+            stress = np.zeros((3, 3), dtype=np.float64)
+            for r_atom, f_atom in zip(R, F):
+                stress += np.multiply.outer(r_atom, f_atom)
+            stress /= periodic_cell.volume
+
+            del R
+
+            return E, F, stress
 
         return E, F
 
@@ -864,7 +899,7 @@ class mbePredict:
 
         return E, F, entity_combs
 
-    def predict(self, Z, R, entity_ids, comp_ids):
+    def predict(self, Z, R, entity_ids, comp_ids, compute_stress=False):
         r"""Predict the energies and forces of one or multiple structures.
 
         Parameters
@@ -878,31 +913,72 @@ class mbePredict:
         comp_ids : :obj:`numpy.ndarray`, shape: ``(N,)``
             Relates each ``entity_id`` to a fragment label. Each item's index
             is the label's ``entity_id``.
+        compute_stress : :obj:`bool`, default: ``False``
+            Compute the internal virial contribution,
+            :math:`\mathbf{W} \left( \mathbf{r}^N \right) / V`, of :math:`N`
+            particles at positions :math:`\mathbf{r}` to the pressure stress tensor of
+            a periodic box at with volume :math:`V`. Uses Equation 30 (periodic group
+            form) from `10.1063/1.3245303 <https://doi.org/10.1063/1.3245303>`__:
+
+            .. math::
+
+                \mathbf{W} \left( \mathbf{r}^N \right) =
+                \sum_{k \in \mathbf{0}} \sum_{w = 1}^{N_k} \mathbf{r}_w^k
+                \otimes \mathbf{F}_w^k.
+
+            Here, :math:`k` is a group of atoms that must be in the local cell
+            (i.e., :math:`k \in \mathbf{0}`). :math:`w` is the atom index within
+            group :math:`k` (:math:`N_k` is the total number of atoms in the group).
+            :math:`\otimes` is the outer tensor product (i.e., ``np.multiply.outer``).
+            Note that "the number of groups, number of atoms in each group, and the
+            number of groups in which an atom participates are completely arbitrary".
+            Thus, we use each :math:`n`-body combination as a group.
+
+            .. danger::
+
+                This algorithm has been implemented in the
+                :meth:`~mbgdml.mbe.mbePredict.compute_nbody` method. However,
+                the correctness and validity for this framework has not been verified
+                yet. Use at your own risk.
 
         Returns
         -------
-        :obj:`numpy.ndarray`, shape: ``(N,)``
-            Predicted many-body energy
-        :obj:`numpy.ndarray`, shape: ``(N, len(Z), 3)``
-            Predicted atomic forces.
+        :obj:`numpy.ndarray`
+            (shape: ``(N,)``) Predicted many-body energy
+        :obj:`numpy.ndarray`
+            (shape: ``(N, len(Z), 3)``) Predicted atomic forces.
+        :obj:`numpy.ndarray`
+            (optional) Virial contributions to the pressure stress tensor in units of
+            energy/distance\ :sup:`3`.
         """
         t_predict = log.t_start()
         if R.ndim == 2:
             R = np.array([R])
 
         # Preallocate memory for energies and forces.
-        E = np.zeros((R.shape[0],), dtype=np.double)
-        F = np.zeros(R.shape, dtype=np.double)
+        E = np.zeros((R.shape[0],), dtype=np.float64)
+        F = np.zeros(R.shape, dtype=np.float64)
+        if compute_stress:
+            stress = np.zeros((3, 3), dtype=np.float64)
 
         # Compute all energies and forces with every model.
         for i, r in enumerate(R):
             for model in self.models:
-                E_nbody, F_nbody = self.compute_nbody(Z, r, entity_ids, comp_ids, model)
+                # Extra returns are present for stress. The *stress_nbody captures it.
+                # If it is not requested, it will just be an empty list.
+                E_nbody, F_nbody, *stress_nbody = self.compute_nbody(
+                    Z, r, entity_ids, comp_ids, model, compute_stress=compute_stress
+                )
+                if compute_stress:
+                    stress += stress_nbody[0]
                 E[i] += E_nbody
                 F[i] += F_nbody
         log.t_stop(
             t_predict, message="Predictions took {time} s", precision=3, level=10
         )
+        if compute_stress:
+            return E, F, stress
+
         return E, F
 
     def predict_decomp(self, Z, R, entity_ids, comp_ids):

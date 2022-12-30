@@ -22,12 +22,15 @@
 
 from ase.calculators.calculator import Calculator
 import numpy as np
+import ray
+
+VOIGT_INDICES = [[0, 0], [1, 1], [2, 2], [1, 0], [0, 2], [0, 1]]
 
 # pylint: disable-next=invalid-name
 class mbeCalculator(Calculator):
     r"""ASE calculator for a many-body expansion predictor."""
 
-    implemented_properties = ["energy", "forces"]
+    implemented_properties = ["energy", "forces", "stress"]
 
     def __init__(
         self, mbe_pred, parameters=None, e_conv=1.0, f_conv=1.0, atoms=None, **kwargs
@@ -59,8 +62,10 @@ class mbeCalculator(Calculator):
     # pylint: disable-next=unused-argument, keyword-arg-before-vararg
     def calculate(self, atoms=None, *args, **kwargs):
         r"""Predicts all available properties using the MBE predictor."""
+        is_periodic = bool(self.mbe_pred.periodic_cell)
+
         if atoms is not None:
-            if self.mbe_pred.periodic_cell is not None:
+            if is_periodic:
                 atoms.wrap()
             self.atoms = atoms.copy()
 
@@ -68,16 +73,41 @@ class mbeCalculator(Calculator):
         entity_ids = parameters["entity_ids"]
         comp_ids = parameters["comp_ids"]
 
-        e, f = self.mbe_pred.predict(
-            atoms.get_atomic_numbers(), atoms.get_positions(), entity_ids, comp_ids
+        predict_kwargs = {}
+        if is_periodic:
+            # Update cell vectors and cutoff
+            cell_vectors = atoms.get_cell()[:]
+            periodic_cell = self.mbe_pred.periodic_cell
+            if self.mbe_pred.use_ray:
+                periodic_cell = ray.get(periodic_cell)
+            periodic_cell.cell_v = cell_vectors
+            # TODO: This does not seem right. What is the cutoff of a parallelepiped
+            # (not necessarily a cube.
+            periodic_cell.cutoff = np.min(np.linalg.norm(cell_vectors, axis=1))/2.0
+            self.mbe_pred.periodic_cell = periodic_cell
+
+            predict_kwargs["compute_stress"] = True
+
+        E, F, *stress = self.mbe_pred.predict(
+            atoms.get_atomic_numbers(),
+            atoms.get_positions(),
+            entity_ids,
+            comp_ids,
+            **predict_kwargs
         )
-        e = e[0]
-
+        E = E[0]
+        F = F.reshape(-1, 3)
         # Unit conversions
-        e *= self.e_conv
-        f *= self.f_conv
+        E *= self.e_conv
+        F *= self.f_conv
 
-        self.results = {"energy": e, "forces": f.reshape(-1, 3)}
+        self.results = {"energy": E, "forces": F}
+
+        if is_periodic:
+            stress = stress[0]
+            stress_voigt = np.array([stress[i, j] for i, j in VOIGT_INDICES])
+            stress_voigt[3:] = 0.0  # TODO: Keep a cube?
+            self.results["stress"] = stress_voigt * self.e_conv
 
     def todict(self, skip_default=True):
         defaults = self.get_default_parameters()
