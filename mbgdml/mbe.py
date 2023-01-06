@@ -28,6 +28,7 @@ import math
 import numpy as np
 import ray
 from .utils import chunk_array, chunk_iterable, gen_combs
+from .stress import virial_atom_loop, to_voigt
 
 
 log = logging.getLogger(__name__)
@@ -514,8 +515,9 @@ class mbePredict:
         wkr_chunk_size=None,
         alchemy_scalers=None,
         periodic_cell=None,
+        compute_stress=False,
     ):
-        """
+        r"""
         Parameters
         ----------
         models : :obj:`list` of :obj:`mbgdml.models.Model`
@@ -548,6 +550,18 @@ class mbePredict:
         periodic_cell : :obj:`mbgdml.periodic.Cell`, default: :obj:`None`
             Use periodic boundary conditions defined by this object. If this
             is not :obj:`None` only :meth:`~mbgdml.mbe.mbePredict.predict` can be used.
+        compute_stress : :obj:`bool`, default: ``False``
+            Compute the internal virial contribution,
+            :math:`\mathbf{W} \left( \mathbf{r}^N \right) / V`, of :math:`N`
+            particles at positions :math:`\mathbf{r}` to the pressure stress tensor of
+            a periodic box at with volume :math:`V`.
+
+            .. danger::
+
+                This algorithm has been implemented in the
+                :meth:`~mbgdml.mbe.mbePredict.compute_nbody` method. However,
+                the correctness and validity for this framework has not been verified
+                yet. Use at your own risk.
         """
         self.models = models
         self.predict_model = predict_model
@@ -564,6 +578,76 @@ class mbePredict:
             alchemy_scalers = []
         self.alchemy_scalers = alchemy_scalers
         self.periodic_cell = periodic_cell
+        self.compute_stress = compute_stress
+
+        self.virial_form = "atom"
+        r"""The form to use from
+        `10.1063/1.3245303 <https://doi.org/10.1063/1.3245303>`__ to compute the
+        internal virial contribution to the pressure stress tensor. There are two
+        possible selections, but both are mathematically equivalent. In all cases,
+        :math:`\mathbf{W} \left( \mathbf{r}^N \right)` is the internal virial of
+        :math:`N` atoms and :math:`\otimes` is the outer tensor product (i.e.,
+        ``np.multiply.outer``).
+
+        ``atom`` (**default**)
+
+            Computes the virial over a single loop over all atoms in the system
+            (including replicas).
+
+            .. math::
+
+                \mathbf{W} \left( \mathbf{r}^N \right) =
+                \sum_{\mathbf{n} \in Z^3} \sum_{i = 1}^N
+                \mathbf{r}_{i \mathbf{n}} \otimes \mathbf{F}_{i \mathbf{n}}'.
+
+            This summation is only over all local and periodic image atoms (i.e.,
+            :math:`\mathbf{n} \in Z^3`) at positions
+            :math:`\mathbf{r}_{i \mathbf{n}}` where :math:`\mathbf{n}` accounts
+            for the :math:`x`, :math:`y`, and :math:`z` offsets of the periodic
+            images relative to the local cell. :math:`\mathbf{F}_{i \mathbf{n}}'`
+            is not the total force on atom :math:`i`, but the partial force on the
+            atom located at :math:`\mathbf{r}_{i \mathbf{n}}` due to all the
+            groups associated with the local cell.
+
+            .. note::
+
+                mbGDML exclusively uses the minimum-image convention where each
+                local atom interacts only with the closest image of every other
+                local atom. Thus, we take the computed total force to be
+                :math:`\mathbf{F}_{i \mathbf{n}}'`.
+
+        ``group``
+
+            This computes the virial by considering contributions based on groups
+            of atoms. The number of groups, number of atoms in each group, and
+            number of groups is completely arbitrary. Thus, we can straightforwardly
+            use :math:`n`-body combinations as groups and get more insight into
+            the virial contributions origin.
+
+            .. math::
+
+                \mathbf{W} \left( \mathbf{r}^N \right) =
+                \sum_{k \in \mathbf{0}} \sum_{w = 1}^{N_k} \mathbf{r}_w^k
+                \otimes \mathbf{F}_w^k.
+
+            Here, :math:`k` is a group of atoms that must be in the local cell
+            (i.e., :math:`k \in \mathbf{0}`). :math:`w` is the atom index within
+            group :math:`k` (:math:`N_k` is the total number of atoms in the group).
+
+            .. important::
+
+                This has to be specifically implemented in the relevant predictor
+                functions.
+
+        :type: :obj:`str`
+        """
+        self.use_voigt = False
+        r"""Convert the stress tensor to the 1D Voigt notation (xx, yy, zz, yz, xz, xy).
+
+        Default: ``False``
+
+        :type: :obj:`bool`
+        """
 
         if use_ray:
             if not ray.is_initialized():
@@ -618,8 +702,8 @@ class mbePredict:
 
         Returns
         -------
-        :obj:`list`, length: ``len(comp_ids_r)``
-
+        :obj:`list`
+            (length: ``len(comp_ids_r)``)
         """
         # Models have a specific entity order that needs to be conserved in the
         # predictions. Here, we create a ``avail_entity_ids`` list where each item
@@ -631,7 +715,7 @@ class mbePredict:
         return avail_entity_ids
 
     # pylint: disable=too-many-branches, too-many-statements
-    def compute_nbody(self, Z, R, entity_ids, comp_ids, model, compute_stress=False):
+    def compute_nbody(self, Z, R, entity_ids, comp_ids, model):
         r"""Compute all :math:`n`-body contributions of a single structure
         using a :obj:`mbgdml.models.Model` object.
 
@@ -651,16 +735,16 @@ class mbePredict:
             is the label's ``entity_id``.
         model : :obj:`mbgdml.models.Model`
             Model that contains all information needed by ``model_predict``.
-        compute_stress : :obj:`bool`, default: ``False``
-            Compute the internal virial contribution to the pressure stress tensor of
-            a periodic box.
 
         Returns
         -------
         :obj:`float`
             Total :math:`n`-body energy of ``r``.
-        :obj:`numpy.ndarray`, shape: ``(len(Z), 3)``
-            Total :math:`n`-body atomic forces of ``r``.
+        :obj:`numpy.ndarray`
+            (shape: ``(len(Z), 3)``) - Total :math:`n`-body atomic forces of ``r``.
+        :obj:`numpy.ndarray`
+            (optional, shape: ``(len(Z), 3)``) - The internal virial
+            contribution to the pressure stress tensor in units of energy.
         """
         # Unify r shape.
         if R.ndim == 3:
@@ -691,13 +775,21 @@ class mbePredict:
             ]
 
         periodic_cell = self.periodic_cell
+        compute_stress = (
+            self.compute_stress and bool(periodic_cell) and self.virial_form == "group"
+        )
+        if compute_stress:
+            virial = np.zeros((3, 3), dtype=np.float64)
+            kwargs_pred["compute_virial"] = True
 
         # Runs the predict_model function to calculate all n-body energies
         # with this model.
         if not self.use_ray:
-            E, F = self.predict_model(
+            E, F, *virial_model = self.predict_model(
                 Z, R, entity_ids, nbody_gen, model, periodic_cell, **kwargs_pred
             )
+            if compute_stress:
+                virial += virial_model[0]
         else:
             E = 0.0
             F = np.zeros(R.shape, dtype=np.float64)
@@ -741,9 +833,13 @@ class mbePredict:
             # Start workers and collect results.
             while len(workers) != 0:
                 done_id, workers = ray.wait(workers)
-                E_worker, F_worker = ray.get(done_id)[0]
+                E_worker, F_worker, *virial_model = ray.get(done_id)[0]
+
                 E += E_worker
                 F += F_worker
+                if compute_stress:
+                    virial += virial_model[0]
+
                 try:
                     chunk = next(nbody_chunker)
                     add_worker(workers, chunk)
@@ -753,20 +849,8 @@ class mbePredict:
             # Cleanup object store
             del Z, entity_ids
 
-        # Computes virial stress if requested.
-        if compute_stress and bool(periodic_cell):
-            if self.use_ray:
-                R = ray.get(R)
-                periodic_cell = ray.get(periodic_cell)
-            stress = np.zeros((3, 3), dtype=np.float64)
-            for r_atom, f_atom in zip(R, F):
-                stress += np.multiply.outer(r_atom, f_atom)
-            stress /= periodic_cell.volume
-
-            del R
-
-            return E, F, stress
-
+        if compute_stress:
+            return E, F, virial
         return E, F
 
     # pylint: disable=too-many-branches, too-many-statements
@@ -797,15 +881,17 @@ class mbePredict:
 
         Returns
         -------
-        :obj:`numpy.ndarray`, ndim: ``1``
+        :obj:`numpy.ndarray`
+            (ndim: ``1``) -
             Energies of all possible :math:`n`-body structures. Some elements
             can be :obj:`numpy.nan` if they are beyond the descriptor cutoff.
-        :obj:`numpy.ndarray`, ndim: ``3``
+        :obj:`numpy.ndarray`
+            (ndim: ``3``) -
             Atomic forces of all possible :math:`n`-body structure. Some
             elements can be :obj:`numpy.nan` if they are beyond the descriptor
             cutoff.
-        :obj:`numpy.ndarray`, ndim: ``2``
-            All possible entity IDs.
+        :obj:`numpy.ndarray`
+            (ndim: ``2``) - All possible entity IDs.
         """
         # Unify r shape.
         if R.ndim == 3:
@@ -899,7 +985,7 @@ class mbePredict:
 
         return E, F, entity_combs
 
-    def predict(self, Z, R, entity_ids, comp_ids, compute_stress=False):
+    def predict(self, Z, R, entity_ids, comp_ids):
         r"""Predict the energies and forces of one or multiple structures.
 
         Parameters
@@ -913,70 +999,58 @@ class mbePredict:
         comp_ids : :obj:`numpy.ndarray`, shape: ``(N,)``
             Relates each ``entity_id`` to a fragment label. Each item's index
             is the label's ``entity_id``.
-        compute_stress : :obj:`bool`, default: ``False``
-            Compute the internal virial contribution,
-            :math:`\mathbf{W} \left( \mathbf{r}^N \right) / V`, of :math:`N`
-            particles at positions :math:`\mathbf{r}` to the pressure stress tensor of
-            a periodic box at with volume :math:`V`. Uses Equation 30 (periodic group
-            form) from `10.1063/1.3245303 <https://doi.org/10.1063/1.3245303>`__:
-
-            .. math::
-
-                \mathbf{W} \left( \mathbf{r}^N \right) =
-                \sum_{k \in \mathbf{0}} \sum_{w = 1}^{N_k} \mathbf{r}_w^k
-                \otimes \mathbf{F}_w^k.
-
-            Here, :math:`k` is a group of atoms that must be in the local cell
-            (i.e., :math:`k \in \mathbf{0}`). :math:`w` is the atom index within
-            group :math:`k` (:math:`N_k` is the total number of atoms in the group).
-            :math:`\otimes` is the outer tensor product (i.e., ``np.multiply.outer``).
-            Note that "the number of groups, number of atoms in each group, and the
-            number of groups in which an atom participates are completely arbitrary".
-            Thus, we use each :math:`n`-body combination as a group.
-
-            .. danger::
-
-                This algorithm has been implemented in the
-                :meth:`~mbgdml.mbe.mbePredict.compute_nbody` method. However,
-                the correctness and validity for this framework has not been verified
-                yet. Use at your own risk.
 
         Returns
         -------
         :obj:`numpy.ndarray`
-            (shape: ``(N,)``) Predicted many-body energy
+            (shape: ``(N,)``) - Predicted many-body energy
         :obj:`numpy.ndarray`
-            (shape: ``(N, len(Z), 3)``) Predicted atomic forces.
+            (shape: ``(N, len(Z), 3)``) - Predicted atomic forces.
         :obj:`numpy.ndarray`
-            (optional) Virial contributions to the pressure stress tensor in units of
-            energy/distance\ :sup:`3`.
+            (optional, shape: ``(N, len(Z), 3)``) - The pressure stress tensor in units
+            of energy/distance\ :sup:`3`.
         """
         t_predict = log.t_start()
         if R.ndim == 2:
             R = np.array([R])
+        n_R = R.shape[0]
+        compute_stress = self.compute_stress and bool(self.periodic_cell)
 
         # Preallocate memory for energies and forces.
-        E = np.zeros((R.shape[0],), dtype=np.float64)
+        E = np.zeros((n_R,), dtype=np.float64)
         F = np.zeros(R.shape, dtype=np.float64)
         if compute_stress:
-            stress = np.zeros((3, 3), dtype=np.float64)
+            assert self.virial_form in ("atom", "group")
+            stress = np.zeros((n_R, 3, 3), dtype=np.float64)
 
         # Compute all energies and forces with every model.
         for i, r in enumerate(R):
             for model in self.models:
                 # Extra returns are present for stress. The *stress_nbody captures it.
                 # If it is not requested, it will just be an empty list.
-                E_nbody, F_nbody, *stress_nbody = self.compute_nbody(
-                    Z, r, entity_ids, comp_ids, model, compute_stress=compute_stress
+                E_nbody, F_nbody, *virial_nbody = self.compute_nbody(
+                    Z, r, entity_ids, comp_ids, model
                 )
-                if compute_stress:
-                    stress += stress_nbody[0]
+                if compute_stress and self.virial_form == "group":
+                    stress[i] += virial_nbody[0]
                 E[i] += E_nbody
                 F[i] += F_nbody
+
+            if compute_stress and self.virial_form == "atom":
+                stress[i] = virial_atom_loop(r, F[i])
+
         log.t_stop(
             t_predict, message="Predictions took {time} s", precision=3, level=10
         )
         if compute_stress:
+            periodic_cell = self.periodic_cell
+            if self.use_ray:
+                periodic_cell = ray.get(periodic_cell)
+            stress /= periodic_cell.volume  # TODO: Verify
+
+            if self.use_voigt:
+                stress = np.array([to_voigt(r_stress) for r_stress in stress])
+
             return E, F, stress
 
         return E, F

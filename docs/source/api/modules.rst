@@ -16,6 +16,7 @@ API
    Prediction Sets <PredictSet>
    Periodic <periodic/periodic_module>
    Predictors <predictors/predictors_module>
+   Stress <stress/stress_module>
    Structure generation <structure_gen/structure_gen>
    Switching functions <switching/switching_module>
    Training <training/training>

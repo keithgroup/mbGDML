@@ -24,8 +24,6 @@ from ase.calculators.calculator import Calculator
 import numpy as np
 import ray
 
-VOIGT_INDICES = [[0, 0], [1, 1], [2, 2], [1, 0], [0, 2], [0, 1]]
-
 # pylint: disable-next=invalid-name
 class mbeCalculator(Calculator):
     r"""ASE calculator for a many-body expansion predictor."""
@@ -51,6 +49,7 @@ class mbeCalculator(Calculator):
         Calculator.__init__(self, restart=None, label=None, atoms=atoms, **kwargs)
 
         self.mbe_pred = mbe_pred
+        self.mbe_pred.use_voigt = True
 
         self.e_conv = e_conv
         self.f_conv = f_conv
@@ -81,12 +80,10 @@ class mbeCalculator(Calculator):
             if self.mbe_pred.use_ray:
                 periodic_cell = ray.get(periodic_cell)
             periodic_cell.cell_v = cell_vectors
-            # TODO: This does not seem right. What is the cutoff of a parallelepiped
-            # (not necessarily a cube.
-            periodic_cell.cutoff = np.min(np.linalg.norm(cell_vectors, axis=1))/2.0
             self.mbe_pred.periodic_cell = periodic_cell
 
-            predict_kwargs["compute_stress"] = True
+            if not self.mbe_pred.compute_stress:
+                self.mbe_pred.compute_stress = True
 
         E, F, *stress = self.mbe_pred.predict(
             atoms.get_atomic_numbers(),
@@ -104,10 +101,8 @@ class mbeCalculator(Calculator):
         self.results = {"energy": E, "forces": F}
 
         if is_periodic:
-            stress = stress[0]
-            stress_voigt = np.array([stress[i, j] for i, j in VOIGT_INDICES])
-            stress_voigt[3:] = 0.0  # TODO: Keep a cube?
-            self.results["stress"] = stress_voigt * self.e_conv
+            stress = stress[0][0]
+            self.results["stress"] = stress * self.e_conv
 
     def todict(self, skip_default=True):
         defaults = self.get_default_parameters()

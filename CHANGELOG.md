@@ -7,7 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Added
 
 - Ability of ASE calculator to update periodic cell on ``mbePredict`` object.
-- Preliminary virial stress algorithm.
+- Preliminary virial stress algorithms and ``stress`` module.
 - Switching function module for alchemical scaling.
 - Documentation example of an ASE optimization under periodic boundary conditions.
 - Structure generation module using packmol.
