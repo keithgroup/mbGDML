@@ -36,8 +36,6 @@
     <a href="#license">License</a>
 </p>
 
-**Disclaimer**: This package is still under active development and not suitable for production.
-
 ## Motivation
 
 Machine learning potentials (i.e., force fields) often rely on local descriptors for size transferability.

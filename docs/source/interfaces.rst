@@ -5,7 +5,7 @@ Interfaces
 Atomic Simulation Environment
 =============================
 
-We provide a :class:`calculator <mbgdml.interfaces.ase.mbeCalculator>` for Atomic Simulation Environment (ASE) that enables many routines such as optimization and molecular dynamics.
+We provide a :class:`calculator <mbgdml.interfaces.ase.mbeCalculator>` for `Atomic Simulation Environment <https://wiki.fysik.dtu.dk/ase/>`__ (ASE) that enables many routines such as optimization and molecular dynamics.
 
 Examples
 --------

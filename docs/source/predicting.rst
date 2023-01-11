@@ -2,7 +2,7 @@
 Predicting
 ==========
 
-mbGDML was originally designed just for GDML models; hence the name.
+mbGDML was initially designed just for GDML models, hence the name.
 However, other ML potentials or even QC methods can be used to make many-body predictions.
 We designed an extensible, modular framework for many-body predictions using :class:`~mbgdml.mbe.mbePredict`.
 
@@ -16,7 +16,7 @@ Model
 =====
 
 Information needed to make quantum chemistry or machine learning predictions are contained in objects that inherit the :class:`~mbgdml.models.Model` class.
-For example, :class:`~mbgdml.models.gdmlModel` stores GDML parameters for use in its predict function.
+For example, :class:`~mbgdml.models.gdmlModel` stores GDML parameters for the predict function.
 
 Predict
 =======
@@ -28,8 +28,8 @@ Predict functions perform the actual predictions from the respective model objec
 - ``entity_ids``: integers specifying atoms that make up individual entities or fragments,
 - ``entity_combs``: unique combinations of entity IDs to predict. 
 
-For example, :func:`~mbgdml.predictors.predict_gdml` will sum up all :math:`n`-body combinations for its contribution to ``R``'s energy and forces.
-You can also have decomposed predict functions (i.e., :func:`~mbgdml.predictors.predict_gdml_decomp`) that returns all individual :math:`n`-body energies and forces.
+For example, :func:`~mbgdml.predictors.predict_gdml` will sum up all :math:`n`-body combinations for their contribution to ``R``'s energy and forces.
+You can also have decomposed predict functions (i.e., :func:`~mbgdml.predictors.predict_gdml_decomp`) that return all individual :math:`n`-body energies and forces.
 
 ``mbePredict``
 ==============
@@ -39,15 +39,16 @@ Once initialized, predictions are made with the :meth:`~mbgdml.mbe.mbePredict.pr
 :meth:`~mbgdml.mbe.mbePredict.compute_nbody` is then called for each loaded model until all possible :math:`n`-body contributions are accounted for.
 
 .. warning::
+
     Predictions are made by iterating through models and accounting for all compatible entities.
     If the model component IDs are different, no entity combinations are used.
 
 Parallel predictions
 --------------------
 
-Many-body expansions are known for their curse of dimensionality: as the supersystem grows in size so does the number of entity combinations.
+Many-body expansions are known for their curse of dimensionality: as the supersystem grows in size, so does the number of entity combinations.
 These can be easily parallelized by assigning workers with specified batch sizes.
-At the moment, only a `ray <https://docs.ray.io/en/latest/>`_ implementation for GDML is provided by specifying ``use_ray`` to ``True`` and setting ``n_workers``.
+Currently, only a `ray <https://docs.ray.io/en/latest/>`_ implementation for GDML is provided by specifying ``use_ray`` to ``True`` and setting ``n_workers``.
 
 Supported potentials
 --------------------
@@ -61,8 +62,10 @@ mbGDML already provides support for the following potentials:
 Examples
 ========
 
+Prediction of (H2O)6 using mbGDML
+---------------------------------
+
 .. code-block:: python
-    :caption: Prediction of (H2O)6 using mbGDML
     
     import numpy as np
     from mbgdml.mbe import mbePredict

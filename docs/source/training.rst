@@ -2,12 +2,12 @@
 Training
 ========
 
-mbGDML is a data-driven method; meaning we need to train a ML model to reproduce a system's potential energy surface (PES).
-Once we have a collection of structures (usually from a MD simulation) and calculated energies and forces we can begin training GDML models.
+mbGDML is a data-driven method, meaning we need to train an ML model to reproduce a system's potential energy surface (PES).
+Once we have a collection of structures (usually from an MD simulation) and calculated energies and forces, we can begin training GDML models.
 
 .. seealso::
 
-    Code for training largely comes from the `sGDML package <https://github.com/stefanch/sGDML>`__ where modifications were made to support many-body data and new routines.
+    Code for training primarily comes from the `sGDML package <https://github.com/stefanch/sGDML>`__ where modifications were made to support many-body data and new routines.
     For more technical information, please refer to the extensive `sGDML literature <http://www.sgdml.org/>`__.
 
 
@@ -19,7 +19,7 @@ Data
 
 We require data to be stored in NumPy ``npz`` files.
 These are `binary files <https://numpy.org/doc/stable/reference/generated/numpy.savez.html>`__ that can store several NumPy arrays of various types.
-At minimum, mbGDML needs four arrays containing information about the PES.
+At a minimum, mbGDML needs four arrays containing information about the PES.
 
 - ``Z`` of shape ``(n_atoms,)``: atomic numbers for all structures in the data set.
 - ``R`` of shape ``(n_structures, n_atoms, 3)``: Cartesian coordinates of all structures in the data set.
@@ -29,7 +29,7 @@ At minimum, mbGDML needs four arrays containing information about the PES.
 .. attention::
 
     GDML uses a global descriptor, meaning the number and order of atoms must be the same for each structure.
-    For example, if you have a single water molecule and your ``Z`` is ``[8, 1, 1]`` then every structure in ``R`` must have the oxygen atom first.
+    For example, if you have a single water molecule and your ``Z`` is ``[8, 1, 1]``, then every structure in ``R`` must have the oxygen atom first.
 
 Here are some examples of water :download:`1-body <./files/dsets/1h2o.npz>`, :download:`2-body <./files/dsets/2h2o-nbody.npz>`, and :download:`3-body <./files/dsets/3h2o-nbody.npz>` data sets.
 
@@ -59,8 +59,8 @@ We use the :class:`~mbgdml.data.DataSet` class to load and provide simple access
 What are we training?
 =====================
 
-The underlying technical details of GDML are important, but only a few concepts are really necessary for training and using models.
-Briefly, a GDML model takes Cartesian coordinates and outputs an energy and forces shown in the following flowchart.
+The underlying technical details of GDML are essential, but only a few concepts are necessary for training and using models.
+Briefly, a GDML model takes Cartesian coordinates and outputs energy and forces shown in the following flowchart.
 
 .. mermaid::
 
@@ -70,8 +70,8 @@ Briefly, a GDML model takes Cartesian coordinates and outputs an energy and forc
         traindist -- alphas --> forces[/Forces/]
         forces -- integ_c --> energy[/Energy/]
 
-``sigma``, ``alphas``, and the integration constant ``integ_c`` are broadly the three pieces of data we get during training for predictions.
-We will discus these later.
+``sigma``, ``alphas``, and the integration constant ``integ_c`` are the three data pieces we get during training for predictions.
+We will discuss these later.
 
 
 
@@ -164,7 +164,7 @@ We can compute the inverse atomic pairwise distances with :func:`~mbgdml._gdml.d
 ``sigma``
 ---------
 
-The kernel length scale, :math:`\sigma` or ``sigma``, is the hyperparameter we optimizing during training coming from Equation :eq:`matern_kernel`.
+The kernel length scale, :math:`\sigma` or ``sigma``, is the hyperparameter we optimize during training from Equation :eq:`matern_kernel`.
 It broadly represents the smoothness of how quickly the kernel function can change.
 As we can see in the figures below, the smaller length scale rapidly changes to better fit the data.
 
@@ -181,14 +181,14 @@ As we can see in the figures below, the smaller length scale rapidly changes to 
    Large length scale.
 
 There is no analytical way to determine the optimal ``sigma``.
-We have to just iteratively try values that minimizes the error during training.
+We have to iteratively try values that minimizes the error during training.
 How we do this in mbGDML will be discussed later.
 
 
 ``alphas``
 ----------
 
-Once we have the kernel Hessian we need the ``(n_train, n_atoms, 3)`` regression parameters.
+Once we have the kernel Hessian, we need the ``(n_train, n_atoms, 3)`` regression parameters.
 This is analytically determined using Cholesky factorization.
 First, we use :func:`scipy.linalg.cho_factor` to decompose the negative kernel matrix from :meth:`~mbgdml._gdml.train.GDMLTrain._assemble_kernel_mat` after we apply the regularization parameter ``lam``: ``K[np.diag_indices_from(K)] -= lam``.
 The negative of :func:`scipy.linalg.cho_solve` computes ``alphas`` where the targets are the atomic forces (scaled by their standard deviation).
@@ -205,7 +205,7 @@ All of this is automatically done in :meth:`~mbgdml._gdml.train.GDMLTrain.solve_
 ``integ_c``
 -----------
 
-GDML is an energy-conserving potential where the energy is recovered by integrating the forces up to an integration constant, ``integ_c``.
+GDML is an energy-conserving force field where the energy is recovered by integrating the forces up to an integration constant, ``integ_c``.
 
 .. math::
     \hat{f}_E (\overrightarrow{x}_i) = \sum_i^M \sum_j^{3N} \left( \overrightarrow{\alpha}_i \right)_j
@@ -218,8 +218,8 @@ This is automatically done in :meth:`~mbgdml._gdml.train.GDMLTrain._recov_int_co
 Training routine
 ================
 
-We provide a :class:`~mbgdml.train.mbGDMLTrain` class that manages all training routines.
-There are many training and model options that are either parameters or attributes.
+We provide a class, :class:`~mbgdml.train.mbGDMLTrain`, that manages all training routines.
+Many training and model options are either parameters or attributes.
 Please refer to the :class:`~mbgdml.train.mbGDMLTrain` documentation for explanations.
 
 
@@ -269,7 +269,7 @@ So we sort the sigmas by ascending values and repeat the training routine discus
     :align: center
     :width: 450 px
 
-    Validation loss, :func:`~mbgdml.losses.loss_f_e_weighted_mse`, of training a water 1-body potential with 1000 training points.
+    Validation loss, :func:`~mbgdml.losses.loss_f_e_weighted_mse`, of training a water 1-body force field with 1000 training points.
     Note: additional ``sigmas`` were performed for illustrative purposes.
 
 .. admonition:: Info
@@ -280,14 +280,14 @@ So we sort the sigmas by ascending values and repeat the training routine discus
 -------------
 
 More often than not, the optimal ``sigma`` is not one in :attr:`~mbgdml.train.mbGDMLTrain.sigma_grid`, but somewhere in between.
-We implemented a routine using the `bayesian-optimization <https://github.com/fmfn/BayesianOptimization>`__ package that better optimizes ``sigmas``.
-Furthermore, unlike the `sGDML package <https://github.com/stefanch/sGDML>`__ we do not restrict ``sigmas`` to integer values.
+We implemented a routine using the `bayesian-optimization <https://github.com/fmfn/BayesianOptimization>`__, package that better optimizes ``sigmas``.
+Furthermore, unlike the `sGDML package <https://github.com/stefanch/sGDML>`__ we do not restrict ``sigma`` to integer values.
 
 .. figure:: images/training/2h2o-sigma-dual-min.png
     :align: center
     :width: 450 px
 
-    Validation loss, :func:`~mbgdml.losses.loss_f_e_weighted_mse`, of training a water 2-body potential with 300 training points.
+    Validation loss, :func:`~mbgdml.losses.loss_f_e_weighted_mse`, of training a water 2-body force field with 300 training points.
 
 
 
@@ -312,5 +312,81 @@ Iterative training
 
 .. seealso::
 
-    This iterative training routine was originally introduced in DOI: `10.1063/5.0035530 <https://doi.org/10.1063/5.0035530>`__.
+    This iterative training routine was introduced in DOI: `10.1063/5.0035530 <https://doi.org/10.1063/5.0035530>`__.
+
+
+Examples
+========
+
+
+Iterative training of water 3-body model
+----------------------------------------
+
+.. code-block:: python
+
+    import os
+    from mbgdml.data import DataSet
+    from mbgdml.train import mbGDMLTrain
+    from mbgdml.losses import loss_f_e_weighted_mse
+    from mbgdml.utils import get_entity_ids, get_comp_ids
+
+
+    # Ensures we execute from script directory (for relative paths).
+    os.chdir(os.path.dirname(os.path.realpath(__file__)))
+
+
+    # Setting paths.
+    # dset_path: Path to dataset to train on.
+    # log_path: Path to directory where training will occur
+    #     (logs and model will be stored here).
+    model_name = "./3h2o-nbody-model"
+    dset_path = "./3h2o-nbody.npz"
+    save_dir = "./"
+
+
+    # System fragmentation
+    entity_ids = get_entity_ids(atoms_per_mol=3, num_mol=3)
+    comp_ids = get_comp_ids("h2o", num_mol=3)
+
+
+    # Loading data set
+    dset = DataSet(dset_path)
+    dset.entity_ids = entity_ids
+    dset.comp_ids = comp_ids
+
+
+    # Setting up training object
+    train = mbGDMLTrain(entity_ids=entity_ids, comp_ids=comp_ids, use_sym=True, use_E=True)
+
+    train.bayes_opt_params = {
+        "init_points": 10,
+        "n_iter": 10,
+        "acq": "ucb",
+        "alpha": 1e-7,
+        "kappa": 0.1,
+    }
+    train.bayes_opt_params_final = {
+        "init_points": 10,
+        "n_iter": 20,
+        "acq": "ucb",
+        "alpha": 1e-7,
+        "kappa": 0.1,
+    }
+    train.initial_grid = [
+        2, 25, 50, 100, 200, 300, 400, 500, 700, 900, 1100, 1500, 2000, 2500, 3000,
+        4000, 5000, 6000, 7000, 8000, 9000, 10000,
+    ]
+    train.sigma_bounds = (min(train.initial_grid), max(train.initial_grid))
+    train.loss_func = loss_f_e_weighted_mse
+    train.loss_kwargs = {"rho": 0.01, "n_atoms": dset.n_Z}
+    train.require_E_eval = True
+    train.keep_tasks = False
+
+
+    # Train the model
+    train.iterative_train(
+        dset, model_name, n_train_init=200, n_train_final=1000, n_valid=100,
+        n_train_step=50, n_test=1000, save_dir=save_dir, overwrite=True,
+        write_json=True, write_idxs=True,
+    )
 

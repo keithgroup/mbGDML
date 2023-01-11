@@ -405,6 +405,7 @@ class ProblematicStructures:
 
         log.info("\nPredicting structures")
         t_prediction = log.t_start()
+        # pylint: disable-next=unbalanced-tuple-unpacking
         E_pred, F_pred = self.mbe_pred.predict(Z, R, entity_ids, comp_ids)
         log.t_stop(t_prediction, message="Took {time} s")
         log.info("Computing prediction errors")

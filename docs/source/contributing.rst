@@ -174,7 +174,7 @@ If additional data is required, keep the file size as small as possible.
 
 8. Check *Black* formatting by running the ``black ./`` command.
 
-9. Run Pylint locally and fix all errors.
+9. Run Pylint locally (`pylint mbgdml --rcfile=.pylintrc`) and fix all warning and errors.
 
 10. Write any additional documentation in ``docs/source/``.
 You can easily build and view the documentation locally by running the ``docs/branch-build-docs.sh`` script then opening ``docs/html/index.html`` in your favorite browser.
