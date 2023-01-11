@@ -6,4 +6,5 @@
 
     to_voigt
     virial_atom_loop
+    virial_finite_diff
     

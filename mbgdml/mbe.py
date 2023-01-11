@@ -28,7 +28,7 @@ import math
 import numpy as np
 import ray
 from .utils import chunk_array, chunk_iterable, gen_combs
-from .stress import virial_atom_loop, to_voigt
+from .stress import virial_atom_loop, to_voigt, virial_finite_diff
 
 
 log = logging.getLogger(__name__)
@@ -639,10 +639,22 @@ class mbePredict:
                 This has to be specifically implemented in the relevant predictor
                 functions.
 
+        ``finite_diff``
+
+            Uses finite differences by perturbing the cell vectors.
+
         :type: :obj:`str`
         """
         self.use_voigt = False
         r"""Convert the stress tensor to the 1D Voigt notation (xx, yy, zz, yz, xz, xy).
+
+        Default: ``False``
+
+        :type: :obj:`bool`
+        """
+        self.only_normal_stress = False
+        r"""Only compute normal (xx, yy, and zz) stress. All other elements will be
+        zero.
 
         Default: ``False``
 
@@ -1020,7 +1032,7 @@ class mbePredict:
         E = np.zeros((n_R,), dtype=np.float64)
         F = np.zeros(R.shape, dtype=np.float64)
         if compute_stress:
-            assert self.virial_form in ("atom", "group")
+            assert self.virial_form in ("atom", "group", "finite_diff")
             stress = np.zeros((n_R, 3, 3), dtype=np.float64)
 
         # Compute all energies and forces with every model.
@@ -1036,17 +1048,40 @@ class mbePredict:
                 E[i] += E_nbody
                 F[i] += F_nbody
 
-            if compute_stress and self.virial_form == "atom":
-                stress[i] = virial_atom_loop(r, F[i])
+            if compute_stress:
+                if self.virial_form == "atom":
+                    stress[i] = virial_atom_loop(r, F[i])
+                else:
+                    # Must be finite_diff
+                    periodic_cell = self.periodic_cell
+                    if self.use_ray:
+                        periodic_cell = ray.get(periodic_cell)
+                    cell_v = periodic_cell.cell_v
+                    stress[i] = virial_finite_diff(
+                        Z,
+                        r,
+                        entity_ids,
+                        comp_ids,
+                        cell_v,
+                        self,
+                        only_normal_stress=self.only_normal_stress,
+                    )
 
         log.t_stop(
             t_predict, message="Predictions took {time} s", precision=3, level=10
         )
-        if compute_stress:
+        if compute_stress:  # pylint: disable=too-many-nested-blocks
             periodic_cell = self.periodic_cell
             if self.use_ray:
                 periodic_cell = ray.get(periodic_cell)
-            stress /= periodic_cell.volume  # TODO: Verify
+            stress /= periodic_cell.volume
+
+            if self.only_normal_stress:
+                for n in range(stress.shape[0]):
+                    for i in range(0, 3):
+                        for j in range(0, 3):
+                            if i != j:
+                                stress[n][i][j] = 0.0
 
             if self.use_voigt:
                 stress = np.array([to_voigt(r_stress) for r_stress in stress])

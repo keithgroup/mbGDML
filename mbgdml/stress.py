@@ -24,6 +24,7 @@
 
 import logging
 import numpy as np
+from .periodic import Cell
 
 log = logging.getLogger(__name__)
 
@@ -56,7 +57,7 @@ def virial_atom_loop(R, F):
 
 
 def to_voigt(arr):
-    """Convert array to Voigt notation.
+    r"""Convert array to Voigt notation.
 
     Parameters
     ----------
@@ -69,3 +70,78 @@ def to_voigt(arr):
         Array in Voigt notation.
     """
     return np.array([arr[i, j] for i, j in VOIGT_INDICES])
+
+
+def virial_finite_diff(
+    Z,
+    R,
+    entity_ids,
+    comp_ids,
+    cell_vectors,
+    mbe_pred,
+    dh=1e-4,
+    only_normal_stress=False,
+):
+    r"""Approximates the virial stress of a periodic cell with vectors
+    :math:`\mathbf{h}` using a finite difference scheme.
+
+    .. math::
+
+        W_{ij} = \frac{E_{h_{ij} + \Delta h} - E_{h_{ij} - \Delta h}}{2 \Delta h}
+
+    Parameters
+    ----------
+    Z : :obj:`numpy.ndarray`, ndim: ``1``
+        Atomic numbers of all atoms in the system with respect to ``R``.
+    R : :obj:`numpy.ndarray`, shape: ``(N, len(Z), 3)``
+        Cartesian coordinates of ``N`` structures to predict.
+    entity_ids : :obj:`numpy.ndarray`, shape: ``(N,)``
+        Integers specifying which atoms belong to which entities.
+    comp_ids : :obj:`numpy.ndarray`, shape: ``(N,)``
+        Relates each ``entity_id`` to a fragment label. Each item's index
+        is the label's ``entity_id``.
+    cell_vectors : :obj:`numpy.ndarray`, shape: ``(3, 3)``
+        The three cell vectors.
+    mbe_pred : :obj:`mbgdml.mbe.mbePredict`
+        Initialized many-body expansion predictor.
+    dh : :obj:`float`, default: ``1e-4``
+        Forward and backward displacement for the cell vectors.
+    only_normal_stress : :obj:`bool`
+        Only compute normal (xx, yy, and zz) stress.
+
+    Returns
+    -------
+    :obj:`numpy.ndarray`
+        (shape: ``(3, 3)``) - Virial stress in units of energy.
+
+    Notes
+    -----
+    Code adapted from `here
+    <https://github.com/svandenhaute/openyaff/blob/main/openyaff/utils.py#L442>`__.
+    """
+    # pylint: disable=invalid-name
+    mbe_pred.compute_stress = False  # Prevents recursion
+    R_fractional = np.dot(R, np.linalg.inv(cell_vectors))
+    dEdh = np.zeros((3, 3))
+
+    for i in range(0, 3):
+        for j in range(0, 3):
+            if only_normal_stress and (i != j):
+                continue
+
+            cell_vectors_ = cell_vectors.copy()
+
+            cell_vectors_[i, j] -= dh / 2
+            R_tmp = np.dot(R_fractional, cell_vectors_)
+            cell_vectors_tmp = cell_vectors_.copy()
+            mbe_pred.periodic_cell = Cell(cell_vectors_tmp, pbc=True)
+            E_minus, _ = mbe_pred.predict(Z, R_tmp, entity_ids, comp_ids)
+
+            cell_vectors_[i, j] += dh
+            R_tmp = np.dot(R_fractional, cell_vectors_)
+            cell_vectors_tmp = cell_vectors_.copy()
+            mbe_pred.periodic_cell = Cell(cell_vectors_tmp, pbc=True)
+            E_plus, _ = mbe_pred.predict(Z, R_tmp, entity_ids, comp_ids)
+            dEdh[i, j] = (E_plus - E_minus) / dh
+
+    return dEdh
