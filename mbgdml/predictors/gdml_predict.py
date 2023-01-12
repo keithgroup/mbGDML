@@ -228,9 +228,6 @@ def predict_gdml(Z, R, entity_ids, entity_combs, model, periodic_cell, **kwargs)
                 # Any atomic pairwise distance was larger than cutoff.
                 continue
 
-        # TODO: Check if we can avoid prediction if we have an alchemical factor of
-        # zero?
-
         # Checks criteria cutoff if present and desired.
         if model.criteria is not None:
             accept_r, _ = model.criteria.accept(z, r)

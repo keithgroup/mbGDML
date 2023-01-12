@@ -551,17 +551,17 @@ class mbePredict:
             Use periodic boundary conditions defined by this object. If this
             is not :obj:`None` only :meth:`~mbgdml.mbe.mbePredict.predict` can be used.
         compute_stress : :obj:`bool`, default: ``False``
-            Compute the internal virial contribution,
-            :math:`\mathbf{W} \left( \mathbf{r}^N \right) / V`, of :math:`N`
-            particles at positions :math:`\mathbf{r}` to the pressure stress tensor of
-            a periodic box at with volume :math:`V`.
 
             .. danger::
 
-                This algorithm has been implemented in the
-                :meth:`~mbgdml.mbe.mbePredict.compute_nbody` method. However,
-                the correctness of this framework has not been verified. Use at your
-                own risk.
+                This implementation is experimental and has not been verified. We do
+                not recommend using this. 
+
+            Compute the internal virial contribution,
+            :math:`\mathbf{W} \left( \mathbf{r}^N \right) / V`, of :math:`N`
+            particles at positions :math:`\mathbf{r}` to the pressure stress tensor of
+            a periodic box with volume :math:`V`. The kinetic contribution is not
+            computed here.
         """
         self.models = models
         self.predict_model = predict_model
@@ -1039,10 +1039,10 @@ class mbePredict:
                 E_nbody, F_nbody, *virial_nbody = self.compute_nbody(
                     Z, r, entity_ids, comp_ids, model
                 )
-                if compute_stress and self.virial_form == "group":
-                    stress[i] += virial_nbody[0]
                 E[i] += E_nbody
                 F[i] += F_nbody
+                if compute_stress and self.virial_form == "group":
+                    stress[i] += virial_nbody[0]
 
             if compute_stress and self.virial_form == "finite_diff":
                 periodic_cell = self.periodic_cell
