@@ -28,6 +28,7 @@ import math
 import numpy as np
 import ray
 from .utils import chunk_array, chunk_iterable, gen_combs
+from .stress import to_voigt, virial_finite_diff
 
 
 log = logging.getLogger(__name__)
@@ -237,7 +238,7 @@ def mbe_contrib(
     operation="remove",
     use_ray=False,
     ray_address="auto",
-    n_workers=2,
+    n_workers=1,
 ):
     r"""Adds or removes energy and derivative (i.e., gradients or forces)
     contributions from a reference.
@@ -246,7 +247,7 @@ def mbe_contrib(
     These are the energy and derivative contributions to remove or add to a
     reference.
 
-    Making :math:`n`-body predictions (i.e., ``operation = 'add'``) will often
+    Making :math:`n`-body predictions (i.e., ``operation = "add"``) will often
     not have ``r_prov_ids`` or ``r_prov_specs`` as all lower contributions are
     derived exclusively from these structures. Use :obj:`None` for both of these
     and this function will assume that all ``_lower`` properties apply.
@@ -297,11 +298,11 @@ def mbe_contrib(
         ``'add'`` or ``'remove'`` the contributions.
     use_ray : :obj:`bool`, default: ``False``
         Use `ray <https://docs.ray.io/en/latest/>`__ to parallelize
-        calculations.
-    n_workers : :obj:`int`, default: ``2``
-        Number of ray workers to use. This is ignored if ``use_ray`` is
-        ``False``.
-    ray_address : :obj:`str`, default: ``'auto'``
+        computations.
+    n_workers : :obj:`int`, default: ``1``
+        Total number of workers available for ray. This is ignored if ``use_ray``
+        is ``False``.
+    ray_address : :obj:`str`, default: ``"auto"``
         Ray cluster address to connect to.
 
     Returns
@@ -311,6 +312,21 @@ def mbe_contrib(
     :obj:`numpy.ndarray`
         Derivatives with lower-order contributions added or removed.
     """
+    if use_ray:
+        if not ray.is_initialized():
+            log.debug("ray is not initialized")
+            # Try to connect to already running ray service (from ray cli).
+            try:
+                log.debug("Trying to connect to ray at address %r", ray_address)
+                ray.init(address=ray_address)
+            except ConnectionError:
+                log.debug("Failed to connect to ray at %r", ray_address)
+                log.debug("Trying to initialize ray with %d cores", n_workers)
+                ray.init(num_cpus=n_workers)
+            log.debug("Successfully initialized ray")
+        else:
+            log.debug("Ray was already initialized")
+
     log.debug("Computing many-body expansion contributions")
     if operation not in ("add", "remove"):
         raise ValueError(f'{operation} is not "add" or "remove"')
@@ -406,8 +422,8 @@ def decomp_to_total(
     entity_ids,
     entity_combs,
     use_ray=False,
+    n_workers=1,
     ray_address="auto",
-    n_workers=2,
 ):
     r"""Sum decomposed :math:`n`-body energies and forces for total
     :math:`n`-body contribution.
@@ -431,11 +447,11 @@ def decomp_to_total(
         the remaining columns are entity IDs.
     use_ray : :obj:`bool`, default: ``False``
         Use `ray <https://docs.ray.io/en/latest/>`__ to parallelize
-        calculations.
-    n_workers : :obj:`int`, default: ``2``
-        Number of ray workers to use. This is ignored if ``use_ray`` is
-        ``False``.
-    ray_address : :obj:`str`, default: ``'auto'``
+        computations.
+    n_workers : :obj:`int`, default: ``1``
+        Total number of workers available for ray. This is ignored if ``use_ray``
+        is ``False``.
+    ray_address : :obj:`str`, default: ``"auto"``
         Ray cluster address to connect to.
 
     Returns
@@ -473,8 +489,8 @@ def decomp_to_total(
         r_prov_specs_lower,
         operation="add",
         use_ray=use_ray,
-        ray_address=ray_address,
         n_workers=n_workers,
+        ray_address=ray_address,
     )
     return E, F
 
@@ -494,40 +510,58 @@ class mbePredict:
         models,
         predict_model,
         use_ray=False,
-        n_workers=2,
+        n_workers=1,
         ray_address="auto",
         wkr_chunk_size=None,
         alchemy_scalers=None,
         periodic_cell=None,
+        compute_stress=False,
     ):
-        """
+        r"""
         Parameters
         ----------
         models : :obj:`list` of :obj:`mbgdml.models.Model`
             Machine learning model objects that contain all information to make
             predictions using ``predict_model``.
         predict_model : ``callable``
-            A function that takes ``Z, R, entity_ids, nbody_gen, model`` and
-            computes energies and forces. This will be turned into a ray remote
+            A function that takes ``Z``, ``R``, ``entity_ids``, ``nbody_gen``, ``model``
+            and computes energies and forces. This will be turned into a ray remote
             function if ``use_ray`` is ``True``. This can return total properties
             or all individual :math:`n`-body energies and forces.
         use_ray : :obj:`bool`, default: ``False``
-            Parallelize predictions using ray.
-        n_workers : :obj:`int`, default: ``2``
-            Total number of workers available for predictions when using ray.
-            This is ignored if ``use_ray`` is ``False``.
-        ray_address : :obj:`str`, default: ``'auto'``
+            Use `ray <https://docs.ray.io/en/latest/>`__ to parallelize
+            computations.
+        n_workers : :obj:`int`, default: ``1``
+            Total number of workers available for ray. This is ignored if ``use_ray``
+            is ``False``.
+        ray_address : :obj:`str`, default: ``"auto"``
             Ray cluster address to connect to.
         wkr_chunk_size : :obj:`int`, default: :obj:`None`
             Number of :math:`n`-body structures to assign to each spawned
             worker with ray. If :obj:`None`, it will divide up the number of
             predictions by ``n_workers``.
-        alchemical_scaling : :obj:`list` of ``mbgdml.alchemy.mbeAlchemyScale``,
+        alchemical_scaling : :obj:`list` of :class:`~mbgdml.alchemy.mbeAlchemyScale`, \
         default: :obj:`None`
             Alchemical scaling of :math:`n`-body interactions of entities.
+
+            .. warning::
+
+                This has not been thoroughly tested.
         periodic_cell : :obj:`mbgdml.periodic.Cell`, default: :obj:`None`
             Use periodic boundary conditions defined by this object. If this
-            is not :obj:`None` only ``mbePredict.predict()`` can be used.
+            is not :obj:`None` only :meth:`~mbgdml.mbe.mbePredict.predict` can be used.
+        compute_stress : :obj:`bool`, default: ``False``
+
+            .. danger::
+
+                This implementation is experimental and has not been verified. We do
+                not recommend using this.
+
+            Compute the internal virial contribution,
+            :math:`\mathbf{W} \left( \mathbf{r}^N \right) / V`, of :math:`N`
+            particles at positions :math:`\mathbf{r}` to the pressure stress tensor of
+            a periodic box with volume :math:`V`. The kinetic contribution is not
+            computed here.
         """
         self.models = models
         self.predict_model = predict_model
@@ -537,17 +571,106 @@ class mbePredict:
         elif models[0].type == "schnet":
             assert not use_ray
 
-        self.use_ray = use_ray
+        self.use_ray = use_ray  # Do early because some setters are dependent on this.
         self.n_workers = n_workers
         self.wkr_chunk_size = wkr_chunk_size
         if alchemy_scalers is None:
             alchemy_scalers = []
         self.alchemy_scalers = alchemy_scalers
         self.periodic_cell = periodic_cell
+        self.compute_stress = compute_stress
+
+        self.virial_form = "group"
+        r"""The form to use from
+        `10.1063/1.3245303 <https://doi.org/10.1063/1.3245303>`__ to compute the
+        internal virial contribution to the pressure stress tensor.
+        :math:`\mathbf{W} \left( \mathbf{r}^N \right)` is the internal virial of
+        :math:`N` atoms and :math:`\otimes` is the outer tensor product (i.e.,
+        ``np.multiply.outer``).
+
+        ``group`` (**default**)
+
+            This computes the virial by considering contributions based on groups
+            of atoms. The number of groups, number of atoms in each group, and
+            number of groups is completely arbitrary. Thus, we can straightforwardly
+            use :math:`n`-body combinations as groups and get more insight into
+            the virial contributions origin.
+
+            .. math::
+
+                \mathbf{W} \left( \mathbf{r}^N \right) =
+                \sum_{k \in \mathbf{0}} \sum_{w = 1}^{N_k} \mathbf{r}_w^k
+                \otimes \mathbf{F}_w^k.
+
+            Here, :math:`k` is a group of atoms that must be in the local cell
+            (i.e., :math:`k \in \mathbf{0}`). :math:`w` is the atom index within
+            group :math:`k` (:math:`N_k` is the total number of atoms in the group).
+
+            .. important::
+
+                This has to be specifically implemented in the relevant predictor
+                functions.
+
+        ``finite_diff``
+
+            Uses finite differences by perturbing the cell vectors.
+
+        :type: :obj:`str`
+        """
+        self.finite_diff_dh = 1e-4
+        r"""Forward and backward displacement of the cell vectors for finite
+        differences.
+
+        Default: ``1e-4``
+
+        :type: :obj:`float`
+        """
+        self.use_voigt = False
+        r"""Convert the stress tensor to the 1D Voigt notation (xx, yy, zz, yz, xz, xy).
+
+        Default: ``False``
+
+        :type: :obj:`bool`
+        """
+        self.only_normal_stress = False
+        r"""Only compute normal (xx, yy, and zz) stress. All other elements will be
+        zero. This is recommended for MD simulations to avoid altering box angular
+        momentum due to the antisymmetric contributions (yz, xz, and xy).
+
+        Default: ``False``
+
+        :type: :obj:`bool`
+        """
+        self.box_scaling_type = "anisotropic"
+        r"""Treatment of box scaling when
+        :attr:`mbgdml.mbe.mbePredict.only_normal_stress` is ``True``.
+
+        ``anisotropic`` (**default**)
+
+            No modifications are made to normal stresses which allows box vectors
+            to scale independently.
+
+        ``isotropic``
+
+            Average the normal stresses so box vectors will scale identically.
+
+        :type: :obj:`str`
+        """
+
         if use_ray:
             if not ray.is_initialized():
-                ray.init(address=ray_address)
-            assert ray.is_initialized()
+                log.debug("ray is not initialized")
+                # Try to connect to already running ray service (from ray cli).
+                try:
+                    log.debug("Trying to connect to ray at address %r", ray_address)
+                    ray.init(address=ray_address)
+                except ConnectionError:
+                    log.debug("Failed to connect to ray at %r", ray_address)
+                    log.debug("Trying to initialize ray with %d cores", n_workers)
+                    ray.init(num_cpus=n_workers)
+                log.debug("Successfully initialized ray")
+            else:
+                log.debug("Ray was already initialized")
 
             self.models = [ray.put(model) for model in models]
             # if alchemy_scalers is not None:
@@ -555,8 +678,24 @@ class mbePredict:
             #        ray.put(scaler) for scaler in alchemy_scalers
             #    ]
             self.predict_model = ray.remote(predict_model)
-            if periodic_cell is not None:
-                self.periodic_cell = ray.put(periodic_cell)
+
+    @property
+    def periodic_cell(self):
+        r"""Periodic cell for MBE predictions.
+
+        :type: :obj:`mbgdml.periodic.Cell`
+        """
+        if hasattr(self, "_periodic_cell"):
+            return self._periodic_cell
+
+        return None
+
+    @periodic_cell.setter
+    def periodic_cell(self, var):
+        if var is not None:
+            if self.use_ray:
+                var = ray.put(var)
+        self._periodic_cell = var
 
     def get_avail_entities(self, comp_ids_r, comp_ids_model):
         r"""Determines available ``entity_ids`` for each ``comp_id`` in a
@@ -571,8 +710,8 @@ class mbePredict:
 
         Returns
         -------
-        :obj:`list`, length: ``len(comp_ids_r)``
-
+        :obj:`list`
+            (length: ``len(comp_ids_r)``)
         """
         # Models have a specific entity order that needs to be conserved in the
         # predictions. Here, we create a ``avail_entity_ids`` list where each item
@@ -609,8 +748,11 @@ class mbePredict:
         -------
         :obj:`float`
             Total :math:`n`-body energy of ``r``.
-        :obj:`numpy.ndarray`, shape: ``(len(Z), 3)``
-            Total :math:`n`-body atomic forces of ``r``.
+        :obj:`numpy.ndarray`
+            (shape: ``(len(Z), 3)``) - Total :math:`n`-body atomic forces of ``r``.
+        :obj:`numpy.ndarray`
+            (optional, shape: ``(len(Z), 3)``) - The internal virial
+            contribution to the pressure stress tensor in units of energy.
         """
         # Unify r shape.
         if R.ndim == 3:
@@ -620,9 +762,6 @@ class mbePredict:
                 R = R[0]
             else:
                 raise ValueError("R.ndim is not 2 (only one structure is allowed)")
-
-        E = 0.0
-        F = np.zeros(R.shape, dtype=np.double)
 
         # Creates a generator for all possible n-body combinations regardless
         # of cutoffs.
@@ -643,13 +782,26 @@ class mbePredict:
                 if alchemy_scaler.order == nbody_order
             ]
 
+        periodic_cell = self.periodic_cell
+        compute_stress = (
+            self.compute_stress and bool(periodic_cell) and self.virial_form == "group"
+        )
+        if compute_stress:
+            virial = np.zeros((3, 3), dtype=np.float64)
+            kwargs_pred["compute_virial"] = True
+
         # Runs the predict_model function to calculate all n-body energies
         # with this model.
         if not self.use_ray:
-            E, F = self.predict_model(
-                Z, R, entity_ids, nbody_gen, model, self.periodic_cell, **kwargs_pred
+            E, F, *virial_model = self.predict_model(
+                Z, R, entity_ids, nbody_gen, model, periodic_cell, **kwargs_pred
             )
+            if compute_stress:
+                virial += virial_model[0]
         else:
+            E = 0.0
+            F = np.zeros(R.shape, dtype=np.float64)
+
             # Put all common data into the ray object store.
             Z = ray.put(Z)
             R = ray.put(R)
@@ -674,7 +826,7 @@ class mbePredict:
                         entity_ids,
                         chunk,
                         model,
-                        self.periodic_cell,
+                        periodic_cell,
                         **kwargs_pred,
                     )
                 )
@@ -689,9 +841,13 @@ class mbePredict:
             # Start workers and collect results.
             while len(workers) != 0:
                 done_id, workers = ray.wait(workers)
-                E_worker, F_worker = ray.get(done_id)[0]
+                E_worker, F_worker, *virial_model = ray.get(done_id)[0]
+
                 E += E_worker
                 F += F_worker
+                if compute_stress:
+                    virial += virial_model[0]
+
                 try:
                     chunk = next(nbody_chunker)
                     add_worker(workers, chunk)
@@ -699,8 +855,10 @@ class mbePredict:
                     pass
 
             # Cleanup object store
-            del Z, R, entity_ids
+            del Z, entity_ids
 
+        if compute_stress:
+            return E, F, virial
         return E, F
 
     # pylint: disable=too-many-branches, too-many-statements
@@ -731,15 +889,17 @@ class mbePredict:
 
         Returns
         -------
-        :obj:`numpy.ndarray`, ndim: ``1``
+        :obj:`numpy.ndarray`
+            (ndim: ``1``) -
             Energies of all possible :math:`n`-body structures. Some elements
             can be :obj:`numpy.nan` if they are beyond the descriptor cutoff.
-        :obj:`numpy.ndarray`, ndim: ``3``
+        :obj:`numpy.ndarray`
+            (ndim: ``3``) -
             Atomic forces of all possible :math:`n`-body structure. Some
             elements can be :obj:`numpy.nan` if they are beyond the descriptor
             cutoff.
-        :obj:`numpy.ndarray`, ndim: ``2``
-            All possible entity IDs.
+        :obj:`numpy.ndarray`
+            (ndim: ``2``) - All possible entity IDs.
         """
         # Unify r shape.
         if R.ndim == 3:
@@ -850,25 +1010,81 @@ class mbePredict:
 
         Returns
         -------
-        :obj:`numpy.ndarray`, shape: ``(N,)``
-            Predicted many-body energy
-        :obj:`numpy.ndarray`, shape: ``(N, len(Z), 3)``
-            Predicted atomic forces.
+        :obj:`numpy.ndarray`
+            (shape: ``(N,)``) - Predicted many-body energy
+        :obj:`numpy.ndarray`
+            (shape: ``(N, len(Z), 3)``) - Predicted atomic forces.
+        :obj:`numpy.ndarray`
+            (optional, shape: ``(N, len(Z), 3)``) - The pressure stress tensor in units
+            of energy/distance\ :sup:`3`.
         """
         t_predict = log.t_start()
         if R.ndim == 2:
             R = np.array([R])
+        n_R = R.shape[0]
+        compute_stress = self.compute_stress and bool(self.periodic_cell)
 
         # Preallocate memory for energies and forces.
-        E = np.zeros((R.shape[0],), dtype=np.double)
-        F = np.zeros(R.shape, dtype=np.double)
+        E = np.zeros((n_R,), dtype=np.float64)
+        F = np.zeros(R.shape, dtype=np.float64)
+        if compute_stress:
+            assert self.virial_form in ("group", "finite_diff")
+            stress = np.zeros((n_R, 3, 3), dtype=np.float64)
 
         # Compute all energies and forces with every model.
         for i, r in enumerate(R):
             for model in self.models:
-                E_nbody, F_nbody = self.compute_nbody(Z, r, entity_ids, comp_ids, model)
+                # Extra returns are present for stress. The *stress_nbody captures it.
+                # If it is not requested, it will just be an empty list.
+                E_nbody, F_nbody, *virial_nbody = self.compute_nbody(
+                    Z, r, entity_ids, comp_ids, model
+                )
                 E[i] += E_nbody
                 F[i] += F_nbody
+                if compute_stress and self.virial_form == "group":
+                    stress[i] += virial_nbody[0]
+
+            if compute_stress and self.virial_form == "finite_diff":
+                periodic_cell = self.periodic_cell
+                if self.use_ray:
+                    periodic_cell = ray.get(periodic_cell)
+                cell_v = periodic_cell.cell_v
+                stress[i] = virial_finite_diff(
+                    Z,
+                    r,
+                    entity_ids,
+                    comp_ids,
+                    cell_v,
+                    self,
+                    only_normal_stress=self.only_normal_stress,
+                )
+
+        if compute_stress:  # pylint: disable=too-many-nested-blocks
+            periodic_cell = self.periodic_cell
+            if self.use_ray:
+                periodic_cell = ray.get(periodic_cell)
+            stress /= periodic_cell.volume
+
+            if self.only_normal_stress:
+                for n in range(stress.shape[0]):
+                    for i in range(0, 3):
+                        for j in range(0, 3):
+                            if i != j:
+                                stress[n][i][j] = 0.0
+
+                    if self.box_scaling_type == "isotropic":
+                        stress_average = np.trace(stress[n]) / 3
+                        for i in range(0, 3):
+                            stress[n][i][i] = stress_average
+
+            if self.use_voigt:
+                stress = np.array([to_voigt(r_stress) for r_stress in stress])
+
+            log.t_stop(
+                t_predict, message="Predictions took {time} s", precision=3, level=10
+            )
+            return E, F, stress
+
         log.t_stop(
             t_predict, message="Predictions took {time} s", precision=3, level=10
         )

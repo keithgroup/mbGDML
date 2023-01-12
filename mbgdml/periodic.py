@@ -34,24 +34,25 @@ class Cell:
     structures in a form resembling non-periodic structures.
     """
 
-    def __init__(self, cell_v, cutoff, pbc=True):
+    def __init__(self, cell_v, cutoff=None, pbc=True):
         r"""
         Parameters
         ----------
         cell_v : :obj:`numpy.ndarray`, shape: ``(3, 3)``
             The three cell vectors. For example, a cube of length 9.0 would be
             ``[[9.0, 0.0, 0.0], [0.0, 9.0, 0.0], [0.0, 0.0, 9.0]]``.
-        cutoff : :obj:`float`
-            A periodic image interaction cutoff. Must not be larger than half
-            the cube length (non-cubic cells might have slightly larger
-            cutoffs).
+        cutoff : :obj:`float`, default: ``None``
+            A periodic image interaction cutoff. Must be smaller than half
+            the smallest cube length (non-cubic cells might have slightly larger
+            cutoffs). Is automatically calculated if this is ``None``.
         pbc : :obj:`list` or :obj:`bool`
             Periodic boundary conditions in x-, y- and z-direction. Default is
             to assume periodic boundaries in all directions
             (i.e., ``pbc=True``).
         """
         self.cell_v = cell_v
-        self.cutoff = cutoff
+        if cutoff is not None:
+            self.cutoff = cutoff
         self.pbc = pbc
 
     def d_mic(self, d, check_cutoff=True):
@@ -101,6 +102,25 @@ class Cell:
         assert r.ndim == 2
         d = np.subtract(r, r[0, :])
         return self.d_mic(d)
+
+    @property
+    def cell_v(self):
+        r"""The three cell vectors. For example, a cube of length 9.0 would be
+        ``[[9.0, 0.0, 0.0], [0.0, 9.0, 0.0], [0.0, 0.0, 9.0]]``.
+
+        :type: :obj:`numpy.ndarray`
+        """
+        if hasattr(self, "_cell_v"):
+            return self._cell_v
+
+        return None
+
+    @cell_v.setter
+    def cell_v(self, var):
+        var = np.array(var)
+        self._cell_v = var
+        # Update the cutoff
+        self.cutoff = np.min(np.linalg.norm(var, axis=1)) / 2.0
 
     @property
     def volume(self):

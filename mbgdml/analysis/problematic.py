@@ -46,7 +46,13 @@ class ProblematicStructures:
     """
 
     def __init__(
-        self, models, predict_model, use_ray=False, n_workers=None, wkr_chunk_size=100
+        self,
+        models,
+        predict_model,
+        use_ray=False,
+        n_workers=1,
+        ray_address="auto",
+        wkr_chunk_size=100,
     ):
         """
         Parameters
@@ -55,24 +61,30 @@ class ProblematicStructures:
             Machine learning model objects that contain all information to make
             predictions using ``predict_model``.
         predict_model : ``callable``
-            A function that takes ``z, R, entity_ids, nbody_gen, model`` and
-            computes energies and forces. This will be turned into a ray remote
+            A function that takes ``Z``, ``R``, ``entity_ids``, ``nbody_gen``, ``model``
+            and computes energies and forces. This will be turned into a ray remote
             function if ``use_ray = True``. This can return total properties
             or all individual :math:`n`-body energies and forces.
         use_ray : :obj:`bool`, default: ``False``
-            Parallelize predictions using ray. Note that initializing ray tasks
-            comes with some overhead and can make smaller computations much
-            slower. Thus, this is only recommended with more than 10 or so
-            entities.
-        n_workers : :obj:`int`, default: :obj:`None`
-            Total number of workers available for predictions when using ray.
+            Use `ray <https://docs.ray.io/en/latest/>`__ to parallelize
+            computations.
+        n_workers : :obj:`int`, default: ``1``
+            Total number of workers available for ray. This is ignored if ``use_ray``
+            is ``False``.
+        ray_address : :obj:`str`, default: ``"auto"``
+            Ray cluster address to connect to.
         wkr_chunk_size : :obj:`int`, default: ``100``
             Number of :math:`n`-body structures to assign to each spawned
             worker with ray.
         """
         self.models = models
         self.mbe_pred = mbePredict(
-            models, predict_model, use_ray, n_workers, wkr_chunk_size
+            models,
+            predict_model,
+            use_ray=use_ray,
+            n_workers=n_workers,
+            ray_address=ray_address,
+            wkr_chunk_size=wkr_chunk_size,
         )
 
         self.course_n_cl_r = 10
@@ -393,6 +405,7 @@ class ProblematicStructures:
 
         log.info("\nPredicting structures")
         t_prediction = log.t_start()
+        # pylint: disable-next=unbalanced-tuple-unpacking
         E_pred, F_pred = self.mbe_pred.predict(Z, R, entity_ids, comp_ids)
         log.t_stop(t_prediction, message="Took {time} s")
         log.info("Computing prediction errors")

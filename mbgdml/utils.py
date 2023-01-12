@@ -163,6 +163,51 @@ def write_xyz(xyz_path, Z, R, comments=None, data_precision=10):
             f.write(string_xyz_arrays(Z, r, precision=data_precision))
 
 
+def parse_xyz(xyz_path):
+    r"""Parses data from xyz file.
+
+    An xyz file is data presented as consecutive xyz structures. The data could be
+    three Cartesian coordinates for each atom, three atomic force vector
+    components, or both coordinates and atomic forces in one line (referred to
+    as extended xyz).
+
+    Parameters
+    ----------
+    xyz_path : :obj:`str`
+        Path to xyz file.
+
+    Returns
+    -------
+    :obj:`tuple` [:obj:`list`]
+        Parsed atoms (as element symbols :obj:`str`), comments, and data as
+        :obj:`float` from string file.
+    """
+    Z, comments, data = [], [], []
+    with open(xyz_path, "r", encoding="utf-8") as f:
+        for _, line in enumerate(f):
+            line = line.strip()
+            if not line:
+                # Skips blank lines
+                pass
+            else:
+                line_split = line.split()
+                if (
+                    len(line_split) == 1
+                    and float(line_split[0]) % int(line_split[0]) == 0.0
+                ):
+                    # Skips number of atoms line, adds comment line, and
+                    # prepares next z and data item.
+                    comment_line = next(f)
+                    comments.append(comment_line.strip())
+                    Z.append([])
+                    data.append([])
+                else:
+                    # Grabs z and data information.
+                    Z[-1].append(line_split[0])
+                    data[-1].append([float(i) for i in line_split[1:]])
+    return Z, comments, data
+
+
 def convert_forces(forces, e_units_calc, r_units_calc, e_units, r_units):
     r"""Converts forces (or gradients) to specified units.
 

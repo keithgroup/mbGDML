@@ -30,7 +30,7 @@ log = logging.getLogger(__name__)
 class mbeAlchemyScale:
     r"""Scale many-body interactions according to an alchemical parameter."""
 
-    def __init__(self, entity_id, order, factor):
+    def __init__(self, entity_id, order, switching_func, switching_kwargs):
         r"""
         Parameters
         ----------
@@ -38,18 +38,25 @@ class mbeAlchemyScale:
             Entity ID to scale interactions of.
         order : :obj:`int`
             Many-body order interactions to scale.
-        factor : :obj:`float`
-            Scaling factor that should be between ``0.`` and ``1.``.
+        switching_func : ``callable``
+            Switching function that accepts ``data`` and arguments. See
+            :meth:`~mbgdml.switching.linear_switching` as an example.
+        switching_kwargs : :obj:`dict`
+            Arguments for the switching function (besides ``data``).
         """
         self.entity_id = entity_id
         self.order = order
-        self.factor = factor
+        self.switching_func = switching_func
+        self.switching_kwargs = switching_kwargs
 
-    def scale(self, data):
+    def scale(self, data, **kwargs):
         r"""Scale energies and forces.
 
         Parameters
         ----------
         data : :obj:`float` or :obj:`numpy.ndarray`
+            Data to scale.
+        kwargs
+            Additional arguments to pass into the switching function.
         """
-        return self.factor * data
+        return self.switching_func(data, **self.switching_kwargs, **kwargs)

@@ -20,48 +20,46 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import logging
 import ray
 import numpy as np
 from .. import __version__ as mbgdml_version
 from .basedata import mbGDMLData
 from ..mbe import mbePredict, decomp_to_total
 
+log = logging.getLogger(__name__)
+
 
 class PredictSet(mbGDMLData):
     r"""A predict set is a data set with mbGDML predicted energy and forces
     instead of training data.
 
-    When analyzing many structures using mbGDML it is easier to
-    predict all many-body contributions once and then analyze the stored data.
-
-    Attributes
-    ----------
-    name : :obj:`str`
-        File name of the predict set.
-    theory : :obj:`str`
-        Specifies the level of theory used for GDML training.
-    entity_ids : :obj:`numpy.ndarray`
-        A uniquely identifying integer specifying what atoms belong to
-        which entities. Entities can be a related set of atoms, molecules,
-        or functional group. For example, a water and methanol molecule
-        could be ``[0, 0, 0, 1, 1, 1, 1, 1, 1]``.
-    comp_ids : :obj:`numpy.ndarray`
-        Relates ``entity_id`` to a fragment label for chemical components
-        or species. Labels could be ``WAT`` or ``h2o`` for water, ``MeOH``
-        for methanol, ``bz`` for benzene, etc. There are no standardized
-        labels for species. The index of the label is the respective
-        ``entity_id``. For example, a water and methanol molecule could
-        be ``['h2o', 'meoh']``.
+    When analyzing many structures using mbGDML it is easier to predict all many-body
+    contributions once and then analyze the stored data.
     """
 
     def __init__(self, pset=None, Z_key="Z", R_key="R", E_key="E", F_key="F"):
         r"""
         Parameters
         ----------
-        pset : :obj:`str` or :obj:`dict`, optional
+        pset : :obj:`str` or :obj:`dict`, default: ``None``
             Predict set path or dictionary to initialize with.
+        Z_key : :obj:`str`, default: ``Z``
+            :obj:`dict` key in ``pset`` for atomic numbers.
+        R_key : :obj:`str`, default: ``R``
+            :obj:`dict` key in ``pset`` for Cartesian coordinates.
+        E_key : :obj:`str`, default: ``E``
+            :obj:`dict` key in ``pset`` for energies.
+        F_key : :obj:`str`, default: ``F``
+            :obj:`dict` key in ``pset`` for atomic forces.
         """
         self.name = "predictset"
+        r"""File name of the predict set.
+
+        Default: ``"predictset"``
+
+        :type: :obj:`str`
+        """
         self.type = "p"
         self.mbgdml_version = mbgdml_version
         self._loaded = False
@@ -82,7 +80,7 @@ class PredictSet(mbGDMLData):
 
         Note
         -----
-        You must load a dataset first to specify ``z``, ``R``, ``entity_ids``,
+        You must load a dataset first to specify ``Z``, ``R``, ``entity_ids``,
         and ``comp_ids``.
         """
         E_nbody, F_nbody, entity_combs, nbody_orders = self.mbePredict.predict_decomp(
@@ -169,6 +167,74 @@ class PredictSet(mbGDMLData):
     def F_true(self, var):
         self._F_true = var  # pylint: disable=invalid-name
 
+    @property
+    def entity_ids(self):
+        r"""1D array specifying which atoms belong to which entities.
+
+        An entity represents a related set of atoms such as a single molecule,
+        several molecules, or a functional group. For mbGDML, an entity usually
+        corresponds to a model trained to predict energies and forces of those
+        atoms. Each ``entity_id`` is an :obj:`int` starting from ``0``.
+
+        It is conceptually similar to PDBx/mmCIF ``_atom_site.label_entity_ids``
+        data item.
+
+        Examples
+        --------
+        A single water molecule would be ``[0, 0, 0]``. A water (three atoms)
+        and methanol (six atoms) molecule in the same structure would be
+        ``[0, 0, 0, 1, 1, 1, 1, 1, 1]``.
+
+        :type: :obj:`numpy.ndarray`
+        """
+        if hasattr(self, "_entity_ids"):
+            return self._entity_ids
+
+        return np.array([])
+
+    @entity_ids.setter
+    def entity_ids(self, var):
+        self._entity_ids = np.array(var)
+
+    @property
+    def comp_ids(self):
+        r"""A 1D array relating ``entity_id`` to a fragment label for chemical
+        components or species. Labels could be ``WAT`` or ``h2o`` for water,
+        ``MeOH`` for methanol, ``bz`` for benzene, etc. There are no
+        standardized labels for species. The index of the label is the
+        respective ``entity_id``. For example, a water and methanol molecule
+        could be ``['h2o', 'meoh']``.
+
+        Examples
+        --------
+        Suppose we have a structure containing a water and methanol molecule.
+        We can use the labels of ``h2o`` and ``meoh`` (which could be
+        anything): ``['h2o', 'meoh']``. Note that the
+        ``entity_id`` is a :obj:`str`.
+
+        :type: :obj:`numpy.ndarray`
+        """
+        if hasattr(self, "_comp_ids"):
+            return self._comp_ids
+
+        return np.array([])
+
+    @property
+    def theory(self):
+        r"""The level of theory used to compute energy and gradients of the data
+        set.
+
+        :type: :obj:`str`
+        """
+        if hasattr(self, "_theory"):
+            return self._theory
+
+        return "n/a"
+
+    @theory.setter
+    def theory(self, var):
+        self._theory = var
+
     def load(self, pset):
         r"""Reads predict data set and loads data.
 
@@ -204,7 +270,13 @@ class PredictSet(mbGDMLData):
 
         self._loaded = True
 
-    def nbody_predictions(self, nbody_orders, n_workers=1):
+    @comp_ids.setter
+    def comp_ids(self, var):
+        self._comp_ids = np.array(var)
+
+    def nbody_predictions(
+        self, nbody_orders, use_ray=False, n_workers=1, ray_address="auto"
+    ):
         r"""Energies and forces of all structures including ``nbody_order``
         contributions.
 
@@ -217,6 +289,14 @@ class PredictSet(mbGDMLData):
         ----------
         nbody_orders : :obj:`list` of :obj:`int`
             :math:`n`-body orders to include.
+        use_ray : :obj:`bool`, default: ``False``
+            Use `ray <https://docs.ray.io/en/latest/>`__ to parallelize
+            computations.
+        n_workers : :obj:`int`, default: ``1``
+            Total number of workers available for ray. This is ignored if ``use_ray``
+            is ``False``.
+        ray_address : :obj:`str`, default: ``"auto"``
+            Ray cluster address to connect to.
 
         Returns
         -------
@@ -225,8 +305,20 @@ class PredictSet(mbGDMLData):
         :obj:`numpy.ndarray`
             Forces of structures up to an including n-order corrections.
         """
-        if n_workers != 1:
-            ray.is_initialized()
+        if use_ray:
+            if not ray.is_initialized():
+                log.debug("ray is not initialized")
+                # Try to connect to already running ray service (from ray cli).
+                try:
+                    log.debug("Trying to connect to ray at address %r", ray_address)
+                    ray.init(address=ray_address)
+                except ConnectionError:
+                    log.debug("Failed to connect to ray at %r", ray_address)
+                    log.debug("Trying to initialize ray with %d cores", n_workers)
+                    ray.init(num_cpus=n_workers)
+                log.debug("Successfully initialized ray")
+            else:
+                log.debug("Ray was already initialized")
 
         E = np.zeros(self.E_true.shape)
         F = np.zeros(self.F_true.shape)
@@ -290,13 +382,19 @@ class PredictSet(mbGDMLData):
             self.e_unit = dset["e_unit"]
 
     def load_models(
-        self, models, predict_model, use_ray=False, n_workers=None, wkr_chunk_size=100
+        self,
+        models,
+        predict_model,
+        use_ray=False,
+        n_workers=1,
+        ray_address="auto",
+        wkr_chunk_size=100,
     ):
         r"""Loads model(s) in preparation to create a predict set.
 
         Parameters
         ----------
-        models : :obj:`list` of :obj:`mbgdml.predictors.mlWorker`
+        models : :obj:`list` of :obj:`mbgdml.models.Model`
             Machine learning model objects that contain all information to make
             predictions using ``predict_model``.
         predict_model : ``callable``
@@ -305,12 +403,13 @@ class PredictSet(mbGDMLData):
             function if ``use_ray = True``. This can return total properties
             or all individual :math:`n`-body energies and forces.
         use_ray : :obj:`bool`, default: ``False``
-            Parallelize predictions using ray. Note that initializing ray tasks
-            comes with some overhead and can make smaller computations much
-            slower. Thus, this is only recommended with more than 10 or so
-            entities.
-        n_workers : :obj:`int`, default: :obj:`None`
-            Total number of workers available for predictions when using ray.
+            Use `ray <https://docs.ray.io/en/latest/>`__ to parallelize
+            computations.
+        n_workers : :obj:`int`, default: ``1``
+            Total number of workers available for ray. This is ignored if ``use_ray``
+            is ``False``.
+        ray_address : :obj:`str`, default: ``"auto"``
+            Ray cluster address to connect to.
         wkr_chunk_size : :obj:`int`, default: ``100``
             Number of :math:`n`-body structures to assign to each spawned
             worker with ray.
@@ -318,7 +417,7 @@ class PredictSet(mbGDMLData):
         if use_ray:
             assert ray.is_initialized()
         self.mbePredict = mbePredict(
-            models, predict_model, use_ray, n_workers, wkr_chunk_size
+            models, predict_model, use_ray, n_workers, ray_address, wkr_chunk_size
         )
 
         models_md5, nbody_orders = [], []

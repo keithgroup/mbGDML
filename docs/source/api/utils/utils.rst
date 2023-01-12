@@ -17,6 +17,7 @@
     get_entity_ids
     get_R_slice
     md5_data
+    parse_xyz
     save_json
     string_xyz_arrays
     write_xyz

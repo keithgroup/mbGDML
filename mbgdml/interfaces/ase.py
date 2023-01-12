@@ -22,12 +22,13 @@
 
 from ase.calculators.calculator import Calculator
 import numpy as np
+import ray
 
 # pylint: disable-next=invalid-name
 class mbeCalculator(Calculator):
-    r"""ASE calculator using the many-body expansion predictor in mbGDML."""
+    r"""ASE calculator for a many-body expansion predictor."""
 
-    implemented_properties = ["energy", "forces"]
+    implemented_properties = ["energy", "forces", "stress"]
 
     def __init__(
         self, mbe_pred, parameters=None, e_conv=1.0, f_conv=1.0, atoms=None, **kwargs
@@ -48,6 +49,7 @@ class mbeCalculator(Calculator):
         Calculator.__init__(self, restart=None, label=None, atoms=atoms, **kwargs)
 
         self.mbe_pred = mbe_pred
+        self.mbe_pred.use_voigt = True
 
         self.e_conv = e_conv
         self.f_conv = f_conv
@@ -58,9 +60,11 @@ class mbeCalculator(Calculator):
 
     # pylint: disable-next=unused-argument, keyword-arg-before-vararg
     def calculate(self, atoms=None, *args, **kwargs):
-        r"""Predicts energy and forces using many-body GDML models."""
+        r"""Predicts all available properties using the MBE predictor."""
+        is_periodic = bool(self.mbe_pred.periodic_cell)
+
         if atoms is not None:
-            if self.mbe_pred.periodic_cell is not None:
+            if is_periodic:
                 atoms.wrap()
             self.atoms = atoms.copy()
 
@@ -68,16 +72,37 @@ class mbeCalculator(Calculator):
         entity_ids = parameters["entity_ids"]
         comp_ids = parameters["comp_ids"]
 
-        e, f = self.mbe_pred.predict(
-            atoms.get_atomic_numbers(), atoms.get_positions(), entity_ids, comp_ids
+        predict_kwargs = {}
+        if is_periodic:
+            # Update cell vectors and cutoff
+            cell_vectors = atoms.get_cell()[:]
+            periodic_cell = self.mbe_pred.periodic_cell
+            if self.mbe_pred.use_ray:
+                periodic_cell = ray.get(periodic_cell)
+            periodic_cell.cell_v = cell_vectors
+            self.mbe_pred.periodic_cell = periodic_cell
+
+            if not self.mbe_pred.compute_stress:
+                self.mbe_pred.compute_stress = True
+
+        E, F, *stress = self.mbe_pred.predict(
+            atoms.get_atomic_numbers(),
+            atoms.get_positions(),
+            entity_ids,
+            comp_ids,
+            **predict_kwargs
         )
-        e = e[0]
-
+        E = E[0]
+        F = F.reshape(-1, 3)
         # Unit conversions
-        e *= self.e_conv
-        f *= self.f_conv
+        E *= self.e_conv
+        F *= self.f_conv
 
-        self.results = {"energy": e, "forces": f.reshape(-1, 3)}
+        self.results = {"energy": E, "forces": F}
+
+        if is_periodic:
+            stress = stress[0][0]
+            self.results["stress"] = stress * self.e_conv
 
     def todict(self, skip_default=True):
         defaults = self.get_default_parameters()

@@ -29,7 +29,7 @@ What is a fragment?
 ===================
 
 MBEs are built upon what we define our fragments/monomers to be.
-A fragment is a group atoms we represent as monomer used to define :math:`n`-body interactions.
+A fragment is a group of atoms we represent as a monomer used to define :math:`n`-body interactions.
 Procedures to fragment the system are classified based on two categories:
 
 .. glossary::
@@ -38,21 +38,21 @@ Procedures to fragment the system are classified based on two categories:
         Whether a fragment "breaks" covalent bonds.
         Non-covalent fragments occur when the entire molecule is its own fragment.
         Separating a molecule into individual fragments is possible, but there are additional complexities.
-        We do not consider covalent fragments here.
+        Therefore, we do not consider covalent fragments here.
     
     **Intersecting fragments**
         Nothing precludes defining fragments with more than one molecule.
-        This changes the many-body formulation and Equation :eq:`mbe_sum` is not applicable.
-        Principle of inclusion and exclusion (PIE) generally is used with intersecting fragments.
-        We do not support this, yet.
+        This changes the many-body formulation, and Equation :eq:`mbe_sum` is not applicable.
+        The principle of inclusion and exclusion (PIE) generally is used with intersecting fragments.
+        We do not support this yet.
         Only non-intersecting fragments are considered here.
 
-Non-covalent, non-intersecting fragments are the default in almost all of our cases here.
+Non-covalent, non-intersecting fragments are the default in almost all of our cases.
 
 The choice is yours, but the driving aspect of selecting a fragmentation scheme is often the number and size of :math:`n`-body combinations.
-If we consider a water trimer, there are substantially more 2- and 3-body structures if we fragment with respect to atoms instead of molecules.
+For example, if we consider a water trimer, there are substantially more 2- and 3-body structures if we fragment with respect to atoms instead of molecules.
 Not to mention that whole molecular fragments are typically more accurate.
-Computational cost of fragments also becomes an issue if they are particularly large.
+The computational cost of fragments also becomes an issue if they are particularly large.
 
 See :ref:`no free lunch <no free lunch>` for more discussion.
 
@@ -62,7 +62,7 @@ Water trimer example
 
 We find MBEs are much easier to understand with an example.
 Suppose we want to compute the energy of the following trimer with MP2/def2-TZVP and that this level of theory is intractable.
-Obviously this calculation is possible in a matter of seconds---as the energy is shown below---but just imagine we cannot.
+This calculation is possible in a matter of seconds---as the energy is shown below---but imagine we cannot.
 
 .. image:: images/mbe-explained/3h2o-energy.png
     :width: 200px
@@ -73,7 +73,7 @@ Obviously this calculation is possible in a matter of seconds---as the energy is
 ------
 
 The first term of the MBE (Equation :eq:`mbe_sum`) represents the 1-body contributions of this structure.
-Before this we have to define what our 1-body structures or fragments are.
+Before this, we must define our 1-body structures or fragments.
 Each molecule will be a fragment since they are small and it is a non-covalent cluster (fragment indices are shown above).
 Thus, our 1-body prediction, :math:`E^{(1)}`, of this trimer would be
 
@@ -94,16 +94,16 @@ After computing :math:`E_0^{(1)}`, :math:`E_1^{(1)}`, and :math:`E_2^{(1)}` our 
 
 -228.93794 Eh is our 1-body prediction of this particular trimer.
 In terms of accuracy, the error is a whopping -0.02504 Eh (-15.7 kcal/mol).
-This error is unsurprising as we have made not accounted for how these water molecules are interacting.
+This error is unsurprising as we have yet to account for how these water molecules interact.
 
 
 
 2-body
 ------
 
-Our previous 1-body prediction was subpar with a rather larger error.
-We can substantially reduce this error by accounting for how monomers interacts with each other (i.e., dimer interactions).
-These interaction are called the 2-body contributions to the MBE which is defined in Equation :eq:`2_body_term`.
+Our previous 1-body prediction was subpar with a somewhat larger error.
+We can substantially reduce this error by accounting for how monomers interact with each other (i.e., dimer interactions).
+These interactions are called the 2-body contributions to the MBE, which is defined in Equation :eq:`2_body_term`.
 Essentially, we need to compute the total energy of each possible dimer and subtract out the monomer (i.e., lower order) contributions.
 Whatever energy is left over is the 2-body contribution of that dimer to the sum.
 
@@ -145,18 +145,18 @@ We have reduced our error by an order of magnitude to -0.00267 Eh (-1.7 kcal/mol
 
 .. attention::
 
-    This leftover -1.7 kcal/mol is actually the 3-body energy of this trimer.
-    However, there is no way we could know these errors without being able to compare to the actual energy of the trimer.
+    This leftover -1.7 kcal/mol is the 3-body energy of this trimer.
+    However, we can only know these errors by comparing them to the trimer's energy.
     Practical applications of MBE involve structures we actually cannot compute.
 
 
 No free lunch
 =============
 
-Up to this point we have swept a few things under the rug about how accurate and useful MBEs are.
+Up to this point, we have swept a few things under the rug about how accurate and valuable MBEs are.
 In the past, MBE was often referred to as a "free lunch," where high-light *ab initio* results for large systems are easily attainable with minimal loss of accuracy.
-Contemporary research shows this is not entirely true; there are nuances that influence MBE accuracy.
-We discuss a few of the main aspects here so you can judge if this approach will work for your systems.
+Contemporary research shows this is only partially true; some nuances influence MBE accuracy.
+We discuss a few main aspects here so you can judge if this approach will work for your systems.
 
 
 
@@ -164,7 +164,7 @@ Curse of dimensionality
 -----------------------
 
 As previously mentioned, one of the crucial aspects of MBEs is system fragmentation.
-When the number of fragments of a system grows the total number of :math:`n`-body combinations explodes.
+When the number of fragments of a system grows, the total number of :math:`n`-body combinations explodes.
 The figure below shows the number of 1-, 2-, and 3-body structures with respect to system size.
 
 .. image:: images/free-lunches/curse-of-dimensionality.png
@@ -188,9 +188,9 @@ TODO
 Specifying fragments in mbGDML
 ==============================
 
-In order to make many-body predictions we have to specify the fragments to generate :math:`n`-body combinations from.
-For example, we can consider making a MBE(2) prediction of a water and methanol cluster.
-This is rather small system, but it is useful for understanding the concepts.
+In order to make many-body predictions, we have to specify the fragments to generate :math:`n`-body combinations.
+For example, we can make an MBE(2) prediction of a water and methanol cluster.
+This is rather small system, but it helps understand the concepts.
 
 .. figure:: images/mbe-explained/2-body-example.png
    :width: 250px
@@ -212,17 +212,17 @@ As with most atomistic modeling practices, we must specify atomic numbers and co
 
    ``R``: Cartesian coordinates in the same order as ``Z``.
 
-Some ML potentials require the order of the atoms to be the exact same (e.g., GDML).
+Some ML potentials require the order of the atoms to be the same (e.g., GDML).
 This means any indistinguishable atoms must be in the same order.
-For the structure specified above, we must have the water molecule then the methanol.
-Water's oxygen atom must come before the hydrogens whose order does not matter.
-With methanol, we specify the OH group first, then the CH3 group where the first hydrogen is the one furthest from the OH hydrogen and proceeding in a clockwise direction.
+For the structure specified above, we must have the water molecule and then the methanol.
+Water's oxygen atom must come before the hydrogens, whose order does not matter.
+With methanol, we specify the OH group first, then the CH3 group, where the first hydrogen is the one furthest from the OH hydrogen and proceeding in a clockwise direction.
 
 .. figure:: images/mbe-explained/2-body-entity-ids.png
    :width: 250px
    :align: center
 
-   ``entity_ids``: integers that specify which fragment each atom belongs to.
+   ``entity_ids``: integers that specify which fragment each atom belongs.
 
 .. figure:: images/mbe-explained/2-body-comp-ids.png
    :width: 175px

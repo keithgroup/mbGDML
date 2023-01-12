@@ -28,8 +28,6 @@ Create, use, and analyze machine learning potentials within the many-body expans
 .. image:: https://img.shields.io/badge/linting-pylint-yellowgreen
     :target: https://github.com/PyCQA/pylint
 
-**Disclaimer:** This package is still under active development and not suitable for production.
-
 
 
 Motivation
@@ -136,5 +134,6 @@ Distributed under the MIT License. See `LICENSE <https://github.com/keithgroup/m
    Many-body expansions <mbe>
    Training <training>
    Predicting <predicting>
+   Interfaces <interfaces>
    API <api/modules>
    Contributing <contributing>

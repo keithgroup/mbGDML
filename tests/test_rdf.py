@@ -54,7 +54,8 @@ def test_meoh_gr_OO():
         bin_width=bin_width,
         rdf_range=rdf_range,
         inter_only=True,
-        n_workers=None,
+        use_ray=False,
+        n_workers=1,
     )
     bins, gr = rdf.run(R, comp_id_pair, entity_idxs, step=1)
 
