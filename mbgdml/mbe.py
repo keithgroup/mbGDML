@@ -28,7 +28,7 @@ import math
 import numpy as np
 import ray
 from .utils import chunk_array, chunk_iterable, gen_combs
-from .stress import virial_atom_loop, to_voigt, virial_finite_diff
+from .stress import to_voigt, virial_finite_diff
 
 
 log = logging.getLogger(__name__)
