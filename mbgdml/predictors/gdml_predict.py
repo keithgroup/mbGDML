@@ -217,18 +217,16 @@ def predict_gdml(Z, R, entity_ids, entity_combs, model, periodic_cell, **kwargs)
             r_slice.extend(np.where(entity_ids == entity_id)[0])
 
         z = Z[r_slice]
-        r_orig = R[r_slice]
+        r = R[r_slice]
         # Note: We store the original coordinates in case the virial is requested
 
         # If we are using a periodic cell we convert r_comp into coordinates
         # we can use in many-body expansions.
         if periodic:
-            r = periodic_cell.r_mic(r_orig)
+            r = periodic_cell.r_mic(r)
             if r is None:
                 # Any atomic pairwise distance was larger than cutoff.
                 continue
-        else:
-            r = r_orig
 
         # TODO: Check if we can avoid prediction if we have an alchemical factor of
         # zero?
@@ -270,7 +268,7 @@ def predict_gdml(Z, R, entity_ids, entity_combs, model, periodic_cell, **kwargs)
         F[r_slice] += f
 
         if compute_virial:
-            virial += virial_atom_loop(r_orig, f)
+            virial += virial_atom_loop(r, f)
 
     if compute_virial:
         return E, F, virial

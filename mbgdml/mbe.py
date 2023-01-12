@@ -560,8 +560,8 @@ class mbePredict:
 
                 This algorithm has been implemented in the
                 :meth:`~mbgdml.mbe.mbePredict.compute_nbody` method. However,
-                the correctness and validity for this framework has not been verified
-                yet. Use at your own risk.
+                the correctness of this framework has not been verified. Use at your
+                own risk.
         """
         self.models = models
         self.predict_model = predict_model
@@ -580,43 +580,15 @@ class mbePredict:
         self.periodic_cell = periodic_cell
         self.compute_stress = compute_stress
 
-        self.virial_form = "atom"
+        self.virial_form = "group"
         r"""The form to use from
         `10.1063/1.3245303 <https://doi.org/10.1063/1.3245303>`__ to compute the
-        internal virial contribution to the pressure stress tensor. There are two
-        possible selections, but both are mathematically equivalent. In all cases,
+        internal virial contribution to the pressure stress tensor.
         :math:`\mathbf{W} \left( \mathbf{r}^N \right)` is the internal virial of
         :math:`N` atoms and :math:`\otimes` is the outer tensor product (i.e.,
         ``np.multiply.outer``).
 
-        ``atom`` (**default**)
-
-            Computes the virial over a single loop over all atoms in the system
-            (including replicas).
-
-            .. math::
-
-                \mathbf{W} \left( \mathbf{r}^N \right) =
-                \sum_{\mathbf{n} \in Z^3} \sum_{i = 1}^N
-                \mathbf{r}_{i \mathbf{n}} \otimes \mathbf{F}_{i \mathbf{n}}'.
-
-            This summation is only over all local and periodic image atoms (i.e.,
-            :math:`\mathbf{n} \in Z^3`) at positions
-            :math:`\mathbf{r}_{i \mathbf{n}}` where :math:`\mathbf{n}` accounts
-            for the :math:`x`, :math:`y`, and :math:`z` offsets of the periodic
-            images relative to the local cell. :math:`\mathbf{F}_{i \mathbf{n}}'`
-            is not the total force on atom :math:`i`, but the partial force on the
-            atom located at :math:`\mathbf{r}_{i \mathbf{n}}` due to all the
-            groups associated with the local cell.
-
-            .. note::
-
-                mbGDML exclusively uses the minimum-image convention where each
-                local atom interacts only with the closest image of every other
-                local atom. Thus, we take the computed total force to be
-                :math:`\mathbf{F}_{i \mathbf{n}}'`.
-
-        ``group``
+        ``group`` (**default**)
 
             This computes the virial by considering contributions based on groups
             of atoms. The number of groups, number of atoms in each group, and
@@ -645,6 +617,14 @@ class mbePredict:
 
         :type: :obj:`str`
         """
+        self.finite_diff_dh = 1e-4
+        r"""Forward and backward displacement of the cell vectors for finite
+        differences.
+
+        Default: ``1e-4``
+
+        :type: :obj:`float`
+        """
         self.use_voigt = False
         r"""Convert the stress tensor to the 1D Voigt notation (xx, yy, zz, yz, xz, xy).
 
@@ -654,11 +634,27 @@ class mbePredict:
         """
         self.only_normal_stress = False
         r"""Only compute normal (xx, yy, and zz) stress. All other elements will be
-        zero.
+        zero. This is recommended for MD simulations to avoid altering box angular
+        momentum due to the antisymmetric contributions (yz, xz, and xy).
 
         Default: ``False``
 
         :type: :obj:`bool`
+        """
+        self.box_scaling_type = "anisotropic"
+        r"""Treatment of box scaling when
+        :attr:`mbgdml.mbe.mbePredict.only_normal_stress` is ``True``.
+
+        ``anisotropic`` (**default**)
+
+            No modifications are made to normal stresses which allows box vectors
+            to scale independently.
+
+        ``isotropic``
+
+            Average the normal stresses so box vectors will scale identically.
+
+        :type: :obj:`str`
         """
 
         if use_ray:
@@ -1032,7 +1028,7 @@ class mbePredict:
         E = np.zeros((n_R,), dtype=np.float64)
         F = np.zeros(R.shape, dtype=np.float64)
         if compute_stress:
-            assert self.virial_form in ("atom", "group", "finite_diff")
+            assert self.virial_form in ("group", "finite_diff")
             stress = np.zeros((n_R, 3, 3), dtype=np.float64)
 
         # Compute all energies and forces with every model.
@@ -1048,28 +1044,21 @@ class mbePredict:
                 E[i] += E_nbody
                 F[i] += F_nbody
 
-            if compute_stress:
-                if self.virial_form == "atom":
-                    stress[i] = virial_atom_loop(r, F[i])
-                else:
-                    # Must be finite_diff
-                    periodic_cell = self.periodic_cell
-                    if self.use_ray:
-                        periodic_cell = ray.get(periodic_cell)
-                    cell_v = periodic_cell.cell_v
-                    stress[i] = virial_finite_diff(
-                        Z,
-                        r,
-                        entity_ids,
-                        comp_ids,
-                        cell_v,
-                        self,
-                        only_normal_stress=self.only_normal_stress,
-                    )
+            if compute_stress and self.virial_form == "finite_diff":
+                periodic_cell = self.periodic_cell
+                if self.use_ray:
+                    periodic_cell = ray.get(periodic_cell)
+                cell_v = periodic_cell.cell_v
+                stress[i] = virial_finite_diff(
+                    Z,
+                    r,
+                    entity_ids,
+                    comp_ids,
+                    cell_v,
+                    self,
+                    only_normal_stress=self.only_normal_stress,
+                )
 
-        log.t_stop(
-            t_predict, message="Predictions took {time} s", precision=3, level=10
-        )
         if compute_stress:  # pylint: disable=too-many-nested-blocks
             periodic_cell = self.periodic_cell
             if self.use_ray:
@@ -1083,11 +1072,22 @@ class mbePredict:
                             if i != j:
                                 stress[n][i][j] = 0.0
 
+                    if self.box_scaling_type == "isotropic":
+                        stress_average = np.trace(stress[n]) / 3
+                        for i in range(0, 3):
+                            stress[n][i][i] = stress_average
+
             if self.use_voigt:
                 stress = np.array([to_voigt(r_stress) for r_stress in stress])
 
+            log.t_stop(
+                t_predict, message="Predictions took {time} s", precision=3, level=10
+            )
             return E, F, stress
 
+        log.t_stop(
+            t_predict, message="Predictions took {time} s", precision=3, level=10
+        )
         return E, F
 
     def predict_decomp(self, Z, R, entity_ids, comp_ids):

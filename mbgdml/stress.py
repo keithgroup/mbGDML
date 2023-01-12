@@ -120,6 +120,7 @@ def virial_finite_diff(
     <https://github.com/svandenhaute/openyaff/blob/main/openyaff/utils.py#L442>`__.
     """
     # pylint: disable=invalid-name
+    compute_stress_original = mbe_pred.compute_stress
     mbe_pred.compute_stress = False  # Prevents recursion
     R_fractional = np.dot(R, np.linalg.inv(cell_vectors))
     dEdh = np.zeros((3, 3))
@@ -131,12 +132,14 @@ def virial_finite_diff(
 
             cell_vectors_ = cell_vectors.copy()
 
+            # Backward
             cell_vectors_[i, j] -= dh / 2
             R_tmp = np.dot(R_fractional, cell_vectors_)
             cell_vectors_tmp = cell_vectors_.copy()
             mbe_pred.periodic_cell = Cell(cell_vectors_tmp, pbc=True)
             E_minus, _ = mbe_pred.predict(Z, R_tmp, entity_ids, comp_ids)
 
+            # Forward
             cell_vectors_[i, j] += dh
             R_tmp = np.dot(R_fractional, cell_vectors_)
             cell_vectors_tmp = cell_vectors_.copy()
@@ -144,4 +147,6 @@ def virial_finite_diff(
             E_plus, _ = mbe_pred.predict(Z, R_tmp, entity_ids, comp_ids)
             dEdh[i, j] = (E_plus - E_minus) / dh
 
+    # Puts the original value of compute_stress back.
+    mbe_pred.compute_stress = compute_stress_original
     return dEdh
