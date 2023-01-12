@@ -555,7 +555,7 @@ class mbePredict:
             .. danger::
 
                 This implementation is experimental and has not been verified. We do
-                not recommend using this. 
+                not recommend using this.
 
             Compute the internal virial contribution,
             :math:`\mathbf{W} \left( \mathbf{r}^N \right) / V`, of :math:`N`
