@@ -18,6 +18,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Updated prediction set documentation.
 - Unified use of ray by always having ``use_ray`` option and defaulting ``n_workers`` to ``1``.
 
+### Fixed
+
+- Explicitly use 3DMol v1.8.0 for documentation.
+
 ## [0.0.4] - 2022-12-12
 
 ### Added

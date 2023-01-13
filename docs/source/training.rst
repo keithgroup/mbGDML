@@ -97,7 +97,8 @@ For example, consider this water dimer.
 
 .. raw:: html
 
-    <script src="https://3Dmol.csb.pitt.edu/build/3Dmol-min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/3Dmol/1.8.0/3Dmol-min.js"></script>
+    <!-- Any 3Dmol version higher than this breaks. Kicking the can. -->
 
     <div style="height: 300px; width: 400px; margin: auto;"
     class='viewer_3Dmoljs' data-datatype='xyz'

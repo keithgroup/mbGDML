@@ -51,7 +51,7 @@ Periodic box optimization
 
             print("Setting up system")
 
-            XYZ_PATH = "./33h2o-10ang-box.xyz"
+            XYZ_PATH = "./33h2o.xyz"
             Z, _, R = parse_xyz(XYZ_PATH)
             Z = atoms_by_number(Z[0])
             Z = np.array(Z)
@@ -121,7 +121,7 @@ Periodic box optimization
             ase_atoms.calc = mbe_calc
 
             # Setup logging
-            mbe_traj_path = os.path.join(WORK_DIR, "33h2o-10ang-box-opt.traj")
+            mbe_traj_path = os.path.join(WORK_DIR, "33h2o-opt.traj")
 
 
             print("Starting optimization")
@@ -133,7 +133,7 @@ Periodic box optimization
 
             Z = ase_atoms.get_atomic_numbers()
             R = ase_atoms.get_positions()
-            write_xyz(os.path.join(WORK_DIR, "33h2o-10ang-box-opt.xyz"), Z, R[None, ...])
+            write_xyz(os.path.join(WORK_DIR, "33h2o-opt.xyz"), Z, R[None, ...])
 
             print("Done!")
 
@@ -220,7 +220,7 @@ Periodic box optimization
             Writing XYZ file
             Done!
     
-    .. tab-item:: 33h2o-10ang-box.xyz
+    .. tab-item:: 33h2o.xyz
 
         .. code-block:: text
 
@@ -326,7 +326,7 @@ Periodic box optimization
             H            8.750038        3.656909        2.483939
             H            8.229177        2.283705        2.886954
 
-    .. tab-item:: 33h2o-10ang-box-opt.xyz
+    .. tab-item:: 33h2o-opt.xyz
 
         .. code-block:: text
 
@@ -431,5 +431,3 @@ Periodic box optimization
             O    8.3557160006    2.8240939311    1.9732294490
             H    8.8516177548    3.6509547288    1.8477623018
             H    8.4158125805    2.6138864123    2.9219561606
-
-
