@@ -1,7 +1,7 @@
 # MIT License
 #
 # Copyright (c) 2018-2021, Stefan Chmiela
-# Copyright (c) 2020-2022, Alex M. Maldonado
+# Copyright (c) 2020-2023, Alex M. Maldonado
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
