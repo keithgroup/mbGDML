@@ -22,7 +22,7 @@
 
 """Tests generating structure generation utilities"""
 
-# pylint: disable=invalid-name
+# pylint: skip-file
 
 import numpy as np
 

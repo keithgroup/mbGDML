@@ -22,7 +22,7 @@
 
 """Tests many-body utilities"""
 
-# pylint: disable=invalid-name
+# pylint: skip-file
 
 import numpy as np
 from mbgdml.mbe import mbe_contrib

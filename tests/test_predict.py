@@ -23,7 +23,7 @@
 
 """Tests for `mbgdml` package."""
 
-# pylint: disable=invalid-name
+# pylint: skip-file
 
 import numpy as np
 from mbgdml import data

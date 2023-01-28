@@ -23,7 +23,7 @@
 
 """Tests for `mbgdml.descriptor`."""
 
-# pylint: disable=invalid-name
+# pylint: skip-file
 
 import numpy as np
 from mbgdml import descriptors

@@ -23,7 +23,7 @@
 
 """Tests for `mbgdml.analysis.rdf`."""
 
-# pylint: disable=invalid-name
+# pylint: skip-file
 
 import numpy as np
 from mbgdml.analysis.rdf import RDF

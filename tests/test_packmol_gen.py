@@ -22,7 +22,7 @@
 
 """Tests generating packmol structures"""
 
-# pylint: disable=invalid-name
+# pylint: skip-file
 
 import os
 import shutil

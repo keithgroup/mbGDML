@@ -23,7 +23,7 @@
 
 """Tests for `mbgdml` package."""
 
-# pylint: disable=invalid-name
+# pylint: skip-file
 
 from mbgdml import data
 

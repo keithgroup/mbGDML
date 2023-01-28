@@ -23,7 +23,7 @@
 
 """Tests for GDML training"""
 
-# pylint: disable=invalid-name
+# pylint: skip-file
 
 import os
 import numpy as np
