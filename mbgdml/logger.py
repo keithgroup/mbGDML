@@ -30,6 +30,20 @@ from . import _version
 __version__ = _version.get_versions()["version"]
 
 
+def set_log_level(level):
+    """Dynamically control the log level of mbGDML.
+
+    Parameters
+    ----------
+    level : :obj:`int`
+        The desired logging level.
+    """
+    for logger_name in logging.root.manager.loggerDict:  # pylint: disable=no-member
+        if "mbgdml" in logger_name:
+            logger = logging.getLogger(logger_name)
+            logger.setLevel(level)
+
+
 class TimeTracker:
     r"""Simple way to keep track of multiple timings."""
 
@@ -49,13 +63,13 @@ class TimeTracker:
         ----------
         t_hash : :obj:`str`
             Timing hash generated from ``TimeTracker.start()``.
-        log : ``GDMLLogger``
-            Log object to write to.
         message : :obj:`str`, default: ``'Took {time} s'``
             Timing message to be written to log. ``'{time}'`` will be replaced
             with for the elapsed time.
         precision : :obj:`int`, default: ``5``
-            Number of decimal points to print time.
+            Number of decimal points to print.
+        level : :obj:`int`, default: ``20``
+            Log level.
         """
         t_stop = time.time()
         t_elapsed = t_stop - self.t_hashes[t_hash]
