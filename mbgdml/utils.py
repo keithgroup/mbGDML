@@ -28,6 +28,9 @@ import numpy as np
 import cclib
 from qcelemental import periodictable as ptable
 from .descriptors import get_center_of_mass
+from .logger import GDMLLogger
+
+log = GDMLLogger(__name__)
 
 
 def get_files(path, expression, recursive=True):

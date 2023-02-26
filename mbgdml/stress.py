@@ -22,11 +22,11 @@
 
 """Compute stress"""
 
-import logging
 import numpy as np
 from .periodic import Cell
+from .logger import GDMLLogger
 
-log = logging.getLogger(__name__)
+log = GDMLLogger(__name__)
 
 VOIGT_INDICES = [[0, 0], [1, 1], [2, 2], [1, 0], [0, 2], [0, 1]]
 

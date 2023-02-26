@@ -20,9 +20,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import logging
 import numpy as np
 import ase
+from ..logger import GDMLLogger
 
 try:
     import schnetpack
@@ -38,7 +38,7 @@ try:
 except ImportError:
     _HAS_TORCH = False
 
-log = logging.getLogger(__name__)
+log = GDMLLogger(__name__)
 
 
 # pylint: disable-next=unused-argument

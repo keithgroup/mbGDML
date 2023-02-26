@@ -20,11 +20,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import logging
 import numpy as np
 import ase
+from ..logger import GDMLLogger
 
-log = logging.getLogger(__name__)
+log = GDMLLogger(__name__)
 
 # Possible ray task.
 # pylint: disable-next=unused-argument

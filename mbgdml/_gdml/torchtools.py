@@ -51,6 +51,10 @@ try:
 except (NameError, AttributeError):
     _TORCH_CUDA_IS_AVAILABLE = False
 
+import logging
+
+log = logging.getLogger(__name__)
+
 # pylint: disable=no-member
 
 _dtype = torch.float64
@@ -63,11 +67,6 @@ def _next_batch_size(n_total, batch_size):
         batch_size += 1
 
     return batch_size
-
-
-import logging
-
-log = logging.getLogger(__name__)
 
 
 class GDMLTorchAssemble(nn.Module):

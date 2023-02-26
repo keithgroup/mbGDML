@@ -22,7 +22,6 @@
 # SOFTWARE.
 
 import sys
-import logging
 import os
 import multiprocessing as mp
 import timeit
@@ -31,6 +30,7 @@ import numpy as np
 import psutil
 
 from .. import __version__
+from ..logger import GDMLLogger
 from .desc import Desc
 
 try:
@@ -53,7 +53,7 @@ except (NameError, AttributeError):
 
 Pool = mp.get_context("fork").Pool
 
-log = logging.getLogger(__name__)
+log = GDMLLogger(__name__)
 
 
 def share_array(arr_np):

@@ -26,8 +26,11 @@ from cclib.parser.utils import convertor
 from .basedata import mbGDMLData
 from .. import utils
 from .. import _version
+from ..logger import GDMLLogger
 
 mbgdml_version = _version.get_versions()["version"]
+
+log = GDMLLogger(__name__)
 
 
 class DataSet(mbGDMLData):

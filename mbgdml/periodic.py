@@ -25,6 +25,9 @@
 from ase.geometry import find_mic
 import numpy as np
 from scipy.spatial.distance import pdist
+from .logger import GDMLLogger
+
+log = GDMLLogger(__name__)
 
 
 class Cell:

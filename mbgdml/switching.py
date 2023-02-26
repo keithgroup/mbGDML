@@ -22,9 +22,9 @@
 
 """Switching functions."""
 
-import logging
+from .logger import GDMLLogger
 
-log = logging.getLogger(__name__)
+log = GDMLLogger(__name__)
 
 
 def linear_switching(data, factor):

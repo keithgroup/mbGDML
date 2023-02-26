@@ -22,13 +22,13 @@
 
 """Compute RDF curves under periodic boundary conditions."""
 
-import logging
 import ray
 import numpy as np
 from ..periodic import Cell
 from ..utils import gen_combs, chunk_iterable
+from ..logger import GDMLLogger
 
-log = logging.getLogger(__name__)
+log = GDMLLogger(__name__)
 
 
 # Possible ray task.

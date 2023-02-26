@@ -23,6 +23,9 @@
 """Analyses for models."""
 
 import numpy as np
+from ..logger import GDMLLogger
+
+log = GDMLLogger(__name__)
 
 
 def gdml_mat52_wrk(r_desc, sig, n_perms, R_desc_perms):

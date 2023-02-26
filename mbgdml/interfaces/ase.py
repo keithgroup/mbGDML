@@ -23,6 +23,9 @@
 from ase.calculators.calculator import Calculator
 import numpy as np
 import ray
+from ..logger import GDMLLogger
+
+log = GDMLLogger(__name__)
 
 # pylint: disable-next=invalid-name
 class mbeCalculator(Calculator):

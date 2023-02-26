@@ -25,7 +25,6 @@ from __future__ import print_function
 
 import multiprocessing as mp
 from functools import partial
-import logging
 import numpy as np
 import scipy.optimize
 import scipy.spatial.distance
@@ -34,10 +33,11 @@ from scipy.sparse.csgraph import minimum_spanning_tree, connected_components
 from ase import Atoms
 from ase.geometry.analysis import Analysis
 from .desc import Desc, _pdist, _squareform
+from ..logger import GDMLLogger
 
 Pool = mp.get_context("fork").Pool
 
-log = logging.getLogger(__name__)
+log = GDMLLogger(__name__)
 
 glob = {}
 

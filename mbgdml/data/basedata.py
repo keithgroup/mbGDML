@@ -21,6 +21,9 @@
 # SOFTWARE.
 
 import numpy as np
+from ..logger import GDMLLogger
+
+log = GDMLLogger(__name__)
 
 
 # pylint: disable-next=invalid-name

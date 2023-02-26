@@ -23,7 +23,6 @@
 
 import os
 import shutil
-import logging
 import numpy as np
 from bayes_opt import BayesianOptimization, SequentialDomainReductionTransformer
 
@@ -34,8 +33,9 @@ from ._gdml.train import GDMLTrain, model_errors, add_valid_errors
 from ._gdml.train import save_model, get_test_idxs
 from .utils import save_json
 from .losses import loss_f_rmse, mae, rmse
+from .logger import GDMLLogger
 
-log = logging.getLogger(__name__)
+log = GDMLLogger(__name__)
 
 
 class mbGDMLTrain:

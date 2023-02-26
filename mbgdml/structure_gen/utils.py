@@ -23,6 +23,9 @@
 """Structure generation utilities"""
 
 import numpy as np
+from ..logger import GDMLLogger
+
+log = GDMLLogger(__name__)
 
 NA = 6.02214076e23  # particles/mole
 

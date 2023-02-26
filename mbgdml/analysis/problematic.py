@@ -26,7 +26,6 @@ Some code within this module is modified from https://github.com/fonsecag/MLFF.
 """
 
 import os
-import logging
 import numpy as np
 from scipy.spatial.distance import pdist
 
@@ -34,8 +33,9 @@ from . import clustering
 from ..mbe import mbePredict
 from ..utils import save_json
 from ..losses import loss_f_mse
+from ..logger import GDMLLogger
 
-log = logging.getLogger(__name__)
+log = GDMLLogger(__name__)
 
 
 class ProblematicStructures:

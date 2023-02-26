@@ -20,14 +20,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import logging
 import ray
 import numpy as np
 from .. import __version__ as mbgdml_version
 from .basedata import mbGDMLData
 from ..mbe import mbePredict, decomp_to_total
+from ..logger import GDMLLogger
 
-log = logging.getLogger(__name__)
+log = GDMLLogger(__name__)
 
 
 class PredictSet(mbGDMLData):

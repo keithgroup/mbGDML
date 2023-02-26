@@ -23,15 +23,14 @@
 """Many-body utilities."""
 
 import itertools
-import logging
 import math
 import numpy as np
 import ray
 from .utils import chunk_array, chunk_iterable, gen_combs
 from .stress import to_voigt, virial_finite_diff
+from .logger import GDMLLogger
 
-
-log = logging.getLogger(__name__)
+log = GDMLLogger(__name__)
 
 
 def gen_r_entity_combs(r_prov_spec, entity_ids_lower):
@@ -129,6 +128,8 @@ def mbe_worker(
         Many-body derivative (i.e., gradients or forces depending on the sign)
         contributions for the worker structure indices.
     """
+    log.info("MBE contributions")
+    log.info("Parent size %i", np.unique(entity_ids).shape[0])
     E = np.zeros(len(r_idxs))
     Deriv = np.zeros((len(r_idxs), *r_shape))
 
@@ -138,6 +139,7 @@ def mbe_worker(
         # structure to the molecules in this lower-order structure to remove
         # the right contribution.
         r_prov_spec = r_prov_specs[i_r]  # r_prov_specs of this structure.
+        log.debug("Parent structure r_prov_spec: %r", r_prov_spec)
 
         # Loop through every molecular combination.
         for entity_comb in gen_r_entity_combs(r_prov_spec, entity_ids_lower):
@@ -326,6 +328,11 @@ def mbe_contrib(
             log.debug("Successfully initialized ray")
         else:
             log.debug("Ray was already initialized")
+    else:
+        log.debug("Not using ray")
+    log.warning("warning")
+    log.info("info")
+    log.debug("debug")
 
     log.debug("Computing many-body expansion contributions")
     if operation not in ("add", "remove"):

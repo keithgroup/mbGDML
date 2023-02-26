@@ -26,6 +26,9 @@ import os
 import shutil
 import uuid
 import ray
+from ..logger import GDMLLogger
+
+log = GDMLLogger(__name__)
 
 
 @ray.remote

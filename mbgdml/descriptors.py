@@ -21,11 +21,11 @@
 # SOFTWARE.
 
 import itertools
-import logging
 import numpy as np
 from qcelemental import periodictable as ptable
+from .logger import GDMLLogger
 
-log = logging.getLogger(__name__)
+log = GDMLLogger(__name__)
 
 
 class Criteria:

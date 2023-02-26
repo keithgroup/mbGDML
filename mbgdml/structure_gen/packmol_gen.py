@@ -26,6 +26,9 @@ import os
 import subprocess
 import numpy as np
 from ..utils import parse_xyz, atoms_by_number
+from ..logger import GDMLLogger
+
+log = GDMLLogger(__name__)
 
 
 def get_packmol_input(

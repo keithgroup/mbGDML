@@ -23,6 +23,9 @@
 """Drive MD simulations and sample high-error, n-body structures"""
 
 import ray
+from ..logger import GDMLLogger
+
+log = GDMLLogger(__name__)
 
 
 @ray.remote
