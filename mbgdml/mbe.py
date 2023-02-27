@@ -146,9 +146,7 @@ def mbe_worker(
             # r_prov_spec of the lower-order structure.
             # Combines [r_prov_id, r_idx] with the entity combination.
             r_prov_spec_lower_comb = np.block([r_prov_spec[:2], np.array(entity_comb)])
-            log.debug(
-                "Fragment r_prov_spec: %r", r_prov_spec_lower_comb.tolist()
-            )
+            log.debug("Fragment r_prov_spec: %r", r_prov_spec_lower_comb.tolist())
 
             # Index of the structure in the lower data set.
             try:
@@ -193,7 +191,7 @@ def mbe_worker(
                 i_z_lower = np.where(entity_ids_lower == entity_id_lower)[0]
 
                 Deriv[i][i_z] += deriv_lower[i_z_lower]
-            
+
             log.debug("Fragment successfully accounted for")
 
     return r_idxs, E, Deriv
