@@ -139,20 +139,26 @@ def mbe_worker(
         # structure to the molecules in this lower-order structure to remove
         # the right contribution.
         r_prov_spec = r_prov_specs[i_r]  # r_prov_specs of this structure.
-        log.debug("Parent structure r_prov_spec: %r", r_prov_spec)
+        log.debug("Supersystem structure r_prov_spec: %r", r_prov_spec.tolist())
 
         # Loop through every molecular combination.
         for entity_comb in gen_r_entity_combs(r_prov_spec, entity_ids_lower):
             # r_prov_spec of the lower-order structure.
             # Combines [r_prov_id, r_idx] with the entity combination.
             r_prov_spec_lower_comb = np.block([r_prov_spec[:2], np.array(entity_comb)])
+            log.debug(
+                "Fragment r_prov_spec: %r", r_prov_spec_lower_comb.tolist()
+            )
 
             # Index of the structure in the lower data set.
             try:
+                log.debug("Searching for fragment's r_prov_spec")
                 i_r_lower = np.where(
                     np.all(r_prov_specs_lower == r_prov_spec_lower_comb, axis=1)
                 )[0][0]
+                log.debug("Found fragment index: %d", i_r_lower)
             except IndexError as e:
+                log.debug("Could not find fragment. This can be expected sometimes.")
                 if "for axis 0 with size 0" in str(e):
                     continue
                 raise
@@ -161,6 +167,7 @@ def mbe_worker(
 
             # Adding or removing energy contributions.
             E[i] += E_lower[i_r_lower]
+            log.debug("Fragment energy: %r", E_lower[i_r_lower])
 
             # Adding or removing derivative contributions.
             # We have to determine the corresponding atom indices of both the
@@ -178,6 +185,7 @@ def mbe_worker(
             for entity_id_prov in r_prov_spec_lower_comb[2:]:
                 entity_id = np.where(r_prov_spec[2:] == entity_id_prov)[0][0]
                 i_z = np.where(entity_ids == entity_id)[0]
+                log.debug("atom slice : %r", i_z.tolist())
 
                 entity_id_lower = np.where(
                     r_prov_spec_lower_comb[2:] == entity_id_prov
@@ -185,6 +193,8 @@ def mbe_worker(
                 i_z_lower = np.where(entity_ids_lower == entity_id_lower)[0]
 
                 Deriv[i][i_z] += deriv_lower[i_z_lower]
+            
+            log.debug("Fragment successfully accounted for")
 
     return r_idxs, E, Deriv
 
@@ -330,9 +340,6 @@ def mbe_contrib(
             log.debug("Ray was already initialized")
     else:
         log.debug("Not using ray")
-    log.warning("warning")
-    log.info("info")
-    log.debug("debug")
 
     log.debug("Computing many-body expansion contributions")
     if operation not in ("add", "remove"):
@@ -413,6 +420,7 @@ def mbe_contrib(
             done_id, worker_list = ray.wait(worker_list)
 
             r_idxs_worker, E_worker, Deriv_worker = ray.get(done_id)[0]
+            log.debug("Worker %r has finished", done_id)
             if operation == "remove":
                 E[r_idxs_worker] -= E_worker
                 Deriv[r_idxs_worker] -= Deriv_worker
