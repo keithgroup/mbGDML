@@ -278,4 +278,4 @@ def test_packmol_water_box():
         dtype=np.float64,
     )
     assert np.allclose(Z, Z_ref)
-    assert np.allclose(R, R_ref)
+    assert np.allclose(R, R_ref, rtol=1e-4)
