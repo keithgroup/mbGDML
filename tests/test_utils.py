@@ -20,29 +20,20 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-"""Switching functions."""
+"""Tests utilities"""
 
-from .logger import GDMLLogger
+# pylint: skip-file
 
-log = GDMLLogger(__name__)
+import numpy as np
+from mbgdml import utils
 
 
-def linear_switching(data, factor):
-    r"""Linear switching function:
+def test_centering_structures_dimers():
+    r"""Centering dimers"""
 
-    .. math::
+    Z = np.load("./tests/data/other/r-for-centering/Z.npy")
+    R = np.load("./tests/data/other/r-for-centering/R.npy")
+    R_ref = np.load("./tests/data/other/r-for-centering/R_center.npy")
 
-        y = Ax
-
-    where :math:`x` is ``data``, :math:`A` is the scaling ``factor``, and :math:`y` is
-    the scaled data.
-
-    Parameters
-    ----------
-    data : :obj:`float` or :obj:`numpy.ndarray`
-        Data to apply switching function to.
-    factor : :obj:`float`
-        Scaling factor :math:`a` between 0 and 1.
-    """
-    assert 0 <= factor <= 1
-    return factor * data
+    R_center = utils.center_structures(Z, R)
+    assert np.allclose(R_center, R_ref)

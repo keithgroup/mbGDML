@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Added
 
+- Some many-body expansion logging (for debugging).
+- Logger documentation.
+- Function to change mbGDML log levels.
 - Ability of ASE calculator to update periodic cell on ``mbePredict`` object.
 - Preliminary virial stress algorithms and ``stress`` module.
 - Switching function module for alchemical scaling.
@@ -20,6 +23,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Fixed
 
+- `utils.center_structures` sometimes repeated the array incorrectly.
 - Explicitly use 3DMol v1.8.0 for documentation.
 
 ## [0.0.4] - 2022-12-12

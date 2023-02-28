@@ -23,9 +23,9 @@
 
 from functools import partial
 import multiprocessing as mp
-import logging
 import numpy as np
 import scipy as sp
+from ..logger import GDMLLogger
 
 try:
     import torch
@@ -36,7 +36,7 @@ else:
 
 Pool = mp.get_context("fork").Pool
 
-log = logging.getLogger(__name__)
+log = GDMLLogger(__name__)
 
 
 def _pbc_diff(diffs, lat_and_inv, use_torch=False):

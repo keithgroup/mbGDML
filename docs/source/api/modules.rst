@@ -10,6 +10,7 @@ API
    Descriptors <descriptors/descriptors_module>
    GDML <gdml/gdml>
    Interfaces <interfaces/interfaces_module>
+   Logger <logger/logger_module>
    Losses <losses/losses_module>
    MBE <mbe/mbe_module>
    Models <models/models_module>

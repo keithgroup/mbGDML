@@ -22,9 +22,9 @@
 
 """Alchemical utilities."""
 
-import logging
+from .logger import GDMLLogger
 
-log = logging.getLogger(__name__)
+log = GDMLLogger(__name__)
 
 
 class mbeAlchemyScale:

@@ -20,8 +20,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import logging
 import numpy as np
+from ..logger import GDMLLogger
 
 try:
     from sklearn.cluster import AgglomerativeClustering
@@ -31,7 +31,7 @@ try:
 except ImportError:
     _HAS_SKLEARN = False
 
-log = logging.getLogger(__name__)
+log = GDMLLogger(__name__)
 
 
 def get_clustered_data(cl_idxs, data):

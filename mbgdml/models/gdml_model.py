@@ -21,14 +21,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import logging
 import numpy as np
 from .base import Model
 from ..utils import md5_data
 from .._gdml.desc import _from_r
 from .. import __version__ as mbgdml_version
+from ..logger import GDMLLogger
 
-log = logging.getLogger(__name__)
+log = GDMLLogger(__name__)
 
 
 # pylint: disable-next=invalid-name

@@ -21,9 +21,9 @@
 # SOFTWARE.
 
 import hashlib
-import logging
 import numpy as np
 from .base import Model
+from ..logger import GDMLLogger
 
 try:
     import quippy
@@ -32,7 +32,7 @@ try:
 except ImportError:
     _HAS_QUIPPY = False
 
-log = logging.getLogger(__name__)
+log = GDMLLogger(__name__)
 
 # pylint: disable-next=invalid-name
 class gapModel(Model):

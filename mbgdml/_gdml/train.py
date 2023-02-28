@@ -24,7 +24,6 @@
 # pylint: disable=too-many-branches, too-many-statements
 
 import sys
-import logging
 import warnings
 from functools import partial
 import multiprocessing as mp
@@ -38,7 +37,7 @@ from .sample import draw_strat_sample
 from .perm import find_perms
 from ..utils import md5_data, chunk_array
 from ..losses import mae, rmse
-
+from ..logger import GDMLLogger
 from .. import _version
 
 mbgdml_version = _version.get_versions()["version"]
@@ -69,7 +68,7 @@ try:
 except ImportError:
     pass
 
-log = logging.getLogger(__name__)
+log = GDMLLogger(__name__)
 
 
 def _share_array(arr_np, typecode_or_type):

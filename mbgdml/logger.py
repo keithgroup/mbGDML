@@ -24,71 +24,82 @@ import logging
 import random
 import time
 import numpy as np
-from .utils import atoms_by_element
+from qcelemental import periodictable as ptable
 from . import _version
 
 __version__ = _version.get_versions()["version"]
 
 
-class TimeTracker:
-    r"""Simple way to keep track of multiple timings."""
+def set_log_level(level):
+    """Dynamically control the log level of mbGDML.
 
-    def __init__(self):
+    Parameters
+    ----------
+    level : :obj:`int`
+        The desired logging level.
+    """
+    for logger_name in logging.root.manager.loggerDict:  # pylint: disable=no-member
+        if "mbgdml" in logger_name:
+            logger = logging.getLogger(logger_name)
+            logger.setLevel(level)
+            for handler in logger.handlers:
+                handler.setLevel(level)
+
+
+def atoms_by_element(atom_list):
+    r"""Converts a list of atoms identified by their atomic number to their
+    elemental symbol in the same order.
+
+    Parameters
+    ----------
+    atom_list : :obj:`list` [:obj:`int`]
+        Atomic numbers of atoms within a structure.
+
+    Returns
+    -------
+    :obj:`list` [:obj:`str`]
+        Element symbols of atoms within a structure.
+    """
+    return [ptable.to_symbol(z) for z in atom_list]
+
+
+class GDMLLogger:
+    def __init__(self, name, level=logging.INFO):
+        self.logger = logging.getLogger(name)
+        self.logger.setLevel(level)
+
+        # '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        self.formatter = logging.Formatter("%(message)s")
+        self.handler = logging.StreamHandler()
+        self.handler.setLevel(level)
+        self.handler.setFormatter(self.formatter)
+        self.logger.addHandler(self.handler)
+
         self.t_hashes = {}
 
-    def t_start(self):
-        r"""Record the time and return a random hash."""
-        t_hash = random.getrandbits(128)
-        self.t_hashes[t_hash] = time.time()
-        return t_hash
+    def log(self, level, msg, *args, **kwargs):
+        self.logger.log(level, msg, *args, **kwargs)
 
-    def t_stop(self, t_hash, message="Took {time} s", precision=5, level=20):
-        r"""Determine timing from a hash.
+    def debug(self, msg, *args, **kwargs):
+        self.logger.log(logging.DEBUG, msg, *args, **kwargs)
 
-        Parameters
-        ----------
-        t_hash : :obj:`str`
-            Timing hash generated from ``TimeTracker.start()``.
-        log : ``GDMLLogger``
-            Log object to write to.
-        message : :obj:`str`, default: ``'Took {time} s'``
-            Timing message to be written to log. ``'{time}'`` will be replaced
-            with for the elapsed time.
-        precision : :obj:`int`, default: ``5``
-            Number of decimal points to print time.
-        """
-        t_stop = time.time()
-        t_elapsed = t_stop - self.t_hashes[t_hash]
-        del self.t_hashes[t_hash]
-        # pylint: disable-next=no-member
-        self.log(level, message.replace("{time}", f"%.{precision}f" % t_elapsed))
-        return t_elapsed
+    def info(self, msg, *args, **kwargs):
+        self.logger.log(logging.INFO, msg, *args, **kwargs)
 
+    def warning(self, msg, *args, **kwargs):
+        self.logger.log(logging.WARNING, msg, *args, **kwargs)
 
-class GDMLLogger(logging.Logger, TimeTracker):
+    def error(self, msg, *args, **kwargs):
+        self.logger.log(logging.ERROR, msg, *args, **kwargs)
 
-    level = logging.INFO
+    def critical(self, msg, *args, **kwargs):
+        self.logger.log(logging.CRITICAL, msg, *args, **kwargs)
 
-    def __init__(self, name):
-
-        logging.Logger.__init__(self, name, self.level)
-        TimeTracker.__init__(self)
-
-        # only display levelname and message
-        formatter = logging.Formatter("%(message)s")
-
-        # this handler will write to sys.stderr by default
-        hd = logging.StreamHandler()  # pylint: disable=invalid-name
-        hd.setFormatter(formatter)
-        hd.setLevel(self.level)
-
-        self.addHandler(hd)
-
-    def log_array(self, array, level=20):
+    def log_array(self, array, level=logging.INFO):
         if isinstance(array, (list, tuple)):
             array = np.array(array)
         arr_str = np.array2string(array, separator=", ")
-        self.log(level, arr_str)
+        self.logger.log(level, arr_str)
 
     def log_package(self):
         title = r"""           _      ____ ____  __  __ _
@@ -97,7 +108,7 @@ class GDMLLogger(logging.Logger, TimeTracker):
 | | | | | | |_) | |_| | |_| | |  | | |___ 
 |_| |_| |_|_.__/ \____|____/|_|  |_|_____|"""
         self.info(title)
-        self.info("%s\n", __version__)
+        self.info(f"{__version__}\n")
 
     # pylint: disable-next=too-many-branches
     def log_model(self, model):
@@ -149,5 +160,33 @@ class GDMLLogger(logging.Logger, TimeTracker):
                 use_E_cstr = True
             else:
                 use_E_cstr = False
-            self.info("use_E_cstr : %r", use_E_cstr)
-        self.info("use_cprsn : %r", model["use_cprsn"])
+            self.info(f"use_E_cstr : {use_E_cstr}")
+        self.info(f"use_cprsn : {model['use_cprsn']}")
+
+    def t_start(self):
+        r"""Record the time and return a random hash."""
+        t_hash = random.getrandbits(128)
+        self.t_hashes[t_hash] = time.time()
+        return t_hash
+
+    def t_stop(self, t_hash, message="Took {time} s", precision=5, level=20):
+        r"""Determine timing from a hash.
+
+        Parameters
+        ----------
+        t_hash : :obj:`str`
+            Timing hash generated from ``TimeTracker.start()``.
+        message : :obj:`str`, default: ``'Took {time} s'``
+            Timing message to be written to log. ``'{time}'`` will be replaced
+            with for the elapsed time.
+        precision : :obj:`int`, default: ``5``
+            Number of decimal points to print.
+        level : :obj:`int`, default: ``20``
+            Log level.
+        """
+        t_stop = time.time()
+        t_elapsed = t_stop - self.t_hashes[t_hash]
+        del self.t_hashes[t_hash]
+        # pylint: disable-next=no-member
+        self.log(level, message.replace("{time}", f"%.{precision}f" % t_elapsed))
+        return t_elapsed

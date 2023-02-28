@@ -28,6 +28,9 @@ import numpy as np
 import cclib
 from qcelemental import periodictable as ptable
 from .descriptors import get_center_of_mass
+from .logger import GDMLLogger
+
+log = GDMLLogger(__name__)
 
 
 def get_files(path, expression, recursive=True):
@@ -416,8 +419,9 @@ def center_structures(Z, R):
     # Masses of each atom in the same shape of R.
     if R.ndim == 2:
         R = np.array([R])
+    n_atoms = R.shape[1]
 
-    R -= np.repeat(get_center_of_mass(Z, R), R.shape[1]).reshape(R.shape)
+    R -= np.repeat(get_center_of_mass(Z, R), n_atoms, axis=0).reshape(R.shape)
 
     if R.shape[0] == 1:
         R = R[0]
