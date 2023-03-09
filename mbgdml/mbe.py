@@ -128,8 +128,8 @@ def mbe_worker(
         Many-body derivative (i.e., gradients or forces depending on the sign)
         contributions for the worker structure indices.
     """
-    log.info("MBE contributions")
-    log.info("Parent size %i", np.unique(entity_ids).shape[0])
+    log.debug("MBE contributions")
+    log.debug("Parent size %i", np.unique(entity_ids).shape[0])
     E = np.zeros(len(r_idxs))
     Deriv = np.zeros((len(r_idxs), *r_shape))
 
