@@ -6,4 +6,3 @@
 
     GDMLLogger
     set_log_level
-    TimeTracker
