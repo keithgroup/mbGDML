@@ -13,6 +13,7 @@ Once we have a collection of structures (usually from an MD simulation) and calc
 
 
 
+.. _training-data:
 
 Data
 ====

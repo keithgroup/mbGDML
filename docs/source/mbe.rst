@@ -232,6 +232,278 @@ With methanol, we specify the OH group first, then the CH3 group, where the firs
 
 
 
+.. _mbe-data:
+
+Obtaining many-body data
+========================
+
+Data sets used for training are briefly discussed :ref:`here <training-data>`.
+Obtaining many-body energies and forces for these data sets generally requires the following multistep procedure.
+
+.. admonition:: Example
+
+    For illustrative purposes, we will provide examples for many-body GDML models for water (H2O), methanol (MeOH), and their mixtures.
+
+Identify many-body interactions
+-------------------------------
+
+The many-body expansion requires many-body interactions between all possible species.
+Thus, we must have models for each possible ``comp_id`` combination.
+For a pure system, like water, this is just 1-, 2-, and 3-body models for the species.
+Multicomponent systems will have additional combinations that will require more models.
+Understanding your desired combinations will influence how to proceed with the following sections.
+
+.. admonition:: Example
+
+    Modeling water and methanol mixtures will require the following :math:`n`-body interactions.
+
+    - **1-body:** H2O |nbsp| |nbsp| |nbsp| |nbsp| |nbsp| MeOH
+    - **2-body:** H2O+H2O |nbsp| |nbsp| |nbsp| |nbsp| |nbsp| H2O+MeOH |nbsp| |nbsp| |nbsp| |nbsp| |nbsp| MeOH+MeOH
+    - **3-body:** H2O+H2O+H2O |nbsp| |nbsp| |nbsp| |nbsp| |nbsp| H2O+H2O+MeOH |nbsp| |nbsp| |nbsp| |nbsp| |nbsp| H2O+MeOH+MeOH |nbsp| |nbsp| |nbsp| |nbsp| |nbsp| MeOH+MeOH+MeOH
+
+Generate relevant configurations
+--------------------------------
+
+Exhaustive conformational searches with flexible molecules is impossible to do analytically.
+Molecular dynamics simulations is a common technique to automatically sample structures.
+However, these simulations can become rather expensive depending on the method used to calculate energies and forces.
+Simulation quality is not too important; only realistic monomer, dimer, and trimer structures are needed at this stage.
+We often recommend using GFN2-xTB, a semiempirical quantum mechanics method, to efficiently run MD simulations at high temperatures.
+
+.. admonition:: Example
+
+    In the previous section, we note that multiple water and methanol structures are needed.
+    Careful consideration is needed to minimize the number of simulations.
+    For example, our ML models should apply to all concentrations.
+    One possible simulation scheme could be two independent simulations:
+
+    - one water molecule solvated by methanol, and
+    - one methanol molecule solvated by water.
+
+    This will provide all necessary combinations of water and methanol molecules.
+    The system must be large enough so the pure combinations (e.g., H2O+H2O and MeOH+MeOH) are not substantially affected by the other species.
+
+
+
+Sample structures
+-----------------
+
+Once all simulations are done, :math:`n`-body structures containing the desired number of components.
+The Python package `reptar <https://www.aalexmmaldonado.com/reptar/>`__ includes routines for sampling, but any procedure can be used.
+
+All possible fragment :math:`n`-body contributions need to be removed from each structure.
+Each sampled trimer requires energies and forces for the three unique dimers and monomers.
+Thus, we recommend a top-down approach where you sample all the desired trimer structures and then sample every possible dimer and monomer.
+This minimizes the total number of calculations required.
+
+.. admonition:: Example
+
+    Given our 3-body data sets, we would perform the following sampling from simulations.
+
+    1. Water in methanol (source)
+        - H2O+H2O+MeOH (destination)
+        - H2O+H2O+H2O (destination)
+    2. Methanol in water
+        - H2O+MeOH+MeOH
+        - MeOH+MeOH+MeOH
+    3. H2O+H2O+MeOH
+        - H2O+H2O
+        - H2O+MeOH
+        - H2O
+        - MeOH
+    4. H2O+H2O+H2O
+        - H2O+H2O
+        - H2O
+    5. H2O+MeOH+MeOH
+        - H2O+MeOH
+        - MeOH+MeOH
+        - H2O
+        - MeOH
+    6. MeOH+MeOH+MeOH
+        - MeOH+MeOH
+        - MeOH
+    
+
+
+Compute total energies and forces
+---------------------------------
+
+Energies and forces, preferable with a quantum chemical method needs to be computed for all sampled structures.
+This can be done in any way, but `reptar <https://www.aalexmmaldonado.com/reptar/>`__ has a driver and calculator for `Psi4 <https://psicode.org/>`__ if that is useful.
+
+
+Compute many-body data
+----------------------
+
+Once we have total energies and forces of all monomers, dimers, and trimers we can begin to create many-body data sets.
+Note that instead of a top-down approach (i.e., trimer to monomers) we have to do bottom-up (i.e., monomers to trimers).
+For example, 2-body data—with monomer contributions already removed—are needed to compute 3-body data.
+Once this is done, you can train ML models on each :math:`n`-body data set.
+
+The following code shows a simple script to automatically compute many-body energies and forces using :func:`~mbgdml.mbe.mbe_contrib` with `reptar <https://www.aalexmmaldonado.com/reptar/>`__.
+
+.. code-block:: python
+
+    """Compute n-body energies and gradients from total properties."""
+
+    import os
+    from mbgdml.mbe import mbe_contrib
+    import numpy as np
+    from reptar import File
+
+
+    rfile_path = './h2o.meoh-md-sampling.exdir'
+    parent_key = '/samples'
+
+    nbody_key = os.path.join(parent_key, 'h2o.2meoh')  # Data to make n-body
+    # Contains a nested list specifying the fragment key and if the data should be n-body.
+    fragment_keys = [
+        (os.path.join(parent_key, 'h2o.meoh'), True),  # n-body data
+        (os.path.join(parent_key, 'meoh.meoh'), True),  # n-body data
+        (os.path.join(parent_key, 'h2o'), False),  # total data
+        (os.path.join(parent_key, 'meoh'), False),  # total data
+    ]
+
+    method = 'df.mp2.def2qzvppd'
+
+    energy_key = f'energy_ele_{method}'
+    energy_nbody_key = f'energy_ele_nbody_{method}'
+    grad_key = f'grads_{method}'
+    grad_nbody_key = f'grads_nbody_{method}'
+
+    use_ray = True
+    n_workers = 4
+
+    save = True  # If False, we just print the energies.
+
+
+
+
+    ###   SCRIPT   ###
+
+    hartree2kcalmol = 627.5094737775374055927342256  # Psi4 constant
+    hartree2ev = 27.21138602  # Psi4 constant
+    ev2kcalmol = hartree2kcalmol/hartree2ev
+    kcalmol2ev = hartree2ev/hartree2kcalmol
+
+    # Ensures we execute from script directory (for relative paths).
+    os.chdir(os.path.dirname(os.path.realpath(__file__)))
+
+
+    def get_fragment_data(rfile, group_key, is_nbody):
+        """Retrieve fragment (i.e., lower order) contributions.
+
+
+        Parameters
+        ----------
+        rfile : :obj:`reptar.File`
+            File to get data.
+        group_key : :obj:`str`
+            Key to group.
+        is_nbody : :obj:`bool`
+            If we should retrieve :math:`n`-body data or not.
+
+        Returns
+        -------
+        Arguments for fragment (i.e., lower-order) data in :obj:`mbgdml.mbe.mbe_contrib`
+        """
+        global energy_key, energy_nbody_key, grad_key, grad_nbody_key
+
+        if is_nbody:
+            E = rfile.get(os.path.join(group_key, energy_nbody_key))
+            G = rfile.get(os.path.join(group_key, grad_nbody_key))
+        else:
+            E = rfile.get(os.path.join(group_key, energy_key))
+            G = rfile.get(os.path.join(group_key, grad_key))
+        entity_ids = rfile.get(os.path.join(group_key, 'entity_ids'))
+        r_prov_ids = rfile.get(os.path.join(group_key, 'r_prov_ids'))
+        r_prov_specs = rfile.get(os.path.join(group_key, 'r_prov_specs'))
+        
+        return E, G, entity_ids, r_prov_ids, r_prov_specs
+
+
+    # Retrieve data
+    print('Loading data')
+    rfile = File(rfile_path, mode='a', allow_remove=False)
+
+    E_mb = rfile.get(os.path.join(nbody_key, energy_key), as_memmap=False)
+    G_mb = rfile.get(os.path.join(nbody_key, grad_key), as_memmap=False)
+    entity_ids = rfile.get(os.path.join(nbody_key, 'entity_ids'), as_memmap=False)
+    try:
+        r_prov_ids = rfile.get(os.path.join(nbody_key, 'r_prov_ids'), as_memmap=False)
+    except RuntimeError as e:
+        if 'does not exist' in str(e):
+            print('Did not find r_prov_ids')
+            r_prov_ids = None
+    try:
+        r_prov_specs = rfile.get(os.path.join(nbody_key, 'r_prov_specs'), as_memmap=False)
+    except RuntimeError as e:
+        if 'does not exist' in str(e):
+            print('Did not find r_prov_specs')
+            r_prov_specs = None
+
+    # Remove fragment energies and gradients
+    for fragment_key, is_nbody in fragment_keys:
+        print(f'Removing {fragment_key} data')
+        fragment_data = get_fragment_data(rfile, fragment_key, is_nbody)
+
+        E_mb, G_mb = mbe_contrib(
+            E_mb, G_mb, entity_ids, r_prov_ids, r_prov_specs,
+            *fragment_data, operation='remove', use_ray=use_ray, n_workers=n_workers
+        )
+
+
+    # Check if any are NaN
+    if np.count_nonzero(np.isnan(E_mb)) != 0:
+        print('Check your calculations ... some are NaN')
+        exit()
+
+    if save:
+        # Put n-body data
+        print(f'Saving n-body energies and gradients')
+        rfile.put(os.path.join(nbody_key, energy_nbody_key), E_mb)
+        rfile.put(os.path.join(nbody_key, grad_nbody_key), G_mb)
+
+    print('\n')
+    E_mb *= hartree2kcalmol
+    G_mb *= hartree2kcalmol
+    print('{:<10}   {:^10}      {:^10}    {:^10}'.format('Property', '   Min   ', '  Mean   ', '   Max   '))
+    print('{:<10}   {:^10}      {:^10}    {:^10}'.format('--------', '---------', '---------', '---------'))
+    print('{:<10}   {:^10.3f}      {:^10.3f}     {:^10.3f}'.format('Energy', np.min(E_mb), np.mean(E_mb), np.max(E_mb)))
+    print('{:<10}   {:^10.3f}      {:^10.3f}     {:^10.3f}'.format('Force', np.min(-G_mb), np.mean(-G_mb), np.max(-G_mb)))
+
+.. admonition:: Example
+
+    Perform the following computations with either **total** or :math:`n`-body data.
+    1-body data is considered **total** here.
+    Note that all of the unique entities should be contained in the lower-order data sets.
+
+    1. **H2O+H2O** (parent)
+        - **H2O** (fragment)
+    2. **H2O+MeOH**
+        - **H2O**
+        - **MeOH**
+    3. **MeOH+MeOH**
+        - **MeOH**
+    4. **H2O+H2O+H2O**
+        - H2O+H2O
+        - **H2O**
+    5. **H2O+H2O+MeOH**
+        - H2O+H2O
+        - H2O+MeOH
+        - **H2O**
+        - **MeOH**
+    6. **H2O+MeOH+MeOH**
+        - H2O+MeOH
+        - MeOH+MeOH
+        - **H2O**
+        - **MeOH**
+    7. **MeOH+MeOH+MeOH**
+        - MeOH+MeOH
+        - **MeOH**
+    
+
+
 Additional resources
 ====================
 
@@ -250,3 +522,5 @@ Please see the following incomplete list of literature for additional informatio
 - **Metals**: `10.1063/5.0094598 <https://doi.org/10.1063/5.0094598>`__
 
 
+.. |nbsp| unicode:: 0xA0 
+   :trim:
