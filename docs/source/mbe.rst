@@ -277,8 +277,8 @@ We often recommend using GFN2-xTB, a semiempirical quantum mechanics method, to 
     For example, our ML models should apply to all concentrations.
     One possible simulation scheme could be two independent simulations:
 
-    - one water molecule solvated by methanol, and
-    - one methanol molecule solvated by water.
+    - one water molecule solvated by methanol,
+    - and one methanol molecule solvated by water.
 
     This will provide all necessary combinations of water and methanol molecules.
     The system must be large enough so the pure combinations (e.g., H2O+H2O and MeOH+MeOH) are not substantially affected by the other species.
@@ -300,28 +300,39 @@ This minimizes the total number of calculations required.
 
     Given our 3-body data sets, we would perform the following sampling from simulations.
 
-    1. Water in methanol (source)
-        - H2O+H2O+MeOH (destination)
-        - H2O+H2O+H2O (destination)
-    2. Methanol in water
-        - H2O+MeOH+MeOH
-        - MeOH+MeOH+MeOH
-    3. H2O+H2O+MeOH
-        - H2O+H2O
-        - H2O+MeOH
-        - H2O
-        - MeOH
-    4. H2O+H2O+H2O
-        - H2O+H2O
-        - H2O
-    5. H2O+MeOH+MeOH
-        - H2O+MeOH
-        - MeOH+MeOH
-        - H2O
-        - MeOH
-    6. MeOH+MeOH+MeOH
-        - MeOH+MeOH
-        - MeOH
+    - Water in methanol (source)
+
+      - H2O+H2O+MeOH (destination)
+      - H2O+H2O+H2O (destination)
+
+    - Methanol in water
+
+      - H2O+MeOH+MeOH
+      - MeOH+MeOH+MeOH
+
+    - H2O+H2O+MeOH
+
+      - H2O+H2O
+      - H2O+MeOH
+      - H2O
+      - MeOH
+
+    - H2O+H2O+H2O
+
+      - H2O+H2O
+      - H2O
+
+    - H2O+MeOH+MeOH
+
+      - H2O+MeOH
+      - MeOH+MeOH
+      - H2O
+      - MeOH
+
+    - MeOH+MeOH+MeOH
+
+      - MeOH+MeOH
+      - MeOH
     
 
 
@@ -478,29 +489,42 @@ The following code shows a simple script to automatically compute many-body ener
     1-body data is considered **total** here.
     Note that all of the unique entities should be contained in the lower-order data sets.
 
-    1. **H2O+H2O** (parent)
-        - **H2O** (fragment)
-    2. **H2O+MeOH**
-        - **H2O**
-        - **MeOH**
-    3. **MeOH+MeOH**
-        - **MeOH**
-    4. **H2O+H2O+H2O**
-        - H2O+H2O
-        - **H2O**
-    5. **H2O+H2O+MeOH**
-        - H2O+H2O
-        - H2O+MeOH
-        - **H2O**
-        - **MeOH**
-    6. **H2O+MeOH+MeOH**
-        - H2O+MeOH
-        - MeOH+MeOH
-        - **H2O**
-        - **MeOH**
-    7. **MeOH+MeOH+MeOH**
-        - MeOH+MeOH
-        - **MeOH**
+    - **H2O+H2O** (parent)
+
+      - **H2O** (fragment)
+
+    - **H2O+MeOH**
+
+      - **H2O**
+      - **MeOH**
+
+    - **MeOH+MeOH**
+
+      - **MeOH**
+
+    - **H2O+H2O+H2O**
+    
+      - H2O+H2O
+      - **H2O**
+
+    - **H2O+H2O+MeOH**
+
+      - H2O+H2O
+      - H2O+MeOH
+      - **H2O**
+      - **MeOH**
+
+    - **H2O+MeOH+MeOH**
+
+      - H2O+MeOH
+      - MeOH+MeOH
+      - **H2O**
+      - **MeOH**
+
+    - **MeOH+MeOH+MeOH**
+
+      - MeOH+MeOH
+      - **MeOH**
     
 
 
