@@ -26,6 +26,7 @@ import os
 import shutil
 import uuid
 import ray
+from ..structure_gen.packmol_gen import run_packmol
 from ..logger import GDMLLogger
 
 log = GDMLLogger(__name__)
@@ -82,6 +83,9 @@ class MDDriver:
         packmol_input : :obj:`str`
             Input file for packmol structure generation.
         """
+        output_path = os.path.join(self.temp_dir, "packmol-output.xyz")
+        packmol_input.append(f"output {output_path}\n")
+        self.Z, self.R = run_packmol(self.temp_dir, packmol_input)
 
     def check_md_stability(self, R, E):
         r"""Determines if the MD simulation is unstable and needs to be terminated.
