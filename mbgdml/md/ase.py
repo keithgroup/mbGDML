@@ -23,9 +23,8 @@
 """Drive MD simulations and sample high-error, n-body structures"""
 
 import os
-import shutil
 import sys
-import uuid
+import time
 from ase import Atoms
 from ase import units as ase_units
 from ase.md.npt import NPT
@@ -33,18 +32,21 @@ from ase.md.velocitydistribution import MaxwellBoltzmannDistribution
 from ase.optimize import BFGS
 from ase.io.trajectory import Trajectory
 import numpy as np
-import ray
+from .drive_md import MDDriver
 from ..interfaces.ase import mbeCalculator
-from ..structure_gen.packmol_gen import run_packmol
-from ..utils import get_entity_ids, get_comp_ids
 from ..logger import GDMLLogger
 
 log = GDMLLogger(__name__)
 
 
-@ray.remote(num_cpus=2)
-class MDDriver:
-    r"""Run MD simulations using the ASE interface."""
+class ASEMDDriver(MDDriver):
+    r"""Run MD simulations using the ASE interface.
+
+    .. tip::
+
+        If you want to use this class as an Actor with ray, import ``ASEMDDriver``
+        and use ``ASEMDDriver = ray.remote(ASEMDDriver)``.
+    """
 
     def __init__(
         self,
@@ -60,14 +62,14 @@ class MDDriver:
         opt_f_max=0.4,
         opt_max_steps=50,
         md_n_steps=1000,
-        md_t_step=1.0 * ase_units.fs,
+        md_t_step=1.0,
         md_init_temp=100.0,
         md_temp=300.0,
-        nose_hoover_ttime=50.0 * ase_units.fs,
-        md_external_stress=101325 * ase_units.Pascal,
+        nose_hoover_ttime=50.0,
+        md_external_stress=101325,
         md_traj_interval=1,
         md_stability_interval=5,
-        keep_files=False,
+        keep_files=True,
     ):
         r"""
         Parameters
@@ -93,113 +95,71 @@ class MDDriver:
         ase_e_conv : :obj:`float`, default: ``1.0``
             Model energy conversion factor to eV (required by ASE).
         ase_f_conv : :obj:`float`, default: ``1.0``
-            Model forces conversion factor to eV/A (required by ASE).
+            Model forces conversion factor to eV/Å (required by ASE).
         opt_f_max : :obj:`float`, default: ``0.4``
-            Max force in eV/A to be considered converged.
+            Max force in eV/Å to be considered converged.
         opt_max_steps : :obj:`int`, default: ``50``
             Maximum number of geometry optimization steps.
         md_n_steps : :obj:`int`, default: ``1000``
             Number of MD steps to take after optimization.
-        md_t_step : :obj:`float`, default: ``1.0*ase_units.fs``
-            MD time step in ASE units.
+        md_t_step : :obj:`float`, default: ``1.0``
+            MD time step in femtoseconds.
         md_init_temp : :obj:`float`, default: ``100``
-            Temperature used to initialize velocities for MD simulations using the
-            Maxwell-Boltzmann distribution.
+            Temperature (Kelvin) used to initialize velocities for MD simulations using
+            the Maxwell-Boltzmann distribution.
         md_temp : :obj:`float`, default: ``300``
-            Temperature set point for thermostat.
-        nose_hoover_ttime : :obj:`float`, default: ``50.0*ase_units.fs``
-            Characteristic timescale of the thermostat in ASE internal units.
-        md_external_stress : :obj:`float`, default: ``101325*ase_units.Pascal``
-            External stress to the system in ASE internal units. The value is not
-            actually used.
+            Temperature (Kelvin) set point for thermostat.
+        nose_hoover_ttime : :obj:`float`, default: ``50.0``
+            Characteristic timescale of the thermostat in femtoseconds.
+
+            .. warning::
+
+                This parameter is specific to your system (and potential). The default
+                value is likely not appropriate and an optimal value should be
+                investigated.
+        md_external_stress : :obj:`float`, default: ``101325``
+            External stress to the system in Pascals. The value is not actually used
+            in the NVT simulations performed here.
         md_traj_interval : :obj:`int`, default: ``1``
             Steps between logging in the trajectory.
+        md_stability_interval : :obj:`int`, default: ``5``
+            Number of previous MD steps to include in MD stability analysis.
         keep_files : :obj:`bool`, default: ``True``
             Keep all working files of this Actor.
         """
-        self.log = GDMLLogger(__name__)
-        self.log.info("Initializing MDDriver")
+        # Perform any conversion into internal ASE units.
+        md_t_step *= ase_units.fs
+        nose_hoover_ttime *= ase_units.fs
+        md_external_stress *= ase_units.Pascal
 
-        self.work_dir = work_dir
-        if not os.path.exists(work_dir):
-            raise RuntimeError(f"The working directory, {work_dir}, does not exist")
+        super().__init__(
+            work_dir,
+            packmol_input,
+            mol_n_atoms,
+            mol_comp_ids,
+            mbe_pred,
+            label=label,
+            periodic_cell=periodic_cell,
+            opt_max_steps=opt_max_steps,
+            md_t_step=md_t_step,
+            md_n_steps=md_n_steps,
+            md_traj_interval=md_traj_interval,
+            md_stability_interval=md_stability_interval,
+            keep_files=keep_files,
+        )
 
-        self.packmol_input = packmol_input
-        self.mol_n_atoms = mol_n_atoms
-        self.mol_comp_ids = mol_comp_ids
-
-        self.mbe_pred = mbe_pred
-
-        if label is None:
-            label = str(uuid.uuid4().hex)
-        self.label = label
-        self.log.debug("Label is %s", label)
-        self.temp_dir = os.path.join(work_dir, label)
-        os.mkdir(self.temp_dir)
-
-        self.periodic_cell = periodic_cell
         self.ase_e_conv = ase_e_conv
         self.ase_f_conv = ase_f_conv
         self.opt_f_max = opt_f_max
-        self.opt_max_steps = opt_max_steps
-        self.md_n_steps = md_n_steps
-        self.md_t_step = md_t_step
         self.md_init_temp = md_init_temp
         self.md_temp = md_temp
         self.nose_hoover_ttime = nose_hoover_ttime
         self.md_external_stress = md_external_stress
-        self.md_traj_interval = md_traj_interval
-        self.md_stability_interval = md_stability_interval
-
-        self.opt_traj_name = "opt.traj"
-        self.md_traj_name = "nvt.traj"
-
-        self.keep_files = keep_files
 
         self.log.info("Done initializing MDDriver")
 
-    def getattr(self, attr):
-        r"""Get attribute.
-
-        Parameters
-        ----------
-        attr : :obj:`str`
-            Attribute name.
-
-        Returns
-        -------
-        Attribute
-        """
-        return getattr(self, attr)
-
-    # pylint: disable-next=invalid-name
-    def create_starting_R(self):
-        r"""Create the starting structure for a MD simulation using packmol."""
-        self.log.info("Generating structure with packmol")
-
-        # Determine entity_ids and comp_ids for predictions.
-        i = 0
-        entity_ids = np.array([])
-        comp_ids = np.array([])
-        for line in self.packmol_input:
-            if " number " in line:
-                # This is a new species.
-                num_mol = int(line.strip().split()[-1])
-                entity_ids = get_entity_ids(
-                    self.mol_n_atoms[i], num_mol, add_to=entity_ids
-                )
-                comp_ids = get_comp_ids(self.mol_comp_ids[i], num_mol, add_to=comp_ids)
-                i += 1
-        self.entity_ids = entity_ids
-        self.comp_ids = comp_ids
-
-        output_path = os.path.join(self.temp_dir, "packmol-output.xyz")
-        self.packmol_input.append(f"output {output_path}\n")
-        # pylint: disable-next=invalid-name
-        self.Z_packmol, self.R_packmol = run_packmol(self.temp_dir, self.packmol_input)
-
-    def setup_ase(self):
-        """Prepares ASE atoms with calculator."""
+    def setup(self):
+        r"""Prepares ASE atoms with calculator."""
         self.log.info("Setting up ASE calculator")
         pbc = False
         cell_v = None
@@ -224,39 +184,29 @@ class MDDriver:
         dyn = BFGS(atoms=self.ase_atoms, trajectory=traj_path)
         dyn.run(fmax=self.opt_f_max, steps=self.opt_max_steps)
 
-    def check_md_stability(self):
-        r"""Determines if the MD simulation is stable. If not, it will be terminated.
-        
+    def get_energies(self):
+        r"""Retrieves energies for checking MD stability.
+
         Returns
         -------
-        :obj:`bool`
-            If the MD simulation is stable.
+        :obj:`numpy.ndarray`
+            Energies to use for checking MD simulation.
         """
-        self.log.info("Checking MD simulations")
         traj_path = os.path.join(self.temp_dir, self.md_traj_name)
         md_traj_read = Trajectory(traj_path, mode="r")
         energies = []
         for atoms in md_traj_read[-self.md_stability_interval :]:
             energies.append(atoms.get_potential_energy())
         energies = np.array(energies)
-        energies -= energies[0]
-        energy_change_abs_mean = np.abs(np.mean(energies[1:]))
-        self.log.debug("Average absolute energy change: %d", energy_change_abs_mean)
-        threshold = 3.0
-        if energy_change_abs_mean > threshold:
-            self.log.debug("This is above the threshold of %d", threshold)
-            self.log.debug("MD simulation is considered unstable")
-            return False
-        self.log.debug("MD simulation is considered stable")
-        return True
+        return energies
 
-    def nvt(self):
+    def md(self):
         """Perform MD simulation."""
         self.log.info("Setting up MD")
         ase_atoms = self.ase_atoms
         self.log.debug("Initializing velocities using Maxwell-Boltzmann distribution")
         MaxwellBoltzmannDistribution(ase_atoms, temperature_K=self.md_init_temp)
-        self.log.debug("Setting up NPT object")
+        self.log.debug("Setting up NVT object")
         self.md = NPT(  # pylint: disable=invalid-name
             atoms=ase_atoms,
             timestep=self.md_t_step,
@@ -269,7 +219,7 @@ class MDDriver:
         md_traj_path = os.path.join(self.temp_dir, self.md_traj_name)
         md_traj = Trajectory(md_traj_path, mode="w", atoms=ase_atoms)
 
-        self.md_step = 0
+        self.md_step = 1
 
         def print_ase_step(
             a=ase_atoms,
@@ -280,10 +230,13 @@ class MDDriver:
             ekin_per_atom = ekin / len(a)
             temp_step = ekin_per_atom / (1.5 * ase_units.kB)
 
+            Time = time.localtime()  # pylint: disable=invalid-name
+            time_string = f"{Time[3]:02}:{Time[4]:02}:{Time[5]:02}"
+            if self.md_step == 1:
+                print(" Step        Time         E_pot (eV)      T (K)")
             print(
-                f"Step {self.md_step : >5}/{self.md_n_steps : <5}     "
-                f"E_pot: {epot : >15.8f} eV     "
-                f"T: {temp_step : >7.2f} K"
+                f"{self.md_step:>5}    {time_string:>8}"
+                f"    {epot:>15.8f}    {temp_step:>7.2f}"
             )
             self.md_step += 1
             if self.md_step > self.md_stability_interval:
@@ -299,16 +252,3 @@ class MDDriver:
         except SystemExit as e:
             if "MD simulation is unstable" != str(e):
                 raise e
-
-    def cleanup(self):
-        r"""Cleanup temporary files and such."""
-        if not self.keep_files:
-            shutil.rmtree(self.temp_dir)
-
-    def run(self):
-        r"""Prepare and run MD simulation."""
-        self.create_starting_R()
-        self.setup_ase()
-        self.optimize()
-        self.nvt()
-        self.cleanup()

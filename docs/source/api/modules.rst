@@ -13,6 +13,7 @@ API
    Logger <logger/logger_module>
    Losses <losses/losses_module>
    MBE <mbe/mbe_module>
+   MD <md/md_module>
    Models <models/models_module>
    Prediction Sets <PredictSet>
    Periodic <periodic/periodic_module>
