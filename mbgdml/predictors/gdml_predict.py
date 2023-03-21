@@ -222,7 +222,7 @@ def predict_gdml(Z, R, entity_ids, entity_combs, model, periodic_cell, **kwargs)
         # If we are using a periodic cell we convert r_comp into coordinates
         # we can use in many-body expansions.
         if periodic:
-            r = periodic_cell.r_mic(r)
+            r = periodic_cell.r_mic(r, check_cutoff=True)
             if r is None:
                 # Any atomic pairwise distance was larger than cutoff.
                 continue

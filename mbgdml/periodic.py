@@ -69,6 +69,8 @@ class Cell:
         ----------
         d : :obj:`numpy.ndarray`, ndim: ``2``
             Distances computed within the periodic cell.
+        check_cutoff : :obj:`bool`, default: ``True``
+            Check the minimum-image convention cutoff.
 
         Returns
         -------
@@ -83,7 +85,7 @@ class Cell:
                 return None
         return d_periodic
 
-    def r_mic(self, r):
+    def r_mic(self, r, check_cutoff=True):
         r"""Find minimum-image convention coordinates of molecule(s) under
         periodic boundary conditions.
 
@@ -94,6 +96,8 @@ class Cell:
         ----------
         r : :obj:`numpy.ndarray`, ndim: ``2``
             Cartesian coordinates of atoms under periodic boundary conditions.
+        check_cutoff : :obj:`bool`, default: ``True``
+            Check the minimum-image convention cutoff.
 
         Returns
         -------
@@ -104,7 +108,7 @@ class Cell:
         # Computes the distance from the first atom.
         assert r.ndim == 2
         d = np.subtract(r, r[0, :])
-        return self.d_mic(d)
+        return self.d_mic(d, check_cutoff)
 
     @property
     def cell_v(self):
