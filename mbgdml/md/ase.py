@@ -45,7 +45,9 @@ class ASEMDDriver(MDDriver):
     .. tip::
 
         If you want to use this class as an Actor with ray, import ``ASEMDDriver``
-        and use ``ASEMDDriver = ray.remote(ASEMDDriver)``.
+        and use ``ASEMDDriver = ray.remote(ASEMDDriver)``. Make sure to set the
+        environmental variable ``OMP_NUM_THREADS`` to ``1`` if starting ray with the
+        cli.
     """
 
     def __init__(

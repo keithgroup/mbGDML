@@ -522,3 +522,8 @@ def chunk_array(array, n):
     for i in range(0, len(array), n):
         array_worker = array[i : i + n]
         yield array_worker
+
+
+def _setup_ray_environment():
+    """Sets environmental variables for correct ray parallelization."""
+    os.environ["OMP_NUM_THREADS"] = "1"

@@ -25,11 +25,12 @@
 import ray
 import numpy as np
 from ..periodic import Cell
-from ..utils import gen_combs, chunk_iterable
+from ..utils import gen_combs, chunk_iterable, _setup_ray_environment
 from ..logger import GDMLLogger
 
 log = GDMLLogger(__name__)
 
+_setup_ray_environment()
 
 # Possible ray task.
 def _bin_distances(R, R_idxs, atom_pairs, rdf_settings, cell_vectors):

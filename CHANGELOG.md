@@ -25,6 +25,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Fixed
 
+- Explicitly set ``OMP_NUM_THREADS`` to ``1`` for ``mbe`` and ``rdf`` modules.
 - `utils.center_structures` sometimes repeated the array incorrectly.
 - Explicitly use 3DMol v1.8.0 for documentation.
 

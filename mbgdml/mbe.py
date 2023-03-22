@@ -26,11 +26,13 @@ import itertools
 import math
 import numpy as np
 import ray
-from .utils import chunk_array, chunk_iterable, gen_combs
+from .utils import chunk_array, chunk_iterable, gen_combs, _setup_ray_environment
 from .stress import to_voigt, virial_finite_diff
 from .logger import GDMLLogger
 
 log = GDMLLogger(__name__)
+
+_setup_ray_environment()
 
 
 def gen_r_entity_combs(r_prov_spec, entity_ids_lower):
@@ -309,6 +311,18 @@ def mbe_contrib(
     use_ray : :obj:`bool`, default: ``False``
         Use `ray <https://docs.ray.io/en/latest/>`__ to parallelize
         computations.
+
+        .. attention::
+
+            Since ray 2.2.0, ``OMP_NUM_THREADS`` defaults to ``num_cpus``
+            unless ``num_cpus`` is less than ``1``. ``OMP_NUM_THREADS`` is
+            commonly used in NumPy, PyTorch, and TensorFlow and should be ``1`` in
+            a multi-worker setting. Thus, this needs to be set before initializing
+            or starting ray. This can be done with ``export OMP_NUM_THREADS=1``
+            before staring ray via the cli. If ``mbgdml`` has to initialize ray, it
+            will automatically set this for you. For more information, see the
+            relevant
+            `pull request <https://github.com/ray-project/ray/pull/30496>`__.
     n_workers : :obj:`int`, default: ``1``
         Total number of workers available for ray. This is ignored if ``use_ray``
         is ``False``.
@@ -401,7 +415,7 @@ def mbe_contrib(
         worker_list = []
         for r_idxs in gen_r_idxs_worker(r_prov_specs, r_prov_ids_lower, n_workers):
             worker_list.append(
-                worker.options(num_cpus=1).remote(
+                worker.remote(
                     r_shape,
                     entity_ids,
                     r_prov_specs,
@@ -544,6 +558,18 @@ class mbePredict:
         use_ray : :obj:`bool`, default: ``False``
             Use `ray <https://docs.ray.io/en/latest/>`__ to parallelize
             computations.
+
+            .. attention::
+
+                Since ray 2.2.0, ``OMP_NUM_THREADS`` defaults to ``num_cpus``
+                unless ``num_cpus`` is less than ``1``. ``OMP_NUM_THREADS`` is
+                commonly used in NumPy, PyTorch, and TensorFlow and should be ``1`` in
+                a multi-worker setting. Thus, this needs to be set before initializing
+                or starting ray. This can be done with ``export OMP_NUM_THREADS=1``
+                before staring ray via the cli. If ``mbgdml`` has to initialize ray, it
+                will automatically set this for you. For more information, see the
+                relevant
+                `pull request <https://github.com/ray-project/ray/pull/30496>`__.
         n_workers : :obj:`int`, default: ``1``
             Total number of workers available for ray. This is ignored if ``use_ray``
             is ``False``.
