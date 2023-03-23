@@ -24,6 +24,7 @@
 
 import itertools
 import math
+import tempfile
 import numpy as np
 import ray
 from .utils import chunk_array, chunk_iterable, gen_combs, _setup_ray_environment
@@ -543,6 +544,8 @@ class mbePredict:
         alchemy_scalers=None,
         periodic_cell=None,
         compute_stress=False,
+        use_memmaps=False,
+        temp_dir=None,
     ):
         r"""
         Parameters
@@ -601,6 +604,12 @@ class mbePredict:
             particles at positions :math:`\mathbf{r}` to the pressure stress tensor of
             a periodic box with volume :math:`V`. The kinetic contribution is not
             computed here.
+        use_memmaps : :obj:`bool`, default: ``True``
+            Store memory-intensive NumPy arrays as memory-map. Useful for large
+            predictions in parallel operation that would be too memory intensive.
+            Memory-maps will be returned instead of arrays if ``True``.
+        temp_dir : :obj:`str`, default: ``None``
+            Temporary directory to store memory-maps if requested.
         """
         self.models = models
         self.predict_model = predict_model
@@ -618,6 +627,11 @@ class mbePredict:
         self.alchemy_scalers = alchemy_scalers
         self.periodic_cell = periodic_cell
         self.compute_stress = compute_stress
+        self.use_memmaps = use_memmaps
+        self.temp_dir = temp_dir
+        if use_memmaps:
+            # pylint: disable-next=consider-using-with
+            self.temp_dir = tempfile.TemporaryDirectory(dir=temp_dir)
 
         self.virial_form = "group"
         r"""The form to use from
@@ -717,6 +731,10 @@ class mbePredict:
             #        ray.put(scaler) for scaler in alchemy_scalers
             #    ]
             self.predict_model = ray.remote(predict_model)
+
+    def __del__(self):
+        if self.use_memmaps:
+            self.temp_dir.cleanup()
 
     @property
     def periodic_cell(self):
@@ -839,7 +857,19 @@ class mbePredict:
                 virial += virial_model[0]
         else:
             E = 0.0
-            F = np.zeros(R.shape, dtype=np.float64)
+            if self.use_memmaps:
+                # pylint: disable-next=R1732,invalid-name
+                F_path = tempfile.NamedTemporaryFile(dir=self.temp_dir.name).name
+                F = np.memmap(
+                    F_path,
+                    dtype=np.float64,
+                    mode="w+",
+                    shape=R.shape,
+                )
+            else:
+                # pylint: disable-next=invalid-name
+                F_path = None
+                F = np.zeros(R.shape, dtype=np.float64)
 
             # Put all common data into the ray object store.
             Z = ray.put(Z)
@@ -866,6 +896,7 @@ class mbePredict:
                         chunk,
                         model,
                         periodic_cell,
+                        F_path=F_path,
                         **kwargs_pred,
                     )
                 )
@@ -883,7 +914,8 @@ class mbePredict:
                 E_worker, F_worker, *virial_model = ray.get(done_id)[0]
 
                 E += E_worker
-                F += F_worker
+                if not self.use_memmaps:
+                    F += F_worker
                 if compute_stress:
                     virial += virial_model[0]
 
@@ -916,7 +948,7 @@ class mbePredict:
         ----------
         Z : :obj:`numpy.ndarray`, ndim: ``1``
             Atomic numbers of all atoms in the system with respect to ``r``.
-        r : :obj:`numpy.ndarray`, shape: ``(len(Z), 3)``
+        R : :obj:`numpy.ndarray`, shape: ``(len(Z), 3)``
             Cartesian coordinates of a single structure.
         entity_ids : :obj:`numpy.ndarray`, shape: ``(len(Z),)``
             Integers specifying which atoms belong to which entities.
@@ -1064,8 +1096,25 @@ class mbePredict:
         compute_stress = self.compute_stress and bool(self.periodic_cell)
 
         # Preallocate memory for energies and forces.
-        E = np.zeros((n_R,), dtype=np.float64)
-        F = np.zeros(R.shape, dtype=np.float64)
+        if not self.use_memmaps:
+            E = np.zeros((n_R,), dtype=np.float64)
+            F = np.zeros(R.shape, dtype=np.float64)
+        else:
+            # pylint: disable=R1732
+            E = np.memmap(
+                tempfile.NamedTemporaryFile(dir=self.temp_dir.name).name,
+                dtype="float64",
+                mode="w+",
+                shape=(n_R,),
+            )
+            F = np.memmap(
+                tempfile.NamedTemporaryFile(dir=self.temp_dir.name).name,
+                dtype="float64",
+                mode="w+",
+                shape=R.shape,
+            )
+            E[:] = 0.0
+            F[:] = 0.0
         if compute_stress:
             assert self.virial_form in ("group", "finite_diff")
             stress = np.zeros((n_R, 3, 3), dtype=np.float64)

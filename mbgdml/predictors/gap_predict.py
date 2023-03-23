@@ -23,6 +23,7 @@
 import numpy as np
 import ase
 from ..logger import GDMLLogger
+from ..utils import get_R_slice
 
 log = GDMLLogger(__name__)
 
@@ -68,9 +69,7 @@ def predict_gap(Z, R, entity_ids, entity_combs, model, periodic_cell, **kwargs):
 
         # Gets indices of all atoms in the combination of molecules.
         # r_slice is a list of the atoms for the entity_id combination.
-        r_slice = []
-        for entity_id in entity_id_comb:
-            r_slice.extend(np.where(entity_ids == entity_id)[0])
+        r_slice = get_R_slice(entity_id_comb, entity_ids)
 
         z_comp = Z[r_slice]
         r_comp = R[r_slice]

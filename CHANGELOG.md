@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Added
 
+- Option to use NumPy memory-maps for predictions.
 - MD driver using packmol and ASE.
 - Additional documentation on obtaining many-body data.
 - Some many-body expansion logging (for debugging).

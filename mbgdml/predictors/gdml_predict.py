@@ -24,6 +24,7 @@
 import numpy as np
 from ..logger import GDMLLogger
 from ..stress import virial_atom_loop
+from ..utils import get_R_slice
 
 log = GDMLLogger(__name__)
 
@@ -167,7 +168,16 @@ def _predict_gdml_wkr(
 
 # Possible ray task.
 # pylint: disable-next=too-many-branches
-def predict_gdml(Z, R, entity_ids, entity_combs, model, periodic_cell, **kwargs):
+def predict_gdml(
+    Z,
+    R,
+    entity_ids,
+    entity_combs,
+    model,
+    periodic_cell,
+    F_path=None,  # pylint: disable=invalid-name
+    **kwargs
+):
     r"""Predict total :math:`n`-body energy and forces of a single structure.
 
     Parameters
@@ -196,7 +206,10 @@ def predict_gdml(Z, R, entity_ids, entity_combs, model, periodic_cell, **kwargs)
     """
     assert R.ndim == 2
     E = 0.0
-    F = np.zeros(R.shape)
+    if F_path is None:
+        F = np.zeros(R.shape)
+    else:
+        F = np.memmap(F_path, dtype=np.float64, mode="r+", shape=R.shape)
 
     alchemy_scalers = kwargs.get("alchemy_scalers", None)
     compute_virial = kwargs.get("compute_virial", False)
@@ -211,9 +224,7 @@ def predict_gdml(Z, R, entity_ids, entity_combs, model, periodic_cell, **kwargs)
 
         # Gets indices of all atoms in the combination of molecules.
         # r_slice is a list of the atoms for the entity_id combination.
-        r_slice = []
-        for entity_id in entity_id_comb:
-            r_slice.extend(np.where(entity_ids == entity_id)[0])
+        r_slice = get_R_slice(entity_id_comb, entity_ids)
 
         z = Z[r_slice]
         r = R[r_slice]
