@@ -779,8 +779,10 @@ class mbePredict:
             avail_entity_ids.append(matching_entity_ids)
         return avail_entity_ids
 
-    # pylint: disable=too-many-branches, too-many-statements
-    def compute_nbody(self, Z, R, entity_ids, comp_ids, model):
+    # pylint: disable=too-many-branches, too-many-statements, invalid-name
+    def compute_nbody(
+        self, Z, R, R_shape, R_idx, entity_ids, comp_ids, model
+    ):
         r"""Compute all :math:`n`-body contributions of a single structure
         using a :obj:`mbgdml.models.Model` object.
 
@@ -793,6 +795,10 @@ class mbePredict:
             Atomic numbers of all atoms in the system with respect to ``r``.
         R : :obj:`numpy.ndarray`, shape: ``(len(Z), 3)``
             Cartesian coordinates of a single structure.
+        R_shape : :obj:`tuple`
+            Shape of ``R`` to compute.
+        R_idx : :obj:`int`
+            Index of ``R`` to compute.
         entity_ids : :obj:`numpy.ndarray`, shape: ``(len(Z),)``
             Integers specifying which atoms belong to which entities.
         comp_ids : :obj:`numpy.ndarray`, shape: ``(len(entity_ids),)``
@@ -811,14 +817,8 @@ class mbePredict:
             (optional, shape: ``(len(Z), 3)``) - The internal virial
             contribution to the pressure stress tensor in units of energy.
         """
-        # Unify r shape.
-        if R.ndim == 3:
-            log.debug("R has three dimensions (instead of two)")
-            if R.shape[0] == 1:
-                log.debug("R[0] was selected to proceed")
-                R = R[0]
-            else:
-                raise ValueError("R.ndim is not 2 (only one structure is allowed)")
+        # R = R[R_idx]
+        kwargs_pred = {}
 
         # Creates a generator for all possible n-body combinations regardless
         # of cutoffs.
@@ -830,7 +830,6 @@ class mbePredict:
         log.debug("Available entity IDs: %r", avail_entity_ids)
         nbody_gen = gen_combs(avail_entity_ids)
 
-        kwargs_pred = {}
         if self.alchemy_scalers is not None:
             nbody_order = len(model_comp_ids)
             kwargs_pred["alchemy_scalers"] = [
@@ -851,7 +850,7 @@ class mbePredict:
         # with this model.
         if not self.use_ray:
             E, F, *virial_model = self.predict_model(
-                Z, R, entity_ids, nbody_gen, model, periodic_cell, **kwargs_pred
+                Z, R, R_idx, entity_ids, nbody_gen, model, periodic_cell, **kwargs_pred
             )
             if compute_stress:
                 virial += virial_model[0]
@@ -864,17 +863,12 @@ class mbePredict:
                     F_path,
                     dtype=np.float64,
                     mode="w+",
-                    shape=R.shape,
+                    shape=R_shape[1:],
                 )
             else:
                 # pylint: disable-next=invalid-name
                 F_path = None
-                F = np.zeros(R.shape, dtype=np.float64)
-
-            # Put all common data into the ray object store.
-            Z = ray.put(Z)
-            R = ray.put(R)
-            entity_ids = ray.put(entity_ids)
+                F = np.zeros(R_shape[1:], dtype=np.float64)
 
             nbody_gen = tuple(nbody_gen)
             if self.wkr_chunk_size is None:
@@ -892,6 +886,7 @@ class mbePredict:
                     predict_model.remote(
                         Z,
                         R,
+                        R_idx,
                         entity_ids,
                         chunk,
                         model,
@@ -1092,54 +1087,62 @@ class mbePredict:
         t_predict = log.t_start()
         if R.ndim == 2:
             R = np.array([R])
-        n_R = R.shape[0]
+        R_shape = R.shape
         compute_stress = self.compute_stress and bool(self.periodic_cell)
+
+        assert Z.shape == entity_ids.shape
+
+        if self.use_ray:
+            Z = ray.put(Z)
+            R = ray.put(R)
+            entity_ids = ray.put(entity_ids)
 
         # Preallocate memory for energies and forces.
         if not self.use_memmaps:
-            E = np.zeros((n_R,), dtype=np.float64)
-            F = np.zeros(R.shape, dtype=np.float64)
+            E = np.zeros((R_shape[0],), dtype=np.float64)
+            F = np.zeros(R_shape, dtype=np.float64)
         else:
             # pylint: disable=R1732
             E = np.memmap(
                 tempfile.NamedTemporaryFile(dir=self.temp_dir.name).name,
-                dtype="float64",
+                dtype=np.float64,
                 mode="w+",
-                shape=(n_R,),
+                shape=(R_shape[0],),
             )
             F = np.memmap(
                 tempfile.NamedTemporaryFile(dir=self.temp_dir.name).name,
-                dtype="float64",
+                dtype=np.float64,
                 mode="w+",
-                shape=R.shape,
+                shape=R_shape,
             )
             E[:] = 0.0
             F[:] = 0.0
         if compute_stress:
             assert self.virial_form in ("group", "finite_diff")
-            stress = np.zeros((n_R, 3, 3), dtype=np.float64)
+            stress = np.zeros((R_shape[0], 3, 3), dtype=np.float64)
 
         # Compute all energies and forces with every model.
-        for i, r in enumerate(R):
+        for R_idx in range(R_shape[0]):
             for model in self.models:
                 # Extra returns are present for stress. The *stress_nbody captures it.
                 # If it is not requested, it will just be an empty list.
                 E_nbody, F_nbody, *virial_nbody = self.compute_nbody(
-                    Z, r, entity_ids, comp_ids, model
+                    Z, R, R_shape, R_idx, entity_ids, comp_ids, model
                 )
-                E[i] += E_nbody
-                F[i] += F_nbody
+                E[R_idx] += E_nbody
+                F[R_idx] += F_nbody
                 if compute_stress and self.virial_form == "group":
-                    stress[i] += virial_nbody[0]
+                    stress[R_idx] += virial_nbody[0]
 
             if compute_stress and self.virial_form == "finite_diff":
                 periodic_cell = self.periodic_cell
                 if self.use_ray:
                     periodic_cell = ray.get(periodic_cell)
                 cell_v = periodic_cell.cell_v
-                stress[i] = virial_finite_diff(
+                stress[R_idx] = virial_finite_diff(
                     Z,
-                    r,
+                    R,
+                    R_idx,
                     entity_ids,
                     comp_ids,
                     cell_v,

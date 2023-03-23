@@ -75,6 +75,7 @@ def to_voigt(arr):
 def virial_finite_diff(
     Z,
     R,
+    R_idx,
     entity_ids,
     comp_ids,
     cell_vectors,
@@ -119,6 +120,7 @@ def virial_finite_diff(
     Code adapted from `here
     <https://github.com/svandenhaute/openyaff/blob/main/openyaff/utils.py#L442>`__.
     """
+    R = R[R_idx]
     # pylint: disable=invalid-name
     compute_stress_original = mbe_pred.compute_stress
     mbe_pred.compute_stress = False  # Prevents recursion

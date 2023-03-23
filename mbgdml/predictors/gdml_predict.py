@@ -171,6 +171,7 @@ def _predict_gdml_wkr(
 def predict_gdml(
     Z,
     R,
+    R_idx,
     entity_ids,
     entity_combs,
     model,
@@ -204,12 +205,13 @@ def predict_gdml(
     :obj:`numpy.ndarray`
         Predicted :math:`n`-body forces.
     """
-    assert R.ndim == 2
+    # assert R.ndim == 2
+
     E = 0.0
     if F_path is None:
-        F = np.zeros(R.shape)
+        F = np.zeros(R[R_idx].shape)
     else:
-        F = np.memmap(F_path, dtype=np.float64, mode="r+", shape=R.shape)
+        F = np.memmap(F_path, dtype=np.float64, mode="r+", shape=R[R_idx].shape)
 
     alchemy_scalers = kwargs.get("alchemy_scalers", None)
     compute_virial = kwargs.get("compute_virial", False)
@@ -227,7 +229,7 @@ def predict_gdml(
         r_slice = get_R_slice(entity_id_comb, entity_ids)
 
         z = Z[r_slice]
-        r = R[r_slice]
+        r = R[R_idx][r_slice]
         # Note: We store the original coordinates in case the virial is requested
 
         # If we are using a periodic cell we convert r_comp into coordinates
