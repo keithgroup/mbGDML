@@ -546,6 +546,7 @@ class mbePredict:
         compute_stress=False,
         use_memmaps=False,
         temp_dir=None,
+        worker_memory=None,
     ):
         r"""
         Parameters
@@ -610,6 +611,8 @@ class mbePredict:
             Memory-maps will be returned instead of arrays if ``True``.
         temp_dir : :obj:`str`, default: ``None``
             Temporary directory to store memory-maps if requested.
+        worker_memory : :obj:`float`, default: ``None``
+            Specify the amount of heap memory to request in MB.
         """
         self.models = models
         self.predict_model = predict_model
@@ -629,6 +632,7 @@ class mbePredict:
         self.compute_stress = compute_stress
         self.use_memmaps = use_memmaps
         self.temp_dir = temp_dir
+        self.worker_memory = worker_memory
         if use_memmaps:
             # pylint: disable-next=consider-using-with
             self.temp_dir = tempfile.TemporaryDirectory(dir=temp_dir)
@@ -780,9 +784,7 @@ class mbePredict:
         return avail_entity_ids
 
     # pylint: disable=too-many-branches, too-many-statements, invalid-name
-    def compute_nbody(
-        self, Z, R, R_shape, R_idx, entity_ids, comp_ids, model
-    ):
+    def compute_nbody(self, Z, R, R_shape, R_idx, entity_ids, comp_ids, model):
         r"""Compute all :math:`n`-body contributions of a single structure
         using a :obj:`mbgdml.models.Model` object.
 
@@ -817,7 +819,6 @@ class mbePredict:
             (optional, shape: ``(len(Z), 3)``) - The internal virial
             contribution to the pressure stress tensor in units of energy.
         """
-        # R = R[R_idx]
         kwargs_pred = {}
 
         # Creates a generator for all possible n-body combinations regardless
@@ -850,7 +851,15 @@ class mbePredict:
         # with this model.
         if not self.use_ray:
             E, F, *virial_model = self.predict_model(
-                Z, R, R_idx, entity_ids, nbody_gen, model, periodic_cell, **kwargs_pred
+                Z,
+                R,
+                R_shape,
+                R_idx,
+                entity_ids,
+                nbody_gen,
+                model,
+                periodic_cell,
+                **kwargs_pred,
             )
             if compute_stress:
                 virial += virial_model[0]
@@ -870,6 +879,8 @@ class mbePredict:
                 F_path = None
                 F = np.zeros(R_shape[1:], dtype=np.float64)
 
+            F_path = ray.put(F_path)
+
             nbody_gen = tuple(nbody_gen)
             if self.wkr_chunk_size is None:
                 wkr_chunk_size = math.ceil(len(nbody_gen) / self.n_workers)
@@ -880,12 +891,16 @@ class mbePredict:
 
             # Initialize workers
             predict_model = self.predict_model
+            remote_options = {}
+            if self.worker_memory is not None:
+                remote_options["memory"] = int(self.worker_memory * 1e6)  # mb -> bytes
 
             def add_worker(workers, chunk):
                 workers.append(
-                    predict_model.remote(
+                    predict_model.options(**remote_options).remote(
                         Z,
                         R,
+                        R_shape,
                         R_idx,
                         entity_ids,
                         chunk,
@@ -1117,6 +1132,7 @@ class mbePredict:
             )
             E[:] = 0.0
             F[:] = 0.0
+
         if compute_stress:
             assert self.virial_form in ("group", "finite_diff")
             stress = np.zeros((R_shape[0], 3, 3), dtype=np.float64)

@@ -171,7 +171,8 @@ def _predict_gdml_wkr(
 def predict_gdml(
     Z,
     R,
-    R_idx,
+    R_shape,  # pylint: disable=invalid-name
+    R_idx,  # pylint: disable=invalid-name
     entity_ids,
     entity_combs,
     model,
@@ -209,9 +210,9 @@ def predict_gdml(
 
     E = 0.0
     if F_path is None:
-        F = np.zeros(R[R_idx].shape)
+        F = np.zeros(R_shape[1:])
     else:
-        F = np.memmap(F_path, dtype=np.float64, mode="r+", shape=R[R_idx].shape)
+        F = np.memmap(F_path, dtype=np.float64, mode="r+", shape=R_shape[1:])
 
     alchemy_scalers = kwargs.get("alchemy_scalers", None)
     compute_virial = kwargs.get("compute_virial", False)
