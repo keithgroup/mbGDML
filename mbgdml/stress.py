@@ -80,7 +80,7 @@ def virial_finite_diff(
     comp_ids,
     cell_vectors,
     mbe_pred,
-    dh=1e-4,
+    dh=1e-5,
     only_normal_stress=False,
 ):
     r"""Approximates the virial stress of a periodic cell with vectors
@@ -105,7 +105,7 @@ def virial_finite_diff(
         The three cell vectors.
     mbe_pred : :obj:`mbgdml.mbe.mbePredict`
         Initialized many-body expansion predictor.
-    dh : :obj:`float`, default: ``1e-4``
+    dh : :obj:`float`, default: ``1e-5``
         Forward and backward displacement for the cell vectors.
     only_normal_stress : :obj:`bool`
         Only compute normal (xx, yy, and zz) stress.
@@ -135,19 +135,19 @@ def virial_finite_diff(
             cell_vectors_ = cell_vectors.copy()
 
             # Backward
-            cell_vectors_[i, j] -= dh / 2
+            cell_vectors_[i, j] -= dh
             R_tmp = np.dot(R_fractional, cell_vectors_)
             cell_vectors_tmp = cell_vectors_.copy()
             mbe_pred.periodic_cell = Cell(cell_vectors_tmp, pbc=True)
             E_minus, _ = mbe_pred.predict(Z, R_tmp, entity_ids, comp_ids)
 
             # Forward
-            cell_vectors_[i, j] += dh
+            cell_vectors_[i, j] += 2 * dh
             R_tmp = np.dot(R_fractional, cell_vectors_)
             cell_vectors_tmp = cell_vectors_.copy()
             mbe_pred.periodic_cell = Cell(cell_vectors_tmp, pbc=True)
             E_plus, _ = mbe_pred.predict(Z, R_tmp, entity_ids, comp_ids)
-            dEdh[i, j] = (E_plus - E_minus) / dh
+            dEdh[i, j] = (E_plus - E_minus) / (2 * dh)
 
     # Puts the original value of compute_stress back.
     mbe_pred.compute_stress = compute_stress_original
