@@ -34,7 +34,14 @@ class mbeCalculator(Calculator):
     implemented_properties = ["energy", "forces", "stress"]
 
     def __init__(
-        self, mbe_pred, parameters=None, e_conv=1.0, f_conv=1.0, atoms=None, **kwargs
+        self,
+        mbe_pred,
+        parameters=None,
+        e_conv=1.0,
+        f_conv=1.0,
+        atoms=None,
+        wrap_atoms=True,
+        **kwargs
     ):
         """
         Parameters
@@ -57,6 +64,8 @@ class mbeCalculator(Calculator):
         self.e_conv = e_conv
         self.f_conv = f_conv
 
+        self.wrap_atoms = wrap_atoms
+
         if parameters is None:
             parameters = {}
         self.parameters = parameters
@@ -67,7 +76,7 @@ class mbeCalculator(Calculator):
         is_periodic = bool(self.mbe_pred.periodic_cell)
 
         if atoms is not None:
-            if is_periodic:
+            if is_periodic and self.wrap_atoms:
                 atoms.wrap()
             self.atoms = atoms.copy()
 
