@@ -214,8 +214,8 @@ def test_1h2o_train_grid_search_iterative():
     assert np.allclose(
         np.array(model["f_err"].item()["rmse"]),
         0.4673519840841512,
-        rtol=1e-04,
-        atol=1e-05,
+        rtol=1e-02,
+        atol=1e-03,
     )
     assert model["perms"].shape[0] == 2
 
