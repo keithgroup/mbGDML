@@ -165,6 +165,61 @@ def test_1h2o_train_grid_search():
     assert model["perms"].shape[0] == 2
 
 
+def test_1h2o_train_grid_search_iterative():
+    check_glob()
+
+    dset_path = os.path.join(
+        DSET_DIR, "1h2o/140h2o.sphere.gfn2.md.500k.prod1.3h2o.dset.1h2o-dset.npz"
+    )
+    dset = DataSet(dset_path, Z_key="z")
+
+    train_dir_1h2o = os.path.join(TRAIN_DIR, "1h2o/")
+    train_idxs_path = os.path.join(train_dir_1h2o, "train_idxs.npy")
+    valid_idxs_path = os.path.join(train_dir_1h2o, "valid_idxs.npy")
+    train_idxs = np.load(train_idxs_path, allow_pickle=True)
+    valid_idxs = np.load(valid_idxs_path, allow_pickle=True)
+
+    n_train = 50
+    n_valid = 100
+    sigma_grid = [32, 42, 52]
+
+    train = mbGDMLTrain(
+        entity_ids=np.array([0, 0, 0]),
+        comp_ids=np.array(["h2o"]),
+        use_sym=True,
+        use_E=True,
+        use_E_cstr=False,
+        use_cprsn=False,
+        solver="iterative",
+        lam=1e-15,
+        solver_tol=1e-4,
+    )
+    train.sigma_grid = sigma_grid
+    model = train.grid_search(
+        dset,
+        "1h2o",
+        n_train,
+        n_valid,
+        train_idxs=train_idxs,
+        valid_idxs=valid_idxs,
+        write_json=True,
+        write_idxs=True,
+        overwrite=True,
+        save_dir="./tests/tmp/1h2o-grid-iterative",
+    )
+
+    del train
+
+    assert model["sig"].item() == 42
+    assert np.allclose(
+        np.array(model["f_err"].item()["rmse"]),
+        0.4673519840841512,
+        rtol=1e-02,
+        atol=1e-03,
+    )
+    assert model["perms"].shape[0] == 2
+
+
 def test_1h2o_train_bayes_opt():
     check_glob()
 

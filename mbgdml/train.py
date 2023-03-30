@@ -80,8 +80,7 @@ class mbGDMLTrain:
             try to reduce training time. Usually does not provide significant
             benefits.
         solver : :obj:`str`, default: ``'analytic'``
-            The GDML solver to use. Currently the only option is
-            ``'analytic'``.
+            The GDML solver to use, either ``analytic`` or ``iterative``.
         lam : :obj:`float`, default: ``1e-10``
             Hyper-parameter lambda (regularization strength). This generally
             does not need to change.

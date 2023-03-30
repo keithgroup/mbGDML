@@ -431,16 +431,14 @@ class GDMLTorchPredict(nn.Module):
 
         super(GDMLTorchPredict, self).__init__()
 
-        log = logging.getLogger(__name__)
-
         model = dict(model)
 
         self._lat_and_inv = (
             None
             if lat_and_inv is None
             else (
-                torch.tensor(lat_and_inv[0]),
-                torch.tensor(lat_and_inv[1]),
+                torch.tensor(lat_and_inv[0], dtype=_dtype),
+                torch.tensor(lat_and_inv[1], dtype=_dtype),
             )
         )
 
@@ -491,6 +489,14 @@ class GDMLTorchPredict(nn.Module):
             )  # bytes to GB
         else:  # TODO: what about MPS?
             default_cpu_max_mem = 32
+            if max_memory is None:
+                pytorch_mem_limit = 2**30 * default_cpu_max_mem * 1e-9  # GB
+                log.info(
+                    "PyTorch CPU memory budget is limited to %.2f GB"
+                    " by default, which may impact performance",
+                    pytorch_mem_limit,
+                )
+                log.info("If necessary, adjust memory limit with option '-m'")
             max_memory = (
                 max_memory or default_cpu_max_mem
             )  # 32 GB as default (hardcoded for now...)
@@ -543,15 +549,15 @@ class GDMLTorchPredict(nn.Module):
                     torch.cuda.empty_cache()
 
                 if n_perm_batches == 1:
-                    self.set_n_perm_batches(
-                        2
-                    )  # Set to 2 perm batches, because that's the first batch size (and fastest) that is not cached.
+                    # Set to 2 perm batches, because that's the first batch size
+                    # (and fastest) that is not cached.
+                    self.set_n_perm_batches(2)
                     pass
                 else:
                     log.critical(
-                        "Could not allocate enough memory to store model parameters on GPU. There is no hope!"
+                        "Could not allocate enough memory to store model parameters "
+                        "on GPU. There is no hope!"
                     )
-                    print()
                     os._exit(1)
             else:
                 raise e
@@ -852,7 +858,7 @@ class GDMLTorchPredict(nn.Module):
         is_train_pred = Rs_or_train_idxs.dim() == 1
         if not is_train_pred:  # Rs
 
-            Rs = Rs_or_train_idxs
+            Rs = Rs_or_train_idxs.type(_dtype)
             diffs = Rs[:, :, None, :] - Rs[:, None, :, :]  # N, a, a, 3
             diffs = diffs[:, i, j, :]  # N, d, 3
 

@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Added
 
+- Iterative solver for GDML training on larger systems (changes up to v1.0.0).
 - Additional documentation on obtaining many-body data.
 - Some many-body expansion logging (for debugging).
 - Logger documentation.
@@ -19,6 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Changed
 
+- GDML solvers are put into their own modules.
 - Updated prediction set documentation.
 - Unified use of ray by always having ``use_ray`` option and defaulting ``n_workers`` to ``1``.
 

@@ -23,14 +23,12 @@
 
 # pylint: disable=too-many-branches, too-many-statements
 
-import sys
-import warnings
 from functools import partial
 import multiprocessing as mp
 import numpy as np
-import scipy as sp
 import psutil
 
+from .solvers.analytic import Analytic
 from .predict import GDMLPredict
 from .desc import Desc
 from .sample import draw_strat_sample
@@ -126,7 +124,7 @@ def _assemble_kernel_mat_wkr(
         Number of kernel matrix blocks created, divided by 2
         (symmetric blocks are always created at together).
     """
-    # pylint: disable=invalid-name
+    # pylint: disable=invalid-name, undefined-variable
     global glob  # pylint: disable=global-variable-not-assigned
 
     R_desc = np.frombuffer(glob["R_desc"]).reshape(glob["R_desc_shape"])
@@ -842,7 +840,7 @@ class GDMLTrain:
         n_perms = task["perms"].shape[0]
         tril_perms = np.array([desc.perm(p) for p in task["perms"]])
 
-        # dim_i = 3 * n_atoms
+        # dim_i = 3 * n_atoms  # Unused variable
         dim_d = desc.dim
 
         perm_offsets = np.arange(n_perms)[:, None] * dim_d
@@ -874,7 +872,7 @@ class GDMLTrain:
         max_memory_bytes = self._max_memory * 1024**3
 
         # Memory cost of analytic solver
-        est_bytes_analytic = self.analytic_est_memory_requirement(n_train, n_atoms)
+        est_bytes_analytic = Analytic.est_memory_requirement(n_train, n_atoms)
 
         # Memory overhead (solver independent)
         est_bytes_overhead = y.nbytes
@@ -890,20 +888,12 @@ class GDMLTrain:
 
         ###   mbGDML CHANGE START   ###
         if task["solver_name"] is None:
-            # Fall back to analytic solver, if iterative solver file is missing.
-            # Force analytic solver because iterative solver is not released yet.
+            # Fall back to analytic solver
             use_analytic_solver = True
-            # base_path = os.path.dirname(os.path.abspath(__file__))
-            # iter_solver_path = os.path.join(base_path, 'solvers/iterative.py')
-            # if not os.path.exists(iter_solver_path):
-            #     log.debug('Iterative solver not installed.')
-            #     use_analytic_solver = True
         else:
             solver = task["solver_name"]
-            if solver == "analytic":
-                use_analytic_solver = True
-            else:
-                raise ValueError(f"{solver} is not currently supported")
+            assert solver in ("analytic", "iterative")
+            use_analytic_solver = bool(solver == "analytic")
         ###   mbGDML CHANGE END   ###
 
         if use_analytic_solver:
@@ -913,13 +903,13 @@ class GDMLTrain:
                 mem_req_mb,
             )
             ###   mbGDML CHANGE START   ###
-            alphas = self.solve_analytic(
-                task, desc, R_desc, R_d_desc, tril_perms_lin, y
-            )
+            analytic = Analytic(self, desc)
+            alphas = analytic.solve(task, R_desc, R_d_desc, tril_perms_lin, y)
             solver_keys["norm_y_train"] = np.linalg.norm(y)
             ###   mbGDML CHANGE END   ###
 
         else:
+            # Iterative solver
             max_n_inducing_pts = Iterative.max_n_inducing_pts(
                 n_train, n_atoms, max_memory_bytes
             )
@@ -1013,141 +1003,6 @@ class GDMLTrain:
             model["c"] = c
 
         return model
-
-    def analytic_est_memory_requirement(self, n_train, n_atoms):
-        est_bytes = 3 * (n_train * 3 * n_atoms) ** 2 * 8  # K + factor(s) of K
-        est_bytes += (n_train * 3 * n_atoms) * 8  # alpha
-        return est_bytes
-
-    def solve_analytic(self, task, desc, R_desc, R_d_desc, tril_perms_lin, y):
-        r"""Condensed :class:`sgdml.solvers.analytic.Analytic` class.
-
-        Parameters
-        ----------
-        task : :obj:`dict`
-
-        R_desc : :obj:`numpy.ndarray`
-            Array containing the descriptor for each training point.
-            Computed from :func:`~mbgdml._gdml.desc._r_to_desc`.
-        R_d_desc : :obj:`numpy.ndarray`
-            Array containing the gradient of the descriptor for
-            each training point. Computed from
-            :func:`~mbgdml._gdml.desc._r_to_d_desc`.
-        tril_perms_lin : :obj:`numpy.ndarray`, ndim: ``1``
-            An array containing all recovered permutations expanded as one large
-            permutation to be applied to a tiled copy of the object to be
-            permuted.
-        y : :obj:`numpy.ndarray`, ndim: ``1``
-            The train labels computed in
-            :meth:`~mbgdml._gdml.train.GDMLTrain.train_labels`.
-        """
-        # pylint: disable=invalid-name
-        log.info(
-            "\n-------------------------\n"
-            "|   Analytical solver   |\n"
-            "-------------------------\n"
-        )
-
-        sig = task["sig"]
-        lam = task["lam"]
-        use_E_cstr = task["use_E_cstr"]
-        log.log_model(task)
-
-        n_train, dim_d = R_d_desc.shape[:2]
-        n_atoms = int((1 + np.sqrt(8 * dim_d + 1)) / 2)
-        dim_i = 3 * n_atoms
-
-        # Compress kernel based on symmetries
-        col_idxs = np.s_[:]
-        if "cprsn_keep_atoms_idxs" in task:
-
-            cprsn_keep_idxs = task["cprsn_keep_atoms_idxs"]
-            cprsn_keep_idxs_lin = (
-                np.arange(dim_i).reshape(n_atoms, -1)[cprsn_keep_idxs, :].ravel()
-            )
-
-            col_idxs = (
-                cprsn_keep_idxs_lin[:, None] + np.arange(n_train) * dim_i
-            ).T.ravel()
-
-        log.info("\nAssembling kernel matrix")
-        t_assemble = log.t_start()
-        K = self._assemble_kernel_mat(
-            R_desc,
-            R_d_desc,
-            tril_perms_lin,
-            sig,
-            desc,
-            use_E_cstr=use_E_cstr,
-            col_idxs=col_idxs,
-        )
-        log.t_stop(t_assemble)
-
-        # with warnings.catch_warnings():
-        #     warnings.simplefilter("ignore")
-        with warnings.catch_warnings():
-            warnings.filterwarnings("ignore", r"Ill-conditioned matrix")
-
-            if K.shape[0] == K.shape[1]:
-
-                K[np.diag_indices_from(K)] -= lam  # regularize
-
-                try:
-                    t_cholesky = log.t_start()
-                    log.info("Solving linear system (Cholesky factorization)")
-                    # Cholesky
-                    L, lower = sp.linalg.cho_factor(
-                        -K, overwrite_a=True, check_finite=False
-                    )
-                    alphas = -sp.linalg.cho_solve(
-                        (L, lower), y, overwrite_b=True, check_finite=False
-                    )
-
-                    log.t_stop(t_cholesky, message="Done in {time} s")
-                except np.linalg.LinAlgError:
-                    # try a solver that makes less assumptions
-                    log.t_stop(
-                        t_cholesky, message="Cholesky factorization failed in {time} s"
-                    )
-                    log.info("Solving linear system (LU factorization)")
-
-                    try:
-                        # LU
-                        t_lu = log.t_start()
-                        alphas = sp.linalg.solve(
-                            K, y, overwrite_a=True, overwrite_b=True, check_finite=False
-                        )
-                        log.t_stop(t_lu, message="Done in {time} s")
-                    except MemoryError:
-                        log.t_stop(
-                            t_lu,
-                            message="LU factorization failed in {time} s",
-                            level=50,
-                        )
-                        log.critical(
-                            "Not enough memory to train this system using a closed "
-                            "form solver.\nPlease reduce the size of the training set "
-                            "or consider one of the approximate solver options."
-                        )
-                        sys.exit()
-
-                except MemoryError:
-                    log.critical(
-                        "Not enough memory to train this system using a closed "
-                        "form solver.\nPlease reduce the size of the training set "
-                        "or consider one of the approximate solver options."
-                    )
-                    sys.exit()
-            else:
-                log.info(
-                    "Solving overdetermined linear system (least squares approximation)"
-                )
-                t_least_squares = log.t_start()
-                # least squares for non-square K
-                alphas = np.linalg.lstsq(K, y, rcond=-1)[0]
-                log.t_stop(t_least_squares)
-
-        return alphas
 
     def _recov_int_const(
         self, model, task, R_desc=None, R_d_desc=None, require_E_eval=False
