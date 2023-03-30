@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Changed
 
+- GDML solvers are put into their own modules.
 - Updated prediction set documentation.
 - Unified use of ray by always having ``use_ray`` option and defaulting ``n_workers`` to ``1``.
 
