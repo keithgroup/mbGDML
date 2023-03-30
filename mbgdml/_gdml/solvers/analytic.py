@@ -166,3 +166,9 @@ class Analytic:
                 log.t_stop(t_least_squares)
 
         return alphas
+
+    @staticmethod
+    def est_memory_requirement(n_train, n_atoms):
+        est_bytes = 3 * (n_train * 3 * n_atoms) ** 2 * 8  # K + factor(s) of K
+        est_bytes += (n_train * 3 * n_atoms) * 8  # alpha
+        return est_bytes

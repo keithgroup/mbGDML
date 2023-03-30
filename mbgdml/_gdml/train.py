@@ -840,7 +840,7 @@ class GDMLTrain:
         n_perms = task["perms"].shape[0]
         tril_perms = np.array([desc.perm(p) for p in task["perms"]])
 
-        # dim_i = 3 * n_atoms
+        # dim_i = 3 * n_atoms  # Unused variable
         dim_d = desc.dim
 
         perm_offsets = np.arange(n_perms)[:, None] * dim_d
@@ -872,7 +872,7 @@ class GDMLTrain:
         max_memory_bytes = self._max_memory * 1024**3
 
         # Memory cost of analytic solver
-        est_bytes_analytic = self.analytic_est_memory_requirement(n_train, n_atoms)
+        est_bytes_analytic = Analytic.est_memory_requirement(n_train, n_atoms)
 
         # Memory overhead (solver independent)
         est_bytes_overhead = y.nbytes
@@ -888,20 +888,12 @@ class GDMLTrain:
 
         ###   mbGDML CHANGE START   ###
         if task["solver_name"] is None:
-            # Fall back to analytic solver, if iterative solver file is missing.
-            # Force analytic solver because iterative solver is not released yet.
+            # Fall back to analytic solver
             use_analytic_solver = True
-            # base_path = os.path.dirname(os.path.abspath(__file__))
-            # iter_solver_path = os.path.join(base_path, 'solvers/iterative.py')
-            # if not os.path.exists(iter_solver_path):
-            #     log.debug('Iterative solver not installed.')
-            #     use_analytic_solver = True
         else:
             solver = task["solver_name"]
-            if solver == "analytic":
-                use_analytic_solver = True
-            else:
-                raise ValueError(f"{solver} is not currently supported")
+            assert solver in ("analytic", "iterative")
+            use_analytic_solver = bool(solver == "analytic")
         ###   mbGDML CHANGE END   ###
 
         if use_analytic_solver:
@@ -917,6 +909,7 @@ class GDMLTrain:
             ###   mbGDML CHANGE END   ###
 
         else:
+            # Iterative solver
             max_n_inducing_pts = Iterative.max_n_inducing_pts(
                 n_train, n_atoms, max_memory_bytes
             )
@@ -1010,11 +1003,6 @@ class GDMLTrain:
             model["c"] = c
 
         return model
-
-    def analytic_est_memory_requirement(self, n_train, n_atoms):
-        est_bytes = 3 * (n_train * 3 * n_atoms) ** 2 * 8  # K + factor(s) of K
-        est_bytes += (n_train * 3 * n_atoms) * 8  # alpha
-        return est_bytes
 
     def _recov_int_const(
         self, model, task, R_desc=None, R_d_desc=None, require_E_eval=False
