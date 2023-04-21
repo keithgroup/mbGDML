@@ -8,6 +8,6 @@ authors:
     given-names: John A.
     orcid: "https://orcid.org/0000-0002-6583-6322"
 type: software
-version: v0.0.4
+version: v0.1.0
 license: MIT
 cff-version: 1.2.0
