@@ -201,7 +201,7 @@ If Cholesky factorization fails, we try LU factorization with :func:`scipy.linal
     \frac{\partial}{\partial x_j} \nabla_{\overrightarrow{x}_i} \: k_{5/2} (\overrightarrow{x}_i, \overrightarrow{x}_j)
     :label: gdml_force_eq
 
-All of this is automatically done in :meth:`~mbgdml._gdml.train.GDMLTrain.solve_analytic`.
+All of this is automatically done in :class:`~mbgdml._gdml.solvers.analytic.Analytic`.
 
 
 ``integ_c``
@@ -293,8 +293,8 @@ Furthermore, unlike the `sGDML package <https://github.com/stefanch/sGDML>`__ we
 
 
 
-Iterative training
-==================
+Active learning
+===============
 
 .. figure:: images/training/1h2o-cl-losses-1000-rand.png
     :align: center
@@ -308,21 +308,21 @@ Iterative training
     :align: center
     :width: 600 px
 
-    Mean loss, :func:`~mbgdml.losses.loss_f_mse`, from an iteratively trained water 1-body model on 1000 structures.
+    Mean loss, :func:`~mbgdml.losses.loss_f_mse`, from a water 1-body model trained with active learning on 1000 structures.
     Structures were automatically selected using :func:`~mbgdml._gdml.sample.draw_strat_sample`.
     The maximum cluster loss was :math:`5.079 \times 10^{-7}` [kcal/(mol A)]\ :sup:`2`.
 
 .. seealso::
 
-    This iterative training routine was introduced in DOI: `10.1063/5.0035530 <https://doi.org/10.1063/5.0035530>`__.
+    This active learning procedure was presented in DOI: `10.1063/5.0035530 <https://doi.org/10.1063/5.0035530>`__.
 
 
 Examples
 ========
 
 
-Iterative training of water 3-body model
-----------------------------------------
+Active learning of water 3-body model
+-------------------------------------
 
 .. code-block:: python
 
@@ -386,7 +386,7 @@ Iterative training of water 3-body model
 
 
     # Train the model
-    train.iterative_train(
+    train.active_train(
         dset, model_name, n_train_init=200, n_train_final=1000, n_valid=100,
         n_train_step=50, n_test=1000, save_dir=save_dir, overwrite=True,
         write_json=True, write_idxs=True,

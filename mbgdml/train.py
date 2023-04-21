@@ -185,7 +185,7 @@ class mbGDMLTrain:
         :type: :obj:`dict`
         """
         self.bayes_opt_params_final = None
-        r"""Bayesian optimization parameters for the final iterative model.
+        r"""Bayesian optimization parameters for the final model.
 
         If :obj:`None`, then ``bayes_opt_params`` are used.
 
@@ -1041,7 +1041,7 @@ class mbGDMLTrain:
         log.t_stop(t_job, message="\nJob duration : {time} s", precision=2)
         return model_best.model_dict
 
-    def iterative_train(
+    def active_train(
         self,
         dataset,
         model_name,
@@ -1056,7 +1056,7 @@ class mbGDMLTrain:
         write_json=True,
         write_idxs=True,
     ):
-        r"""Iteratively trains a GDML model by using Bayesian optimization and
+        r"""Trains a GDML model by using Bayesian optimization and
         adding problematic (high error) structures to the training set.
 
         Trains a GDML model with :meth:`mbgdml.train.mbGDMLTrain.bayes_opt`.
@@ -1077,8 +1077,8 @@ class mbGDMLTrain:
             Size of the validation set to be used for each training task.
             Different structures are sampled for each training task.
         model0 : :obj:`dict`, default: :obj:`None`
-            Initial model to start iterative training with. Training indices
-            will be taken from here.
+            Initial model to start training with. Training indices will be taken from
+            here.
         n_train_step : :obj:`int`, default: ``100``
             Number of problematic structures to add to the training set for
             each iteration.
@@ -1099,7 +1099,7 @@ class mbGDMLTrain:
         t_job = log.t_start()
         log.info(
             "###################\n"
-            "#    Iterative    #\n"
+            "#    Active       #\n"
             "#    Training     #\n"
             "###################\n"
         )

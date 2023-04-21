@@ -66,7 +66,8 @@ class Iterative:
         max_processes,
         use_torch,
     ):
-        log.info("Initializinggg iterative solver")
+        r"""The sGDML :class:`sgdml.solvers.iterative.Iterative` class."""
+        log.info("Initializing iterative solver")
         self.gdml_train = gdml_train
         self.gdml_predict = None
         self.desc = desc
@@ -78,6 +79,26 @@ class Iterative:
     def _init_precon_operator(
         self, task, R_desc, R_d_desc, tril_perms_lin, inducing_pts_idxs
     ):
+        r"""Solve for :math:`\alpha`.
+
+        Parameters
+        ----------
+        task : :obj:`dict`
+            Properties of the training task.
+        R_desc : :obj:`numpy.ndarray`
+            Array containing the descriptor for each training point.
+            Computed from :func:`~mbgdml._gdml.desc._r_to_desc`.
+        R_d_desc : :obj:`numpy.ndarray`
+            Array containing the gradient of the descriptor for
+            each training point. Computed from
+            :func:`~mbgdml._gdml.desc._r_to_d_desc`.
+        tril_perms_lin : :obj:`numpy.ndarray`, ndim: ``1``
+            An array containing all recovered permutations expanded as one large
+            permutation to be applied to a tiled copy of the object to be
+            permuted.
+        inducing_pts_idxs : :obj:`numpy.ndarray`, ndim: ``1``
+            Indices of inducing points.
+        """
 
         lam = task["lam"]
         lam_inv = 1.0 / lam
@@ -425,6 +446,7 @@ class Iterative:
         tol=1e-4,
         save_progr_callback=None,
     ):
+        r"""Iteratively solve for :math:`\alpha`."""
 
         global num_iters, start, resid, avg_tt, m  # , P_t
 

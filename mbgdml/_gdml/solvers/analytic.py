@@ -33,17 +33,17 @@ log = GDMLLogger(__name__)
 
 class Analytic:
     def __init__(self, gdml_train, desc):
+        r"""The sGDML :class:`sgdml.solvers.analytic.Analytic` class."""
         self.gdml_train = gdml_train
         self.desc = desc
 
     def solve(self, task, R_desc, R_d_desc, tril_perms_lin, y):
-
-        r"""Condensed :class:`sgdml.solvers.analytic.Analytic` class.
+        r"""Solve for :math:`\alpha`.
 
         Parameters
         ----------
         task : :obj:`dict`
-
+            Properties of the training task.
         R_desc : :obj:`numpy.ndarray`
             Array containing the descriptor for each training point.
             Computed from :func:`~mbgdml._gdml.desc._r_to_desc`.
