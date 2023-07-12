@@ -217,16 +217,23 @@ GDML is an energy-conserving force field where the energy is recovered by integr
 This is automatically done in :meth:`~mbgdml._gdml.train.GDMLTrain._recov_int_const`.
 
 
-Training routine
-================
+Training routines
+=================
 
 We provide a class, :class:`~mbgdml.train.mbGDMLTrain`, that manages all training routines.
-Many training and model options are either parameters or attributes.
-Please refer to the :class:`~mbgdml.train.mbGDMLTrain` documentation for explanations.
+All you need to do is initialize :class:`~mbgdml.train.mbGDMLTrain` with the desired options and then pick one of the following routines to train a model:
 
+- :meth:`~mbgdml.train.mbGDMLTrain.grid_search`,
+- :meth:`~mbgdml.train.mbGDMLTrain.bayes_opt`.
+
+The primary difference between these two routines is how an optimal ``sigma`` is selected.
+:meth:`~mbgdml.train.mbGDMLTrain.grid_search` is a brute-force routine where it selects the model with the lowest validation loss from each ``sigma`` in :attr:`~mbgdml.train.mbGDMLTrain.sigma_grid`.
+:meth:`~mbgdml.train.mbGDMLTrain.bayes_opt` takes this a step further and uses Bayesian optimization of ``sigma`` around the region identified by a preliminary grid search.
 
 ``create_task``
 ---------------
+
+:meth:`~mbgdml.train.mbGDMLTrain.create_task`
 
 .. mermaid::
 
@@ -236,6 +243,8 @@ Please refer to the :class:`~mbgdml.train.mbGDMLTrain` documentation for explana
 
 ``train_model``
 ---------------
+
+:meth:`~mbgdml.train.mbGDMLTrain.train_model`
 
 .. mermaid::
 
@@ -296,6 +305,8 @@ Furthermore, unlike the `sGDML package <https://github.com/stefanch/sGDML>`__ we
 Active learning
 ===============
 
+:meth:`~mbgdml.train.mbGDMLTrain.active_train`
+
 .. figure:: images/training/1h2o-cl-losses-1000-rand.png
     :align: center
     :width: 600 px
@@ -320,9 +331,18 @@ Active learning
 Examples
 ========
 
+Water 3-body
+------------
 
-Active learning of water 3-body model
--------------------------------------
+These examples demonstrate different procedures to train a 3-body water model using the :class:`~mbgdml.train.mbGDMLTrain` interface.
+All examples below can be used with :download:`this dataset <./files/dsets/3h2o-nbody.npz>`.
+
+
+Active learning
+^^^^^^^^^^^^^^^
+
+The script below shows an example of using :meth:`~mbgdml.train.mbGDMLTrain.active_train` for a 3-body water model.
+Here is an example :download:`dataset <./files/dsets/3h2o-nbody.npz>` and :download:`model <./files/models/2023-digital-discovery/3h2o-model-gdml-nbody.npz>`.
 
 .. code-block:: python
 
@@ -341,8 +361,8 @@ Active learning of water 3-body model
     # dset_path: Path to dataset to train on.
     # log_path: Path to directory where training will occur
     #     (logs and model will be stored here).
-    model_name = "./3h2o-nbody-model"
-    dset_path = "./3h2o-nbody.npz"
+    model_name = "3h2o-nbody-model"
+    dset_path = "3h2o-nbody.npz"
     save_dir = "./"
 
 
@@ -376,7 +396,7 @@ Active learning of water 3-body model
     }
     train.initial_grid = [
         2, 25, 50, 100, 200, 300, 400, 500, 700, 900, 1100, 1500, 2000, 2500, 3000,
-        4000, 5000, 6000, 7000, 8000, 9000, 10000,
+        4000, 5000, 6000, 7000, 8000, 9000, 10000
     ]
     train.sigma_bounds = (min(train.initial_grid), max(train.initial_grid))
     train.loss_func = loss_f_e_weighted_mse

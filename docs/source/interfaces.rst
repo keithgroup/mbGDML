@@ -140,7 +140,7 @@ Periodic box optimization
 
     .. tab-item:: models
 
-        Here are example :download:`1-body <./files/models/first-manuscript/1h2o-model-gdml.npz>`, :download:`2-body <./files/models/first-manuscript/2h2o-model-gdml-nbody.npz>`, and :download:`3-body <./files/models/first-manuscript/3h2o-model-gdml-nbody.npz>` GDML force fields for water.
+        Here are example :download:`1-body <./files/models/2023-digital-discovery/1h2o-model-gdml.npz>`, :download:`2-body <./files/models/2023-digital-discovery/2h2o-model-gdml-nbody.npz>`, and :download:`3-body <./files/models/2023-digital-discovery/3h2o-model-gdml-nbody.npz>` GDML force fields for water.
 
     .. tab-item:: output
 

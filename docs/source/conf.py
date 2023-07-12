@@ -105,5 +105,5 @@ html_sidebars = {
 # Manually copy over files to the root. These can then be referenced outside of the
 # download directive.
 html_extra_path = [
-    "./files/structures/2h2o-psi4-opt.xyz",
+    "./files/structures/2h2o-psi4-opt.xyz"
 ]
