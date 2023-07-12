@@ -15,6 +15,7 @@ requirements = [
     "bayesian-optimization>=1.4.0",
     "pandas",
     "qcelemental>=0.25.1",
+    "pydantic<2.0.0",  # See https://github.com/MolSSI/QCElemental/issues/312
     "ray>=2.0.0",
 ]
 setup_requirements = []
