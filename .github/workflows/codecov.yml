@@ -15,6 +15,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install ase cclib matplotlib numpy scipy ray
           python -m pip install umap-learn psutil bayesian-optimization qcelemental
+          python -m pip install pydantic<2.0.0
           python -m pip install pandas
           python -m pip install pytest-cov
       - name: Run tests and collect coverage
