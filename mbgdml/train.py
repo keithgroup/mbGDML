@@ -690,10 +690,16 @@ class mbGDMLTrain:
                 gp_params = self.bayes_opt_params
         else:
             gp_params = self.bayes_opt_params
-        if gp_params is not None and "init_points" in gp_params:
-            init_points = gp_params["init_points"]
-        else:
-            init_points = 5  # BayesianOptimization default.
+        # Addressing way of handling gp_params
+        # https://github.com/bayesian-optimization/BayesianOptimization/commit/ac435483f24e666866a395423aa3eb4d65278fea
+        if gp_params is not None:
+            init_points = gp_params.get("init_points", 5)
+            init_points = gp_params.get("n_iter", 25)
+        del_keys = ["init_points", "n_iter"]
+        for key in del_keys:
+            if key in gp_params.keys():  # pylint: disable=consider-iterating-dictionary
+                del gp_params[key]
+
         sigma_grid = self.sigma_grid
         if sigma_grid is not None:
             log.info("#   Initial grid search   #")
@@ -777,12 +783,12 @@ class mbGDMLTrain:
                         # We stop grid search and start Bayesian optimization.
                         break
 
-        if init_points < 0:
-            init_points = 0
-            gp_params["init_points"] = init_points
+        # Ensure init_points cannot be negative
+        init_points = max(init_points, 0)
 
         log.info("#   Bayesian optimization   #")
-        optimizer.maximize(**gp_params)
+        optimizer.set_gp_params(**gp_params)
+        optimizer.maximize()
 
         results = optimizer.res
         losses = np.array([-res["target"] for res in results])
