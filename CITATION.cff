@@ -10,4 +10,35 @@ authors:
 type: software
 version: v0.1.0
 license: MIT
+preferred-citation:
+  type: article
+  title: "Modeling molecular ensembles with gradient-domain machine learning force fields"
+  authors:
+    - family-names: "Maldonado"
+      given-names: "Alex M."
+      orcid: "https://orcid.org/0000-0003-3280-062X"
+    - family-names: "Poltavsky"
+      given-names: "Igor"
+      orcid: "https://orcid.org/0000-0002-3188-7017"
+    - family-names: "Vassilev-Galindo"
+      given-names: "Valentin"
+      orcid: "https://orcid.org/0000-0001-7532-3590"
+    - family-names: "Tkatchenko"
+      given-names: "Alexandre"
+      email: "alexandre.tkatchenko@uni.lu"
+      orcid: "https://orcid.org/0000-0002-1012-4854"
+    - family-names: "Keith"
+      given-names: "John A."
+      email: "jakeith@pitt.edu"
+      orcid: "https://orcid.org/0000-0002-6583-6322"
+  journal: "Digital Discovery"
+  volume: 2
+  issue: 3
+  pages: "871-880"
+  year: 2023
+  doi: "10.1039/D3DD00011G"
+contact:
+  - email: "alex.maldonado@pitt.edu"
+    family-names: "Maldonado"
+    given-names: "Alex"
 cff-version: 1.2.0

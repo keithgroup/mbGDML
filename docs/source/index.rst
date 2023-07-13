@@ -122,6 +122,31 @@ Or, the latest development version can be installed directly from the `GitHub re
     pip install .
    
 
+Citing this work
+================
+
+If you find this code helpful in your research or project, please consider citing the following paper:
+
+Maldonado, A. M.; Poltavsky, I.; Vassilev-Galindo, V.; Tkatchenko, A.; Keith, J. A. Modeling molecular ensembles with gradient-domain machine learning force fields. *Digital Discovery* **2023**, *2* (3), 871-880. DOI: `10.1039/D3DD00011G <https://doi.org/10.1039/D3DD00011G>`__.
+
+.. code-block:: bibtex
+
+   @article{maldonado2023modeling,
+      title={Modeling molecular ensembles with gradient-domain machine learning force fields},
+      author={Maldonado, Alex M and Poltavsky, Igor and Vassilev-Galindo, Valentin and Tkatchenko, Alexandre and Keith, John A},
+      journal={Digital Discovery},
+      volume={2},
+      number={3},
+      pages={871--880},
+      year={2023},
+      publisher={Royal Society of Chemistry},
+      doi={10.1039/D3DD00011G}
+   }
+
+Citing the paper helps acknowledge the effort put into developing and maintaining this codebase, and it provides a way to support further research and development.
+Thank you for your support!
+
+
 
 License
 =======
