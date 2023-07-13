@@ -2,6 +2,13 @@
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## Fixed
+
+- Bayesian optimization for ``sigma`` hyperparameter optimization changed how to specify ``gp_params``.
+- Pydantic had API changes that affected qcelemental, so we have to specify ``pydantic<2.0.0`` for now.
+
 ## [0.1.0] - 2023-04-20
 
 ### Added
